@@ -9,8 +9,7 @@ interface Dict { [k: string]: any }
 interface Props {
   lang: Lang;
   dict: Dict;
-  web3formsKey: string;
-  discordWebhook: string;
+  contactEmail: string;
 }
 
 interface Stats { volumeCm3: number; sizeMm: [number, number, number] }
@@ -121,7 +120,7 @@ const INITIAL: WizardState = {
   agree: false
 };
 
-export default function OrderWizard({ lang, dict, web3formsKey, discordWebhook }: Props) {
+export default function OrderWizard({ lang, dict, contactEmail }: Props) {
   const L = dict.order;
   const labels = L.labels;
   const [state, setState] = useState<WizardState>(INITIAL);
@@ -162,46 +161,33 @@ export default function OrderWizard({ lang, dict, web3formsKey, discordWebhook }
     setSubmitting(true); setErr(null);
     const code = makeTrackingCode();
     const summary = buildSummary(state, estimate, code, lang);
+    const fileNote = state.files.length
+      ? (lang === 'sl'
+          ? `\n\n— Priloge za pripeti v e-pošto: ${state.files.map((f) => f.name).join(', ')}`
+          : `\n\n— Files to attach to this email: ${state.files.map((f) => f.name).join(', ')}`)
+      : '';
+    const subject = `[${code}] ${lang === 'sl' ? 'Novo povpraševanje' : 'New project request'} — ${state.name || 'unknown'}`;
+    const body = summary + fileNote + '\n\n' + (lang === 'sl'
+      ? '— Poslano prek nacekepa.com'
+      : '— Sent via nacekepa.com');
+
     try {
-      const fd = new FormData();
-      fd.append('access_key', web3formsKey);
-      fd.append('subject', `[${code}] New project request — ${state.name || 'unknown'}`);
-      fd.append('from_name', state.name || 'Website visitor');
-      fd.append('email', state.email);
-      fd.append('reply_to', state.email);
-      fd.append('tracking_code', code);
-      fd.append('language', lang);
-      fd.append('estimate_eur', String(estimate));
-      fd.append('message', summary);
-      state.files.forEach((f, i) => fd.append(`attachment_${i}`, f, f.name));
+      // 1. Trigger a local download of the brief so the visitor always has a copy.
+      const blob = new Blob([body], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${code}-brief.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-      // Web3Forms
-      const w3 = await fetch('https://api.web3forms.com/submit', { method: 'POST', body: fd });
-      if (!w3.ok) throw new Error('Web3Forms ' + w3.status);
+      // 2. Open the visitor's mail client with the brief pre-filled.
+      const mailto = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      // Some browsers limit mailto length; if it is too long, the download still works.
+      window.location.href = mailto;
 
-      // Discord webhook (best-effort)
-      if (discordWebhook && discordWebhook.startsWith('https://discord.com/api/webhooks/')) {
-        const embed = {
-          title: `New project request — ${code}`,
-          description: state.description.slice(0, 1500),
-          color: 0x3a64f5,
-          fields: [
-            { name: 'From', value: `${state.name || '-'} <${state.email}>`, inline: false },
-            { name: 'Services', value: state.services.map((s) => SERVICE_TITLES[s].en).join(', ') || '-', inline: false },
-            { name: 'Estimate', value: `€${estimate}`, inline: true },
-            { name: 'Deadline', value: state.flexible ? 'Flexible' : (state.deadline || '-'), inline: true },
-            { name: 'Files', value: state.files.length ? state.files.map((f) => f.name).join('\n').slice(0, 1000) : '—', inline: false }
-          ],
-          timestamp: new Date().toISOString()
-        };
-        try {
-          await fetch(discordWebhook, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: 'nacekepa.com', embeds: [embed] })
-          });
-        } catch { /* non-fatal */ }
-      }
       setDone({ code });
     } catch (e: any) {
       setErr(L.error + (e?.message ? ` (${e.message})` : ''));
@@ -211,11 +197,34 @@ export default function OrderWizard({ lang, dict, web3formsKey, discordWebhook }
   }
 
   if (done) {
+    const mailtoFallback = `mailto:${contactEmail}?subject=${encodeURIComponent(`[${done.code}] ${lang === 'sl' ? 'Povpraševanje' : 'Project request'}`)}`;
     return (
       <div className="rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-8 text-center">
         <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500 text-white flex items-center justify-center text-2xl">✓</div>
         <h2 className="font-display text-2xl font-bold mt-4">{L.success_title}</h2>
         <p className="mt-2 text-ink-600 dark:text-ink-300 max-w-md mx-auto">{L.success_body}</p>
+        <div className="mt-6 text-left max-w-md mx-auto p-4 rounded-lg bg-white dark:bg-ink-950 border border-ink-200 dark:border-ink-800 text-sm">
+          <p className="font-medium mb-2">{lang === 'sl' ? 'Kaj se je pravkar zgodilo:' : 'What just happened:'}</p>
+          <ol className="list-decimal pl-5 space-y-1 text-ink-600 dark:text-ink-300">
+            <li>{lang === 'sl' ? `Datoteka ${done.code}-brief.txt se je prenesla na tvoj računalnik.` : `The file ${done.code}-brief.txt was downloaded to your computer.`}</li>
+            <li>{lang === 'sl' ? 'Odprl se je tvoj e-poštni odjemalec z že izpolnjenim povpraševanjem.' : 'Your email client opened with the request pre-filled.'}</li>
+            {state.files.length > 0 && (
+              <li className="font-medium text-amber-700 dark:text-amber-300">
+                {lang === 'sl'
+                  ? `Pripni svoje datoteke (${state.files.map((f) => f.name).join(', ')}) v e-pošto, preden jo pošlješ.`
+                  : `Attach your files (${state.files.map((f) => f.name).join(', ')}) to the email before sending.`}
+              </li>
+            )}
+            <li>{lang === 'sl' ? 'Pritisni Pošlji v e-poštnem odjemalcu.' : 'Hit Send in your email client.'}</li>
+          </ol>
+          <p className="mt-3 text-xs text-ink-500">
+            {lang === 'sl' ? 'Se e-pošta ni odprla? ' : 'Email did not open? '}
+            <a href={mailtoFallback} className="text-accent-600 dark:text-accent-300 underline">
+              {lang === 'sl' ? 'Klikni tukaj' : 'Click here'}
+            </a>
+            {lang === 'sl' ? ' in priloži preneseno datoteko.' : ' and attach the downloaded file.'}
+          </p>
+        </div>
         <div className="mt-6 inline-flex items-center gap-2 px-4 py-3 rounded-lg bg-white dark:bg-ink-950 border border-ink-200 dark:border-ink-800">
           <span className="text-xs uppercase tracking-wider text-ink-500">{L.tracking_code}</span>
           <span className="font-display font-bold tabular-nums text-lg">{done.code}</span>

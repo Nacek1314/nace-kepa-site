@@ -23,10 +23,6 @@ jobs:
         with: { node-version: '20', cache: 'npm' }
       - run: npm ci
       - name: Build
-        env:
-          PUBLIC_WEB3FORMS_KEY: ${{ secrets.PUBLIC_WEB3FORMS_KEY }}
-          PUBLIC_DISCORD_WEBHOOK: ${{ secrets.PUBLIC_DISCORD_WEBHOOK }}
-          PUBLIC_CAL_USERNAME: ${{ secrets.PUBLIC_CAL_USERNAME }}
         run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

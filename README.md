@@ -10,25 +10,22 @@ Live (placeholder): `https://nacek1314.github.io/nace-kepa-site/`
 
 ```powershell
 npm install
-copy .env.example .env   # then fill in your secrets
 npm run dev
 ```
 
 Open http://localhost:4321/nace-kepa-site/.
 
-## Required secrets (for the order form to actually send mail)
+## How orders work (no secrets, no third-party services)
 
-Set these as GitHub Action secrets in the repo
-(Settings → Secrets and variables → Actions → New repository secret),
-and locally in `.env`:
+When a visitor finishes the wizard, two things happen entirely in their own browser:
 
-| Name | Where to get it |
-| --- | --- |
-| `PUBLIC_WEB3FORMS_KEY`  | https://web3forms.com — free, just give the email you want submissions sent to |
-| `PUBLIC_DISCORD_WEBHOOK` | Discord server → Integrations → Webhooks → New Webhook → Copy URL |
-| `PUBLIC_CAL_USERNAME`   | (optional) your https://cal.com/ username for the booking widget |
+1. A `NK-XXXXXX-brief.txt` file is **downloaded to their computer** with the full request.
+2. Their **email client opens** (`mailto:`) pre-filled with the brief in the body, ready to send to `kepanace@gmail.com`.
 
-Without these, the wizard still runs locally but the submit button will fail.
+Nothing is uploaded anywhere. No API keys, no Web3Forms, no Discord webhook, no
+backend. The only personal data on the public site is the contact email itself,
+which lives in `src/components/pages/Order.astro` — change it there if you ever
+move addresses.
 
 ## Deploy
 
