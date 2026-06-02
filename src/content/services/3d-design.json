@@ -1,0 +1,26 @@
+{
+  "slug": "3d-design",
+  "order": 1,
+  "icon": "cube",
+  "title": {
+    "en": "3D Design & CAD modeling",
+    "sl": "3D oblikovanje in CAD modeliranje"
+  },
+  "short": {
+    "en": "SolidWorks and Fusion 360 design for parts, assemblies, and prototypes — built to print, machine, or mold.",
+    "sl": "Oblikovanje s SolidWorksom in Fusion 360 za dele, sklope in prototipe — pripravljeno za tisk, obdelavo ali kalupljenje."
+  },
+  "long": {
+    "en": "Four years of SolidWorks and Fusion 360 in production. I model parts the way you will actually make them — clean trees, parametric, with simulation runs where the load matters. From a sketch on a napkin to a print-ready STEP and a clean technical drawing.",
+    "sl": "Štiri leta SolidWorksa in Fusion 360 v praksi. Modele zgradim tako, kot jih boš dejansko izdelal — čisto drevo, parametrično, s simulacijami tam, kjer obremenitev šteje. Od skice na servjeti do STEP datoteke za tisk in čiste tehnične risbe."
+  },
+  "deliverables": {
+    "en": ["Native CAD files (SolidWorks / Fusion 360)", "Neutral STEP and IGES exports", "2D technical drawings (PDF)", "FEA / SimulationXpress reports on request", "Print-ready STL files"],
+    "sl": ["Izvorne CAD datoteke (SolidWorks / Fusion 360)", "Nevtralni izvozi STEP in IGES", "2D tehnične risbe (PDF)", "FEA / SimulationXpress poročila po dogovoru", "STL datoteke pripravljene za tisk"]
+  },
+  "needs": {
+    "en": ["A description of what the part has to do", "Critical dimensions or interfaces", "Reference photos, sketches, or a rough STL", "Target manufacturing process if you know it"],
+    "sl": ["Opis, kaj mora del početi", "Ključne dimenzije ali stike", "Referenčne slike, skice ali groba STL", "Predviden proizvodni proces, če ga poznaš"]
+  },
+  "paid": true
+}

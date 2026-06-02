@@ -1,0 +1,26 @@
+{
+  "slug": "backpack-buckle",
+  "order": 5,
+  "title": {
+    "en": "Engineered backpack buckle",
+    "sl": "Inženirsko zasnovana zaponka za nahrbtnik"
+  },
+  "date": "2025",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Functional 3D-printed buckle with full strength calculation and material trade-off.",
+    "sl": "Funkcionalna 3D natisnjena zaponka s polnim izračunom trdnosti in primerjavo materialov."
+  },
+  "description": {
+    "en": "A replacement buckle that has to survive a daily 12 kg load with a safety factor. The full design memo — material choice between Bambu PLA Basic and PETG, cross-section sizing, expected stress at the latch — sits in the case study. Printed, used daily, still in service.",
+    "sl": "Nadomestna zaponka, ki mora vsakodnevno prenesti 12 kg z varnostnim faktorjem. Celoten razvojni zapis — izbira med Bambu PLA Basic in PETG, dimenzioniranje prereza, pričakovana napetost na zaskoku — je v študiji primera. Natisnjena, v vsakodnevni rabi, še vedno deluje."
+  },
+  "details": {
+    "en": "Stress calculated as σ = F/A on the narrowest cross-section. With F = 12 kg × 9.81 m/s² × 1.5 (safety factor) ≈ 177 N and a target σ_allow of 30 MPa for Bambu PLA Basic in tension, the minimum cross-section comes out at ~5.9 mm². Final geometry uses 4 mm × 6 mm = 24 mm², a 4× margin against creep over time.",
+    "sl": "Napetost izračunana kot σ = F/A na najožjem prerezu. Z F = 12 kg × 9,81 m/s² × 1,5 (varnostni faktor) ≈ 177 N in dovoljeno σ_dop 30 MPa za Bambu PLA Basic na nateg, najmanjši prerez znaša ~5,9 mm². Končna geometrija uporablja 4 mm × 6 mm = 24 mm², kar pomeni 4× rezervo proti lezenju materiala."
+  },
+  "materials": ["Bambu PLA Basic", "PETG"],
+  "tools": ["SolidWorks", "SimulationXpress"],
+  "photos": []
+}

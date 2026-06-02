@@ -1,0 +1,13 @@
+{
+  "slug": "mold-design-composites",
+  "order": 2,
+  "title": {
+    "en": "Mold design for fiber composites",
+    "sl": "Oblikovanje kalupov za kompozite iz vlaken"
+  },
+  "description": {
+    "en": "CAD design of two-part molds for carbon and glass fiber lay-ups, with draft, parting lines, and a workflow that survives release agent and post-cure trimming.",
+    "sl": "CAD oblikovanje dvodelnih kalupov za laminate iz ogljikovih in steklenih vlaken — z naklonskimi koti, ločilnimi linijami in delovnim tokom, ki preživi sredstvo za ločevanje in obrezovanje po strjevanju."
+  },
+  "items": ["Two-part molds", "Draft analysis", "Parting line design", "Carbon / glass fiber lay-up", "Post-cure machining"]
+}

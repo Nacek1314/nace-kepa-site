@@ -1,0 +1,26 @@
+{
+  "slug": "3d-printing",
+  "order": 2,
+  "icon": "printer",
+  "title": {
+    "en": "3D Printing & Prototyping",
+    "sl": "3D tisk in izdelava prototipov"
+  },
+  "short": {
+    "en": "FDM printing on a Bambu Lab P1S — PLA, PETG, and flexibles, with calibration and post-processing.",
+    "sl": "FDM tisk na Bambu Lab P1S — PLA, PETG in fleksibilni materiali, s kalibracijo in post-obdelavo."
+  },
+  "long": {
+    "en": "Bambu Lab P1S, more than 1,100 hours on the clock, maintained and calibrated personally. Send a model or let me design one — I optimise orientation, supports, and infill so the part actually survives the load. Sanding, painting, and assembly available on top.",
+    "sl": "Bambu Lab P1S, več kot 1.100 ur dela, vzdrževan in kalibriran osebno. Pošlji model ali ga oblikujem zate — orientacijo, podpore in polnjenje optimiziram tako, da del dejansko prenese obremenitev. Brušenje, lakiranje in sestavljanje so na voljo dodatno."
+  },
+  "deliverables": {
+    "en": ["Printed parts in PLA, PETG, or flexible filament", "Print-ready slicer profiles for re-runs", "Optional sanding, painting, and assembly", "Quality photos of the delivered part"],
+    "sl": ["Natisnjeni deli iz PLA, PETG ali fleksibilnega filamenta", "Slicer profili za ponovne tiske", "Po želji brušenje, lakiranje in sestavljanje", "Kakovostne fotografije končnega dela"]
+  },
+  "needs": {
+    "en": ["STL, STEP, or 3MF file", "Material and color preference if any", "Functional requirements (load, fit, environment)", "Quantity and deadline"],
+    "sl": ["STL, STEP ali 3MF datoteka", "Želen material in barva, če sta pomembna", "Funkcionalne zahteve (obremenitev, prileganje, okolje)", "Količina in rok"]
+  },
+  "paid": true
+}

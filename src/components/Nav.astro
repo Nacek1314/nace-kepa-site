@@ -1,0 +1,68 @@
+---
+import { t, localePath, altLang, type Lang } from '~/i18n';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const dict = t(lang);
+const url = Astro.url;
+const pathNoLang = url.pathname
+  .replace(import.meta.env.BASE_URL?.replace(/\/$/, '') ?? '', '')
+  .replace(/^\/(en|sl)(?=\/|$)/, '') || '/';
+const otherLang = altLang(lang);
+const otherHref = localePath(otherLang, pathNoLang);
+
+const links = [
+  { href: localePath(lang, '/'),          label: dict.nav.home },
+  { href: localePath(lang, '/services'),  label: dict.nav.services },
+  { href: localePath(lang, '/portfolio'), label: dict.nav.portfolio },
+  { href: localePath(lang, '/skills'),    label: dict.nav.skills },
+  { href: localePath(lang, '/about'),     label: dict.nav.about }
+];
+const orderHref = localePath(lang, '/order');
+---
+<header class="sticky top-0 z-40 backdrop-blur-md bg-ink-50/80 dark:bg-ink-950/70 border-b border-ink-200/60 dark:border-ink-800/60">
+  <nav class="mx-auto max-w-6xl px-5 h-16 flex items-center justify-between gap-4">
+    <a href={localePath(lang, '/')} class="font-display text-lg tracking-tight">
+      <span class="font-bold">Nace</span>
+      <span class="text-ink-500 dark:text-ink-400">Kepa</span>
+    </a>
+    <ul class="hidden md:flex items-center gap-1 text-sm">
+      {links.map((l) => (
+        <li>
+          <a href={l.href} class="px-3 py-2 rounded-md hover:bg-ink-100 dark:hover:bg-ink-800/60 transition-colors">
+            {l.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+    <div class="flex items-center gap-2">
+      <a href={otherHref}
+         class="text-xs font-medium px-2.5 py-1.5 rounded-md border border-ink-200 dark:border-ink-700 hover:bg-ink-100 dark:hover:bg-ink-800/60 transition-colors"
+         aria-label={dict.lang.label}>
+        {otherLang.toUpperCase()}
+      </a>
+      <button id="theme-toggle" type="button"
+              class="p-1.5 rounded-md border border-ink-200 dark:border-ink-700 hover:bg-ink-100 dark:hover:bg-ink-800/60 transition-colors"
+              aria-label={dict.theme.label}>
+        <svg class="w-4 h-4 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="w-4 h-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <a href={orderHref}
+         class="hidden sm:inline-flex items-center text-sm font-medium px-3 py-1.5 rounded-md bg-accent-600 text-white hover:bg-accent-700 transition-colors">
+        {dict.nav.order}
+      </a>
+    </div>
+  </nav>
+</header>
+<script>
+  const btn = document.getElementById('theme-toggle');
+  btn?.addEventListener('click', () => {
+    const root = document.documentElement;
+    const next = root.classList.toggle('dark') ? 'dark' : 'light';
+    try { localStorage.setItem('theme', next); } catch {}
+  });
+</script>

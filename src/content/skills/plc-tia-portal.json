@@ -1,0 +1,13 @@
+{
+  "slug": "plc-tia-portal",
+  "order": 1,
+  "title": {
+    "en": "PLC programming · Siemens TIA Portal",
+    "sl": "PLC programiranje · Siemens TIA Portal"
+  },
+  "description": {
+    "en": "Siemens S7-1200 in TIA Portal — TON/TOF timers, Merker bit logic, frequency inverter mode switching, HMI integration, and field error troubleshooting (e.g. HMI 190011).",
+    "sl": "Siemens S7-1200 v TIA Portal — TON/TOF časovniki, logika Merker bitov, preklapljanje načinov frekvenčnih pretvarnikov, integracija HMI in odpravljanje napak na terenu (npr. HMI 190011)."
+  },
+  "items": ["Siemens S7-1200", "TIA Portal", "TON / TOF timers", "Merker bits", "Frequency inverters", "HMI screens"]
+}

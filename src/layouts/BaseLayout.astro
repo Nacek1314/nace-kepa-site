@@ -1,0 +1,63 @@
+---
+import '~/styles/global.css';
+import Nav from '~/components/Nav.astro';
+import Footer from '~/components/Footer.astro';
+import { detectLang, t, altLang, localePath, type Lang } from '~/i18n';
+
+interface Props {
+  title?: string;
+  description?: string;
+  lang?: Lang;
+}
+
+const url = Astro.url;
+const lang: Lang = Astro.props.lang ?? detectLang(url.pathname);
+const dict = t(lang);
+const title = Astro.props.title ? `${Astro.props.title} · ${dict.site.name}` : `${dict.site.name} · ${dict.site.role}`;
+const description = Astro.props.description ?? dict.site.description;
+
+const other = altLang(lang);
+const pathNoLang = url.pathname
+  .replace(import.meta.env.BASE_URL?.replace(/\/$/, '') ?? '', '')
+  .replace(/^\/(en|sl)(?=\/|$)/, '') || '/';
+const altUrl = localePath(other, pathNoLang);
+const canonical = new URL(url.pathname, Astro.site).toString();
+---
+<!doctype html>
+<html lang={lang} class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang={other} href={new URL(altUrl, Astro.site).toString()} />
+    <link rel="alternate" hreflang={lang} href={canonical} />
+    <link rel="alternate" hreflang="x-default" href={new URL(localePath('en', pathNoLang), Astro.site).toString()} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&display=swap" />
+    <script is:inline>
+      (() => {
+        try {
+          const t = localStorage.getItem('theme');
+          const m = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (t === 'dark' || (!t && m)) document.documentElement.classList.add('dark');
+        } catch {}
+      })();
+    </script>
+  </head>
+  <body class="min-h-dvh flex flex-col">
+    <Nav lang={lang} />
+    <main class="flex-1">
+      <slot />
+    </main>
+    <Footer lang={lang} />
+  </body>
+</html>

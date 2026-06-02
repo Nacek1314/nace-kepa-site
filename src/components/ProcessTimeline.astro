@@ -1,0 +1,24 @@
+---
+import { type Lang } from '~/i18n';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const steps: { en: { t: string; d: string }; sl: { t: string; d: string } }[] = [
+  { en: { t: 'Brief', d: 'You describe the problem in your own words.' }, sl: { t: 'Brief', d: 'Z lastnimi besedami opišeš problem.' } },
+  { en: { t: 'CAD', d: 'I model the part — parametric, clean tree.' }, sl: { t: 'CAD', d: 'Zasnujem del — parametrično, čisto drevo.' } },
+  { en: { t: 'Sim & calc', d: 'FEA or first-principles math where load matters.' }, sl: { t: 'Sim. & izračun', d: 'FEA ali izračuni iz prvih načel, kjer šteje obremenitev.' } },
+  { en: { t: 'Slice & print', d: 'Bambu Lab P1S, calibrated for the material.' }, sl: { t: 'Sliceanje & tisk', d: 'Bambu Lab P1S, kalibriran za material.' } },
+  { en: { t: 'Firmware', d: 'ESP32 / Arduino loop, sensors, UI.' }, sl: { t: 'Firmware', d: 'ESP32 / Arduino zanka, senzorji, UI.' } },
+  { en: { t: 'Assembly', d: 'Hand-fit, cable management, finish.' }, sl: { t: 'Sestavljanje', d: 'Ročno prileganje, ureditev kablov, finiš.' } },
+  { en: { t: 'Test', d: 'Run the part through the load it was made for.' }, sl: { t: 'Testiranje', d: 'Del podvržem obremenitvi, za katero je bil narejen.' } },
+  { en: { t: 'Deliver', d: 'Working unit, source files, walkthrough video.' }, sl: { t: 'Predaja', d: 'Delujoča enota, izvorne datoteke, video pregled.' } }
+];
+---
+<ol class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+  {steps.map((s, i) => (
+    <li class="relative p-4 rounded-lg border border-ink-200 dark:border-ink-800 bg-white/60 dark:bg-ink-900/40">
+      <span class="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-accent-600 text-white text-xs font-bold flex items-center justify-center">{i + 1}</span>
+      <p class="font-display font-bold text-base mt-1">{s[lang].t}</p>
+      <p class="text-xs text-ink-500 dark:text-ink-400 mt-1 leading-relaxed">{s[lang].d}</p>
+    </li>
+  ))}
+</ol>

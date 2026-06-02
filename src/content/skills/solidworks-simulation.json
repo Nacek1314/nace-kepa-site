@@ -1,0 +1,13 @@
+{
+  "slug": "solidworks-simulation",
+  "order": 3,
+  "title": {
+    "en": "Simulation & engineering calculation",
+    "sl": "Simulacije in inženirski izračuni"
+  },
+  "description": {
+    "en": "SolidWorks SimulationXpress for static stress runs, plus first-principles math when a part has to be right the first time — buckles that don't snap, whistles that hit 440 Hz.",
+    "sl": "SolidWorks SimulationXpress za statične napetostne analize, ob njej pa izračuni iz prvih načel, ko mora del že prvič delovati — zaponke, ki se ne zlomijo, in piščalke, ki zadenejo 440 Hz."
+  },
+  "items": ["SimulationXpress", "Material selection", "Hand calculations", "Acoustic resonance", "Tolerance stack-up"]
+}

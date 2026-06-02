@@ -1,0 +1,22 @@
+{
+  "slug": "cocktail-dispenser",
+  "order": 4,
+  "title": {
+    "en": "Automated cocktail dispenser",
+    "sl": "Avtomatizirani dispenzor koktajlov"
+  },
+  "date": "2025",
+  "category": "mechanical",
+  "clientType": "Personal product",
+  "short": {
+    "en": "Eight-channel solenoid manifold, microcontroller, and a recipe book.",
+    "sl": "Osemkanalni solenoidni razdelilnik, mikrokrmilnik in knjiga receptov."
+  },
+  "description": {
+    "en": "Eight solenoid valves on a Keyto Fluid Technology manifold, a small reservoir array, and a controller that times each pour by volume. Built to demonstrate end-to-end product thinking: from fluid mechanics through firmware to a UI that lets a non-engineer pick a drink and watch it appear.",
+    "sl": "Osem solenoidnih ventilov na razdelilniku Keyto Fluid Technology, majhno polje rezervoarjev in krmilnik, ki vsako natakanje časuje po volumnu. Zgrajen kot prikaz celotne produktne miselnosti: od hidravlike prek firmware-ja do uporabniškega vmesnika, ki neinženirju omogoča, da izbere pijačo in jo vidi nastati."
+  },
+  "materials": ["PLA", "PETG"],
+  "tools": ["Keyto solenoid manifold", "ESP32", "Custom PCB"],
+  "photos": []
+}

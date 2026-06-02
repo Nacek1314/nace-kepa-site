@@ -1,0 +1,56 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Fraunces', ui-serif, Georgia, serif;
+
+  --color-ink-50:  #f7f8fa;
+  --color-ink-100: #eef0f4;
+  --color-ink-200: #d9dde5;
+  --color-ink-300: #b6bdcb;
+  --color-ink-400: #8a93a6;
+  --color-ink-500: #5e6678;
+  --color-ink-600: #434a5b;
+  --color-ink-700: #2e3445;
+  --color-ink-800: #1c2030;
+  --color-ink-900: #0f1220;
+  --color-ink-950: #07091a;
+
+  --color-accent-50:  #eef4ff;
+  --color-accent-100: #dbe7ff;
+  --color-accent-200: #b9d0ff;
+  --color-accent-300: #8eb1ff;
+  --color-accent-400: #5e89ff;
+  --color-accent-500: #3a64f5;
+  --color-accent-600: #2748d8;
+  --color-accent-700: #1f37ad;
+  --color-accent-800: #1c3088;
+  --color-accent-900: #1a2c6b;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  @apply bg-ink-50 text-ink-900;
+}
+
+.dark body {
+  @apply bg-ink-950 text-ink-100;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-feature-settings: 'ss01';
+}
+
+/* Soft scroll-driven reveal */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reveal { animation: rise 0.6s ease-out both; }

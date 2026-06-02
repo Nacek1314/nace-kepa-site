@@ -1,0 +1,22 @@
+{
+  "slug": "famfive",
+  "order": 2,
+  "title": {
+    "en": "FamFive — ESP32 smart piggy bank",
+    "sl": "FamFive — pametna hranilnica na ESP32"
+  },
+  "date": "2025",
+  "category": "iot",
+  "clientType": "Personal product",
+  "short": {
+    "en": "ESP32 redesign of the smart piggy bank, packaged as a product.",
+    "sl": "ESP32 prenova pametne hranilnice, zapakirana kot izdelek."
+  },
+  "description": {
+    "en": "FamFive trades the Pi for an ESP32, dropping cost and power draw. Five-account family savings model, OLED UI driven by a rotary encoder, and persistent storage via the Preferences library. Comes with a marketing site and a positioning angle for parents who want kids to see their savings climb.",
+    "sl": "FamFive zamenja Pi z ESP32, kar zniža ceno in porabo. Družinski model varčevanja z petimi računi, OLED vmesnik, ki ga poganja rotacijski enkoder, in trajno shranjevanje prek knjižnice Preferences. Komplet vključuje tržno spletno stran in pozicioniranje za starše, ki želijo, da otroci vidijo, kako prihranki rastejo."
+  },
+  "materials": ["PETG"],
+  "tools": ["ESP32", "OLED SH1106", "Rotary encoder", "MicroPython"],
+  "photos": []
+}

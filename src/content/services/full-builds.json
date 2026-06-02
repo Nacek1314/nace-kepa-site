@@ -1,0 +1,26 @@
+{
+  "slug": "full-builds",
+  "order": 4,
+  "icon": "stack",
+  "title": {
+    "en": "Full custom builds",
+    "sl": "Celostna izdelava izdelka"
+  },
+  "short": {
+    "en": "End-to-end product build — CAD, firmware, PCB, printing, assembly. One person, one timeline.",
+    "sl": "Celosten razvoj izdelka — CAD, firmware, PCB, tisk, sestavljanje. Ena oseba, ena časovnica."
+  },
+  "long": {
+    "en": "Some projects need every discipline at once. I take the brief, design the mechanics, write the firmware, route the electronics, print the enclosure, assemble it, and hand you a working unit. This is the package behind the smart piggy bank, the cocktail dispenser, and other hybrids in the portfolio.",
+    "sl": "Nekateri projekti potrebujejo vsa področja hkrati. Sprejmem brief, zasnujem mehaniko, napišem firmware, narišem elektroniko, natisnem ohišje, sestavim in predam delujočo enoto. Tak paket stoji za pametno hranilnico, dispenzorjem za koktajle in drugimi hibridi v portfelju."
+  },
+  "deliverables": {
+    "en": ["A working unit (or small batch)", "All CAD, firmware, and electronics source files", "Documentation: BOM, wiring, assembly steps", "Hand-off video walkthrough"],
+    "sl": ["Delujoča enota (ali manjša serija)", "Vsi izvorni CAD, firmware in elektronika", "Dokumentacija: BOM, ožičenje, koraki sestavljanja", "Video predaja s pregledom"]
+  },
+  "needs": {
+    "en": ["A description of the problem the product solves", "Constraints: size, budget, deadline, target audience", "Inspiration or references", "Honest answers in a 30-minute call"],
+    "sl": ["Opis problema, ki ga izdelek rešuje", "Omejitve: velikost, proračun, rok, ciljna skupina", "Inspiracija ali reference", "Iskreni odgovori na 30-minutnem klicu"]
+  },
+  "paid": true
+}

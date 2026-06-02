@@ -1,0 +1,14 @@
+---
+const tools = [
+  'SolidWorks', 'Fusion 360', 'Bambu Lab P1S', 'ESP32', 'ESP32-S3', 'Arduino IDE',
+  'MicroPython', 'Raspberry Pi', 'TIA Portal', 'Siemens S7-1200',
+  'SimulationXpress', 'I2C / SPI', 'BLE', 'OLED SH1106', 'PETG', 'PLA'
+];
+---
+<div class="flex flex-wrap gap-2">
+  {tools.map((tool) => (
+    <span class="text-xs font-medium px-3 py-1.5 rounded-full border border-ink-200 dark:border-ink-700 bg-white/60 dark:bg-ink-900/40 text-ink-600 dark:text-ink-300 hover:border-accent-400 dark:hover:border-accent-500 transition-colors">
+      {tool}
+    </span>
+  ))}
+</div>

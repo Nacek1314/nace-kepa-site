@@ -1,0 +1,5 @@
+{
+  "order": 3,
+  "q": { "en": "How big can a printed part be?", "sl": "Kako velik je lahko natisnjen del?" },
+  "a": { "en": "256 × 256 × 256 mm in a single piece on the P1S. Larger parts are split, printed, and bonded.", "sl": "256 × 256 × 256 mm v enem kosu na P1S. Večji deli se razdelijo, natisnejo in zlepijo." }
+}

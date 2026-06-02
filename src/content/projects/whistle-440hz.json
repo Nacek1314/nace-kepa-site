@@ -1,0 +1,26 @@
+{
+  "slug": "whistle-440hz",
+  "order": 6,
+  "title": {
+    "en": "440 Hz precision whistle",
+    "sl": "Piščalka 440 Hz"
+  },
+  "date": "2025",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "A 3D-printed whistle tuned to musical A — designed from acoustic first principles.",
+    "sl": "3D natisnjena piščalka, uglašena na ton A — zasnovana iz akustičnih prvih načel."
+  },
+  "description": {
+    "en": "A Helmholtz-resonator whistle whose cavity dimensions were calculated, not guessed. Target frequency 440 Hz (concert A), printed in PETG, verified with a tuner. The case study walks through the resonator equation, the volume math, and the tweak that brought it back into tune after a first failed print.",
+    "sl": "Piščalka tipa Helmholtz, katere mere votline so bile izračunane, ne uganjene. Ciljna frekvenca 440 Hz (koncertni A), tiskana iz PETG, preverjena z uglaševalnikom. Študija primera razloži enačbo resonatorja, izračun prostornine in popravek, ki jo je po prvem neuspešnem tisku vrnil v točno glasbo."
+  },
+  "details": {
+    "en": "Helmholtz frequency f = (c / 2π) · √(A / (V · L)), with c = 343 m/s. Solving for V at f = 440 Hz with neck area A = 12 mm² and effective neck length L = 8 mm gives V ≈ 11.5 cm³. The resonant cavity was modeled as a cylinder of Ø 28 mm × 19 mm height to match. The first print landed at 426 Hz; trimming the neck length by 0.6 mm corrected the pitch.",
+    "sl": "Frekvenca po Helmholtzu f = (c / 2π) · √(A / (V · L)), z c = 343 m/s. Z f = 440 Hz, presekom vratu A = 12 mm² in efektivno dolžino vratu L = 8 mm dobimo V ≈ 11,5 cm³. Resonančna votlina je modelirana kot valj Ø 28 mm × 19 mm. Prvi tisk je pristal pri 426 Hz; skrajšanje vratu za 0,6 mm je popravilo višino tona."
+  },
+  "materials": ["PETG"],
+  "tools": ["SolidWorks", "Bambu Lab P1S"],
+  "photos": []
+}

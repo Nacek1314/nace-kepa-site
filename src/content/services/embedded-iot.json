@@ -1,0 +1,26 @@
+{
+  "slug": "embedded-iot",
+  "order": 3,
+  "icon": "chip",
+  "title": {
+    "en": "Embedded systems & IoT",
+    "sl": "Vgrajeni sistemi in IoT"
+  },
+  "short": {
+    "en": "ESP32 and Arduino firmware — sensors, OLED UIs, BLE/Wi-Fi, motor control, persistent storage.",
+    "sl": "Firmware za ESP32 in Arduino — senzorji, OLED vmesniki, BLE/Wi-Fi, krmiljenje motorjev, trajno shranjevanje."
+  },
+  "long": {
+    "en": "I write firmware that survives field use. ESP32, ESP32-S3, and Arduino, in MicroPython or Arduino IDE. I/O over I2C and SPI, OLED user interfaces (SH1106 / SSD1306), rotary encoders, BLE, motor drivers, and Preferences-backed persistent state. Bring me a sensor and a goal — I will build the loop that runs it.",
+    "sl": "Pišem firmware, ki preživi vsakodnevno rabo. ESP32, ESP32-S3 in Arduino, v MicroPythonu ali Arduino IDE. Vhodi/izhodi prek I2C in SPI, OLED vmesniki (SH1106 / SSD1306), rotacijski enkoderji, BLE, gonilniki za motorje in trajni stanje prek knjižnice Preferences. Prinesi senzor in cilj — zgradim zanko, ki ga poganja."
+  },
+  "deliverables": {
+    "en": ["Compiled firmware and source code", "Wiring diagram and BOM", "Setup / flashing instructions", "Optional 3D-printed enclosure"],
+    "sl": ["Prevedeni firmware in izvorna koda", "Shema vezja in seznam komponent (BOM)", "Navodila za namestitev / programiranje", "Po želji 3D natisnjeno ohišje"]
+  },
+  "needs": {
+    "en": ["What the device should do, step by step", "Inputs (sensors, buttons) and outputs (display, motor)", "Power source (battery, USB, mains)", "Connectivity needs (offline, BLE, Wi-Fi)"],
+    "sl": ["Kaj naj naprava počne, korak za korakom", "Vhodi (senzorji, tipke) in izhodi (zaslon, motor)", "Vir napajanja (baterija, USB, omrežje)", "Potreba po povezljivosti (offline, BLE, Wi-Fi)"]
+  },
+  "paid": true
+}

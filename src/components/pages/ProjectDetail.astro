@@ -1,0 +1,51 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { t, localePath, type Lang } from '~/i18n';
+import { getCollection, type CollectionEntry } from 'astro:content';
+
+interface Props { project: CollectionEntry<'projects'>; lang: Lang }
+const { project, lang } = Astro.props as Props;
+const dict = t(lang);
+const data = project.data;
+---
+<BaseLayout lang={lang} title={data.title[lang]}>
+  <article class="mx-auto max-w-3xl px-5 py-16">
+    <a href={localePath(lang, '/portfolio')} class="text-sm text-accent-600 dark:text-accent-300 hover:underline">← {dict.portfolio.back}</a>
+    <p class="mt-6 text-xs uppercase tracking-wider text-ink-500">{data.date} · {data.category}</p>
+    <h1 class="mt-2 font-display text-4xl sm:text-5xl font-bold tracking-tight">{data.title[lang]}</h1>
+    <p class="mt-4 text-lg text-ink-600 dark:text-ink-300 leading-relaxed">{data.short[lang]}</p>
+
+    <div class="mt-8 aspect-[16/9] rounded-xl bg-gradient-to-br from-ink-100 via-ink-50 to-accent-50 dark:from-ink-800 dark:via-ink-900 dark:to-accent-900/30 flex items-center justify-center">
+      <span class="font-display text-6xl text-ink-300 dark:text-ink-700 select-none">{data.slug.split('-').map((w: string) => w[0]?.toUpperCase()).join('')}</span>
+    </div>
+
+    <div class="mt-10 prose prose-ink dark:prose-invert max-w-none">
+      <p class="leading-relaxed text-ink-700 dark:text-ink-200">{data.description[lang]}</p>
+      {data.details && (
+        <div class="mt-6 p-6 rounded-lg bg-ink-50 dark:bg-ink-900/50 border border-ink-200 dark:border-ink-800">
+          <p class="text-xs uppercase tracking-wider text-ink-500 mb-2">{dict.portfolio.details}</p>
+          <p class="text-sm leading-relaxed text-ink-700 dark:text-ink-200">{data.details[lang]}</p>
+        </div>
+      )}
+    </div>
+
+    <div class="mt-8 grid sm:grid-cols-2 gap-4">
+      {data.tools.length > 0 && (
+        <div class="p-4 rounded-lg border border-ink-200 dark:border-ink-800">
+          <p class="text-xs uppercase tracking-wider text-ink-500 mb-2">{lang === 'sl' ? 'Orodja' : 'Tools'}</p>
+          <div class="flex flex-wrap gap-1.5">
+            {data.tools.map((tool: string) => <span class="text-xs px-2 py-1 rounded-md bg-ink-100 dark:bg-ink-800/60">{tool}</span>)}
+          </div>
+        </div>
+      )}
+      {data.materials.length > 0 && (
+        <div class="p-4 rounded-lg border border-ink-200 dark:border-ink-800">
+          <p class="text-xs uppercase tracking-wider text-ink-500 mb-2">{lang === 'sl' ? 'Materiali' : 'Materials'}</p>
+          <div class="flex flex-wrap gap-1.5">
+            {data.materials.map((m: string) => <span class="text-xs px-2 py-1 rounded-md bg-ink-100 dark:bg-ink-800/60">{m}</span>)}
+          </div>
+        </div>
+      )}
+    </div>
+  </article>
+</BaseLayout>

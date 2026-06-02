@@ -1,0 +1,26 @@
+---
+interface Props { name: string; class?: string }
+const { name, class: cls = 'w-6 h-6' } = Astro.props;
+---
+{name === 'cube' && (
+  <svg class={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2 3 7v10l9 5 9-5V7l-9-5z"/><path d="M3 7l9 5 9-5"/><path d="M12 12v10"/>
+  </svg>
+)}
+{name === 'printer' && (
+  <svg class={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="3" width="16" height="6" rx="1"/><path d="M4 9h16v8H4z"/><path d="M8 17h8v4H8z"/><circle cx="17" cy="13" r="0.8" fill="currentColor"/>
+  </svg>
+)}
+{name === 'chip' && (
+  <svg class={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="6" y="6" width="12" height="12" rx="1.5"/>
+    <path d="M9 3v2M12 3v2M15 3v2M9 19v2M12 19v2M15 19v2M3 9h2M3 12h2M3 15h2M19 9h2M19 12h2M19 15h2"/>
+    <rect x="9" y="9" width="6" height="6" rx="0.5"/>
+  </svg>
+)}
+{name === 'stack' && (
+  <svg class={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3 2 8l10 5 10-5-10-5z"/><path d="M2 13l10 5 10-5"/><path d="M2 18l10 5 10-5"/>
+  </svg>
+)}

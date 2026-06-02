@@ -1,0 +1,20 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { detectLang, t, localePath } from '~/i18n';
+const lang = detectLang(Astro.url.pathname);
+const dict = t(lang);
+---
+<BaseLayout lang={lang} title="404">
+  <section class="mx-auto max-w-2xl px-5 py-32 text-center">
+    <p class="font-display text-7xl font-bold text-accent-600">404</p>
+    <h1 class="font-display text-3xl font-bold mt-4">
+      {lang === 'sl' ? 'Te strani ni.' : 'This page does not exist.'}
+    </h1>
+    <p class="mt-2 text-ink-500 dark:text-ink-400">
+      {lang === 'sl' ? 'Vrniva se, kjer se gradi.' : 'Let us go back to where things get built.'}
+    </p>
+    <a href={localePath(lang, '/')} class="mt-6 inline-flex items-center px-5 py-3 rounded-md bg-accent-600 text-white font-medium hover:bg-accent-700">
+      {dict.nav.home} →
+    </a>
+  </section>
+</BaseLayout>

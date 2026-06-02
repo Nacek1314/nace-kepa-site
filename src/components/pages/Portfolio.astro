@@ -1,0 +1,64 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import ProjectCard from '~/components/ProjectCard.astro';
+import { t, type Lang } from '~/i18n';
+import { getCollection } from 'astro:content';
+
+interface Props { lang: Lang }
+const lang: Lang = (Astro.props as any).lang ?? 'en';
+const dict = t(lang);
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+const cats = ['cad', 'iot', 'embedded', 'mechanical'];
+const catLabel: Record<string, { en: string; sl: string }> = {
+  cad: { en: 'CAD', sl: 'CAD' },
+  iot: { en: 'IoT', sl: 'IoT' },
+  embedded: { en: 'Embedded', sl: 'Vgrajeni' },
+  mechanical: { en: 'Mechanical', sl: 'Mehanski' }
+};
+---
+<BaseLayout lang={lang} title={dict.portfolio.heading}>
+  <section class="mx-auto max-w-6xl px-5 py-16">
+    <h1 class="font-display font-bold text-4xl sm:text-5xl tracking-tight">{dict.portfolio.heading}</h1>
+    <p class="mt-3 text-ink-500 dark:text-ink-400 max-w-2xl">{dict.portfolio.sub}</p>
+
+    <div class="mt-8 flex flex-wrap gap-2" id="filter-bar">
+      <button data-filter="all" class="filter-btn px-3 py-1.5 rounded-full border text-sm bg-accent-600 text-white border-accent-600">
+        {dict.portfolio.filter_all}
+      </button>
+      {cats.map((c) => (
+        <button data-filter={c} class="filter-btn px-3 py-1.5 rounded-full border text-sm border-ink-200 dark:border-ink-700 hover:bg-ink-100 dark:hover:bg-ink-800/50">
+          {catLabel[c][lang]}
+        </button>
+      ))}
+    </div>
+
+    <div id="grid" class="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {projects.map((p) => (
+        <div data-cat={p.data.category}>
+          <ProjectCard lang={lang} project={p.data} />
+        </div>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const bar = document.getElementById('filter-bar');
+  const grid = document.getElementById('grid');
+  bar?.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    if (!t.matches('button[data-filter]')) return;
+    const f = t.dataset.filter!;
+    bar.querySelectorAll('button').forEach((b) => {
+      const on = (b as HTMLElement).dataset.filter === f;
+      b.classList.toggle('bg-accent-600', on);
+      b.classList.toggle('text-white', on);
+      b.classList.toggle('border-accent-600', on);
+      b.classList.toggle('border-ink-200', !on);
+      b.classList.toggle('dark:border-ink-700', !on);
+    });
+    grid?.querySelectorAll<HTMLElement>('[data-cat]').forEach((el) => {
+      el.style.display = f === 'all' || el.dataset.cat === f ? '' : 'none';
+    });
+  });
+</script>
