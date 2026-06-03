@@ -6,6 +6,9 @@
 //   • 3D tilt cards           (data-tilt)
 //   • scroll-reveal           (data-reveal[, data-reveal-delay])
 //   • parallax layers         (data-parallax="0.3")
+//   • custom cursor           (auto, snaps to a/button/[data-magnetic])
+//   • split-char text reveal  (data-split)
+//   • animated counters       (data-counter="1234"[, data-counter-suffix])
 //
 // All effects respect prefers-reduced-motion and pointer:coarse (touch).
 
@@ -162,15 +165,115 @@ function mountParallax() {
   tick();
 }
 
+// ---------- 7. Custom cursor ----------
+function mountCursor() {
+  if (!fine) return;
+  const dot = document.createElement('div');
+  dot.className = 'cursor-dot';
+  const ring = document.createElement('div');
+  ring.className = 'cursor-ring';
+  document.body.append(dot, ring);
+
+  let dx = 0, dy = 0, rx = 0, ry = 0;
+  let tx = innerWidth / 2, ty = innerHeight / 2;
+  let raf = 0;
+  const tick = () => {
+    dx += (tx - dx) * 0.55;
+    dy += (ty - dy) * 0.55;
+    rx += (tx - rx) * 0.18;
+    ry += (ty - ry) * 0.18;
+    dot.style.transform = `translate3d(${dx - 4}px, ${dy - 4}px, 0)`;
+    ring.style.transform = `translate3d(${rx - 18}px, ${ry - 18}px, 0)`;
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+
+  window.addEventListener('pointermove', (e) => {
+    tx = e.clientX; ty = e.clientY;
+  }, { passive: true });
+
+  // Hover state on interactive elements
+  const interactive = 'a, button, [data-magnetic], [data-tilt], input, textarea, select, [role="button"]';
+  document.addEventListener('pointerover', (e) => {
+    const t = e.target as HTMLElement;
+    if (t && t.closest && t.closest(interactive)) document.body.classList.add('cursor-hover');
+  });
+  document.addEventListener('pointerout', (e) => {
+    const t = e.target as HTMLElement;
+    if (t && t.closest && t.closest(interactive)) document.body.classList.remove('cursor-hover');
+  });
+  window.addEventListener('pointerdown', () => document.body.classList.add('cursor-down'));
+  window.addEventListener('pointerup',   () => document.body.classList.remove('cursor-down'));
+  document.addEventListener('mouseleave', () => { dot.style.opacity = ring.style.opacity = '0'; });
+  document.addEventListener('mouseenter', () => { dot.style.opacity = ring.style.opacity = '1'; });
+}
+
+// ---------- 8. Split-char text reveal ----------
+function mountSplit() {
+  const els = document.querySelectorAll<HTMLElement>('[data-split]');
+  els.forEach((el) => {
+    if (el.dataset.splitDone) return;
+    el.dataset.splitDone = '1';
+    const text = el.textContent || '';
+    el.textContent = '';
+    const frag = document.createDocumentFragment();
+    let i = 0;
+    for (const ch of text) {
+      if (ch === ' ') {
+        frag.appendChild(document.createTextNode(' '));
+        continue;
+      }
+      const span = document.createElement('span');
+      span.className = 'split-char';
+      span.textContent = ch;
+      span.style.animationDelay = `${(i++ * 28).toFixed(0)}ms`;
+      frag.appendChild(span);
+    }
+    el.appendChild(frag);
+  });
+}
+
+// ---------- 9. Animated counters ----------
+function mountCounters() {
+  const els = document.querySelectorAll<HTMLElement>('[data-counter]');
+  if (!('IntersectionObserver' in window)) {
+    els.forEach((el) => { el.textContent = (el.dataset.counter || '0') + (el.dataset.counterSuffix || ''); });
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target as HTMLElement;
+      const target = Number(el.dataset.counter) || 0;
+      const dur = Number(el.dataset.counterDuration) || 1600;
+      const suffix = el.dataset.counterSuffix || '';
+      const start = performance.now();
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / dur);
+        const eased = 1 - Math.pow(1 - t, 3);
+        const value = Math.round(target * eased);
+        el.textContent = value.toLocaleString() + suffix;
+        if (t < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      io.unobserve(el);
+    });
+  }, { threshold: 0.4 });
+  els.forEach((el) => io.observe(el));
+}
+
 // ---------- boot ----------
 function boot() {
   mountScrollBar();
   mountReveal();
+  mountSplit();
+  mountCounters();
   if (reduced) return;
   mountSpotlight();
   mountMagnetic();
   mountTilt();
   mountParallax();
+  mountCursor();
 }
 
 if (document.readyState === 'loading') {
@@ -178,5 +281,18 @@ if (document.readyState === 'loading') {
 } else {
   boot();
 }
+
+// Re-init on Astro view-transition swap
+document.addEventListener('astro:page-load', () => {
+  // Some effects need to re-mount after navigation
+  mountReveal();
+  mountSplit();
+  mountCounters();
+  if (!reduced) {
+    mountMagnetic();
+    mountTilt();
+    mountParallax();
+  }
+});
 
 export {};

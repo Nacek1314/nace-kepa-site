@@ -413,3 +413,137 @@ body:hover > main::before { opacity: 1; }
   [data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; }
   [data-parallax] { transform: none !important; }
 }
+
+/* ==========================================================================
+   NEXT-LEVEL — custom cursor, film grain, split-char, marquee, view-trans
+   ========================================================================== */
+
+/* Custom cursor — dot + ring. JS postavlja transform. */
+@media (pointer: fine) {
+  body { cursor: none; }
+  a, button, input, textarea, select, [role="button"], [data-magnetic], [data-tilt] {
+    cursor: none;
+  }
+}
+.cursor-dot,
+.cursor-ring {
+  position: fixed;
+  top: 0; left: 0;
+  pointer-events: none;
+  z-index: 999;
+  border-radius: 50%;
+  will-change: transform, opacity;
+  transition: opacity 0.2s ease, width 0.25s ease, height 0.25s ease,
+              background 0.25s ease, border-color 0.25s ease;
+  mix-blend-mode: difference;
+}
+.cursor-dot {
+  width: 8px; height: 8px;
+  background: #fff;
+}
+.cursor-ring {
+  width: 36px; height: 36px;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+}
+body.cursor-hover .cursor-dot {
+  width: 0; height: 0;
+}
+body.cursor-hover .cursor-ring {
+  width: 56px; height: 56px;
+  border-color: var(--barva-primarna);
+  background: rgba(255, 46, 106, 0.10);
+  mix-blend-mode: normal;
+}
+body.cursor-down .cursor-ring {
+  transform-origin: center;
+  width: 28px; height: 28px;
+}
+@media (pointer: coarse) {
+  .cursor-dot, .cursor-ring { display: none; }
+}
+
+/* Film grain overlay — animiran SVG noise */
+body::after {
+  /* Already used for blob; ne podvajamo. Grain je samostojen sloj spodaj. */
+}
+.grain-overlay {
+  position: fixed;
+  inset: -50%;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 200px 200px;
+  animation: grainShift 0.8s steps(6) infinite;
+  mix-blend-mode: overlay;
+}
+:root:not(.dark) .grain-overlay { opacity: 0.04; mix-blend-mode: multiply; }
+@keyframes grainShift {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(-5%, -5%); }
+  40%  { transform: translate(-10%, 5%); }
+  60%  { transform: translate(5%, -10%); }
+  80%  { transform: translate(-5%, 10%); }
+  100% { transform: translate(0, 5%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grain-overlay { animation: none; }
+}
+
+/* Split-char hero reveal */
+.split-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.5em) rotateX(-40deg);
+  transform-origin: 50% 100%;
+  animation: charIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+@keyframes charIn {
+  to { opacity: 1; transform: translateY(0) rotateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .split-char { animation: none !important; opacity: 1 !important; transform: none !important; }
+}
+
+/* Marquee — neskončen drsni trak */
+.marquee {
+  position: relative;
+  overflow: hidden;
+  --marquee-speed: 32s;
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+.marquee__track {
+  display: flex;
+  width: max-content;
+  animation: marqueeRoll var(--marquee-speed) linear infinite;
+  gap: 2.5rem;
+}
+.marquee:hover .marquee__track { animation-play-state: paused; }
+@keyframes marqueeRoll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee__track { animation: none; }
+}
+
+/* Astro View Transitions polish */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+::view-transition-old(root) {
+  animation-name: vt-fade-out;
+}
+::view-transition-new(root) {
+  animation-name: vt-fade-in;
+}
+@keyframes vt-fade-out {
+  to { opacity: 0; transform: translateY(-8px); }
+}
+@keyframes vt-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+}
