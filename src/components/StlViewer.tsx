@@ -8,6 +8,7 @@ interface Stats {
 interface Props {
   labels?: { drop: string; loaded: string; volume: string; size: string };
   onStats?: (stats: Stats) => void;
+  onFile?: (file: File) => void;
 }
 
 const DEFAULT_LABELS = {
@@ -17,7 +18,7 @@ const DEFAULT_LABELS = {
   size: 'Size (X×Y×Z)'
 };
 
-export default function StlViewer({ labels = DEFAULT_LABELS, onStats }: Props) {
+export default function StlViewer({ labels = DEFAULT_LABELS, onStats, onFile }: Props) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState(false);
@@ -90,6 +91,9 @@ export default function StlViewer({ labels = DEFAULT_LABELS, onStats }: Props) {
     if (!file) return;
     setError(null);
     setLoading(true);
+    // surface the file to the parent first — even if preview parsing fails
+    // (e.g. STEP / IGES), the wizard still needs the raw file for upload.
+    onFile?.(file);
     try {
       const ext = file.name.toLowerCase().split('.').pop();
       const buf = await file.arrayBuffer();
@@ -159,7 +163,7 @@ export default function StlViewer({ labels = DEFAULT_LABELS, onStats }: Props) {
           </button>
         )}
         {loading && <div className="absolute inset-0 flex items-center justify-center text-sm text-ink-500 bg-white/60 dark:bg-ink-950/60">…</div>}
-        <input ref={inputRef} type="file" accept=".stl,.obj" hidden
+        <input ref={inputRef} type="file" accept=".stl,.obj,.step,.stp,.iges,.igs,.3mf" hidden
                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
       </div>
       {error && <p className="text-xs text-amber-600 dark:text-amber-400">{error}</p>}

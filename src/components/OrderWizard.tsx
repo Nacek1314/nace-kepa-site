@@ -646,6 +646,20 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
           <StlViewer
             labels={{ drop: labels.viewer_drop, loaded: labels.viewer_loaded, volume: labels.viewer_volume, size: labels.viewer_size }}
             onStats={(s) => setStlStats(s)}
+            onFile={(f) => {
+              if (f.size > 100 * 1024 * 1024) {
+                setErr(lang === 'sl'
+                  ? `Datoteka "${f.name}" je prevelika (max 100 MB).`
+                  : `File "${f.name}" is too large (max 100 MB).`);
+                return;
+              }
+              setErr(null);
+              setState((prev) => {
+                if (prev.files.some((x) => x.name === f.name && x.size === f.size)) return prev;
+                if (prev.files.length >= 5) return prev;
+                return { ...prev, files: [...prev.files, f] };
+              });
+            }}
           />
           <input type="file" multiple accept=".stl,.obj,.step,.stp,.iges,.igs,.3mf,.zip,.pdf,image/*"
                  onChange={(e) => {
