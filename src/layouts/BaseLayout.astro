@@ -59,5 +59,8 @@ const canonical = new URL(url.pathname, Astro.site).toString();
       <slot />
     </main>
     <Footer lang={lang} />
+    <script>
+      import '~/scripts/cinematic.client.ts';
+    </script>
   </body>
 </html>

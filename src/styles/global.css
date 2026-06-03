@@ -72,9 +72,9 @@ body {
   --rob-stekla:          rgba(255, 255, 255, 0.06);
   --rob-stekla-svetlo:   rgba(255, 255, 255, 0.16);
 
-  --barva-primarna:      #ff0055;
-  --barva-sekundarna:    #00f0ff;
-  --barva-terciarna:     #7000ff;
+  --barva-primarna:      #ff2e6a;   /* Premium ružova-magenta */
+  --barva-sekundarna:    #22d3ee;   /* Cyan-teal, manj toksičen */
+  --barva-terciarna:     #8b5cf6;   /* Royal violet */
 
   --gradient-tekst:      linear-gradient(135deg, #ffffff 30%, #a3a8b8 100%);
   --gradient-akcent:     linear-gradient(135deg, var(--barva-primarna), var(--barva-sekundarna));
@@ -308,4 +308,108 @@ body > * { position: relative; z-index: 1; }
     transform: none !important;
     box-shadow: var(--senca-premium) !important;
   }
+}
+
+/* ==========================================================================
+   CINEMATIC ENGINE — scroll progress, mouse spotlight, tilt, reveal
+   ========================================================================== */
+
+/* Tanek progress bar na vrhu */
+.scroll-progress {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  z-index: 100;
+  background: var(--gradient-akcent);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(255, 0, 85, 0.6);
+}
+
+/* Mouse spotlight — radialni gradient sledi kazalcu po celotni strani.
+   --mx / --my postavlja JS engine. */
+:root { --mx: 50vw; --my: 50vh; }
+body::after {
+  /* Pre-existing blob na desni postane "spotlight" sledilec.
+     Pozicija po default-u animira (blobDrift2), interakcija z miško
+     se doda preko ::after pseudo-elementa drugega sloja spodaj. */
+}
+
+/* Dodatni spotlight sloj — neodvisen od blob-ov */
+body > main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    400px circle at var(--mx) var(--my),
+    rgba(255, 0, 85, 0.10),
+    rgba(0, 240, 255, 0.06) 40%,
+    transparent 70%
+  );
+  transition: opacity 0.4s ease;
+  opacity: 0;
+}
+body:hover > main::before { opacity: 1; }
+@media (pointer: coarse) {
+  body > main::before { display: none; }
+}
+
+/* 3D tilt kartice — pripni `data-tilt` na element. */
+[data-tilt] {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+[data-tilt].is-tilting {
+  transition: transform 0.08s linear;
+  transform: perspective(1000px)
+             rotateX(var(--tilt-rx, 0deg))
+             rotateY(var(--tilt-ry, 0deg))
+             translateY(-6px);
+}
+[data-tilt] .tilt-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    300px circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(255, 255, 255, 0.15),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  mix-blend-mode: overlay;
+}
+[data-tilt].is-tilting .tilt-glare { opacity: 1; }
+
+/* Scroll-reveal — pripni `data-reveal`, opcijsko `data-reveal-delay="200"`. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(48px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+[data-reveal="fade"]  { transform: none; }
+[data-reveal="left"]  { transform: translateX(-48px); }
+[data-reveal="right"] { transform: translateX(48px); }
+[data-reveal="zoom"]  { transform: scale(0.92); }
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translate(0, 0) scale(1);
+}
+
+/* Parallax sloj — JS posodablja transform; tu samo will-change. */
+[data-parallax] { will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-progress, body > main::before { display: none !important; }
+  [data-tilt], [data-tilt].is-tilting { transform: none !important; transition: none !important; }
+  [data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; }
+  [data-parallax] { transform: none !important; }
 }

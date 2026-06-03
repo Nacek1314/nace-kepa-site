@@ -20,6 +20,7 @@ const categoryLabel: Record<string, { en: string; sl: string }> = {
 };
 ---
 <a href={localePath(lang, `/portfolio/${project.slug}`)}
+   data-tilt="8"
    class="premium-kartica group block overflow-hidden">
   <div class="aspect-[4/3] relative bg-gradient-to-br from-ink-100 via-ink-50 to-accent-50 dark:from-ink-800 dark:via-ink-900 dark:to-accent-900/30 flex items-center justify-center">
     <span class="font-display text-3xl text-ink-300 dark:text-ink-700 select-none">{project.slug.split('-').map(w => w[0]?.toUpperCase()).join('')}</span>
