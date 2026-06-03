@@ -113,37 +113,43 @@ export default {
       return json({ ok: false, error: 'invalid_contact' }, 422, headers);
     }
 
-    if (!env.BOT_TOKEN || !env.CHAT_ID) {
+    // Determine which channels are configured.
+    const hasEmail    = !!(env.RESEND_API_KEY && env.MAIL_FROM && env.MAIL_TO);
+    const hasTelegram = !!(env.BOT_TOKEN && env.CHAT_ID);
+
+    if (!hasEmail && !hasTelegram) {
       return json({ ok: false, error: 'worker_misconfigured' }, 500, headers);
     }
 
-    const tasks = [sendTelegram(env, { code, subject, summary, contact, lang })];
-    if (env.RESEND_API_KEY && env.MAIL_FROM && env.MAIL_TO) {
-      tasks.push(sendEmail(env, { code, subject, summary, contact, lang }));
-    }
+    const tasks = [];
+    if (hasEmail)    tasks.push(['email',    sendEmail(env,    { code, subject, summary, contact, lang })]);
+    if (hasTelegram) tasks.push(['telegram', sendTelegram(env, { code, subject, summary, contact, lang })]);
 
-    const results = await Promise.allSettled(tasks);
-    const tg = results[0];
+    const settled = await Promise.allSettled(tasks.map(([, p]) => p));
+    let anyOk = false;
+    let mail = hasEmail ? 'failed' : 'skipped';
+    let tg   = hasTelegram ? 'failed' : 'skipped';
 
-    if (tg.status === 'rejected' || (tg.value && tg.value.ok === false)) {
-      // Don't leak upstream details to the caller — log only.
-      console.warn('telegram_failed',
-        tg.status === 'rejected' ? String(tg.reason) : tg.value.detail);
+    settled.forEach((res, i) => {
+      const channel = tasks[i][0];
+      const ok = res.status === 'fulfilled' && res.value && res.value.ok;
+      if (ok) {
+        anyOk = true;
+        if (channel === 'email')    mail = 'sent';
+        if (channel === 'telegram') tg   = 'sent';
+      } else {
+        const detail = res.status === 'rejected'
+          ? String(res.reason)
+          : (res.value && res.value.detail) || '';
+        console.warn(`${channel}_failed`, detail);
+      }
+    });
+
+    if (!anyOk) {
       return json({ ok: false, error: 'upstream_failed' }, 502, headers);
     }
 
-    const em = results[1];
-    let mail = 'skipped';
-    if (em) {
-      if (em.status === 'fulfilled' && em.value.ok) mail = 'sent';
-      else {
-        mail = 'failed';
-        console.warn('email_failed',
-          em.status === 'rejected' ? String(em.reason) : em.value.detail);
-      }
-    }
-
-    return json({ ok: true, code, mail }, 200, headers);
+    return json({ ok: true, code, mail, telegram: tg }, 200, headers);
   }
 };
 
