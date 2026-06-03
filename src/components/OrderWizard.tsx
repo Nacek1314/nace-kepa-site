@@ -10,6 +10,9 @@ interface Props {
   lang: Lang;
   dict: Dict;
   contactEmail: string;
+  /** Optional Web3Forms access key. When present, requests are emailed
+   *  straight to the owner; otherwise the form falls back to mailto:. */
+  web3formsKey?: string;
 }
 
 interface Stats { volumeCm3: number; sizeMm: [number, number, number] }
@@ -120,16 +123,18 @@ const INITIAL: WizardState = {
   agree: false
 };
 
-export default function OrderWizard({ lang, dict, contactEmail }: Props) {
+export default function OrderWizard({ lang, dict, contactEmail, web3formsKey = '' }: Props) {
   const L = dict.order;
   const labels = L.labels;
   const [state, setState] = useState<WizardState>(INITIAL);
   const [stlStats, setStlStats] = useState<Stats | null>(null);
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState<{ code: string } | null>(null);
+  const [done, setDone] = useState<{ code: string; sent: boolean } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // Honeypot: real users never see or fill this. A non-empty value means a bot.
+  const [botField, setBotField] = useState('');
 
   // build dynamic step list based on services chosen
   const steps = useMemo(() => {
@@ -159,6 +164,24 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
 
   async function submit() {
     setSubmitting(true); setErr(null);
+
+    // Validate contact details before doing anything. This guards against
+    // malformed/spoofed input and gives a clear error instead of a silent fail.
+    const name = state.name.trim();
+    const email = state.email.trim();
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!name || !emailOk) {
+      setErr(L.invalid_contact || L.error);
+      setSubmitting(false);
+      return;
+    }
+    // Honeypot tripped — silently treat as success without sending anything.
+    if (botField) {
+      setDone({ code: makeTrackingCode(), sent: true });
+      setSubmitting(false);
+      return;
+    }
+
     const code = makeTrackingCode();
     const summary = buildSummary(state, estimate, code, lang);
     const fileNote = state.files.length
@@ -166,13 +189,13 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
           ? `\n\n— Priloge za pripeti v e-pošto: ${state.files.map((f) => f.name).join(', ')}`
           : `\n\n— Files to attach to this email: ${state.files.map((f) => f.name).join(', ')}`)
       : '';
-    const subject = `[${code}] ${lang === 'sl' ? 'Novo povpraševanje' : 'New project request'} — ${state.name || 'unknown'}`;
+    const subject = `[${code}] ${lang === 'sl' ? 'Novo povpraševanje' : 'New project request'} — ${name}`;
     const body = summary + fileNote + '\n\n' + (lang === 'sl'
       ? '— Poslano prek nacekepa.com'
       : '— Sent via nacekepa.com');
 
+    // Always give the visitor a local copy of the brief.
     try {
-      // 1. Trigger a local download of the brief so the visitor always has a copy.
       const blob = new Blob([body], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -182,13 +205,49 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      /* a failed download must not block the actual submission */
+    }
 
-      // 2. Open the visitor's mail client with the brief pre-filled.
+    // Preferred path: deliver straight to the owner's inbox via Web3Forms.
+    // No mail client required, the owner's address stays out of the page source,
+    // and the honeypot above keeps bots out.
+    if (web3formsKey) {
+      try {
+        const res = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            access_key: web3formsKey,
+            subject,
+            from_name: name,
+            name,
+            email,            // used as reply-to so the owner can answer directly
+            replyto: email,
+            phone: state.phone,
+            company: state.company,
+            tracking_code: code,
+            message: body,
+            botcheck: '',
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data?.success) {
+          setDone({ code, sent: true });
+          setSubmitting(false);
+          return;
+        }
+        // Otherwise fall through to the mailto fallback below.
+      } catch {
+        /* network error — fall through to mailto fallback */
+      }
+    }
+
+    // Fallback: open the visitor's own email client with the brief pre-filled.
+    try {
       const mailto = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      // Some browsers limit mailto length; if it is too long, the download still works.
       window.location.href = mailto;
-
-      setDone({ code });
+      setDone({ code, sent: false });
     } catch (e: any) {
       setErr(L.error + (e?.message ? ` (${e.message})` : ''));
     } finally {
@@ -198,32 +257,43 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
 
   if (done) {
     const mailtoFallback = `mailto:${contactEmail}?subject=${encodeURIComponent(`[${done.code}] ${lang === 'sl' ? 'Povpraševanje' : 'Project request'}`)}`;
+    const filesFollowup = `mailto:${contactEmail}?subject=${encodeURIComponent(`[${done.code}] ${lang === 'sl' ? 'Datoteke' : 'Files'}`)}`;
     return (
       <div className="rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-8 text-center">
         <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500 text-white flex items-center justify-center text-2xl">✓</div>
-        <h2 className="font-display text-2xl font-bold mt-4">{L.success_title}</h2>
-        <p className="mt-2 text-ink-600 dark:text-ink-300 max-w-md mx-auto">{L.success_body}</p>
+        <h2 className="font-display text-2xl font-bold mt-4">{done.sent ? L.sent_title : L.success_title}</h2>
+        <p className="mt-2 text-ink-600 dark:text-ink-300 max-w-md mx-auto">{done.sent ? L.sent_body : L.success_body}</p>
         <div className="mt-6 text-left max-w-md mx-auto p-4 rounded-lg bg-white dark:bg-ink-950 border border-ink-200 dark:border-ink-800 text-sm">
           <p className="font-medium mb-2">{lang === 'sl' ? 'Kaj se je pravkar zgodilo:' : 'What just happened:'}</p>
           <ol className="list-decimal pl-5 space-y-1 text-ink-600 dark:text-ink-300">
             <li>{lang === 'sl' ? `Datoteka ${done.code}-brief.txt se je prenesla na tvoj računalnik.` : `The file ${done.code}-brief.txt was downloaded to your computer.`}</li>
-            <li>{lang === 'sl' ? 'Odprl se je tvoj e-poštni odjemalec z že izpolnjenim povpraševanjem.' : 'Your email client opened with the request pre-filled.'}</li>
+            {done.sent ? (
+              <li>{lang === 'sl' ? 'Tvoje povpraševanje je bilo varno poslano naravnost v moj nabiralnik.' : 'Your request was sent securely, straight to my inbox.'}</li>
+            ) : (
+              <li>{lang === 'sl' ? 'Odprl se je tvoj e-poštni odjemalec z že izpolnjenim povpraševanjem.' : 'Your email client opened with the request pre-filled.'}</li>
+            )}
             {state.files.length > 0 && (
               <li className="font-medium text-amber-700 dark:text-amber-300">
-                {lang === 'sl'
-                  ? `Pripni svoje datoteke (${state.files.map((f) => f.name).join(', ')}) v e-pošto, preden jo pošlješ.`
-                  : `Attach your files (${state.files.map((f) => f.name).join(', ')}) to the email before sending.`}
+                {done.sent
+                  ? (lang === 'sl'
+                      ? <>Pošlji svoje datoteke ({state.files.map((f) => f.name).join(', ')}) na <a href={filesFollowup} className="underline">e-pošto</a> in navedi kodo {done.code}.</>
+                      : <>Email your files ({state.files.map((f) => f.name).join(', ')}) to <a href={filesFollowup} className="underline">me</a> and mention code {done.code}.</>)
+                  : (lang === 'sl'
+                      ? `Pripni svoje datoteke (${state.files.map((f) => f.name).join(', ')}) v e-pošto, preden jo pošlješ.`
+                      : `Attach your files (${state.files.map((f) => f.name).join(', ')}) to the email before sending.`)}
               </li>
             )}
-            <li>{lang === 'sl' ? 'Pritisni Pošlji v e-poštnem odjemalcu.' : 'Hit Send in your email client.'}</li>
+            {!done.sent && <li>{lang === 'sl' ? 'Pritisni Pošlji v e-poštnem odjemalcu.' : 'Hit Send in your email client.'}</li>}
           </ol>
-          <p className="mt-3 text-xs text-ink-500">
-            {lang === 'sl' ? 'Se e-pošta ni odprla? ' : 'Email did not open? '}
-            <a href={mailtoFallback} className="text-accent-600 dark:text-accent-300 underline">
-              {lang === 'sl' ? 'Klikni tukaj' : 'Click here'}
-            </a>
-            {lang === 'sl' ? ' in priloži preneseno datoteko.' : ' and attach the downloaded file.'}
-          </p>
+          {!done.sent && (
+            <p className="mt-3 text-xs text-ink-500">
+              {lang === 'sl' ? 'Se e-pošta ni odprla? ' : 'Email did not open? '}
+              <a href={mailtoFallback} className="text-accent-600 dark:text-accent-300 underline">
+                {lang === 'sl' ? 'Klikni tukaj' : 'Click here'}
+              </a>
+              {lang === 'sl' ? ' in priloži preneseno datoteko.' : ' and attach the downloaded file.'}
+            </p>
+          )}
         </div>
         <div className="mt-6 inline-flex items-center gap-2 px-4 py-3 rounded-lg bg-white dark:bg-ink-950 border border-ink-200 dark:border-ink-800">
           <span className="text-xs uppercase tracking-wider text-ink-500">{L.tracking_code}</span>
@@ -484,6 +554,13 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
             <input placeholder={labels.company} value={state.company} onChange={(e) => update('company', e.target.value)}
                    className="px-3 py-2 rounded-md border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950" />
           </div>
+          {/* Honeypot: hidden from real users; only bots fill it. Keeps spam out. */}
+          <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto', width: 1, height: 1, overflow: 'hidden' }}>
+            <label>
+              Leave this field empty
+              <input type="text" tabIndex={-1} autoComplete="off" value={botField} onChange={(e) => setBotField(e.target.value)} />
+            </label>
+          </div>
         </div>
       )}
 
@@ -516,7 +593,7 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
         ) : (
           <button type="button" onClick={submit} disabled={submitting || !state.agree || !state.name || !state.email}
                   className="text-sm font-medium px-5 py-2 rounded-md bg-accent-600 text-white hover:bg-accent-700 disabled:opacity-50">
-            {submitting ? L.submitting : L.submit}
+            {submitting ? L.submitting : (web3formsKey ? (L.submit_send || L.submit) : L.submit)}
           </button>
         )}
       </div>

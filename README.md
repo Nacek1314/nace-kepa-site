@@ -15,17 +15,24 @@ npm run dev
 
 Open http://localhost:4321/nace-kepa-site/.
 
-## How orders work (no secrets, no third-party services)
+## How orders work
 
-When a visitor finishes the wizard, two things happen entirely in their own browser:
+When a visitor finishes the wizard, a `NK-XXXXXX-brief.txt` file is **downloaded
+to their computer** with the full request, and the request is delivered to the
+owner. How it is delivered depends on configuration:
 
-1. A `NK-XXXXXX-brief.txt` file is **downloaded to their computer** with the full request.
-2. Their **email client opens** (`mailto:`) pre-filled with the brief in the body, ready to send to `kepanace@gmail.com`.
+- **Direct delivery (recommended).** Set `PUBLIC_WEB3FORMS_KEY` (see
+  `.env.example`). The request is sent straight to your inbox via
+  [Web3Forms](https://web3forms.com) — no email client needed, with a honeypot
+  field and email validation to keep spam out. The visitor's email is used as
+  the reply-to so you can answer directly.
+- **mailto: fallback (default when no key is set).** The visitor's **email
+  client opens** (`mailto:`) pre-filled with the brief, ready to send to
+  `kepanace@gmail.com`. This is also used automatically if Web3Forms is
+  unreachable.
 
-Nothing is uploaded anywhere. No API keys, no Web3Forms, no Discord webhook, no
-backend. The only personal data on the public site is the contact email itself,
-which lives in `src/components/pages/Order.astro` — change it there if you ever
-move addresses.
+The contact email lives in `src/components/pages/Order.astro` — change it there
+if you ever move addresses.
 
 ## Deploy
 
