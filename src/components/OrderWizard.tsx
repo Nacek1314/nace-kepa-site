@@ -276,8 +276,8 @@ export default function OrderWizard({ lang, dict, contactEmail, web3formsKey = '
               <li className="font-medium text-amber-700 dark:text-amber-300">
                 {done.sent
                   ? (lang === 'sl'
-                      ? <>Pošlji svoje datoteke ({state.files.map((f) => f.name).join(', ')}) na <a href={filesFollowup} className="underline">e-pošto</a> in navedi kodo {done.code}.</>
-                      : <>Email your files ({state.files.map((f) => f.name).join(', ')}) to <a href={filesFollowup} className="underline">me</a> and mention code {done.code}.</>)
+                      ? <>Pošlji svoje datoteke ({state.files.map((f) => f.name).join(', ')}) na <a href={filesFollowup} aria-label="Pošlji datoteke po e-pošti" className="underline">e-pošto</a> in navedi kodo {done.code}.</>
+                      : <>Email your files ({state.files.map((f) => f.name).join(', ')}) to <a href={filesFollowup} aria-label="Send files via email" className="underline">me</a> and mention code {done.code}.</>)
                   : (lang === 'sl'
                       ? `Pripni svoje datoteke (${state.files.map((f) => f.name).join(', ')}) v e-pošto, preden jo pošlješ.`
                       : `Attach your files (${state.files.map((f) => f.name).join(', ')}) to the email before sending.`)}
