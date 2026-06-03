@@ -6,3 +6,7 @@ dist/
 .DS_Store
 .vscode/
 *.log
+
+# Local secrets (never commit)
+scripts/.env
+.env.local
