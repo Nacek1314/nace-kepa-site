@@ -496,16 +496,16 @@ body:hover > main::before { opacity: 1; }
   width: 36px; height: 36px;
   border: 1.5px solid rgba(255, 255, 255, 0.6);
 }
-body.cursor-hover .cursor-dot {
+html.cursor-hover .cursor-dot {
   width: 0; height: 0;
 }
-body.cursor-hover .cursor-ring {
+html.cursor-hover .cursor-ring {
   width: 56px; height: 56px;
   border-color: var(--barva-sekundarna);
   background: rgba(188, 185, 172, 0.10);
   mix-blend-mode: normal;
 }
-body.cursor-down .cursor-ring {
+html.cursor-down .cursor-ring {
   transform-origin: center;
   width: 28px; height: 28px;
 }

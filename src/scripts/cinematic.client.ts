@@ -168,11 +168,13 @@ function mountParallax() {
 // ---------- 7. Custom cursor ----------
 function mountCursor() {
   if (!fine) return;
+  // Append to <html> so Astro view-transitions (which swap <body>) don't wipe it out.
+  if (document.querySelector('.cursor-dot') && document.querySelector('.cursor-ring')) return;
   const dot = document.createElement('div');
   dot.className = 'cursor-dot';
   const ring = document.createElement('div');
   ring.className = 'cursor-ring';
-  document.body.append(dot, ring);
+  document.documentElement.append(dot, ring);
 
   let dx = 0, dy = 0, rx = 0, ry = 0;
   let tx = innerWidth / 2, ty = innerHeight / 2;
@@ -196,14 +198,14 @@ function mountCursor() {
   const interactive = 'a, button, [data-magnetic], [data-tilt], input, textarea, select, [role="button"]';
   document.addEventListener('pointerover', (e) => {
     const t = e.target as HTMLElement;
-    if (t && t.closest && t.closest(interactive)) document.body.classList.add('cursor-hover');
+    if (t && t.closest && t.closest(interactive)) document.documentElement.classList.add('cursor-hover');
   });
   document.addEventListener('pointerout', (e) => {
     const t = e.target as HTMLElement;
-    if (t && t.closest && t.closest(interactive)) document.body.classList.remove('cursor-hover');
+    if (t && t.closest && t.closest(interactive)) document.documentElement.classList.remove('cursor-hover');
   });
-  window.addEventListener('pointerdown', () => document.body.classList.add('cursor-down'));
-  window.addEventListener('pointerup',   () => document.body.classList.remove('cursor-down'));
+  window.addEventListener('pointerdown', () => document.documentElement.classList.add('cursor-down'));
+  window.addEventListener('pointerup',   () => document.documentElement.classList.remove('cursor-down'));
   document.addEventListener('mouseleave', () => { dot.style.opacity = ring.style.opacity = '0'; });
   document.addEventListener('mouseenter', () => { dot.style.opacity = ring.style.opacity = '1'; });
 }
@@ -292,6 +294,7 @@ document.addEventListener('astro:page-load', () => {
     mountMagnetic();
     mountTilt();
     mountParallax();
+    mountCursor();
   }
 });
 
