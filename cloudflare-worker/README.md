@@ -36,7 +36,7 @@ Worker page → **Settings** → **Variables and Secrets** → **Add variable**:
 | ---------------- | ------ | -------------------------------------- |
 | `BOT_TOKEN`      | Secret | the bot token from BotFather           |
 | `CHAT_ID`        | Secret | your numeric chat id                   |
-| `ALLOWED_ORIGIN` | Text   | `https://nacek1314.github.io` (or your custom domain, no trailing slash) |
+| `ALLOWED_ORIGIN` | Text   | `https://nacekepa.work` (no trailing slash) |
 
 Click **Deploy** after adding them.
 

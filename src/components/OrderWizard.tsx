@@ -168,8 +168,8 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
       : '';
     const subject = `[${code}] ${lang === 'sl' ? 'Novo povpraševanje' : 'New project request'} — ${state.name || 'unknown'}`;
     const body = summary + fileNote + '\n\n' + (lang === 'sl'
-      ? '— Poslano prek nacekepa.com'
-      : '— Sent via nacekepa.com');
+      ? '— Poslano prek nacekepa.work'
+      : '— Sent via nacekepa.work');
 
     const endpoint = (import.meta as any).env?.PUBLIC_ORDER_ENDPOINT as string | undefined;
 

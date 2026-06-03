@@ -5,12 +5,10 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 
-// GitHub Pages deploy at https://nacek1314.github.io/nace-kepa-site/
-// To switch to a custom domain later: set `site` to https://yourdomain.com,
-// remove `base`, add public/CNAME with your domain, and update the Pages settings.
+// Deployed at https://nacekepa.work/ via GitHub Pages with a custom domain.
+// (CNAME file in public/ tells GitHub which domain to serve.)
 export default defineConfig({
-  site: 'https://nacek1314.github.io',
-  base: '/nace-kepa-site',
+  site: 'https://nacekepa.work',
   trailingSlash: 'ignore',
   integrations: [react(), mdx(), sitemap({ i18n: { defaultLocale: 'en', locales: { en: 'en', sl: 'sl' } } })],
   i18n: {
