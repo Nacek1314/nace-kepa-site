@@ -31,39 +31,159 @@ function makeTrackingCode(): string {
   return `NK-${s}`;
 }
 
-function estimateEUR(state: WizardState, stats: Stats | null): number {
-  let total = 0;
+interface EstimateLine { label: string; eur: number; note?: string }
+interface EstimateResult { lines: EstimateLine[]; subtotal: number; rushPct: number; total: number; low: number; high: number }
+
+const HOURLY = 25;        // €/h shop rate
+const MIN_ORDER = 35;     // minimum chargeable amount
+
+function rushFactor(deadline: string, flexible: boolean): number {
+  if (flexible || !deadline) return 0;
+  const days = (new Date(deadline).getTime() - Date.now()) / 86400000;
+  if (days <= 3) return 0.4;   // +40 %
+  if (days <= 7) return 0.2;   // +20 %
+  return 0;
+}
+
+function estimateOrder(state: WizardState, stats: Stats | null, lang: Lang): EstimateResult {
+  const t = (en: string, sl: string) => (lang === 'sl' ? sl : en);
+  const lines: EstimateLine[] = [];
+
+  // ── 3D Design / CAD ───────────────────────────────────────────────
   if (state.services.includes('3d-design')) {
-    const hours = state.complexity === 'complex' ? 8 : state.complexity === 'medium' ? 4 : 2;
-    total += hours * 25;
+    const baseHours = state.complexity === 'complex' ? 14 : state.complexity === 'medium' ? 6 : 3;
+    const extras = Math.max(0, state.cadDeliverables.length - 1);
+    const hours = baseHours + extras * 1; // +1h per extra deliverable
+    lines.push({
+      label: t('CAD modelling', 'CAD modeliranje'),
+      eur: hours * HOURLY,
+      note: t(`${hours} h × €${HOURLY}`, `${hours} h × ${HOURLY} €`)
+    });
   }
+
+  // ── 3D Printing ───────────────────────────────────────────────────
   if (state.services.includes('3d-printing')) {
-    // material price ~0.05 €/cm³ for PLA, machine time ~1 €/hour, plus a small handling fee
-    const vol = stats?.volumeCm3 ?? 30;
-    const matFactor = state.material === 'flexible' ? 0.18 : state.material === 'petg' ? 0.08 : 0.05;
+    const vol = Math.max(5, stats?.volumeCm3 ?? 30); // cm³
+    const infillFactor = 0.3 + 0.7 * (state.infill / 100); // walls + infill
+    const matRate = state.material === 'flexible' ? 0.18 : state.material === 'petg' ? 0.09 : 0.05; // €/cm³ filled
+    const machineRate = 0.18; // €/cm³ (printer time + electricity)
+    const filledVol = vol * infillFactor;
+
+    const material = filledVol * matRate;
+    const machine  = filledVol * machineRate;
+    const setup    = 6; // per job
+
+    const post = (state.post.includes('paint') ? 12 : 0)
+               + (state.post.includes('sand')  ? 4  : 0)
+               + (state.post.includes('assemble') ? 8 : 0);
+
     const qty = Math.max(1, state.qty || 1);
-    const post = (state.post.includes('paint') ? 8 : 0) + (state.post.includes('sand') ? 3 : 0) + (state.post.includes('assemble') ? 6 : 0);
-    total += (vol * matFactor + 4 + post) * qty;
+    // Volume discount: 1 → 1.0, 5 → ~0.92, 10 → ~0.85, 20 → ~0.78
+    const qtyDiscount = qty === 1 ? 1 : Math.max(0.7, 1 - 0.08 * Math.log2(qty));
+    const perPart = material + machine + post;
+    const printTotal = (setup + perPart * qty) * qtyDiscount;
+
+    lines.push({
+      label: t('3D print', '3D tisk'),
+      eur: printTotal,
+      note: t(
+        `${qty}× · ${vol.toFixed(0)} cm³ · ${state.material.toUpperCase()} · ${state.infill}% infill`,
+        `${qty}× · ${vol.toFixed(0)} cm³ · ${state.material.toUpperCase()} · ${state.infill}% polnilo`
+      )
+    });
   }
+
+  // ── Embedded / IoT ────────────────────────────────────────────────
   if (state.services.includes('embedded-iot')) {
-    let hours = 6;
-    if ((state.connectivity || []).includes('ble')) hours += 4;
-    if ((state.connectivity || []).includes('wifi')) hours += 4;
-    hours += Math.min(8, (state.sensors?.split(',').filter(Boolean).length || 0) * 1.5);
-    if (state.enclosure) hours += 3;
-    total += hours * 25;
+    let hours = 8; // bring-up + basic firmware
+    const conn = state.connectivity || [];
+    if (conn.includes('ble'))      hours += 4;
+    if (conn.includes('wifi'))     hours += 4;
+    if (conn.includes('cellular')) hours += 8;
+    if (conn.includes('lora'))     hours += 6;
+    const sensorCount = (state.sensors || '').split(',').map((s) => s.trim()).filter(Boolean).length;
+    hours += Math.min(10, sensorCount * 1.5);
+    if (state.power === 'battery') hours += 3;
+
+    const bom = 30 + sensorCount * 6 + (conn.includes('cellular') ? 25 : 0); // ballpark BOM
+    lines.push({
+      label: t('Embedded / firmware', 'Vgrajeni sistem / firmware'),
+      eur: hours * HOURLY + bom,
+      note: t(
+        `${hours} h × €${HOURLY} + €${bom} BOM`,
+        `${hours} h × ${HOURLY} € + ${bom} € materiali`
+      )
+    });
+
+    if (state.enclosure) {
+      lines.push({
+        label: t('Enclosure (CAD + print)', 'Ohišje (CAD + tisk)'),
+        eur: 5 * HOURLY + 18,
+        note: t('5 h CAD + €18 print', '5 h CAD + 18 € tisk')
+      });
+    }
   }
+
+  // ── Full custom build ─────────────────────────────────────────────
   if (state.services.includes('full-builds')) {
-    let hours = 20;
-    if (state.scope.includes('cad'))   hours += 6;
-    if (state.scope.includes('print')) hours += 4;
-    if (state.scope.includes('pcb'))   hours += 12;
-    if (state.scope.includes('fw'))    hours += 10;
-    if (state.scope.includes('assy'))  hours += 6;
-    hours *= Math.max(1, Math.log2(Math.max(1, state.units || 1)) + 1);
-    total += hours * 25;
+    const sc = state.scope || [];
+    const u  = Math.max(1, state.units || 1);
+    let hours = 0; let bom = 0;
+    if (sc.includes('cad'))   { hours += 10; }
+    if (sc.includes('print')) { hours += 6;  bom += 18 * u; }
+    if (sc.includes('pcb'))   { hours += 18; bom += 65 + 12 * u; }
+    if (sc.includes('fw'))    { hours += 18; }
+    if (sc.includes('assy'))  { hours += 4 * u; bom += 8 * u; }
+    // Multi-unit scaling: dev hours grow sub-linearly with units
+    const unitMul = 1 + 0.55 * Math.log2(u);
+    const labour = hours * unitMul * HOURLY;
+    lines.push({
+      label: t('Full build — engineering', 'Celostna izdelava — inženiring'),
+      eur: labour,
+      note: t(`${(hours * unitMul).toFixed(0)} h · ${u} unit(s)`, `${(hours * unitMul).toFixed(0)} h · ${u} kos.`)
+    });
+    if (bom > 0) lines.push({
+      label: t('Materials & components', 'Materiali in komponente'),
+      eur: bom,
+      note: t('PCB / parts / filament', 'PCB / deli / filament')
+    });
   }
-  return Math.round(total / 5) * 5;
+
+  let subtotal = lines.reduce((a, l) => a + l.eur, 0);
+  if (subtotal > 0 && subtotal < MIN_ORDER) {
+    lines.push({
+      label: t('Minimum order top-up', 'Doplačilo do minimalnega naročila'),
+      eur: MIN_ORDER - subtotal,
+      note: `min €${MIN_ORDER}`
+    });
+    subtotal = MIN_ORDER;
+  }
+
+  const rushPct = rushFactor(state.deadline, state.flexible);
+  if (rushPct > 0 && subtotal > 0) {
+    const rushEur = subtotal * rushPct;
+    lines.push({
+      label: t('Rush surcharge', 'Pribitek za hitro izvedbo'),
+      eur: rushEur,
+      note: `+${Math.round(rushPct * 100)} %`
+    });
+  }
+
+  const total = lines.reduce((a, l) => a + l.eur, 0);
+  const round = (n: number) => Math.max(0, Math.round(n / 5) * 5);
+  return {
+    lines: lines.map((l) => ({ ...l, eur: round(l.eur) })),
+    subtotal: round(subtotal),
+    rushPct,
+    total: round(total),
+    low:   round(total * 0.85),
+    high:  round(total * 1.20)
+  };
+}
+
+// Backwards-compatible single-number helper (kept for the email summary).
+function estimateEUR(state: WizardState, stats: Stats | null): number {
+  return estimateOrder(state, stats, 'en').total;
 }
 
 interface WizardState {
@@ -157,11 +277,12 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
   const back = () => setStep((s) => Math.max(0, s - 1));
 
   const estimate = useMemo(() => estimateEUR(state, stlStats), [state, stlStats]);
+  const breakdown = useMemo(() => estimateOrder(state, stlStats, lang), [state, stlStats, lang]);
 
   async function submit() {
     setSubmitting(true); setErr(null); setProgress(null);
     const code = makeTrackingCode();
-    const summary = buildSummary(state, estimate, code, lang);
+    const summary = buildSummary(state, breakdown, code, lang);
     const subject = `[${code}] ${lang === 'sl' ? 'Novo povpraševanje' : 'New project request'} — ${state.name || 'unknown'}`;
 
     const endpoint = (import.meta as any).env?.PUBLIC_ORDER_ENDPOINT as string | undefined;
@@ -585,11 +706,32 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
       )}
 
       {stepKey === 'estimate' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <p className="font-display text-xl font-bold">{L.estimate_title}</p>
-          <div className="p-6 rounded-xl bg-accent-50 dark:bg-accent-900/30 border border-accent-200 dark:border-accent-700 text-center">
-            <div className="text-xs uppercase tracking-wider text-ink-500">{L.estimate_title}</div>
-            <div className="font-display text-4xl font-bold text-accent-700 dark:text-accent-200 tabular-nums">€{estimate}</div>
+          <div className="p-6 rounded-xl bg-accent-50 dark:bg-accent-900/30 border border-accent-200 dark:border-accent-700">
+            <div className="text-xs uppercase tracking-wider text-ink-500 dark:text-ink-300 text-center">
+              {lang === 'sl' ? 'Indikativni razpon' : 'Indicative range'}
+            </div>
+            <div className="font-display text-3xl sm:text-4xl font-bold text-accent-700 dark:text-accent-200 tabular-nums text-center mt-1">
+              €{breakdown.low}<span className="text-ink-400 dark:text-ink-500 mx-2">–</span>€{breakdown.high}
+            </div>
+            <div className="text-center text-xs text-ink-500 dark:text-ink-400 mt-1">
+              {lang === 'sl' ? 'Srednja vrednost' : 'Midpoint'}: <span className="tabular-nums">€{breakdown.total}</span>
+            </div>
+
+            {breakdown.lines.length > 0 && (
+              <ul className="mt-5 divide-y divide-accent-200/60 dark:divide-accent-700/40 text-sm">
+                {breakdown.lines.map((l, i) => (
+                  <li key={i} className="flex justify-between gap-4 py-2">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{l.label}</div>
+                      {l.note && <div className="text-xs text-ink-500 dark:text-ink-400">{l.note}</div>}
+                    </div>
+                    <div className="tabular-nums text-ink-700 dark:text-ink-200 whitespace-nowrap">€{l.eur}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <p className="text-xs text-ink-500 dark:text-ink-400">{L.estimate_disclaimer}</p>
         </div>
@@ -615,7 +757,7 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
         <div className="space-y-4">
           <p className="font-display text-xl font-bold">{labels.review_q}</p>
           <pre className="text-xs whitespace-pre-wrap p-4 rounded-md bg-ink-50 dark:bg-ink-950/60 border border-ink-200 dark:border-ink-800 max-h-72 overflow-auto">
-{buildSummary(state, estimate, '(generated on submit)', lang)}
+{buildSummary(state, breakdown, '(generated on submit)', lang)}
           </pre>
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" checked={state.agree} onChange={(e) => update('agree', e.target.checked)} className="mt-0.5" />
@@ -660,11 +802,17 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
   );
 }
 
-function buildSummary(s: WizardState, estimate: number, code: string, lang: Lang): string {
+function buildSummary(s: WizardState, est: EstimateResult, code: string, lang: Lang): string {
   const lines: string[] = [];
   lines.push(`Tracking code: ${code}`);
   lines.push(`Language: ${lang}`);
-  lines.push(`Indicative estimate: €${estimate}`);
+  lines.push(`Indicative range: €${est.low}–€${est.high}  (mid €${est.total})`);
+  if (est.lines.length) {
+    lines.push('Breakdown:');
+    for (const l of est.lines) {
+      lines.push(`  • ${l.label}: €${l.eur}${l.note ? `  (${l.note})` : ''}`);
+    }
+  }
   lines.push(`Services: ${s.services.map((x) => SERVICE_TITLES[x].en).join(', ') || '—'}`);
   if (s.services.includes('3d-design') || s.services.includes('full-builds')) {
     lines.push(`Complexity: ${s.complexity}`);
