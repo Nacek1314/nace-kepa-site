@@ -4,12 +4,14 @@ import { t, localePath, type Lang } from '~/i18n';
 interface Props {
   lang: Lang;
   service: { slug: string; icon: string; title: { en: string; sl: string }; short: { en: string; sl: string } };
+  accent?: string;
 }
-const { lang, service } = Astro.props;
+const { lang, service, accent } = Astro.props;
 const dict = t(lang);
 ---
 <a href={localePath(lang, `/services#${service.slug}`)}
    data-tilt="6"
+   style={accent ? `--kartica-akcent: ${accent}` : undefined}
    class="premium-kartica group relative block p-6 hover:border-accent-400 dark:hover:border-accent-500">
   <div class="flex items-center justify-between mb-4">
     <div class="w-11 h-11 rounded-lg bg-accent-50 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300 flex items-center justify-center">

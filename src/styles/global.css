@@ -164,8 +164,9 @@ body > * { position: relative; z-index: 1; }
    ANATOMIJA KOMPONENT
    -------------------------------------------------------------------------- */
 
-/* Premium kartica — frosted glass */
+/* Premium kartica — frosted glass + editorial accent bar */
 .premium-kartica {
+  --kartica-akcent: var(--barva-primarna);
   background: var(--bg-povrsina);
   border: 1px solid var(--rob-stekla);
   border-radius: var(--radij-kartice);
@@ -173,6 +174,20 @@ body > * { position: relative; z-index: 1; }
   -webkit-backdrop-filter: blur(12px);
   box-shadow: var(--senca-premium);
   transition: var(--prehod-glavni);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.premium-kartica::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--kartica-akcent), transparent);
+  opacity: 0;
+  transform: translateX(-30%);
+  transition: opacity 0.5s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
 }
 .premium-kartica:hover {
   transform: translateY(-8px) scale(1.01);
@@ -182,10 +197,39 @@ body > * { position: relative; z-index: 1; }
     0 30px 60px rgba(0, 0, 0, 0.45),
     0 0 30px rgba(95, 131, 150, 0.10);
 }
+.premium-kartica:hover::before {
+  opacity: 1;
+  transform: translateX(0);
+}
 :root:not(.dark) .premium-kartica:hover {
   box-shadow:
     0 30px 60px rgba(36, 37, 39, 0.18),
     0 0 30px rgba(95, 131, 150, 0.12);
+}
+
+/* Paletne variante — uporabi z razredom .akcent-{ime} ali style="--kartica-akcent: ..." */
+.akcent-sand   { --kartica-akcent: #bcb9ac; }
+.akcent-blue   { --kartica-akcent: #5f8396; }
+.akcent-navy   { --kartica-akcent: #2f4a61; }
+.akcent-taupe  { --kartica-akcent: #6f6558; }
+
+/* Section label — tanka linija + uppercase eyebrow */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--barva-primarna);
+}
+.section-label::before {
+  content: "";
+  width: 2.5rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.6;
 }
 
 /* Premium gumb — editorial atelier */

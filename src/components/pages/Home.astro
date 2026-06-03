@@ -12,6 +12,9 @@ const lang: Lang = (Astro.props as any).lang ?? 'en';
 const dict = t(lang);
 const services = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order);
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order).slice(0, 4);
+
+// Editorial Atelier accent cycle
+const paleta = ['#5f8396', '#2f4a61', '#6f6558', '#bcb9ac'];
 ---
 <BaseLayout lang={lang}>
   <!-- Hero -->
@@ -91,19 +94,21 @@ const projects = (await getCollection('projects')).sort((a, b) => a.data.order -
   <section data-reveal class="mx-auto max-w-6xl px-5 py-16">
     <div class="flex items-end justify-between gap-6 mb-8">
       <div>
-        <h2 class="font-display text-3xl sm:text-4xl font-bold tracking-tight">{dict.home.services_heading}</h2>
+        <span class="section-label">{lang === 'sl' ? 'Storitve' : 'Services'}</span>
+        <h2 class="font-display text-3xl sm:text-4xl font-bold tracking-tight mt-3">{dict.home.services_heading}</h2>
         <p class="mt-2 text-ink-500 dark:text-ink-400">{dict.home.services_sub}</p>
       </div>
       <a href={localePath(lang, '/services')} class="hidden sm:inline text-sm text-accent-600 dark:text-accent-300 hover:underline">{dict.nav.services} →</a>
     </div>
     <div class="grid sm:grid-cols-2 gap-4">
-      {services.map((s) => <ServiceCard lang={lang} service={s.data} />)}
+      {services.map((s, i) => <ServiceCard lang={lang} service={s.data} accent={paleta[i % paleta.length]} />)}
     </div>
   </section>
 
   <!-- Process -->
   <section data-reveal class="mx-auto max-w-6xl px-5 py-16">
-    <h2 class="font-display text-3xl sm:text-4xl font-bold tracking-tight mb-2">
+    <span class="section-label">{lang === 'sl' ? 'Delotok' : 'Workflow'}</span>
+    <h2 class="font-display text-3xl sm:text-4xl font-bold tracking-tight mt-3 mb-2">
       {lang === 'sl' ? 'Postopek' : 'Process'}
     </h2>
     <p class="mb-8 text-ink-500 dark:text-ink-400">
@@ -116,13 +121,14 @@ const projects = (await getCollection('projects')).sort((a, b) => a.data.order -
   <section data-reveal class="mx-auto max-w-6xl px-5 py-16">
     <div class="flex items-end justify-between gap-6 mb-8">
       <div>
-        <h2 class="font-display text-3xl sm:text-4xl font-bold tracking-tight">{dict.home.projects_heading}</h2>
+        <span class="section-label">{lang === 'sl' ? 'Izbrano' : 'Selected'}</span>
+        <h2 class="font-display text-3xl sm:text-4xl font-bold tracking-tight mt-3">{dict.home.projects_heading}</h2>
         <p class="mt-2 text-ink-500 dark:text-ink-400">{dict.home.projects_sub}</p>
       </div>
       <a href={localePath(lang, '/portfolio')} class="hidden sm:inline text-sm text-accent-600 dark:text-accent-300 hover:underline">{dict.nav.portfolio} →</a>
     </div>
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {projects.map((p) => <ProjectCard lang={lang} project={p.data} />)}
+      {projects.map((p, i) => <ProjectCard lang={lang} project={p.data} accent={paleta[i % paleta.length]} />)}
     </div>
   </section>
 
