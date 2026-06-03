@@ -46,11 +46,14 @@ const ALLOWED_EXTS     = new Set([
 
 export default {
   async fetch(request, env) {
-    const cors = corsHeaders(env.ALLOWED_ORIGIN);
+    // Normalise allowed origin: trim whitespace + drop trailing slashes so that
+    // a copy-paste like "https://nacekepa.work/ " still works.
+    const allowed = (env.ALLOWED_ORIGIN || '').trim().replace(/\/+$/, '');
+    const cors = corsHeaders(allowed);
     const sec  = securityHeaders();
     const headers = { ...cors, ...sec };
 
-    if (!env.ALLOWED_ORIGIN) return json({ ok: false, error: 'worker_misconfigured' }, 500, sec);
+    if (!allowed) return json({ ok: false, error: 'worker_misconfigured' }, 500, sec);
 
     const url = new URL(request.url);
 
@@ -63,11 +66,12 @@ export default {
       return handleDownload(url, env, sec);
     }
 
-    // Private API — strict origin check.
-    const origin  = request.headers.get('Origin')  || '';
-    const referer = request.headers.get('Referer') || '';
-    if (origin !== env.ALLOWED_ORIGIN && !referer.startsWith(env.ALLOWED_ORIGIN + '/')) {
-      return json({ ok: false, error: 'forbidden_origin' }, 403, headers);
+    // Private API — strict origin check (origin OR referer must match).
+    const origin  = (request.headers.get('Origin')  || '').trim().replace(/\/+$/, '');
+    const referer = (request.headers.get('Referer') || '').trim();
+    const refererOk = referer === allowed || referer.startsWith(allowed + '/');
+    if (origin !== allowed && !refererOk) {
+      return json({ ok: false, error: 'forbidden_origin', got_origin: origin, got_referer: referer, expected: allowed }, 403, headers);
     }
 
     if (request.method === 'POST' && url.pathname === '/upload') {
