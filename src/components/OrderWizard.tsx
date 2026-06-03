@@ -129,6 +129,7 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<{ code: string; channel: 'instant' | 'mailto' } | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   // build dynamic step list based on services chosen
@@ -158,26 +159,53 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
   const estimate = useMemo(() => estimateEUR(state, stlStats), [state, stlStats]);
 
   async function submit() {
-    setSubmitting(true); setErr(null);
+    setSubmitting(true); setErr(null); setProgress(null);
     const code = makeTrackingCode();
     const summary = buildSummary(state, estimate, code, lang);
-    const fileNote = state.files.length
-      ? (lang === 'sl'
-          ? `\n\n— Priloge za pripeti v e-pošto: ${state.files.map((f) => f.name).join(', ')}`
-          : `\n\n— Files to attach to this email: ${state.files.map((f) => f.name).join(', ')}`)
-      : '';
     const subject = `[${code}] ${lang === 'sl' ? 'Novo povpraševanje' : 'New project request'} — ${state.name || 'unknown'}`;
-    const body = summary + fileNote + '\n\n' + (lang === 'sl'
-      ? '— Poslano prek nacekepa.work'
-      : '— Sent via nacekepa.work');
 
     const endpoint = (import.meta as any).env?.PUBLIC_ORDER_ENDPOINT as string | undefined;
+    const base = endpoint ? endpoint.replace(/\/+$/, '') : '';
+
+    // 1) Upload files to R2 via Worker, in sequence (XHR for progress).
+    const uploaded: { name: string; size: number; url: string }[] = [];
+    if (base && state.files.length > 0) {
+      for (let i = 0; i < state.files.length; i++) {
+        const f = state.files[i];
+        try {
+          setProgress(lang === 'sl'
+            ? `Pošiljam ${i + 1}/${state.files.length}: ${f.name}…`
+            : `Uploading ${i + 1}/${state.files.length}: ${f.name}…`);
+          const res = await uploadFile(base, code, f, (pct) => {
+            setProgress(lang === 'sl'
+              ? `Pošiljam ${i + 1}/${state.files.length}: ${f.name} — ${pct}%`
+              : `Uploading ${i + 1}/${state.files.length}: ${f.name} — ${pct}%`);
+          });
+          uploaded.push({ name: res.name || f.name, size: res.size || f.size, url: res.url });
+        } catch (e: any) {
+          setProgress(null);
+          setErr(lang === 'sl'
+            ? `Datoteka ${f.name} ni bila poslana (${e?.message || 'napaka'}). Poskusi znova ali odstrani datoteko.`
+            : `File ${f.name} failed to upload (${e?.message || 'error'}). Retry or remove the file.`);
+          setSubmitting(false);
+          return;
+        }
+      }
+    }
+
+    const fileNote = uploaded.length
+      ? '\n\n' + (lang === 'sl' ? '— Priložene datoteke (povezave veljajo 30 dni):' : '— Attached files (links expire in 30 days):') +
+        '\n' + uploaded.map((a) => `• ${a.name} (${fmtSize(a.size)})\n  ${a.url}`).join('\n')
+      : '';
+    const body = summary + fileNote + '\n\n' + (lang === 'sl' ? '— Poslano prek nacekepa.work' : '— Sent via nacekepa.work');
+
+    setProgress(lang === 'sl' ? 'Pošiljam povpraševanje…' : 'Sending brief…');
 
     try {
-      // Preferred path: POST to Cloudflare Worker which DMs Nace on Telegram.
-      if (endpoint) {
+      // Preferred path: POST to Cloudflare Worker which emails Nace.
+      if (base) {
         try {
-          const res = await fetch(endpoint, {
+          const res = await fetch(base + '/', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
@@ -186,10 +214,12 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
               summary: body,
               contact: state.email || state.name || '',
               lang,
+              attachments: uploaded,
               website: '' // honeypot — must stay empty
             })
           });
           if (res.ok) {
+            setProgress(null);
             setDone({ code, channel: 'instant' });
             return;
           }
@@ -199,6 +229,7 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
             setErr(lang === 'sl'
               ? `Preveč povpraševanj s te povezave.${mins ? ` Poskusi znova čez ~${mins} min.` : ''}`
               : `Too many requests from this connection.${mins ? ` Try again in ~${mins} min.` : ''}`);
+            setProgress(null);
             setSubmitting(false);
             return;
           }
@@ -222,6 +253,7 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
       const mailto = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.location.href = mailto;
 
+      setProgress(null);
       setDone({ code, channel: 'mailto' });
     } catch (e: any) {
       setErr(L.error + (e?.message ? ` (${e.message})` : ''));
@@ -485,18 +517,45 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
         <div className="space-y-4">
           <p className="font-display text-xl font-bold">{labels.files_q}</p>
           <p className="text-sm text-ink-500 dark:text-ink-400">{labels.files_help}</p>
+          <p className="text-xs text-ink-500 dark:text-ink-400">
+            {lang === 'sl'
+              ? 'Do 5 datotek · največ 100 MB na datoteko · STL, OBJ, STEP, IGES, 3MF, ZIP, PDF, slike. Datoteke se naložijo varno na zasebni Cloudflare R2 strežnik in povezave veljajo 30 dni.'
+              : 'Up to 5 files · max 100 MB each · STL, OBJ, STEP, IGES, 3MF, ZIP, PDF, images. Files upload securely to a private Cloudflare R2 bucket; download links expire in 30 days.'}
+          </p>
           <StlViewer
             labels={{ drop: labels.viewer_drop, loaded: labels.viewer_loaded, volume: labels.viewer_volume, size: labels.viewer_size }}
             onStats={(s) => setStlStats(s)}
           />
-          <input type="file" multiple accept=".stl,.obj,.step,.stp,.iges,.igs,.3mf,.zip,image/*"
-                 onChange={(e) => update('files', Array.from(e.target.files || []))}
+          <input type="file" multiple accept=".stl,.obj,.step,.stp,.iges,.igs,.3mf,.zip,.pdf,image/*"
+                 onChange={(e) => {
+                   const incoming = Array.from(e.target.files || []);
+                   const tooBig = incoming.find((f) => f.size > 100 * 1024 * 1024);
+                   if (tooBig) {
+                     setErr(lang === 'sl'
+                       ? `Datoteka "${tooBig.name}" je prevelika (max 100 MB).`
+                       : `File "${tooBig.name}" is too large (max 100 MB).`);
+                     e.target.value = '';
+                     return;
+                   }
+                   if (incoming.length > 5) {
+                     setErr(lang === 'sl' ? 'Največ 5 datotek.' : 'Maximum 5 files.');
+                     e.target.value = '';
+                     return;
+                   }
+                   setErr(null);
+                   update('files', incoming);
+                 }}
                  className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:bg-accent-600 file:text-white hover:file:bg-accent-700" />
           {state.files.length > 0 && (
-            <ul className="text-sm text-ink-500 dark:text-ink-400">
-              {state.files.map((f) => <li key={f.name}>{f.name} <span className="text-ink-400">({(f.size / 1024).toFixed(0)} KB)</span></li>)}
+            <ul className="text-sm text-ink-500 dark:text-ink-400 space-y-1">
+              {state.files.map((f) => (
+                <li key={f.name}>
+                  📎 {f.name} <span className="text-ink-400">({fmtSize(f.size)})</span>
+                </li>
+              ))}
             </ul>
           )}
+          {err && stepKey === 'files' && <p className="text-sm text-ink-700 dark:text-ink-200">{err}</p>}
         </div>
       )}
 
@@ -574,6 +633,10 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
         </div>
       )}
 
+      {progress && (
+        <p className="mt-4 text-sm text-accent-700 dark:text-accent-300 font-medium">{progress}</p>
+      )}
+
       {/* nav */}
       <div className="flex items-center justify-between mt-8 pt-6 border-t border-ink-200 dark:border-ink-800">
         <button type="button" onClick={back} disabled={step === 0}
@@ -623,4 +686,43 @@ function buildSummary(s: WizardState, estimate: number, code: string, lang: Lang
   lines.push('Description:');
   lines.push(s.description || '(none provided)');
   return lines.join('\n');
+}
+
+function fmtSize(n: number): string {
+  if (!n || n < 1024) return `${n || 0} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function uploadFile(
+  base: string,
+  code: string,
+  file: File,
+  onProgress: (pct: number) => void
+): Promise<{ name: string; size: number; url: string }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const url = `${base}/upload?code=${encodeURIComponent(code)}&name=${encodeURIComponent(file.name)}`;
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.floor((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText || '{}');
+        if (xhr.status >= 200 && xhr.status < 300 && data && data.ok) {
+          resolve({ name: data.name || file.name, size: data.size || file.size, url: data.url });
+        } else {
+          reject(new Error(data && data.error ? String(data.error) : `HTTP ${xhr.status}`));
+        }
+      } catch (e: any) {
+        reject(new Error(e?.message || 'parse_error'));
+      }
+    };
+    xhr.onerror = () => reject(new Error('network_error'));
+    xhr.ontimeout = () => reject(new Error('timeout'));
+    xhr.timeout = 10 * 60 * 1000; // 10 min
+    xhr.send(file);
+  });
 }
