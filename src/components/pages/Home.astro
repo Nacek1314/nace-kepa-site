@@ -18,8 +18,11 @@ const projects = (await getCollection('projects')).sort((a, b) => a.data.order -
   <section class="relative overflow-hidden">
     <div class="absolute inset-0 -z-10 bg-gradient-to-b from-accent-50/60 via-transparent to-transparent dark:from-accent-900/20"></div>
     <div class="mx-auto max-w-6xl px-5 pt-20 pb-24 sm:pt-28 sm:pb-32">
-      <p class="text-xs uppercase tracking-[0.2em] text-accent-600 dark:text-accent-300 intro-animacija zamik-1">{dict.hero.eyebrow}</p>
-      <h1 data-split class="font-display font-bold text-5xl sm:text-6xl lg:text-7xl tracking-tight mt-4 leading-[1.05] waw-shimmer">
+      <div class="flex items-center gap-3 intro-animacija zamik-1">
+        <span class="h-px w-10 bg-accent-500/70"></span>
+        <p class="text-xs uppercase tracking-[0.2em] text-accent-600 dark:text-accent-300">{dict.hero.eyebrow}</p>
+      </div>
+      <h1 data-split class="font-display font-bold text-5xl sm:text-6xl lg:text-7xl tracking-tight mt-5 leading-[1.05] waw-shimmer">
         {dict.hero.title}
       </h1>
       <p class="mt-6 max-w-2xl text-lg text-ink-600 dark:text-ink-300 leading-relaxed intro-animacija zamik-3">
@@ -33,27 +36,31 @@ const projects = (await getCollection('projects')).sort((a, b) => a.data.order -
           {dict.hero.cta_secondary}
         </a>
       </div>
+      <!-- Palette stripe -->
+      <div class="mt-14 flex items-center gap-1.5 max-w-md intro-animacija zamik-5" aria-hidden="true">
+        <span class="h-1.5 flex-1 rounded-full" style="background:#bcb9ac"></span>
+        <span class="h-1.5 flex-1 rounded-full" style="background:#5f8396"></span>
+        <span class="h-1.5 flex-1 rounded-full" style="background:#2f4a61"></span>
+        <span class="h-1.5 flex-1 rounded-full" style="background:#6f6558"></span>
+        <span class="h-1.5 flex-1 rounded-full" style="background:#242527"></span>
+      </div>
     </div>
   </section>
 
   <!-- Stats band -->
   <section data-reveal class="mx-auto max-w-6xl px-5 py-10">
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
-      <div class="premium-kartica p-5 text-center">
-        <div class="font-display text-4xl font-bold tabular-nums" data-counter="4">0</div>
-        <div class="mt-1 text-xs uppercase tracking-wider text-ink-500">{lang === 'sl' ? 'Discipline' : 'Disciplines'}</div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div class="premium-kartica p-6 text-center">
+        <div class="font-display text-5xl font-bold tabular-nums" data-counter="6">0</div>
+        <div class="mt-2 text-xs uppercase tracking-[0.18em] text-ink-500">{lang === 'sl' ? 'Projektov dostavljenih' : 'Projects shipped'}</div>
       </div>
-      <div class="premium-kartica p-5 text-center">
-        <div class="font-display text-4xl font-bold tabular-nums" data-counter="6">0</div>
-        <div class="mt-1 text-xs uppercase tracking-wider text-ink-500">{lang === 'sl' ? 'Projektov dostavljenih' : 'Projects shipped'}</div>
+      <div class="premium-kartica p-6 text-center">
+        <div class="font-display text-5xl font-bold tabular-nums" data-counter="48" data-counter-suffix="h">0</div>
+        <div class="mt-2 text-xs uppercase tracking-[0.18em] text-ink-500">{lang === 'sl' ? 'Odgovor na povp.' : 'Avg. reply time'}</div>
       </div>
-      <div class="premium-kartica p-5 text-center">
-        <div class="font-display text-4xl font-bold tabular-nums" data-counter="48" data-counter-suffix="h">0</div>
-        <div class="mt-1 text-xs uppercase tracking-wider text-ink-500">{lang === 'sl' ? 'Odgovor na povp.' : 'Avg. reply time'}</div>
-      </div>
-      <div class="premium-kartica p-5 text-center">
-        <div class="font-display text-4xl font-bold tabular-nums" data-counter="100" data-counter-suffix="%">0</div>
-        <div class="mt-1 text-xs uppercase tracking-wider text-ink-500">{lang === 'sl' ? 'Lasten delotok' : 'In-house workflow'}</div>
+      <div class="premium-kartica p-6 text-center">
+        <div class="font-display text-5xl font-bold tabular-nums" data-counter="100" data-counter-suffix="%">0</div>
+        <div class="mt-2 text-xs uppercase tracking-[0.18em] text-ink-500">{lang === 'sl' ? 'Lasten delotok' : 'In-house workflow'}</div>
       </div>
     </div>
   </section>
