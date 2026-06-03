@@ -562,6 +562,14 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
             <input type="checkbox" checked={state.agree} onChange={(e) => update('agree', e.target.checked)} className="mt-0.5" />
             <span>{labels.agree}</span>
           </label>
+          {(!state.name || !state.email || !state.agree) && (
+            <p className="text-xs text-ink-600 dark:text-ink-300">
+              {lang === 'sl' ? 'Za pošiljanje:' : 'To send:'}{' '}
+              {!state.name  && <span>· {lang === 'sl' ? 'vnesi ime' : 'enter name'} </span>}
+              {!state.email && <span>· {lang === 'sl' ? 'vnesi email' : 'enter email'} </span>}
+              {!state.agree && <span>· {lang === 'sl' ? 'potrdi soglasje' : 'tick the agreement'}</span>}
+            </p>
+          )}
           {err && <p className="text-sm text-ink-700 dark:text-ink-200">{err}</p>}
         </div>
       )}
