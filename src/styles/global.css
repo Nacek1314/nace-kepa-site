@@ -35,10 +35,12 @@
 html {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  background-color: #0a0b0c; /* ink-950 — paint behind everything before CSS loads */
+  color-scheme: dark;
 }
 
 body {
-  @apply bg-ink-50 text-ink-900;
+  @apply bg-ink-950 text-ink-100;
 }
 
 .dark body {
