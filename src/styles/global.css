@@ -54,3 +54,66 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 .reveal { animation: rise 0.6s ease-out both; }
+
+/* ==========================================================================
+   GLOBALNI ANIMACIJSKI PAKET
+   ========================================================================== */
+
+/* 1. Nežno nalaganje celotne strani ob prvem obisku */
+body {
+  animation: pageFadeIn 0.8s ease-out forwards;
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 2. Naslovi, ki elegantno "priplavajo" malce kasneje */
+h1, h2, .wow-title {
+  opacity: 0;
+  animation: fadeInUp 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation-delay: 0.2s;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 3. Interaktivni gumbi (ob premiku z miško se dvignejo in zasvetijo) */
+button, .btn, .button {
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+button:hover, .btn:hover, .button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+  filter: brightness(1.1);
+  cursor: pointer;
+}
+
+button:active, .btn:active, .button:active {
+  transform: translateY(-1px);
+}
+
+/* 4. Učinek za bloke vsebine, slike ali kartice (nežen dvig in povečava) */
+.card, .box, section, article {
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.card:hover, .box:hover, section:hover {
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Spoštuj uporabnike, ki so izklopili animacije */
+@media (prefers-reduced-motion: reduce) {
+  body, h1, h2, .wow-title { animation: none !important; opacity: 1 !important; transform: none !important; }
+  button, .btn, .button, .card, .box, section, article { transition: none !important; }
+  button:hover, .btn:hover, .button:hover,
+  .card:hover, .box:hover, section:hover {
+    transform: none !important;
+    filter: none !important;
+  }
+}
