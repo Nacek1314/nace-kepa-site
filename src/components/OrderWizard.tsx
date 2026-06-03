@@ -661,36 +661,74 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
               });
             }}
           />
-          <input type="file" multiple accept=".stl,.obj,.step,.stp,.iges,.igs,.3mf,.zip,.pdf,image/*"
-                 onChange={(e) => {
-                   const incoming = Array.from(e.target.files || []);
-                   const tooBig = incoming.find((f) => f.size > 100 * 1024 * 1024);
-                   if (tooBig) {
-                     setErr(lang === 'sl'
-                       ? `Datoteka "${tooBig.name}" je prevelika (max 100 MB).`
-                       : `File "${tooBig.name}" is too large (max 100 MB).`);
-                     e.target.value = '';
-                     return;
-                   }
-                   if (incoming.length > 5) {
-                     setErr(lang === 'sl' ? 'Največ 5 datotek.' : 'Maximum 5 files.');
-                     e.target.value = '';
-                     return;
-                   }
-                   setErr(null);
-                   update('files', incoming);
-                 }}
-                 className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:bg-accent-600 file:text-white hover:file:bg-accent-700" />
-          {state.files.length > 0 && (
-            <ul className="text-sm text-ink-500 dark:text-ink-400 space-y-1">
-              {state.files.map((f) => (
-                <li key={f.name}>
-                  📎 {f.name} <span className="text-ink-400">({fmtSize(f.size)})</span>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <label
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md border border-ink-700 bg-ink-900/50 hover:bg-ink-800 transition-colors cursor-pointer text-sm ${state.files.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <span aria-hidden>＋</span>
+              <span>{lang === 'sl' ? 'Dodaj datoteko' : 'Add file'}</span>
+              <input
+                type="file"
+                multiple
+                disabled={state.files.length >= 5}
+                accept=".stl,.obj,.step,.stp,.iges,.igs,.3mf,.zip,.pdf,image/*"
+                hidden
+                onChange={(e) => {
+                  const incoming = Array.from(e.target.files || []);
+                  e.target.value = '';
+                  const tooBig = incoming.find((f) => f.size > 100 * 1024 * 1024);
+                  if (tooBig) {
+                    setErr(lang === 'sl'
+                      ? `Datoteka "${tooBig.name}" je prevelika (max 100 MB).`
+                      : `File "${tooBig.name}" is too large (max 100 MB).`);
+                    return;
+                  }
+                  setErr(null);
+                  setState((prev) => {
+                    const merged = [...prev.files];
+                    for (const f of incoming) {
+                      if (merged.length >= 5) break;
+                      if (!merged.some((x) => x.name === f.name && x.size === f.size)) {
+                        merged.push(f);
+                      }
+                    }
+                    return { ...prev, files: merged };
+                  });
+                }}
+              />
+            </label>
+            <span className="text-xs text-ink-500 dark:text-ink-400 tabular-nums">
+              {state.files.length} / 5
+            </span>
+          </div>
+
+          {state.files.length > 0 ? (
+            <ul className="space-y-2">
+              {state.files.map((f, idx) => (
+                <li key={`${f.name}-${idx}`} className="flex items-center justify-between gap-3 px-3 py-2 rounded-md border border-ink-800 bg-ink-900/40">
+                  <div className="min-w-0 flex items-center gap-2 text-sm">
+                    <span aria-hidden>📎</span>
+                    <span className="truncate">{f.name}</span>
+                    <span className="text-xs text-ink-400 dark:text-ink-500 tabular-nums whitespace-nowrap">{fmtSize(f.size)}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setState((prev) => ({ ...prev, files: prev.files.filter((_, i) => i !== idx) }))}
+                    className="text-xs text-ink-400 hover:text-accent-400 transition-colors px-2 py-1"
+                    aria-label={lang === 'sl' ? `Odstrani ${f.name}` : `Remove ${f.name}`}
+                  >
+                    ✕
+                  </button>
                 </li>
               ))}
             </ul>
+          ) : (
+            <p className="text-xs text-ink-500 dark:text-ink-400 italic">
+              {lang === 'sl' ? 'Datoteke še niso priložene (neobvezno).' : 'No files attached yet (optional).'}
+            </p>
           )}
-          {err && stepKey === 'files' && <p className="text-sm text-ink-700 dark:text-ink-200">{err}</p>}
+          {err && stepKey === 'files' && <p className="text-sm text-amber-400">{err}</p>}
         </div>
       )}
 
