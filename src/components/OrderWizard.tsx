@@ -127,7 +127,7 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
   const [stlStats, setStlStats] = useState<Stats | null>(null);
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState<{ code: string } | null>(null);
+  const [done, setDone] = useState<{ code: string; channel: 'instant' | 'mailto' } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -171,8 +171,35 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
       ? '— Poslano prek nacekepa.com'
       : '— Sent via nacekepa.com');
 
+    const endpoint = (import.meta as any).env?.PUBLIC_ORDER_ENDPOINT as string | undefined;
+
     try {
-      // 1. Trigger a local download of the brief so the visitor always has a copy.
+      // Preferred path: POST to Cloudflare Worker which DMs Nace on Telegram.
+      if (endpoint) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              code,
+              subject,
+              summary: body,
+              contact: state.email || state.name || '',
+              lang,
+              website: '' // honeypot — must stay empty
+            })
+          });
+          if (res.ok) {
+            setDone({ code, channel: 'instant' });
+            return;
+          }
+          // fall through to mailto if the worker rejected the request
+        } catch {
+          // network error → fall through to mailto fallback
+        }
+      }
+
+      // Fallback: download brief + open mail client. Always works offline.
       const blob = new Blob([body], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -183,12 +210,10 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-      // 2. Open the visitor's mail client with the brief pre-filled.
       const mailto = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      // Some browsers limit mailto length; if it is too long, the download still works.
       window.location.href = mailto;
 
-      setDone({ code });
+      setDone({ code, channel: 'mailto' });
     } catch (e: any) {
       setErr(L.error + (e?.message ? ` (${e.message})` : ''));
     } finally {
@@ -198,32 +223,63 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
 
   if (done) {
     const mailtoFallback = `mailto:${contactEmail}?subject=${encodeURIComponent(`[${done.code}] ${lang === 'sl' ? 'Povpraševanje' : 'Project request'}`)}`;
+    const isInstant = done.channel === 'instant';
     return (
       <div className="rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-8 text-center">
         <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500 text-white flex items-center justify-center text-2xl">✓</div>
-        <h2 className="font-display text-2xl font-bold mt-4">{L.success_title}</h2>
-        <p className="mt-2 text-ink-600 dark:text-ink-300 max-w-md mx-auto">{L.success_body}</p>
+        <h2 className="font-display text-2xl font-bold mt-4">
+          {isInstant
+            ? (lang === 'sl' ? 'Povpraševanje poslano!' : 'Request sent!')
+            : L.success_title}
+        </h2>
+        <p className="mt-2 text-ink-600 dark:text-ink-300 max-w-md mx-auto">
+          {isInstant
+            ? (lang === 'sl'
+                ? 'Nace je pravkar prejel obvestilo. Odgovor ponavadi v 24 urah.'
+                : 'Nace just got a notification. Reply usually within 24 hours.')
+            : L.success_body}
+        </p>
         <div className="mt-6 text-left max-w-md mx-auto p-4 rounded-lg bg-white dark:bg-ink-950 border border-ink-200 dark:border-ink-800 text-sm">
-          <p className="font-medium mb-2">{lang === 'sl' ? 'Kaj se je pravkar zgodilo:' : 'What just happened:'}</p>
-          <ol className="list-decimal pl-5 space-y-1 text-ink-600 dark:text-ink-300">
-            <li>{lang === 'sl' ? `Datoteka ${done.code}-brief.txt se je prenesla na tvoj računalnik.` : `The file ${done.code}-brief.txt was downloaded to your computer.`}</li>
-            <li>{lang === 'sl' ? 'Odprl se je tvoj e-poštni odjemalec z že izpolnjenim povpraševanjem.' : 'Your email client opened with the request pre-filled.'}</li>
-            {state.files.length > 0 && (
-              <li className="font-medium text-amber-700 dark:text-amber-300">
-                {lang === 'sl'
-                  ? `Pripni svoje datoteke (${state.files.map((f) => f.name).join(', ')}) v e-pošto, preden jo pošlješ.`
-                  : `Attach your files (${state.files.map((f) => f.name).join(', ')}) to the email before sending.`}
-              </li>
-            )}
-            <li>{lang === 'sl' ? 'Pritisni Pošlji v e-poštnem odjemalcu.' : 'Hit Send in your email client.'}</li>
-          </ol>
-          <p className="mt-3 text-xs text-ink-500">
-            {lang === 'sl' ? 'Se e-pošta ni odprla? ' : 'Email did not open? '}
-            <a href={mailtoFallback} className="text-accent-600 dark:text-accent-300 underline">
-              {lang === 'sl' ? 'Klikni tukaj' : 'Click here'}
-            </a>
-            {lang === 'sl' ? ' in priloži preneseno datoteko.' : ' and attach the downloaded file.'}
-          </p>
+          {isInstant ? (
+            <>
+              <p className="font-medium mb-2">{lang === 'sl' ? 'Kaj sledi:' : 'What happens next:'}</p>
+              <ol className="list-decimal pl-5 space-y-1 text-ink-600 dark:text-ink-300">
+                <li>{lang === 'sl' ? 'Nace pregleda povpraševanje in pripravi oceno.' : 'Nace reviews the brief and prepares an estimate.'}</li>
+                <li>{lang === 'sl' ? 'Dobiš odgovor po e-pošti s ceno in roki.' : 'You get an email reply with price and timeline.'}</li>
+                {state.files.length > 0 && (
+                  <li className="font-medium text-amber-700 dark:text-amber-300">
+                    {lang === 'sl'
+                      ? `Imaš datoteke (${state.files.map((f) => f.name).join(', ')})? Pošlji jih kot odgovor na to e-pošto, ko prispe.`
+                      : `Got files (${state.files.map((f) => f.name).join(', ')})? Send them as a reply to the confirmation email when it arrives.`}
+                  </li>
+                )}
+                <li>{lang === 'sl' ? 'Po potrditvi se začne delo.' : 'After confirmation, work begins.'}</li>
+              </ol>
+            </>
+          ) : (
+            <>
+              <p className="font-medium mb-2">{lang === 'sl' ? 'Kaj se je pravkar zgodilo:' : 'What just happened:'}</p>
+              <ol className="list-decimal pl-5 space-y-1 text-ink-600 dark:text-ink-300">
+                <li>{lang === 'sl' ? `Datoteka ${done.code}-brief.txt se je prenesla na tvoj računalnik.` : `The file ${done.code}-brief.txt was downloaded to your computer.`}</li>
+                <li>{lang === 'sl' ? 'Odprl se je tvoj e-poštni odjemalec z že izpolnjenim povpraševanjem.' : 'Your email client opened with the request pre-filled.'}</li>
+                {state.files.length > 0 && (
+                  <li className="font-medium text-amber-700 dark:text-amber-300">
+                    {lang === 'sl'
+                      ? `Pripni svoje datoteke (${state.files.map((f) => f.name).join(', ')}) v e-pošto, preden jo pošlješ.`
+                      : `Attach your files (${state.files.map((f) => f.name).join(', ')}) to the email before sending.`}
+                  </li>
+                )}
+                <li>{lang === 'sl' ? 'Pritisni Pošlji v e-poštnem odjemalcu.' : 'Hit Send in your email client.'}</li>
+              </ol>
+              <p className="mt-3 text-xs text-ink-500">
+                {lang === 'sl' ? 'Se e-pošta ni odprla? ' : 'Email did not open? '}
+                <a href={mailtoFallback} className="text-accent-600 dark:text-accent-300 underline">
+                  {lang === 'sl' ? 'Klikni tukaj' : 'Click here'}
+                </a>
+                {lang === 'sl' ? ' in priloži preneseno datoteko.' : ' and attach the downloaded file.'}
+              </p>
+            </>
+          )}
         </div>
         <div className="mt-6 inline-flex items-center gap-2 px-4 py-3 rounded-lg bg-white dark:bg-ink-950 border border-ink-200 dark:border-ink-800">
           <span className="text-xs uppercase tracking-wider text-ink-500">{L.tracking_code}</span>
