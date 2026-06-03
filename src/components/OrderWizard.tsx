@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import StlViewer from './StlViewer';
 import AiAssistant from './AiAssistant';
 
@@ -264,17 +264,23 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
   const [uploads, setUploads] = useState<Record<string, UploadStatus>>({});
   const fileKey = (f: { name: string; size: number }) => `${f.name}|${f.size}`;
 
+  // In-flight upload promises so submit() can deterministically await them
+  // (no polling against React state, no stale closures).
+  const uploadPromisesRef = useRef<Record<string, Promise<{ name: string; size: number; url: string }>>>({});
+
   const startUpload = (file: File) => {
     if (!endpointBase) return;
     const key = fileKey(file);
     setUploads((u) => ({ ...u, [key]: { progress: 0 } }));
-    uploadFile(endpointBase, trackingCode, file, (pct) => {
+    const p = uploadFile(endpointBase, trackingCode, file, (pct) => {
       setUploads((u) => ({ ...u, [key]: { ...(u[key] || { progress: 0 }), progress: pct } }));
-    })
-      .then((res) => {
+    });
+    uploadPromisesRef.current[key] = p;
+    p.then((res) => {
         setUploads((u) => ({ ...u, [key]: { progress: 100, done: true, url: res.url } }));
       })
       .catch((e: any) => {
+        delete uploadPromisesRef.current[key];
         setUploads((u) => ({ ...u, [key]: { progress: 0, error: String(e?.message || 'error') } }));
       });
   };
@@ -316,57 +322,50 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
 
     const base = endpointBase;
 
-    // 1) Files were auto-uploaded on attach. Wait for any in-flight uploads to finish,
-    //    retry failed ones, and collect the resulting URLs.
+    // 1) Files were auto-uploaded on attach. Await any in-flight promises,
+    //    retry failed/missing ones inline, then collect URLs.
     const uploaded: { name: string; size: number; url: string }[] = [];
     if (base && state.files.length > 0) {
       for (let i = 0; i < state.files.length; i++) {
         const f = state.files[i];
         const k = fileKey(f);
-        let st = uploads[k];
+        const inflight = uploadPromisesRef.current[k];
 
-        // Wait for in-flight upload (poll latest state).
-        if (st && !st.done && !st.error) {
+        // (a) Wait for the in-flight auto-upload promise, if any.
+        if (inflight) {
           setProgress(lang === 'sl'
             ? `Čakam na nalaganje ${i + 1}/${state.files.length}: ${f.name}…`
             : `Waiting for upload ${i + 1}/${state.files.length}: ${f.name}…`);
-          const start = Date.now();
-          while (Date.now() - start < 15 * 60 * 1000) {
-            await new Promise((r) => setTimeout(r, 250));
-            st = (await new Promise<UploadStatus | undefined>((r) =>
-              setUploads((u) => { r(u[k]); return u; })
-            ));
-            if (!st || st.done || st.error) break;
+          try {
+            const res = await inflight;
+            uploaded.push({ name: res.name || f.name, size: res.size || f.size, url: res.url });
+            continue;
+          } catch {
+            // fall through to retry below
           }
         }
 
-        // Retry if not yet started or previously failed.
-        if (!st || st.error || (!st.done && !st.url)) {
+        // (b) Either no auto-upload happened (e.g. very fast click) or it failed
+        //     — upload now, inline.
+        try {
           setProgress(lang === 'sl'
             ? `Pošiljam ${i + 1}/${state.files.length}: ${f.name}…`
             : `Uploading ${i + 1}/${state.files.length}: ${f.name}…`);
-          try {
-            const res = await uploadFile(base, code, f, (pct) => {
-              setUploads((u) => ({ ...u, [k]: { progress: pct } }));
-              setProgress(lang === 'sl'
-                ? `Pošiljam ${i + 1}/${state.files.length}: ${f.name} — ${pct}%`
-                : `Uploading ${i + 1}/${state.files.length}: ${f.name} — ${pct}%`);
-            });
-            setUploads((u) => ({ ...u, [k]: { progress: 100, done: true, url: res.url } }));
-            uploaded.push({ name: res.name || f.name, size: res.size || f.size, url: res.url });
-            continue;
-          } catch (e: any) {
-            setProgress(null);
-            setErr(lang === 'sl'
-              ? `Datoteka ${f.name} ni bila poslana (${e?.message || 'napaka'}). Poskusi znova ali odstrani datoteko.`
-              : `File ${f.name} failed to upload (${e?.message || 'error'}). Retry or remove the file.`);
-            setSubmitting(false);
-            return;
-          }
-        }
-
-        if (st && st.url) {
-          uploaded.push({ name: f.name, size: f.size, url: st.url });
+          const res = await uploadFile(base, code, f, (pct) => {
+            setUploads((u) => ({ ...u, [k]: { progress: pct } }));
+            setProgress(lang === 'sl'
+              ? `Pošiljam ${i + 1}/${state.files.length}: ${f.name} — ${pct}%`
+              : `Uploading ${i + 1}/${state.files.length}: ${f.name} — ${pct}%`);
+          });
+          setUploads((u) => ({ ...u, [k]: { progress: 100, done: true, url: res.url } }));
+          uploaded.push({ name: res.name || f.name, size: res.size || f.size, url: res.url });
+        } catch (e: any) {
+          setProgress(null);
+          setErr(lang === 'sl'
+            ? `Datoteka ${f.name} ni bila poslana (${e?.message || 'napaka'}). Poskusi znova ali odstrani datoteko.`
+            : `File ${f.name} failed to upload (${e?.message || 'error'}). Retry or remove the file.`);
+          setSubmitting(false);
+          return;
         }
       }
     }
