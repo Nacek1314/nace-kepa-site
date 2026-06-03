@@ -4,28 +4,30 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Fraunces', ui-serif, Georgia, serif;
 
-  --color-ink-50:  #f7f8fa;
-  --color-ink-100: #eef0f4;
-  --color-ink-200: #d9dde5;
-  --color-ink-300: #b6bdcb;
-  --color-ink-400: #8a93a6;
-  --color-ink-500: #5e6678;
-  --color-ink-600: #434a5b;
-  --color-ink-700: #2e3445;
-  --color-ink-800: #1c2030;
-  --color-ink-900: #0f1220;
-  --color-ink-950: #07091a;
+  /* Neutralni "ink" scale, naravnan na paleto: #242527 (črna), #6F6558 (taupe), #BCB9AC (sand) */
+  --color-ink-50:  #f5f4ef;
+  --color-ink-100: #e8e7e0;
+  --color-ink-200: #d4d2c8;
+  --color-ink-300: #bcb9ac;  /* paleta — sand */
+  --color-ink-400: #a39c92;
+  --color-ink-500: #8a8378;
+  --color-ink-600: #6f6558;  /* paleta — taupe */
+  --color-ink-700: #4a4641;
+  --color-ink-800: #2e2f31;
+  --color-ink-900: #242527;  /* paleta — black */
+  --color-ink-950: #181a1c;
 
-  --color-accent-50:  #eef4ff;
-  --color-accent-100: #dbe7ff;
-  --color-accent-200: #b9d0ff;
-  --color-accent-300: #8eb1ff;
-  --color-accent-400: #5e89ff;
-  --color-accent-500: #3a64f5;
-  --color-accent-600: #2748d8;
-  --color-accent-700: #1f37ad;
-  --color-accent-800: #1c3088;
-  --color-accent-900: #1a2c6b;
+  /* Accent scale, naravnan na #5F8396 (modra) in #2F4A61 (mornarska) */
+  --color-accent-50:  #eef2f5;
+  --color-accent-100: #d6dfe6;
+  --color-accent-200: #adbecb;
+  --color-accent-300: #84a0b1;
+  --color-accent-400: #5f8396;  /* paleta — dusty blue */
+  --color-accent-500: #466f85;
+  --color-accent-600: #2f4a61;  /* paleta — deep navy */
+  --color-accent-700: #263d51;
+  --color-accent-800: #1f3242;
+  --color-accent-900: #182834;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -64,26 +66,28 @@ body {
 */
 
 :root {
-  /* 1. Barvna paleta */
-  --bg-glavno:           #06070a;
-  --bg-povrsina:         rgba(13, 15, 24, 0.45);
-  --bg-povrsina-aktivna: rgba(22, 26, 41, 0.65);
+  /* 1. Barvna paleta — "Editorial Atelier"
+        sand #bcb9ac · dusty-blue #5f8396 · navy #2f4a61 · taupe #6f6558 · black #242527 */
+  --bg-glavno:           #181a1c;
+  --bg-povrsina:         rgba(36, 37, 39, 0.55);
+  --bg-povrsina-aktivna: rgba(46, 47, 49, 0.75);
 
-  --rob-stekla:          rgba(255, 255, 255, 0.06);
-  --rob-stekla-svetlo:   rgba(255, 255, 255, 0.16);
+  --rob-stekla:          rgba(188, 185, 172, 0.10);
+  --rob-stekla-svetlo:   rgba(188, 185, 172, 0.25);
 
-  --barva-primarna:      #ff2e6a;   /* Premium ružova-magenta */
-  --barva-sekundarna:    #22d3ee;   /* Cyan-teal, manj toksičen */
-  --barva-terciarna:     #8b5cf6;   /* Royal violet */
+  --barva-primarna:      #5f8396;   /* dusty blue */
+  --barva-sekundarna:    #bcb9ac;   /* warm sand */
+  --barva-terciarna:     #2f4a61;   /* deep navy */
+  --barva-akcent:        #6f6558;   /* taupe accent */
 
-  --gradient-tekst:      linear-gradient(135deg, #ffffff 30%, #a3a8b8 100%);
+  --gradient-tekst:      linear-gradient(135deg, #f5f4ef 30%, #bcb9ac 100%);
   --gradient-akcent:     linear-gradient(135deg, var(--barva-primarna), var(--barva-sekundarna));
-  --gradient-gumb-hover: linear-gradient(135deg, var(--barva-sekundarna), var(--barva-terciarna));
+  --gradient-gumb-hover: linear-gradient(135deg, var(--barva-sekundarna), var(--barva-primarna));
 
   /* 2. Tipografija */
-  --tekst-glavni:     #f8fafc;
-  --tekst-sekundarni: #94a3b8;
-  --tekst-temen:      #020408;
+  --tekst-glavni:     #f5f4ef;
+  --tekst-sekundarni: #a39c92;
+  --tekst-temen:      #181a1c;
 
   /* 3. Easing */
   --prehod-hitri:   all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -91,24 +95,25 @@ body {
   --prehod-pocasen: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
 
   /* 4. Struktura */
-  --radij-kartice:  24px;
-  --radij-gumba:    12px;
+  --radij-kartice:  20px;
+  --radij-gumba:    10px;
   --senca-premium:  0 20px 40px rgba(0, 0, 0, 0.5);
-  --senca-neon:     0 0 30px rgba(255, 0, 85, 0.25), 0 0 60px rgba(0, 240, 255, 0.15);
+  --senca-neon:     0 0 30px rgba(95, 131, 150, 0.30), 0 0 60px rgba(47, 74, 97, 0.20);
 }
 
-/* Svetla tema — barve postanejo manj nasičene, ozadje svetlo, kontrast obrnjen */
+/* Svetla tema — sand ozadje, navy kontrast */
 :root:not(.dark) {
-  --bg-glavno:           #f6f7fb;
-  --bg-povrsina:         rgba(255, 255, 255, 0.7);
-  --bg-povrsina-aktivna: rgba(255, 255, 255, 0.9);
-  --rob-stekla:          rgba(15, 18, 32, 0.08);
-  --rob-stekla-svetlo:   rgba(15, 18, 32, 0.16);
-  --tekst-glavni:        #0f1220;
-  --tekst-sekundarni:    #5e6678;
-  --tekst-temen:         #ffffff;
-  --gradient-tekst:      linear-gradient(135deg, #0f1220 30%, #434a5b 100%);
-  --senca-premium:       0 20px 40px rgba(15, 18, 32, 0.10);
+  --bg-glavno:           #f5f4ef;
+  --bg-povrsina:         rgba(255, 255, 255, 0.78);
+  --bg-povrsina-aktivna: rgba(255, 255, 255, 0.92);
+  --rob-stekla:          rgba(36, 37, 39, 0.08);
+  --rob-stekla-svetlo:   rgba(36, 37, 39, 0.18);
+  --tekst-glavni:        #242527;
+  --tekst-sekundarni:    #6f6558;
+  --tekst-temen:         #f5f4ef;
+  --gradient-tekst:      linear-gradient(135deg, #242527 30%, #6f6558 100%);
+  --senca-premium:       0 20px 40px rgba(36, 37, 39, 0.12);
+  --senca-neon:          0 0 30px rgba(47, 74, 97, 0.20), 0 0 60px rgba(95, 131, 150, 0.15);
 }
 
 /* Body fiksiran v --bg-glavno + organski mesh blobi */
@@ -174,29 +179,29 @@ body > * { position: relative; z-index: 1; }
   border-color: var(--rob-stekla-svetlo);
   background: var(--bg-povrsina-aktivna);
   box-shadow:
-    0 30px 60px rgba(0, 0, 0, 0.55),
-    0 0 30px rgba(255, 0, 85, 0.10);
+    0 30px 60px rgba(0, 0, 0, 0.45),
+    0 0 30px rgba(95, 131, 150, 0.10);
 }
 :root:not(.dark) .premium-kartica:hover {
   box-shadow:
-    0 30px 60px rgba(15, 18, 32, 0.18),
-    0 0 30px rgba(255, 0, 85, 0.10);
+    0 30px 60px rgba(36, 37, 39, 0.18),
+    0 0 30px rgba(95, 131, 150, 0.12);
 }
 
-/* Premium gumb — cybernetic */
+/* Premium gumb — editorial atelier */
 .premium-gumb {
   background: var(--gradient-akcent);
   color: var(--tekst-temen);
-  font-weight: 700;
+  font-weight: 600;
   border-radius: var(--radij-gumba);
   border: none;
-  box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3);
+  box-shadow: 0 4px 18px rgba(47, 74, 97, 0.35);
   transition: var(--prehod-glavni);
   letter-spacing: 0;
 }
 .premium-gumb:hover {
   background: var(--gradient-gumb-hover);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   box-shadow: var(--senca-neon);
 }
 .premium-gumb:active {
@@ -254,7 +259,7 @@ body > * { position: relative; z-index: 1; }
     90deg,
     var(--tekst-glavni) 20%,
     var(--barva-primarna) 40%,
-    var(--barva-terciarna) 60%,
+    var(--barva-sekundarna) 60%,
     var(--tekst-glavni) 80%
   );
   background-size: 200% auto;
@@ -262,7 +267,7 @@ body > * { position: relative; z-index: 1; }
           background-clip: text;
   -webkit-text-fill-color: transparent;
           color: transparent;
-  animation: shimmer 5s linear infinite;
+  animation: shimmer 6s linear infinite;
   display: inline-block;
 }
 @keyframes shimmer {
@@ -324,7 +329,7 @@ body > * { position: relative; z-index: 1; }
   transform-origin: 0 50%;
   transform: scaleX(0);
   pointer-events: none;
-  box-shadow: 0 0 12px rgba(255, 0, 85, 0.6);
+  box-shadow: 0 0 10px rgba(95, 131, 150, 0.55);
 }
 
 /* Mouse spotlight — radialni gradient sledi kazalcu po celotni strani.
@@ -345,8 +350,8 @@ body > main::before {
   z-index: 0;
   background: radial-gradient(
     400px circle at var(--mx) var(--my),
-    rgba(255, 0, 85, 0.10),
-    rgba(0, 240, 255, 0.06) 40%,
+    rgba(95, 131, 150, 0.10),
+    rgba(188, 185, 172, 0.06) 40%,
     transparent 70%
   );
   transition: opacity 0.4s ease;
@@ -450,8 +455,8 @@ body.cursor-hover .cursor-dot {
 }
 body.cursor-hover .cursor-ring {
   width: 56px; height: 56px;
-  border-color: var(--barva-primarna);
-  background: rgba(255, 46, 106, 0.10);
+  border-color: var(--barva-sekundarna);
+  background: rgba(188, 185, 172, 0.10);
   mix-blend-mode: normal;
 }
 body.cursor-down .cursor-ring {

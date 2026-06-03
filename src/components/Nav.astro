@@ -1,5 +1,6 @@
 ---
 import { t, localePath, altLang, type Lang } from '~/i18n';
+import Logo from './Logo.astro';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -22,8 +23,9 @@ const orderHref = localePath(lang, '/order');
 ---
 <header class="premium-nav sticky top-0 z-40">
   <nav class="mx-auto max-w-6xl px-5 h-16 flex items-center justify-between gap-4">
-    <a href={localePath(lang, '/')} class="font-display text-lg tracking-tight font-bold premium-logo">
-      Nace Kepa
+    <a href={localePath(lang, '/')} class="flex items-center gap-2.5 font-display text-lg tracking-tight font-bold">
+      <Logo size={32} />
+      <span class="premium-logo">Nace Kepa</span>
     </a>
     <ul class="hidden md:flex items-center gap-1 text-sm">
       {links.map((l) => (
