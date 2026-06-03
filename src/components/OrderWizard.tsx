@@ -225,8 +225,8 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
     const mailtoFallback = `mailto:${contactEmail}?subject=${encodeURIComponent(`[${done.code}] ${lang === 'sl' ? 'Povpraševanje' : 'Project request'}`)}`;
     const isInstant = done.channel === 'instant';
     return (
-      <div className="rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-8 text-center">
-        <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500 text-white flex items-center justify-center text-2xl">✓</div>
+      <div className="rounded-2xl border border-accent-300 dark:border-accent-700 bg-accent-50 dark:bg-accent-900/30 p-8 text-center">
+        <div className="w-12 h-12 mx-auto rounded-full bg-accent-600 text-white flex items-center justify-center text-2xl">✓</div>
         <h2 className="font-display text-2xl font-bold mt-4">
           {isInstant
             ? (lang === 'sl' ? 'Povpraševanje poslano!' : 'Request sent!')
@@ -247,7 +247,7 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
                 <li>{lang === 'sl' ? 'Nace pregleda povpraševanje in pripravi oceno.' : 'Nace reviews the brief and prepares an estimate.'}</li>
                 <li>{lang === 'sl' ? 'Dobiš odgovor po e-pošti s ceno in roki.' : 'You get an email reply with price and timeline.'}</li>
                 {state.files.length > 0 && (
-                  <li className="font-medium text-amber-700 dark:text-amber-300">
+                  <li className="font-medium text-ink-700 dark:text-ink-200">
                     {lang === 'sl'
                       ? `Imaš datoteke (${state.files.map((f) => f.name).join(', ')})? Pošlji jih kot odgovor na to e-pošto, ko prispe.`
                       : `Got files (${state.files.map((f) => f.name).join(', ')})? Send them as a reply to the confirmation email when it arrives.`}
@@ -263,7 +263,7 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
                 <li>{lang === 'sl' ? `Datoteka ${done.code}-brief.txt se je prenesla na tvoj računalnik.` : `The file ${done.code}-brief.txt was downloaded to your computer.`}</li>
                 <li>{lang === 'sl' ? 'Odprl se je tvoj e-poštni odjemalec z že izpolnjenim povpraševanjem.' : 'Your email client opened with the request pre-filled.'}</li>
                 {state.files.length > 0 && (
-                  <li className="font-medium text-amber-700 dark:text-amber-300">
+                  <li className="font-medium text-ink-700 dark:text-ink-200">
                     {lang === 'sl'
                       ? `Pripni svoje datoteke (${state.files.map((f) => f.name).join(', ')}) v e-pošto, preden jo pošlješ.`
                       : `Attach your files (${state.files.map((f) => f.name).join(', ')}) to the email before sending.`}
@@ -553,7 +553,7 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
             <input type="checkbox" checked={state.agree} onChange={(e) => update('agree', e.target.checked)} className="mt-0.5" />
             <span>{labels.agree}</span>
           </label>
-          {err && <p className="text-sm text-amber-600 dark:text-amber-400">{err}</p>}
+          {err && <p className="text-sm text-ink-700 dark:text-ink-200">{err}</p>}
         </div>
       )}
 
