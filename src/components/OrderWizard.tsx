@@ -252,6 +252,35 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
   const [progress, setProgress] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Stable tracking code for this wizard session — used for R2 keys + final email.
+  const [trackingCode] = useState(() => makeTrackingCode());
+  const endpointBase = useMemo(() => {
+    const ep = (import.meta as any).env?.PUBLIC_ORDER_ENDPOINT as string | undefined;
+    return ep ? ep.replace(/\/+$/, '') : '';
+  }, []);
+
+  // Per-file upload status keyed by `${name}|${size}`.
+  type UploadStatus = { progress: number; url?: string; error?: string; done?: boolean };
+  const [uploads, setUploads] = useState<Record<string, UploadStatus>>({});
+  const fileKey = (f: { name: string; size: number }) => `${f.name}|${f.size}`;
+
+  const startUpload = (file: File) => {
+    if (!endpointBase) return;
+    const key = fileKey(file);
+    setUploads((u) => ({ ...u, [key]: { progress: 0 } }));
+    uploadFile(endpointBase, trackingCode, file, (pct) => {
+      setUploads((u) => ({ ...u, [key]: { ...(u[key] || { progress: 0 }), progress: pct } }));
+    })
+      .then((res) => {
+        setUploads((u) => ({ ...u, [key]: { progress: 100, done: true, url: res.url } }));
+      })
+      .catch((e: any) => {
+        setUploads((u) => ({ ...u, [key]: { progress: 0, error: String(e?.message || 'error') } }));
+      });
+  };
+
+  const retryUpload = (file: File) => startUpload(file);
+
   // build dynamic step list based on services chosen
   const steps = useMemo(() => {
     const s = ['services'];
@@ -281,35 +310,63 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
 
   async function submit() {
     setSubmitting(true); setErr(null); setProgress(null);
-    const code = makeTrackingCode();
+    const code = trackingCode;
     const summary = buildSummary(state, breakdown, code, lang);
     const subject = `[${code}] ${lang === 'sl' ? 'Novo povpraševanje' : 'New project request'} — ${state.name || 'unknown'}`;
 
-    const endpoint = (import.meta as any).env?.PUBLIC_ORDER_ENDPOINT as string | undefined;
-    const base = endpoint ? endpoint.replace(/\/+$/, '') : '';
+    const base = endpointBase;
 
-    // 1) Upload files to R2 via Worker, in sequence (XHR for progress).
+    // 1) Files were auto-uploaded on attach. Wait for any in-flight uploads to finish,
+    //    retry failed ones, and collect the resulting URLs.
     const uploaded: { name: string; size: number; url: string }[] = [];
     if (base && state.files.length > 0) {
       for (let i = 0; i < state.files.length; i++) {
         const f = state.files[i];
-        try {
+        const k = fileKey(f);
+        let st = uploads[k];
+
+        // Wait for in-flight upload (poll latest state).
+        if (st && !st.done && !st.error) {
+          setProgress(lang === 'sl'
+            ? `Čakam na nalaganje ${i + 1}/${state.files.length}: ${f.name}…`
+            : `Waiting for upload ${i + 1}/${state.files.length}: ${f.name}…`);
+          const start = Date.now();
+          while (Date.now() - start < 15 * 60 * 1000) {
+            await new Promise((r) => setTimeout(r, 250));
+            st = (await new Promise<UploadStatus | undefined>((r) =>
+              setUploads((u) => { r(u[k]); return u; })
+            ));
+            if (!st || st.done || st.error) break;
+          }
+        }
+
+        // Retry if not yet started or previously failed.
+        if (!st || st.error || (!st.done && !st.url)) {
           setProgress(lang === 'sl'
             ? `Pošiljam ${i + 1}/${state.files.length}: ${f.name}…`
             : `Uploading ${i + 1}/${state.files.length}: ${f.name}…`);
-          const res = await uploadFile(base, code, f, (pct) => {
-            setProgress(lang === 'sl'
-              ? `Pošiljam ${i + 1}/${state.files.length}: ${f.name} — ${pct}%`
-              : `Uploading ${i + 1}/${state.files.length}: ${f.name} — ${pct}%`);
-          });
-          uploaded.push({ name: res.name || f.name, size: res.size || f.size, url: res.url });
-        } catch (e: any) {
-          setProgress(null);
-          setErr(lang === 'sl'
-            ? `Datoteka ${f.name} ni bila poslana (${e?.message || 'napaka'}). Poskusi znova ali odstrani datoteko.`
-            : `File ${f.name} failed to upload (${e?.message || 'error'}). Retry or remove the file.`);
-          setSubmitting(false);
-          return;
+          try {
+            const res = await uploadFile(base, code, f, (pct) => {
+              setUploads((u) => ({ ...u, [k]: { progress: pct } }));
+              setProgress(lang === 'sl'
+                ? `Pošiljam ${i + 1}/${state.files.length}: ${f.name} — ${pct}%`
+                : `Uploading ${i + 1}/${state.files.length}: ${f.name} — ${pct}%`);
+            });
+            setUploads((u) => ({ ...u, [k]: { progress: 100, done: true, url: res.url } }));
+            uploaded.push({ name: res.name || f.name, size: res.size || f.size, url: res.url });
+            continue;
+          } catch (e: any) {
+            setProgress(null);
+            setErr(lang === 'sl'
+              ? `Datoteka ${f.name} ni bila poslana (${e?.message || 'napaka'}). Poskusi znova ali odstrani datoteko.`
+              : `File ${f.name} failed to upload (${e?.message || 'error'}). Retry or remove the file.`);
+            setSubmitting(false);
+            return;
+          }
+        }
+
+        if (st && st.url) {
+          uploaded.push({ name: f.name, size: f.size, url: st.url });
         }
       }
     }
@@ -645,6 +702,7 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
           </p>
           <StlViewer
             labels={{ drop: labels.viewer_drop, loaded: labels.viewer_loaded, volume: labels.viewer_volume, size: labels.viewer_size }}
+            lang={lang}
             onStats={(s) => setStlStats(s)}
             onFile={(f) => {
               if (f.size > 100 * 1024 * 1024) {
@@ -654,11 +712,14 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
                 return;
               }
               setErr(null);
+              let added = false;
               setState((prev) => {
                 if (prev.files.some((x) => x.name === f.name && x.size === f.size)) return prev;
                 if (prev.files.length >= 5) return prev;
+                added = true;
                 return { ...prev, files: [...prev.files, f] };
               });
+              if (added) startUpload(f);
             }}
           />
 
@@ -685,16 +746,19 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
                     return;
                   }
                   setErr(null);
+                  const toUpload: File[] = [];
                   setState((prev) => {
                     const merged = [...prev.files];
                     for (const f of incoming) {
                       if (merged.length >= 5) break;
                       if (!merged.some((x) => x.name === f.name && x.size === f.size)) {
                         merged.push(f);
+                        toUpload.push(f);
                       }
                     }
                     return { ...prev, files: merged };
                   });
+                  toUpload.forEach((f) => startUpload(f));
                 }}
               />
             </label>
@@ -705,23 +769,58 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
 
           {state.files.length > 0 ? (
             <ul className="space-y-2">
-              {state.files.map((f, idx) => (
-                <li key={`${f.name}-${idx}`} className="flex items-center justify-between gap-3 px-3 py-2 rounded-md border border-ink-800 bg-ink-900/40">
-                  <div className="min-w-0 flex items-center gap-2 text-sm">
-                    <span aria-hidden>📎</span>
-                    <span className="truncate">{f.name}</span>
-                    <span className="text-xs text-ink-400 dark:text-ink-500 tabular-nums whitespace-nowrap">{fmtSize(f.size)}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setState((prev) => ({ ...prev, files: prev.files.filter((_, i) => i !== idx) }))}
-                    className="text-xs text-ink-400 hover:text-accent-400 transition-colors px-2 py-1"
-                    aria-label={lang === 'sl' ? `Odstrani ${f.name}` : `Remove ${f.name}`}
-                  >
-                    ✕
-                  </button>
-                </li>
-              ))}
+              {state.files.map((f, idx) => {
+                const st = uploads[fileKey(f)];
+                const uploading = st && !st.done && !st.error;
+                const ok = st?.done;
+                const failed = !!st?.error;
+                return (
+                  <li key={`${f.name}-${idx}`} className="flex items-center justify-between gap-3 px-3 py-2 rounded-md border border-ink-800 bg-ink-900/40">
+                    <div className="min-w-0 flex-1 flex items-center gap-2 text-sm">
+                      <span aria-hidden>{ok ? '✓' : failed ? '!' : '📎'}</span>
+                      <span className="truncate">{f.name}</span>
+                      <span className="text-xs text-ink-400 dark:text-ink-500 tabular-nums whitespace-nowrap">{fmtSize(f.size)}</span>
+                      {uploading && (
+                        <span className="text-xs text-accent-400 tabular-nums whitespace-nowrap">
+                          {lang === 'sl' ? 'Pošiljam' : 'Uploading'} {st!.progress}%
+                        </span>
+                      )}
+                      {ok && (
+                        <span className="text-xs text-emerald-400 whitespace-nowrap">
+                          {lang === 'sl' ? 'Naloženo' : 'Uploaded'}
+                        </span>
+                      )}
+                      {failed && (
+                        <span className="text-xs text-amber-400 whitespace-nowrap" title={st!.error}>
+                          {lang === 'sl' ? 'Napaka' : 'Failed'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {failed && (
+                        <button
+                          type="button"
+                          onClick={() => retryUpload(f)}
+                          className="text-xs text-accent-400 hover:text-accent-300 transition-colors px-2 py-1"
+                        >
+                          {lang === 'sl' ? 'Poskusi znova' : 'Retry'}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setState((prev) => ({ ...prev, files: prev.files.filter((_, i) => i !== idx) }));
+                          setUploads((u) => { const c = { ...u }; delete c[fileKey(f)]; return c; });
+                        }}
+                        className="text-xs text-ink-400 hover:text-accent-400 transition-colors px-2 py-1"
+                        aria-label={lang === 'sl' ? `Odstrani ${f.name}` : `Remove ${f.name}`}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="text-xs text-ink-500 dark:text-ink-400 italic">

@@ -3,10 +3,13 @@ import { useEffect, useRef, useState } from 'react';
 interface Stats {
   volumeCm3: number;
   sizeMm: [number, number, number];
+  triangles: number;
+  watertight: boolean;
 }
 
 interface Props {
   labels?: { drop: string; loaded: string; volume: string; size: string };
+  lang?: 'sl' | 'en';
   onStats?: (stats: Stats) => void;
   onFile?: (file: File) => void;
 }
@@ -18,7 +21,7 @@ const DEFAULT_LABELS = {
   size: 'Size (X×Y×Z)'
 };
 
-export default function StlViewer({ labels = DEFAULT_LABELS, onStats, onFile }: Props) {
+export default function StlViewer({ labels = DEFAULT_LABELS, lang = 'en', onStats, onFile }: Props) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState(false);
@@ -119,8 +122,8 @@ export default function StlViewer({ labels = DEFAULT_LABELS, onStats, onFile }: 
       geom.computeBoundingBox();
       const bb = geom.boundingBox;
       const sizeMm: [number, number, number] = [bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z];
-      const volumeMm3 = computeVolume(geom);
-      const s: Stats = { volumeCm3: volumeMm3 / 1000, sizeMm };
+      const { volumeMm3, triangles, watertight } = computeMeshStats(geom);
+      const s: Stats = { volumeCm3: volumeMm3 / 1000, sizeMm, triangles, watertight };
       setStats(s); onStats?.(s);
     } catch (e: any) {
       setError(e.message || 'Could not load file');
@@ -129,23 +132,29 @@ export default function StlViewer({ labels = DEFAULT_LABELS, onStats, onFile }: 
     }
   }
 
-  function computeVolume(geom: any): number {
+  function computeMeshStats(geom: any): { volumeMm3: number; triangles: number; watertight: boolean } {
     // Signed tetrahedron volume sum. Assumes file units = mm (typical for STL).
+    // Watertight heuristic: |signed sum| / |abs sum| close to 1 → closed mesh.
     const pos = geom.attributes.position;
     const idx = geom.index;
-    let v = 0;
-    const a = [0, 0, 0], b = [0, 0, 0], c = [0, 0, 0];
+    let signed = 0;
+    let absSum = 0;
     const n = idx ? idx.count : pos.count;
+    const triangles = Math.floor(n / 3);
     for (let i = 0; i < n; i += 3) {
       const i0 = idx ? idx.getX(i) : i;
       const i1 = idx ? idx.getX(i + 1) : i + 1;
       const i2 = idx ? idx.getX(i + 2) : i + 2;
-      a[0] = pos.getX(i0); a[1] = pos.getY(i0); a[2] = pos.getZ(i0);
-      b[0] = pos.getX(i1); b[1] = pos.getY(i1); b[2] = pos.getZ(i1);
-      c[0] = pos.getX(i2); c[1] = pos.getY(i2); c[2] = pos.getZ(i2);
-      v += (a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0])) / 6;
+      const ax = pos.getX(i0), ay = pos.getY(i0), az = pos.getZ(i0);
+      const bx = pos.getX(i1), by = pos.getY(i1), bz = pos.getZ(i1);
+      const cx = pos.getX(i2), cy = pos.getY(i2), cz = pos.getZ(i2);
+      const v = (ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)) / 6;
+      signed += v;
+      absSum += Math.abs(v);
     }
-    return Math.abs(v);
+    const volumeMm3 = Math.abs(signed);
+    const watertight = absSum > 0 ? Math.abs(signed) / absSum > 0.95 : false;
+    return { volumeMm3, triangles, watertight };
   }
 
   return (
@@ -167,20 +176,58 @@ export default function StlViewer({ labels = DEFAULT_LABELS, onStats, onFile }: 
                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
       </div>
       {error && <p className="text-xs text-amber-600 dark:text-amber-400">{error}</p>}
-      {stats && (
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="p-3 rounded-lg bg-ink-100 dark:bg-ink-800/50">
-            <div className="text-xs text-ink-500 dark:text-ink-400">{labels.size}</div>
-            <div className="font-display font-bold tabular-nums">
-              {stats.sizeMm.map(n => n.toFixed(1)).join(' × ')} mm
+      {stats && (() => {
+        // PLA density 1.24 g/cm³. Estimated print mass at common infill levels.
+        // Assumes ~25% effective material at 20% infill (walls + tops/bottoms),
+        // 100% solid for the upper bound. Real value depends on slicer settings.
+        const PLA_DENSITY = 1.24;
+        const massSolid = stats.volumeCm3 * PLA_DENSITY;
+        const massInfill20 = stats.volumeCm3 * PLA_DENSITY * 0.30;
+        const fmtMass = (g: number) => g >= 1000 ? `${(g / 1000).toFixed(2)} kg` : `${g.toFixed(0)} g`;
+        const isSL = lang === 'sl';
+        return (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+              <div className="p-3 rounded-lg bg-ink-100 dark:bg-ink-800/50">
+                <div className="text-xs text-ink-500 dark:text-ink-400">{labels.size}</div>
+                <div className="font-display font-bold tabular-nums text-sm">
+                  {stats.sizeMm.map(n => n.toFixed(1)).join(' × ')}
+                  <span className="text-xs font-normal text-ink-500"> mm</span>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-ink-100 dark:bg-ink-800/50">
+                <div className="text-xs text-ink-500 dark:text-ink-400">{labels.volume}</div>
+                <div className="font-display font-bold tabular-nums text-sm">
+                  {stats.volumeCm3.toFixed(1)}
+                  <span className="text-xs font-normal text-ink-500"> cm³</span>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-ink-100 dark:bg-ink-800/50">
+                <div className="text-xs text-ink-500 dark:text-ink-400">{isSL ? 'Trikotniki' : 'Triangles'}</div>
+                <div className="font-display font-bold tabular-nums text-sm">{stats.triangles.toLocaleString('en-US')}</div>
+              </div>
+              <div className="p-3 rounded-lg bg-ink-100 dark:bg-ink-800/50">
+                <div className="text-xs text-ink-500 dark:text-ink-400">{isSL ? 'Teža PLA (20% / 100%)' : 'PLA mass (20% / 100%)'}</div>
+                <div className="font-display font-bold tabular-nums text-sm">
+                  {fmtMass(massInfill20)} <span className="text-ink-500">/</span> {fmtMass(massSolid)}
+                </div>
+              </div>
             </div>
+            {!stats.watertight && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                {isSL
+                  ? 'Mreža verjetno ni vodotesna — volumen in teža sta lahko netočna.'
+                  : 'Mesh appears non-watertight — volume and mass are approximate.'}
+              </p>
+            )}
+            <p className="text-[11px] text-ink-500 dark:text-ink-500">
+              {isSL
+                ? 'Ocene predpostavljajo enote v mm in PLA gostoto 1,24 g/cm³. Dejanska poraba je odvisna od nastavitev slicerja.'
+                : 'Estimates assume mm units and PLA density 1.24 g/cm³. Actual usage depends on slicer settings.'}
+            </p>
           </div>
-          <div className="p-3 rounded-lg bg-ink-100 dark:bg-ink-800/50">
-            <div className="text-xs text-ink-500 dark:text-ink-400">{labels.volume}</div>
-            <div className="font-display font-bold tabular-nums">{stats.volumeCm3.toFixed(2)} cm³</div>
-          </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
