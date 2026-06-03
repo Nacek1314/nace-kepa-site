@@ -32,13 +32,41 @@ or in browser HTML.
 
 Worker page → **Settings** → **Variables and Secrets** → **Add variable**:
 
-| Name             | Type   | Value                                  |
-| ---------------- | ------ | -------------------------------------- |
-| `BOT_TOKEN`      | Secret | the bot token from BotFather           |
-| `CHAT_ID`        | Secret | your numeric chat id                   |
+| Name             | Type   | Value                                       |
+| ---------------- | ------ | ------------------------------------------- |
+| `BOT_TOKEN`      | Secret | the bot token from BotFather                |
+| `CHAT_ID`        | Secret | your numeric chat id                        |
 | `ALLOWED_ORIGIN` | Text   | `https://nacekepa.work` (no trailing slash) |
 
 Click **Deploy** after adding them.
+
+## 3b. (Optional) Email mirror via Resend
+
+Adds an HTML email copy of every order to your inbox, with `Reply-To` set
+to the customer so you can answer with one click.
+
+1. Sign up at <https://resend.com> (free, 100 emails/day, no card).
+2. **API Keys → Create API Key** → copy it.
+3. **Domains → Add Domain** → enter `nacekepa.work` → add the 3 DNS records
+   Resend shows (SPF + DKIM + return-path) at your DNS host. Wait for
+   "Verified" (usually a few minutes).
+4. Back in the Worker → **Settings → Variables and Secrets** → add:
+
+   | Name             | Type   | Value                                          |
+   | ---------------- | ------ | ---------------------------------------------- |
+   | `RESEND_API_KEY` | Secret | the API key from step 2                        |
+   | `MAIL_FROM`      | Text   | `Nace Kepa <orders@nacekepa.work>`             |
+   | `MAIL_TO`        | Text   | `kepanace@gmail.com`                           |
+
+5. Click **Deploy**.
+
+Without these three vars the Worker still works — it just skips email and
+sends Telegram only. The site response now includes `mail: "sent"`,
+`"failed"`, or `"skipped"` so you can confirm.
+
+> Quick test before DNS is verified: use `MAIL_FROM=onboarding@resend.dev`
+> (Resend's shared sandbox sender) — only delivers to the address you
+> signed up with, but proves the wiring works.
 
 ## 4. Copy the Worker URL
 
