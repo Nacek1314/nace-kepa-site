@@ -117,3 +117,113 @@ button:active, .btn:active, .button:active {
     filter: none !important;
   }
 }
+
+/* ==========================================================================
+   CINEMATIC PAKET — mesh ozadje, shimmer naslovi, glow kartice
+   ========================================================================== */
+
+/* 1. Dinamično "mesh" ozadje — počasi plavajoči barvni blobi */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  filter: blur(140px);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.18;
+}
+.dark body::before,
+.dark body::after {
+  opacity: 0.32;
+}
+body::before {
+  background: radial-gradient(circle, #7f00ff, #ff007f);
+  top: -15%;
+  left: -15%;
+  animation: blobDrift1 22s infinite alternate ease-in-out;
+}
+body::after {
+  background: radial-gradient(circle, #00f2fe, #4facfe);
+  bottom: -15%;
+  right: -15%;
+  animation: blobDrift2 28s infinite alternate ease-in-out;
+}
+@keyframes blobDrift1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(120px, 60px) scale(1.3); }
+}
+@keyframes blobDrift2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-140px, -90px) scale(1.2); }
+}
+
+/* Vsebina mora biti nad blobi */
+body > * { position: relative; z-index: 1; }
+
+/* 2. Shimmer naslovi — kovinski sijaj potuje čez besedilo */
+.shimmer-title {
+  background: linear-gradient(
+    to right,
+    var(--color-ink-900) 20%,
+    #ff007f 40%,
+    #7f00ff 60%,
+    var(--color-ink-900) 80%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+          color: transparent;
+  animation: shimmerSweep 5s linear infinite;
+  display: inline-block;
+}
+.dark .shimmer-title {
+  background: linear-gradient(
+    to right,
+    #ffffff 20%,
+    #ff007f 40%,
+    #7f00ff 60%,
+    #ffffff 80%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+@keyframes shimmerSweep {
+  to { background-position: 200% center; }
+}
+
+/* 3. Glow kartice in gumbi */
+.glow-card,
+.glow-btn {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.4s ease !important;
+}
+.glow-card:hover,
+.glow-btn:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: rgba(255, 0, 127, 0.5) !important;
+  box-shadow:
+    0 20px 40px rgba(127, 0, 255, 0.25),
+    0 0 24px rgba(255, 0, 127, 0.18);
+}
+.dark .glow-card:hover,
+.dark .glow-btn:hover {
+  box-shadow:
+    0 20px 40px rgba(127, 0, 255, 0.4),
+    0 0 24px rgba(255, 0, 127, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before, body::after { animation: none !important; }
+  .shimmer-title { animation: none !important; }
+  .glow-card:hover, .glow-btn:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}
