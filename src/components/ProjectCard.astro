@@ -20,7 +20,7 @@ const categoryLabel: Record<string, { en: string; sl: string }> = {
 };
 ---
 <a href={localePath(lang, `/portfolio/${project.slug}`)}
-   class="glow-card group block rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900/50 hover:border-accent-400 dark:hover:border-accent-500 transition-all overflow-hidden">
+   class="premium-kartica group block overflow-hidden">
   <div class="aspect-[4/3] relative bg-gradient-to-br from-ink-100 via-ink-50 to-accent-50 dark:from-ink-800 dark:via-ink-900 dark:to-accent-900/30 flex items-center justify-center">
     <span class="font-display text-3xl text-ink-300 dark:text-ink-700 select-none">{project.slug.split('-').map(w => w[0]?.toUpperCase()).join('')}</span>
     <span class="absolute top-3 left-3 text-[10px] uppercase tracking-wider px-2 py-1 rounded bg-white/80 dark:bg-ink-950/70 text-ink-700 dark:text-ink-200 backdrop-blur">

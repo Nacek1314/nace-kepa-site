@@ -20,16 +20,15 @@ const links = [
 ];
 const orderHref = localePath(lang, '/order');
 ---
-<header class="sticky top-0 z-40 backdrop-blur-md bg-ink-50/80 dark:bg-ink-950/70 border-b border-ink-200/60 dark:border-ink-800/60">
+<header class="premium-nav sticky top-0 z-40">
   <nav class="mx-auto max-w-6xl px-5 h-16 flex items-center justify-between gap-4">
-    <a href={localePath(lang, '/')} class="font-display text-lg tracking-tight">
-      <span class="font-bold">Nace</span>
-      <span class="text-ink-500 dark:text-ink-400">Kepa</span>
+    <a href={localePath(lang, '/')} class="font-display text-lg tracking-tight font-bold premium-logo">
+      Nace Kepa
     </a>
     <ul class="hidden md:flex items-center gap-1 text-sm">
       {links.map((l) => (
         <li>
-          <a href={l.href} class="px-3 py-2 rounded-md hover:bg-ink-100 dark:hover:bg-ink-800/60 transition-colors">
+          <a href={l.href} class="premium-nav-link px-3 py-2 rounded-md">
             {l.label}
           </a>
         </li>
@@ -52,7 +51,7 @@ const orderHref = localePath(lang, '/order');
         </svg>
       </button>
       <a href={orderHref}
-         class="hidden sm:inline-flex items-center text-sm font-medium px-3 py-1.5 rounded-md bg-accent-600 text-white hover:bg-accent-700 transition-colors">
+         class="premium-gumb hidden sm:inline-flex items-center text-sm px-4 py-1.5">
         {dict.nav.order}
       </a>
     </div>

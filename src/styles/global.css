@@ -56,174 +56,256 @@ body {
 .reveal { animation: rise 0.6s ease-out both; }
 
 /* ==========================================================================
-   GLOBALNI ANIMACIJSKI PAKET
-   ========================================================================== */
+   MIDNIGHT CYBER-PREMIUM — design system
+   ==========================================================================
+   Vse barve, prehodi in učinki črpajo iz spremenljivk spodaj.
+   Sistem je naravnan za temno temo (default), v svetli temi se barve
+   degradirajo na bolj pisne svetlejše ekvivalente.
+*/
 
-/* 1. Nežno nalaganje celotne strani ob prvem obisku */
+:root {
+  /* 1. Barvna paleta */
+  --bg-glavno:           #06070a;
+  --bg-povrsina:         rgba(13, 15, 24, 0.45);
+  --bg-povrsina-aktivna: rgba(22, 26, 41, 0.65);
+
+  --rob-stekla:          rgba(255, 255, 255, 0.06);
+  --rob-stekla-svetlo:   rgba(255, 255, 255, 0.16);
+
+  --barva-primarna:      #ff0055;
+  --barva-sekundarna:    #00f0ff;
+  --barva-terciarna:     #7000ff;
+
+  --gradient-tekst:      linear-gradient(135deg, #ffffff 30%, #a3a8b8 100%);
+  --gradient-akcent:     linear-gradient(135deg, var(--barva-primarna), var(--barva-sekundarna));
+  --gradient-gumb-hover: linear-gradient(135deg, var(--barva-sekundarna), var(--barva-terciarna));
+
+  /* 2. Tipografija */
+  --tekst-glavni:     #f8fafc;
+  --tekst-sekundarni: #94a3b8;
+  --tekst-temen:      #020408;
+
+  /* 3. Easing */
+  --prehod-hitri:   all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --prehod-glavni:  all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  --prehod-pocasen: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* 4. Struktura */
+  --radij-kartice:  24px;
+  --radij-gumba:    12px;
+  --senca-premium:  0 20px 40px rgba(0, 0, 0, 0.5);
+  --senca-neon:     0 0 30px rgba(255, 0, 85, 0.25), 0 0 60px rgba(0, 240, 255, 0.15);
+}
+
+/* Svetla tema — barve postanejo manj nasičene, ozadje svetlo, kontrast obrnjen */
+:root:not(.dark) {
+  --bg-glavno:           #f6f7fb;
+  --bg-povrsina:         rgba(255, 255, 255, 0.7);
+  --bg-povrsina-aktivna: rgba(255, 255, 255, 0.9);
+  --rob-stekla:          rgba(15, 18, 32, 0.08);
+  --rob-stekla-svetlo:   rgba(15, 18, 32, 0.16);
+  --tekst-glavni:        #0f1220;
+  --tekst-sekundarni:    #5e6678;
+  --tekst-temen:         #ffffff;
+  --gradient-tekst:      linear-gradient(135deg, #0f1220 30%, #434a5b 100%);
+  --senca-premium:       0 20px 40px rgba(15, 18, 32, 0.10);
+}
+
+/* Body fiksiran v --bg-glavno + organski mesh blobi */
 body {
-  animation: pageFadeIn 0.8s ease-out forwards;
+  background: var(--bg-glavno);
+  color: var(--tekst-glavni);
+  position: relative;
+  overflow-x: hidden;
 }
-
-@keyframes pageFadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* 2. Naslovi, ki elegantno "priplavajo" malce kasneje */
-h1, h2, .wow-title {
-  opacity: 0;
-  animation: fadeInUp 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-  animation-delay: 0.2s;
-}
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* 3. Interaktivni gumbi (ob premiku z miško se dvignejo in zasvetijo) */
-button, .btn, .button {
-  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
-}
-
-button:hover, .btn:hover, .button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-  filter: brightness(1.1);
-  cursor: pointer;
-}
-
-button:active, .btn:active, .button:active {
-  transform: translateY(-1px);
-}
-
-/* 4. Učinek za bloke vsebine, slike ali kartice (nežen dvig in povečava) */
-.card, .box, section, article {
-  transition: transform 0.4s ease, box-shadow 0.4s ease;
-}
-
-.card:hover, .box:hover, section:hover {
-  transform: translateY(-5px) scale(1.01);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-}
-
-/* Spoštuj uporabnike, ki so izklopili animacije */
-@media (prefers-reduced-motion: reduce) {
-  body, h1, h2, .wow-title { animation: none !important; opacity: 1 !important; transform: none !important; }
-  button, .btn, .button, .card, .box, section, article { transition: none !important; }
-  button:hover, .btn:hover, .button:hover,
-  .card:hover, .box:hover, section:hover {
-    transform: none !important;
-    filter: none !important;
-  }
-}
-
-/* ==========================================================================
-   CINEMATIC PAKET — mesh ozadje, shimmer naslovi, glow kartice
-   ========================================================================== */
-
-/* 1. Dinamično "mesh" ozadje — počasi plavajoči barvni blobi */
 body::before,
 body::after {
   content: "";
   position: fixed;
-  width: 520px;
-  height: 520px;
+  width: 600px;
+  height: 600px;
   border-radius: 50%;
-  filter: blur(140px);
-  z-index: 0;
+  filter: blur(150px);
+  opacity: 0.10;
   pointer-events: none;
-  opacity: 0.18;
+  z-index: 0;
 }
-.dark body::before,
-.dark body::after {
-  opacity: 0.32;
-}
+:root.dark body::before,
+:root.dark body::after { opacity: 0.18; }
+
 body::before {
-  background: radial-gradient(circle, #7f00ff, #ff007f);
+  background: radial-gradient(circle, var(--barva-primarna), var(--barva-terciarna));
   top: -15%;
   left: -15%;
-  animation: blobDrift1 22s infinite alternate ease-in-out;
+  animation: blobDrift1 25s infinite alternate ease-in-out;
 }
 body::after {
-  background: radial-gradient(circle, #00f2fe, #4facfe);
+  background: radial-gradient(circle, var(--barva-sekundarna), var(--barva-terciarna));
   bottom: -15%;
   right: -15%;
-  animation: blobDrift2 28s infinite alternate ease-in-out;
+  animation: blobDrift2 25s infinite alternate ease-in-out;
 }
 @keyframes blobDrift1 {
   0%   { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(120px, 60px) scale(1.3); }
+  100% { transform: translate(140px, 80px) scale(1.25); }
 }
 @keyframes blobDrift2 {
   0%   { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(-140px, -90px) scale(1.2); }
+  100% { transform: translate(-160px, -100px) scale(1.2); }
 }
-
-/* Vsebina mora biti nad blobi */
 body > * { position: relative; z-index: 1; }
 
-/* 2. Shimmer naslovi — kovinski sijaj potuje čez besedilo */
-.shimmer-title {
+/* --------------------------------------------------------------------------
+   ANATOMIJA KOMPONENT
+   -------------------------------------------------------------------------- */
+
+/* Premium kartica — frosted glass */
+.premium-kartica {
+  background: var(--bg-povrsina);
+  border: 1px solid var(--rob-stekla);
+  border-radius: var(--radij-kartice);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--senca-premium);
+  transition: var(--prehod-glavni);
+}
+.premium-kartica:hover {
+  transform: translateY(-8px) scale(1.01);
+  border-color: var(--rob-stekla-svetlo);
+  background: var(--bg-povrsina-aktivna);
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.55),
+    0 0 30px rgba(255, 0, 85, 0.10);
+}
+:root:not(.dark) .premium-kartica:hover {
+  box-shadow:
+    0 30px 60px rgba(15, 18, 32, 0.18),
+    0 0 30px rgba(255, 0, 85, 0.10);
+}
+
+/* Premium gumb — cybernetic */
+.premium-gumb {
+  background: var(--gradient-akcent);
+  color: var(--tekst-temen);
+  font-weight: 700;
+  border-radius: var(--radij-gumba);
+  border: none;
+  box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3);
+  transition: var(--prehod-glavni);
+  letter-spacing: 0;
+}
+.premium-gumb:hover {
+  background: var(--gradient-gumb-hover);
+  letter-spacing: 1px;
+  box-shadow: var(--senca-neon);
+}
+.premium-gumb:active {
+  transform: scale(0.97);
+}
+
+/* Navigacija — premium glass header
+   (Pridruženo obstoječi <header> v Nav.astro prek razreda .premium-nav.) */
+.premium-nav {
+  background: var(--bg-povrsina);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--rob-stekla);
+}
+.premium-nav-link {
+  color: var(--tekst-sekundarni);
+  position: relative;
+  transition: var(--prehod-hitri);
+}
+.premium-nav-link:hover {
+  color: var(--tekst-glavni);
+}
+.premium-nav-link::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: 60%;
+  height: 2px;
+  background: var(--gradient-akcent);
+  transform: translateX(-50%) scaleX(0);
+  transform-origin: center;
+  transition: var(--prehod-glavni);
+}
+.premium-nav-link:hover::after {
+  transform: translateX(-50%) scaleX(1);
+}
+
+/* Logo z gradientom */
+.premium-logo {
+  background: var(--gradient-akcent);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+          color: transparent;
+}
+
+/* --------------------------------------------------------------------------
+   KOREOGRAFIJA ANIMACIJ
+   -------------------------------------------------------------------------- */
+
+/* Shimmer naslov */
+.waw-shimmer {
   background: linear-gradient(
-    to right,
-    var(--color-ink-900) 20%,
-    #ff007f 40%,
-    #7f00ff 60%,
-    var(--color-ink-900) 80%
+    90deg,
+    var(--tekst-glavni) 20%,
+    var(--barva-primarna) 40%,
+    var(--barva-terciarna) 60%,
+    var(--tekst-glavni) 80%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
           background-clip: text;
   -webkit-text-fill-color: transparent;
           color: transparent;
-  animation: shimmerSweep 5s linear infinite;
+  animation: shimmer 5s linear infinite;
   display: inline-block;
 }
-.dark .shimmer-title {
-  background: linear-gradient(
-    to right,
-    #ffffff 20%,
-    #ff007f 40%,
-    #7f00ff 60%,
-    #ffffff 80%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-          background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-@keyframes shimmerSweep {
+@keyframes shimmer {
   to { background-position: 200% center; }
 }
 
-/* 3. Glow kartice in gumbi */
-.glow-card,
-.glow-btn {
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.4s ease !important;
+/* Cinematic entrance + stagger */
+@keyframes cinematicEntrance {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-.glow-card:hover,
-.glow-btn:hover {
-  transform: translateY(-8px) scale(1.02);
-  border-color: rgba(255, 0, 127, 0.5) !important;
-  box-shadow:
-    0 20px 40px rgba(127, 0, 255, 0.25),
-    0 0 24px rgba(255, 0, 127, 0.18);
+.intro-animacija {
+  opacity: 0;
+  animation: cinematicEntrance 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation-delay: 0.1s;
 }
-.dark .glow-card:hover,
-.dark .glow-btn:hover {
-  box-shadow:
-    0 20px 40px rgba(127, 0, 255, 0.4),
-    0 0 24px rgba(255, 0, 127, 0.3);
+.intro-animacija.zamik-1 { animation-delay: 0.10s; }
+.intro-animacija.zamik-2 { animation-delay: 0.25s; }
+.intro-animacija.zamik-3 { animation-delay: 0.40s; }
+.intro-animacija.zamik-4 { animation-delay: 0.55s; }
+.intro-animacija.zamik-5 { animation-delay: 0.70s; }
+
+/* Lebdenje — neskončen mehki gor/dol */
+.waw-lebdenje {
+  animation: lebdenje 3s ease-in-out infinite;
+}
+@keyframes lebdenje {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
 }
 
+/* --------------------------------------------------------------------------
+   POŠTEN PREHOD ZA UPORABNIKE BREZ ANIMACIJ
+   -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  body::before, body::after { animation: none !important; }
-  .shimmer-title { animation: none !important; }
-  .glow-card:hover, .glow-btn:hover {
+  body::before, body::after,
+  .waw-shimmer, .waw-lebdenje,
+  .intro-animacija { animation: none !important; }
+  .intro-animacija { opacity: 1 !important; transform: none !important; }
+  .premium-kartica, .premium-gumb, .premium-nav-link,
+  .premium-nav-link::after { transition: none !important; }
+  .premium-kartica:hover, .premium-gumb:hover {
     transform: none !important;
-    box-shadow: none !important;
+    box-shadow: var(--senca-premium) !important;
   }
 }

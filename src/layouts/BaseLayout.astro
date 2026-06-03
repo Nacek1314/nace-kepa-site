@@ -47,9 +47,9 @@ const canonical = new URL(url.pathname, Astro.site).toString();
       (() => {
         try {
           const t = localStorage.getItem('theme');
-          const m = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (t === 'dark' || (!t && m)) document.documentElement.classList.add('dark');
-        } catch {}
+          // Default je temna (Midnight Cyber-Premium). Svetla samo če jo je uporabnik izrecno izbral.
+          if (t !== 'light') document.documentElement.classList.add('dark');
+        } catch { document.documentElement.classList.add('dark'); }
       })();
     </script>
   </head>
