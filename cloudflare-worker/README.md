@@ -113,3 +113,42 @@ npm run dev
 If `PUBLIC_ORDER_ENDPOINT` is missing or the worker is unreachable, the
 order wizard automatically falls back to the original mailto + file
 download flow. Nothing is lost.
+
+---
+
+## Security model
+
+The Worker is hardened against the common abuse vectors for a public
+endpoint:
+
+| Control                       | Implementation                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------ |
+| **Strict origin enforcement** | `ALLOWED_ORIGIN` is **required**; `Origin` *or* `Referer` must match. No wildcards. |
+| **Method + content-type**     | Only `POST` with `application/json` is accepted; everything else returns 4xx.       |
+| **Per-IP rate limit**         | Cache-API based rolling window. Default **5 requests / 5 minutes** per IP.          |
+| **Payload size cap**          | Body capped at **16 KB** before parsing.                                             |
+| **Field validation**          | Each field has a max length; control characters stripped; email format checked.      |
+| **Honeypot**                  | Hidden `website` field — bots fill it, get a fake-success response, never reach Telegram. |
+| **No upstream leakage**       | Telegram/Resend errors are logged in `console.warn` only; client gets generic `upstream_failed`. |
+| **Secret handling**           | Bot token, chat id, Resend API key are Worker secrets — never sent to the browser.  |
+| **CSRF resistance**           | Same-origin check + JSON-only + no cookies = no usable CSRF surface.                 |
+| **Security headers**          | `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`. |
+
+### Optional: tighter rate limit
+
+Override the defaults via Worker env vars:
+
+| Name                | Default | Notes                          |
+| ------------------- | ------- | ------------------------------ |
+| `RATE_LIMIT_MAX`    | `5`     | Max requests per window per IP |
+| `RATE_LIMIT_WINDOW` | `300`   | Window length in seconds       |
+
+When a caller is rate-limited the response is HTTP **429** with a
+`Retry-After` header, and the wizard surfaces a friendly EN/SL message
+instead of falling through to `mailto:`.
+
+### Recommended: Cloudflare Turnstile (free CAPTCHA)
+
+For zero-friction bot mitigation without affecting humans, drop a
+Turnstile widget on the order page and verify the token inside the
+Worker before forwarding. Ask if you want this wired up.

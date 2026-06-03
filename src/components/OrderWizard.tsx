@@ -193,7 +193,16 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
             setDone({ code, channel: 'instant' });
             return;
           }
-          // fall through to mailto if the worker rejected the request
+          if (res.status === 429) {
+            const retry = res.headers.get('Retry-After');
+            const mins = retry ? Math.ceil(parseInt(retry, 10) / 60) : null;
+            setErr(lang === 'sl'
+              ? `Preveč povpraševanj s te povezave.${mins ? ` Poskusi znova čez ~${mins} min.` : ''}`
+              : `Too many requests from this connection.${mins ? ` Try again in ~${mins} min.` : ''}`);
+            setSubmitting(false);
+            return;
+          }
+          // other non-ok → fall through to mailto fallback
         } catch {
           // network error → fall through to mailto fallback
         }
