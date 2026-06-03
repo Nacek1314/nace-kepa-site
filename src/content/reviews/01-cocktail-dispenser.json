@@ -1,0 +1,12 @@
+{
+  "order": 1,
+  "author": "Luka M.",
+  "role": { "en": "Hospitality startup founder", "sl": "Ustanovitelj gostinskega startupa" },
+  "rating": 5,
+  "date": "2025-09-14",
+  "quote": {
+    "en": "Nace took our rough idea for an automated cocktail dispenser and delivered a working, printed build that just worked at our launch event. Clear updates the whole way through.",
+    "sl": "Nace je iz naše grobe ideje za samodejni dozirnik koktajlov naredil delujočo, natisnjeno napravo, ki je na dogodku brezhibno delovala. Ves čas jasne posodobitve."
+  },
+  "project": "cocktail-dispenser"
+}

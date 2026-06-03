@@ -9,6 +9,7 @@
     "services": "Services",
     "portfolio": "Work",
     "skills": "Skills",
+    "reviews": "Reviews",
     "about": "About",
     "order": "Start a project"
   },
@@ -49,6 +50,13 @@
   "skills": {
     "heading": "Skills & instruments",
     "sub": "Disciplines I practice but do not advertise as standalone services. Useful context — and available if your project needs them."
+  },
+  "reviews": {
+    "heading": "Reviews",
+    "sub": "What clients say after the parts ship and the firmware runs.",
+    "cta_heading": "Worked with me?",
+    "cta_sub": "Send a few lines about the project — selected reviews get published here.",
+    "cta_button": "Leave a review"
   },
   "about": {
     "heading": "About",

@@ -9,6 +9,7 @@
     "services": "Storitve",
     "portfolio": "Dela",
     "skills": "Znanja",
+    "reviews": "Mnenja",
     "about": "O meni",
     "order": "Začni projekt"
   },
@@ -49,6 +50,13 @@
   "skills": {
     "heading": "Znanja in orodja",
     "sub": "Področja, ki jih obvladam, a jih ne ponujam kot ločeno storitev. Koristen kontekst — in na voljo, če jih tvoj projekt potrebuje."
+  },
+  "reviews": {
+    "heading": "Mnenja",
+    "sub": "Kaj pravijo naročniki, ko so deli dostavljeni in firmware teče.",
+    "cta_heading": "Sva sodelovala?",
+    "cta_sub": "Pošlji nekaj vrstic o projektu — izbrana mnenja objavim tukaj.",
+    "cta_button": "Oddaj mnenje"
   },
   "about": {
     "heading": "O meni",

@@ -1,0 +1,59 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { t, type Lang } from '~/i18n';
+import { getCollection } from 'astro:content';
+
+interface Props { lang: Lang }
+const lang: Lang = (Astro.props as any).lang ?? 'en';
+const dict = t(lang);
+const contactEmail = 'kepanace@gmail.com';
+
+const reviews = (await getCollection('reviews')).sort((a, b) => a.data.order - b.data.order);
+
+const dateFmt = new Intl.DateTimeFormat(lang === 'sl' ? 'sl-SI' : 'en-GB', {
+  year: 'numeric', month: 'short'
+});
+
+const mailSubject = lang === 'sl' ? 'Mnenje o sodelovanju' : 'Review of our project';
+const mailBody = lang === 'sl'
+  ? 'Ime:\nVloga / podjetje:\nOcena (1–5):\nMnenje:\n'
+  : 'Name:\nRole / company:\nRating (1–5):\nReview:\n';
+const mailto = `mailto:${contactEmail}?subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(mailBody)}`;
+---
+<BaseLayout lang={lang} title={dict.reviews.heading}>
+  <section class="mx-auto max-w-4xl px-5 py-16">
+    <h1 class="font-display font-bold text-4xl sm:text-5xl tracking-tight">{dict.reviews.heading}</h1>
+    <p class="mt-3 text-ink-500 dark:text-ink-400 max-w-2xl">{dict.reviews.sub}</p>
+  </section>
+
+  <section class="mx-auto max-w-4xl px-5 pb-12 grid gap-6 sm:grid-cols-2">
+    {reviews.map((r) => (
+      <article class="rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900/50 p-6 flex flex-col">
+        <div class="flex items-center gap-0.5 text-accent-600" aria-label={`${r.data.rating}/5`}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <svg class={`w-4 h-4 ${i < r.data.rating ? 'fill-current' : 'fill-ink-200 dark:fill-ink-700'}`} viewBox="0 0 20 20">
+              <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9 4.8 17.6l1-5.8L1.5 7.7l5.9-.9z"/>
+            </svg>
+          ))}
+        </div>
+        <blockquote class="mt-4 text-ink-700 dark:text-ink-200 leading-relaxed flex-1">“{r.data.quote[lang]}”</blockquote>
+        <footer class="mt-4 text-sm">
+          <span class="font-semibold">{r.data.author}</span>
+          {r.data.role && <span class="text-ink-500 dark:text-ink-400"> · {r.data.role[lang]}</span>}
+          <span class="block text-xs text-ink-400 dark:text-ink-500 mt-0.5">{dateFmt.format(new Date(r.data.date))}</span>
+        </footer>
+      </article>
+    ))}
+  </section>
+
+  <section class="mx-auto max-w-4xl px-5 pb-20">
+    <div class="rounded-xl border border-ink-200 dark:border-ink-800 bg-ink-50/60 dark:bg-ink-900/40 p-6 text-center">
+      <h2 class="font-display text-xl font-bold">{dict.reviews.cta_heading}</h2>
+      <p class="mt-2 text-ink-500 dark:text-ink-400">{dict.reviews.cta_sub}</p>
+      <a href={mailto}
+         class="mt-4 inline-flex items-center text-sm font-medium px-4 py-2 rounded-md bg-accent-600 text-white hover:bg-accent-700 transition-colors">
+        {dict.reviews.cta_button}
+      </a>
+    </div>
+  </section>
+</BaseLayout>

@@ -57,4 +57,17 @@ const faq = defineCollection({
   })
 });
 
-export const collections = { services, projects, skills, faq };
+const reviews = defineCollection({
+  type: 'data',
+  schema: z.object({
+    order: z.number().default(0),
+    author: z.string(),
+    role: bilingual.optional(),
+    rating: z.number().min(1).max(5).default(5),
+    date: z.string(),
+    quote: bilingual,
+    project: z.string().optional()
+  })
+});
+
+export const collections = { services, projects, skills, faq, reviews };
