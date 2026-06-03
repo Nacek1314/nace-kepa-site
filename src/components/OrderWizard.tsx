@@ -410,28 +410,29 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
             setSubmitting(false);
             return;
           }
-          // other non-ok → fall through to mailto fallback
-        } catch {
-          // network error → fall through to mailto fallback
+          // other non-ok → surface as error
+          setProgress(null);
+          setErr(lang === 'sl'
+            ? `Pošiljanje ni uspelo (HTTP ${res.status}). Poskusi znova čez nekaj sekund.`
+            : `Submission failed (HTTP ${res.status}). Please try again in a few seconds.`);
+          setSubmitting(false);
+          return;
+        } catch (e: any) {
+          setProgress(null);
+          setErr(lang === 'sl'
+            ? `Povezava ni uspela${e?.message ? ` (${e.message})` : ''}. Preveri internet in poskusi znova.`
+            : `Network error${e?.message ? ` (${e.message})` : ''}. Check your connection and try again.`);
+          setSubmitting(false);
+          return;
         }
+      } else {
+        setProgress(null);
+        setErr(lang === 'sl'
+          ? 'Strežnik ni nastavljen. Obvesti administratorja.'
+          : 'Server endpoint not configured. Please notify the admin.');
+        setSubmitting(false);
+        return;
       }
-
-      // Fallback: download brief + open mail client. Always works offline.
-      const blob = new Blob([body], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${code}-brief.txt`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-      const mailto = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailto;
-
-      setProgress(null);
-      setDone({ code, channel: 'mailto' });
     } catch (e: any) {
       setErr(L.error + (e?.message ? ` (${e.message})` : ''));
     } finally {
