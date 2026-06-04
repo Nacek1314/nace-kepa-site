@@ -1,0 +1,22 @@
+{
+  "slug": "drill-bit-rack",
+  "order": 13,
+  "title": {
+    "en": "Magnetic-back drill bit rack",
+    "sl": "Stojalo za svedre z magnetnim hrbtom"
+  },
+  "date": "2024",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Stepped rack for HSS bits 1.0–10.0 mm with neodymium magnets that stick to the toolbox lid.",
+    "sl": "Stopničasto stojalo za HSS svedre 1,0–10,0 mm z neodimovimi magneti, ki se prilepijo na pokrov orodjarne."
+  },
+  "description": {
+    "en": "0.5 mm-step holes in PLA take the bits with a friction fit; four 8×3 mm magnets press into hex pockets on the back. Sticks to a steel toolbox lid and never gets buried under wrenches again.",
+    "sl": "Luknje s korakom 0,5 mm v PLA z drsnim ujemom za svedre; štirje magneti 8×3 mm se zaskočijo v šestrobne žepe na hrbtu. Prilepi se na jekleni pokrov orodjarne in nikoli več ne tone pod ključi."
+  },
+  "materials": ["PLA"],
+  "tools": ["SolidWorks", "N42 magnets"],
+  "photos": []
+}

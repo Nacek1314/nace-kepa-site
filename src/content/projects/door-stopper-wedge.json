@@ -1,0 +1,22 @@
+{
+  "slug": "door-stopper-wedge",
+  "order": 8,
+  "title": {
+    "en": "Adjustable door wedge",
+    "sl": "Nastavljiv zagozdni zaustavljalec vrat"
+  },
+  "date": "2024",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Door wedge with a thumb-screw to dial in the holding force on uneven floors.",
+    "sl": "Zagozda za vrata s palčnim vijakom za nastavitev sile na neravnih tleh."
+  },
+  "description": {
+    "en": "Stock plastic wedges slip on tile and feel cheap on hardwood. This one threads onto a captive M5 screw with a TPU foot, so the foot squishes against the floor and grips. Two parts, no glue, no nuts.",
+    "sl": "Klasične plastične zagozde drsijo po ploščicah in delujejo poceni na parketu. Ta ima M5 vijak in TPU stopalo, ki se stisne na tla in oprime. Dva dela, brez lepila, brez matic."
+  },
+  "materials": ["PETG", "TPU 95A"],
+  "tools": ["SolidWorks"],
+  "photos": []
+}

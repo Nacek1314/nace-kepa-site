@@ -1,0 +1,22 @@
+{
+  "slug": "door-sensor-bot",
+  "order": 20,
+  "title": {
+    "en": "Door-open Telegram bot",
+    "sl": "Telegram bot za odprta vrata"
+  },
+  "date": "2025",
+  "category": "iot",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Reed switch + ESP32 sends a Telegram message every time a designated door opens.",
+    "sl": "Reed stikalo + ESP32 pošlje sporočilo na Telegram vsakič, ko se določena vrata odprejo."
+  },
+  "description": {
+    "en": "Useful for workshop doors, mailbox lids, freezer doors. ESP32 wakes from deep sleep on the reed-pin GPIO, posts to a private bot, and goes back to sleep — single AA pair lasts about a year on a normally-closed door.",
+    "sl": "Uporabno za vrata delavnice, pokrov nabiralnika, vrata zamrzovalnika. ESP32 se prebudi iz globokega spanja prek GPIO reed stikala, pošlje sporočilo zasebnemu botu in spet zaspi — par AA baterij zdrži približno leto pri običajno zaprtih vratih."
+  },
+  "materials": ["PLA"],
+  "tools": ["ESP32", "Reed switch", "Telegram Bot API"],
+  "photos": []
+}

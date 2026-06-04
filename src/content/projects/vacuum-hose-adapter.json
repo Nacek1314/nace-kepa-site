@@ -1,0 +1,22 @@
+{
+  "slug": "vacuum-hose-adapter",
+  "order": 16,
+  "title": {
+    "en": "Universal vacuum hose adapter",
+    "sl": "Univerzalni adapter za sesalno cev"
+  },
+  "date": "2025",
+  "category": "mechanical",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Stepped cone that connects shop-vac hoses to power-tool dust ports of any size.",
+    "sl": "Stopničast adapter, ki poveže cev industrijskega sesalnika z odprtinami za prah na električnih orodjih."
+  },
+  "description": {
+    "en": "Outer diameter steps from 28 to 58 mm, inner taper matches the standard 36 mm hose. Thin enough walls (1.6 mm) to flex slightly and seal without gaskets. Cuts cleanup time in half on the workbench.",
+    "sl": "Zunanji premer stopničasto od 28 do 58 mm, notranji konus se prilega standardni cevi 36 mm. Stene 1,6 mm so dovolj tanke za rahel upogib in tesnenje brez tesnil. Razpolovi čas čiščenja na delovni mizi."
+  },
+  "materials": ["PETG"],
+  "tools": ["Fusion 360"],
+  "photos": []
+}

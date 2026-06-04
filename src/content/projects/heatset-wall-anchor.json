@@ -1,0 +1,22 @@
+{
+  "slug": "heatset-wall-anchor",
+  "order": 24,
+  "title": {
+    "en": "Heat-set insert wall anchor",
+    "sl": "Stensko sidro z vstavkom na vroče"
+  },
+  "date": "2025",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Drywall anchor with an embedded M3 brass insert — gives you reusable, removable threaded mounts.",
+    "sl": "Sidro za mavčne plošče z vgrajenim M3 medeninastim vstavkom — omogoča večkratno uporabo in odstranjevanje navojnih pritrdišč."
+  },
+  "description": {
+    "en": "Cheap plastic anchors strip on the second use. This one accepts a heat-set insert pressed in with a soldering iron. Pull-out test on standard 12.5 mm drywall gave 18 kg before the wall failed before the anchor.",
+    "sl": "Poceni plastična sidra se uničijo pri drugi uporabi. To prejme medeninast vstavek, ki se vroč z spajkalnikom potisne v PLA. Test izvleka na standardni 12,5 mm mavčni plošči je prenesel 18 kg, dokler ni popustila stena, ne sidro."
+  },
+  "materials": ["PLA"],
+  "tools": ["SolidWorks", "M3 brass heat-set inserts"],
+  "photos": []
+}

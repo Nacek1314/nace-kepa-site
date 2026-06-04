@@ -1,0 +1,22 @@
+{
+  "slug": "scooter-grip-tpu",
+  "order": 31,
+  "title": {
+    "en": "TPU scooter handlebar grip",
+    "sl": "TPU oprijem za krmilo skiroja"
+  },
+  "date": "2025",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Custom-fit grip printed in TPU 95A with a knurled pattern for wet-hand traction.",
+    "sl": "Po meri tiskan oprijem iz TPU 95A z narebrenim vzorcem za oprijem v mokrih rokah."
+  },
+  "description": {
+    "en": "Inner diameter scanned with calipers to match the worn aluminum bar (22.2 mm nominal, 22.05 mm actual). Knurled outer face cuts hand slip after a rain ride. Slides on with isopropyl as lubricant; grips dry permanently within an hour.",
+    "sl": "Notranji premer izmerjen s kljunastim merilom za obrabljeno aluminijasto cev (22,2 mm nominalno, 22,05 mm dejansko). Narebrena zunanja površina prepreči zdrs po dežju. Nataknjen z izopropanolom kot mazivom; po uri suhega delovanja se trajno oprime."
+  },
+  "materials": ["TPU 95A"],
+  "tools": ["SolidWorks", "Calipers"],
+  "photos": []
+}

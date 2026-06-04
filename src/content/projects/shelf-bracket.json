@@ -1,0 +1,22 @@
+{
+  "slug": "shelf-bracket",
+  "order": 28,
+  "title": {
+    "en": "Reinforced shelf bracket",
+    "sl": "Ojačan polični nosilec"
+  },
+  "date": "2025",
+  "category": "mechanical",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Triangular bracket calculated for 15 kg/shelf load, printed in PETG with three perimeters.",
+    "sl": "Trikotni nosilec, izračunan za obremenitev 15 kg/polico, tiskan iz PETG-a s tremi obrisi."
+  },
+  "description": {
+    "en": "Replaced rusty steel brackets in a damp pantry. Bending moment calculated at 15 kg × 200 mm lever; PETG cross-section at the root sized for σ_allow = 25 MPa with a 2× safety factor. Validated by loading with two-litre bottles.",
+    "sl": "Zamenjava zarjavelih jeklenih nosilcev v vlažni shrambi. Upogibni moment izračunan pri obremenitvi 15 kg × 200 mm vzvoda; PETG prerez ob korenu dimenzioniran za σ_dop = 25 MPa z 2× varnostnim faktorjem. Potrjeno z dvolitrskimi steklenicami."
+  },
+  "materials": ["PETG"],
+  "tools": ["SolidWorks", "SimulationXpress"],
+  "photos": []
+}

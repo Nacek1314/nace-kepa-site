@@ -1,0 +1,22 @@
+{
+  "slug": "fridge-thermometer",
+  "order": 21,
+  "title": {
+    "en": "Wi-Fi fridge thermometer",
+    "sl": "Wi-Fi termometer za hladilnik"
+  },
+  "date": "2025",
+  "category": "iot",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "DS18B20 inside the fridge, ESP32-C3 outside; pushes temperature to a local dashboard and alerts on excursion.",
+    "sl": "DS18B20 v hladilniku, ESP32-C3 zunaj; pošilja temperaturo na lokalno nadzorno ploščo in opozarja ob odstopanju."
+  },
+  "description": {
+    "en": "Caught a failing fridge before food spoiled. Probe is sealed in PETG with food-safe silicone, cable goes through the door gasket without bending the seal. Threshold and hysteresis are configurable via the web UI.",
+    "sl": "Zaznal je odpoved hladilnika, preden se je hrana pokvarila. Sonda je zatesnjena v PETG-u s silikonom, primernim za živila, kabel poteka skozi tesnilo vrat brez upogiba tesnila. Prag in histereza nastavljiva prek spletne aplikacije."
+  },
+  "materials": ["PETG"],
+  "tools": ["ESP32-C3", "DS18B20", "MQTT"],
+  "photos": []
+}

@@ -1,0 +1,22 @@
+{
+  "slug": "bike-light-bracket",
+  "order": 15,
+  "title": {
+    "en": "Replacement bike light bracket",
+    "sl": "Nadomestni nosilec za luč na kolesu"
+  },
+  "date": "2025",
+  "category": "mechanical",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Drop-in replacement for a snapped OEM front-light bracket — no need to buy a new lamp.",
+    "sl": "Neposredna zamenjava za zlomljen tovarniški nosilec sprednje luči — brez nakupa nove svetilke."
+  },
+  "description": {
+    "en": "OEM brackets break at the same flex point under vibration. The redesign moves the rib to the high-stress zone and adds a 1 mm fillet. Survived 800 km of cobblestone test rides without cracking.",
+    "sl": "Tovarniški nosilci se zaradi vibracij lomijo na istem mestu. Predelava prestavi rebro v območje največje napetosti in doda 1 mm zaokrožitev. Preživel je 800 km vožnje po kockah brez razpok."
+  },
+  "materials": ["PETG"],
+  "tools": ["SolidWorks", "Calipers"],
+  "photos": []
+}

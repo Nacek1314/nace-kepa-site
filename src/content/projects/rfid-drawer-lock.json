@@ -1,0 +1,22 @@
+{
+  "slug": "rfid-drawer-lock",
+  "order": 22,
+  "title": {
+    "en": "RFID drawer lock",
+    "sl": "RFID ključavnica za predal"
+  },
+  "date": "2025",
+  "category": "embedded",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "ESP32 + MFRC522 reader unlocks a 9 g servo bolt when an enrolled card is presented.",
+    "sl": "ESP32 + MFRC522 čitalec odklene 9 g servo zapah, ko se predloži vpisana kartica."
+  },
+  "description": {
+    "en": "Whitelist of card UIDs lives in NVS so it survives power loss; reader is hidden behind 1 mm of PLA at the front of the drawer (RFID still passes). 18650 cell + boost converter keeps it locked for ~6 weeks idle. Audible click on success keeps the user experience clear.",
+    "sl": "Seznam UID kartic je shranjen v NVS, zato preživi izpad napajanja; čitalec je skrit za 1 mm PLA-ja na sprednji strani predala (RFID gre še skozi). 18650 celica + boost pretvornik ga drži zaklenjenega ~6 tednov v mirovanju. Slišen klik ob uspehu da uporabniku jasen občutek."
+  },
+  "materials": ["PLA"],
+  "tools": ["ESP32", "MFRC522", "9 g servo"],
+  "photos": []
+}

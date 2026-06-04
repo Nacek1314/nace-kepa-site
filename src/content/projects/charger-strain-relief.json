@@ -1,0 +1,22 @@
+{
+  "slug": "charger-strain-relief",
+  "order": 30,
+  "title": {
+    "en": "Laptop charger strain relief",
+    "sl": "Razbremenitev kabla polnilca prenosnika"
+  },
+  "date": "2024",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Slip-on TPU spring that doubles the lifespan of the cable at the brick exit.",
+    "sl": "Nataknjena TPU vzmet, ki podvoji življenjsko dobo kabla na izhodu iz polnilca."
+  },
+  "description": {
+    "en": "Cables break where the strain concentrates at a sharp transition. A printed TPU 95A spring spreads the bend over 25 mm. Slides over the cable and locks into the brick housing without glue. Used on three chargers, zero failures over 18 months.",
+    "sl": "Kabli se lomijo, kjer se obremenitev koncentrira na ostrem prehodu. Natisnjena TPU 95A vzmet razprši upogib čez 25 mm. Nasloni se preko kabla in se vpne v ohišje polnilca brez lepila. Uporabljeno na treh polnilcih, brez odpovedi v 18 mesecih."
+  },
+  "materials": ["TPU 95A"],
+  "tools": ["SolidWorks"],
+  "photos": []
+}

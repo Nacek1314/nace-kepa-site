@@ -1,0 +1,22 @@
+{
+  "slug": "blind-cord-cleat",
+  "order": 11,
+  "title": {
+    "en": "Childproof blind cord cleat",
+    "sl": "Otrokom varna zaponka za vrvico žaluzije"
+  },
+  "date": "2024",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Wall-mounted cleat that wraps blind cords above child-reach height.",
+    "sl": "Stenska zaponka, ki vrvico žaluzije ovije nad dosegom otrok."
+  },
+  "description": {
+    "en": "Free retrofit for the well-known choking hazard of long blind cords. Two M3 wood screws, prints in 25 minutes, drops cord-loop length below the safety threshold.",
+    "sl": "Brezplačna naknadna rešitev za znano nevarnost zadušitve z dolgimi vrvicami žaluzij. Dva lesna vijaka M3, čas tiska 25 minut, dolžino zanke spravi pod varnostni prag."
+  },
+  "materials": ["PLA"],
+  "tools": ["SolidWorks"],
+  "photos": []
+}

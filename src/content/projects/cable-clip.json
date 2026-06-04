@@ -1,0 +1,22 @@
+{
+  "slug": "cable-clip",
+  "order": 7,
+  "title": {
+    "en": "Snap-on desk cable clip",
+    "sl": "Zaponka za kable na mizi"
+  },
+  "date": "2024",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Edge-mounted clip that keeps charger and headphone cables from sliding off the desk.",
+    "sl": "Zaponka na rob mize, ki prepreči, da bi kabli polnilca in slušalk zdrsnili z mize."
+  },
+  "description": {
+    "en": "Living-hinge style clip that snaps onto desks 18–35 mm thick. Internal channel holds three cables; cap clicks shut. Printed flat in PETG, prints in 18 minutes.",
+    "sl": "Zaponka z elastičnim zglobom, ki se zaskoči na mize debeline 18–35 mm. Notranji kanal drži tri kable; pokrovček se zatakne. Tiska se ploščato iz PETG-a, čas tiska 18 minut."
+  },
+  "materials": ["PETG"],
+  "tools": ["SolidWorks", "Bambu Lab P1S"],
+  "photos": []
+}

@@ -1,0 +1,22 @@
+{
+  "slug": "tablet-stand",
+  "order": 17,
+  "title": {
+    "en": "Adjustable tablet stand",
+    "sl": "Nastavljivo stojalo za tablico"
+  },
+  "date": "2024",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Two-piece stand with a friction hinge that holds 30°–80° viewing angles.",
+    "sl": "Dvodelno stojalo s tornim zglobom, ki drži kote ogleda 30°–80°."
+  },
+  "description": {
+    "en": "M5 nylon-insert lock-nut sets the friction; tightening adds resistance over time as PLA wears. Lip is wide enough for 11–13\" tablets with a thin case. Folds flat for travel.",
+    "sl": "M5 samovarovalna matica nastavi trenje; pritezanje pridoda upor, ko se PLA obrabi. Spodnji rob primeren za 11–13\" tablice s tanko ovojnico. Zloži se ravno za potovanje."
+  },
+  "materials": ["PLA"],
+  "tools": ["SolidWorks"],
+  "photos": []
+}

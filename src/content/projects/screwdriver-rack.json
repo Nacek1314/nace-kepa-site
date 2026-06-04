@@ -1,0 +1,22 @@
+{
+  "slug": "screwdriver-rack",
+  "order": 27,
+  "title": {
+    "en": "Wall-mount screwdriver rack",
+    "sl": "Stensko stojalo za izvijače"
+  },
+  "date": "2024",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "12-slot rack sized to the actual diameters of a Wera/Wiha mixed set.",
+    "sl": "Stojalo z 12 režami, dimenzionirano po dejanskih premerih kombiniranega kompleta Wera/Wiha."
+  },
+  "description": {
+    "en": "Slots are angled 5° outward so handles tip forward and stay put. Tiered front lip prevents short bits from falling through. PLA print, two M3 screws into wall studs.",
+    "sl": "Reže nagnjene 5° navzven, da se ročaji nagibajo naprej in držijo na mestu. Stopničast prednji rob preprečuje, da bi kratki nastavki padli skozi. PLA tisk, dva vijaka M3 v stensko ploščo."
+  },
+  "materials": ["PLA"],
+  "tools": ["SolidWorks"],
+  "photos": []
+}

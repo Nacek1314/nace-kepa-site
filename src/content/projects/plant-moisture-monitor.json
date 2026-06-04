@@ -1,0 +1,22 @@
+{
+  "slug": "plant-moisture-monitor",
+  "order": 19,
+  "title": {
+    "en": "Plant moisture monitor",
+    "sl": "Merilnik vlage za rastline"
+  },
+  "date": "2025",
+  "category": "iot",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "ESP32-C3 + capacitive probe that lights an LED and pings Telegram when the soil drops below threshold.",
+    "sl": "ESP32-C3 + kapacitivna sonda zasveti z LED in pošlje sporočilo na Telegram, ko vlaga v zemlji pade pod prag."
+  },
+  "description": {
+    "en": "Capacitive probes don't corrode like resistive ones. Calibration is two readings (dry and submerged); everything between is mapped 0–100. Deep-sleep wake every 30 minutes pushes battery life past three months on a 1200 mAh LiPo.",
+    "sl": "Kapacitivne sonde ne korodirajo kot uporovne. Kalibracija sta dve meritvi (suho in potopljeno); vmesni razpon se preslika 0–100. Globoko spanje z vzbujanjem vsakih 30 minut omogoča preko tri mesece delovanja na 1200 mAh LiPo akumulatorju."
+  },
+  "materials": ["PETG"],
+  "tools": ["ESP32-C3", "Capacitive soil probe", "PlatformIO"],
+  "photos": []
+}

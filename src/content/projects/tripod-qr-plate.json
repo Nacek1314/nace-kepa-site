@@ -1,0 +1,22 @@
+{
+  "slug": "tripod-qr-plate",
+  "order": 26,
+  "title": {
+    "en": "Arca-Swiss quick-release plate",
+    "sl": "Hitra plošča Arca-Swiss"
+  },
+  "date": "2025",
+  "category": "mechanical",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Printed dovetail plate that fits standard Arca-Swiss clamps — backup for when the metal one walks away.",
+    "sl": "Natisnjena lastovičja plošča za standardno Arca-Swiss objemko — rezerva, ko kovinska izgine."
+  },
+  "description": {
+    "en": "Dovetail angle is the well-documented 45°; 1/4\"-20 captive nut takes the camera screw. Held a 1.5 kg DSLR + lens during a forest hike without slipping. Not a precision metal replacement — but it gets the shot.",
+    "sl": "Kot lastovičjega zatiča je dobro dokumentiranih 45°; matica 1/4\"-20 sprejme vijak fotoaparata. Drži 1,5 kg DSLR + objektiv med pohodom skozi gozd, brez zdrsa. Ni precizna kovinska zamenjava — vendar reši trenutek posnetka."
+  },
+  "materials": ["PETG"],
+  "tools": ["SolidWorks", "1/4\"-20 captive nut"],
+  "photos": []
+}

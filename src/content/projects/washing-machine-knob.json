@@ -1,0 +1,22 @@
+{
+  "slug": "washing-machine-knob",
+  "order": 25,
+  "title": {
+    "en": "Replacement washing machine knob",
+    "sl": "Nadomestni gumb za pralni stroj"
+  },
+  "date": "2024",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Direct replacement for a snapped D-shaft knob — saves a €40 service call.",
+    "sl": "Neposredna zamenjava za zlomljen gumb na D osi — prihrani 40 € za servisni obisk."
+  },
+  "description": {
+    "en": "Original knob cracks at the thin D-flat. Redesign moves the D-flat to a thicker boss and adds a 1.2 mm wall around it. Printed in PETG for heat tolerance near the warm drum. Two years in daily use without a crack.",
+    "sl": "Originalni gumb poči pri tankem D-ravnem delu. Predelava prestavi D-ravnino na debelejši nastavek in doda 1,2 mm steno okoli. Tiskano iz PETG-a zaradi toplotne odpornosti ob topli bobnu. Dve leti vsakodnevne uporabe brez razpoke."
+  },
+  "materials": ["PETG"],
+  "tools": ["SolidWorks", "Calipers"],
+  "photos": []
+}

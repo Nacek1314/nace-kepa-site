@@ -1,0 +1,22 @@
+{
+  "slug": "smart-pet-feeder",
+  "order": 18,
+  "title": {
+    "en": "Scheduled pet feeder",
+    "sl": "Programirani hranilnik za hišne ljubljenčke"
+  },
+  "date": "2025",
+  "category": "iot",
+  "clientType": "Personal product",
+  "short": {
+    "en": "ESP32 + auger servo dispenses a measured portion on schedule, with manual override on the web UI.",
+    "sl": "ESP32 + servo s polžem dozira odmerjeno količino po urniku, z ročno prevoženjem prek spletne aplikacije."
+  },
+  "description": {
+    "en": "PETG hopper feeds a printed auger driven by a 270° digital servo; one rotation = ~7 g of dry food, calibrated by weighing 10 cycles. ESP32 hosts a small captive web UI on the LAN with a cron-style schedule and Telegram notifications when food runs low (LDR under the hopper).",
+    "sl": "PETG bunker oskrbuje natisnjen polž, ki ga poganja 270° digitalni servo; en obrat = ~7 g suhe hrane, umerjeno s tehtanjem 10 ciklov. ESP32 ponuja preprost spletni vmesnik v lokalnem omrežju z urnikom in obvestili prek Telegrama, ko hrana poide (LDR pod bunkerjem)."
+  },
+  "materials": ["PETG"],
+  "tools": ["ESP32", "Digital servo", "Arduino IDE"],
+  "photos": []
+}

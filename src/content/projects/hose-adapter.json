@@ -1,0 +1,22 @@
+{
+  "slug": "hose-adapter",
+  "order": 10,
+  "title": {
+    "en": "Garden hose universal adapter",
+    "sl": "Univerzalni adapter za vrtno cev"
+  },
+  "date": "2025",
+  "category": "mechanical",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Adapter that bridges Gardena quick-connect to G3/4 male threads when the OEM piece breaks.",
+    "sl": "Adapter, ki poveže Gardena hitri spoj z G3/4 navojem, ko se originalni del zlomi."
+  },
+  "description": {
+    "en": "Printed in PETG with three perimeters and 60 % infill, then sealed with PTFE tape on the threaded end. Survives garden-tap pressure (~3 bar) without weeping after a season outdoors.",
+    "sl": "Natisnjen iz PETG-a s tremi obrisi in 60 % polnilom, navojni del zatesnjen s PTFE trakom. Prenese tlak vrtne pipe (~3 bar) brez puščanja po sezoni na prostem."
+  },
+  "materials": ["PETG"],
+  "tools": ["SolidWorks", "PTFE thread tape"],
+  "photos": []
+}

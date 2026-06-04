@@ -1,0 +1,22 @@
+{
+  "slug": "headphone-hook",
+  "order": 9,
+  "title": {
+    "en": "Under-desk headphone hook",
+    "sl": "Obešalnik za slušalke pod mizo"
+  },
+  "date": "2024",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "3M-mounted hook with a wide saddle so the headband doesn't deform.",
+    "sl": "Obešalnik z 3M nalepko, ki ima široko sedlo, da se naglavni trak ne deformira."
+  },
+  "description": {
+    "en": "Off-the-shelf hooks crease the headband foam after a month. This one has a 32 mm radius cradle to spread load. Mounts under the desk lip with a 3M VHB pad — no drilling, holds 1.5 kg pulled straight down in a 24 h test.",
+    "sl": "Trgovinski obešalniki zmečkajo peno po enem mesecu. Ta ima zgib s polmerom 32 mm, ki obremenitev razporedi. Pritrdi se pod rob mize z 3M VHB lepilom — brez vrtanja, drži 1,5 kg navpično v 24-urnem testu."
+  },
+  "materials": ["PETG"],
+  "tools": ["SolidWorks", "3M VHB"],
+  "photos": []
+}

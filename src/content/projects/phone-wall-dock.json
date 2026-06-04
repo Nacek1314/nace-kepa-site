@@ -1,0 +1,22 @@
+{
+  "slug": "phone-wall-dock",
+  "order": 14,
+  "title": {
+    "en": "Bedside phone wall dock",
+    "sl": "Stenska polica za telefon ob postelji"
+  },
+  "date": "2024",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Wall-mounted dock with a hidden cable channel — phone charges sitting against the wall.",
+    "sl": "Stenska polica s skritim kanalom za kabel — telefon se polni naslonjen ob steno."
+  },
+  "description": {
+    "en": "USB-C cable feeds up through a 12 mm grommet hole and clips into a strain-relief slot. The dock holds phones up to 8.5 mm thick (with case). Two M3 anchors, prints in PLA upright with no supports.",
+    "sl": "USB-C kabel poteka skozi 12 mm odprtino in se zaskoči v reže za razbremenitev. Polica drži telefone do 8,5 mm debeline (skupaj z ovitkom). Dva M3 sidra, tiska se pokončno iz PLA brez podpor."
+  },
+  "materials": ["PLA"],
+  "tools": ["SolidWorks"],
+  "photos": []
+}

@@ -1,0 +1,22 @@
+{
+  "slug": "laptop-riser",
+  "order": 23,
+  "title": {
+    "en": "Ergonomic laptop riser",
+    "sl": "Ergonomski podstavek za prenosnik"
+  },
+  "date": "2024",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Two L-shaped feet that lift any 13–16\" laptop to eye level when paired with an external keyboard.",
+    "sl": "Dva L-stojala, ki vsak 13–16\" prenosnik dvigneta na višino oči pri uporabi z zunanjo tipkovnico."
+  },
+  "description": {
+    "en": "Open back and large vent slots keep airflow up to the laptop's intake fans. Rubberised TPU foot pads (multi-material print) prevent sliding. Holds a 2.4 kg ThinkPad without measurable deflection.",
+    "sl": "Odprta zadnja stran in velike prezračevalne reže omogočajo zračni tok do ventilatorjev prenosnika. TPU gumirana stopala (večmaterialni tisk) preprečujejo drsenje. Drži 2,4 kg ThinkPad brez merljivega upogiba."
+  },
+  "materials": ["PETG", "TPU 95A"],
+  "tools": ["SolidWorks", "Bambu Lab AMS"],
+  "photos": []
+}

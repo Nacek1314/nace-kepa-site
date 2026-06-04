@@ -1,0 +1,22 @@
+{
+  "slug": "magnetic-cable-holder",
+  "order": 29,
+  "title": {
+    "en": "Magnetic desk cable holder",
+    "sl": "Magnetni držalo kablov za pisalno mizo"
+  },
+  "date": "2024",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Loose-cable catcher with a magnetic base — pull a cable, the magnet stays.",
+    "sl": "Lovilec ohlapnih kablov z magnetno osnovo — kabel povlečeš, magnet ostane."
+  },
+  "description": {
+    "en": "USB-C and Lightning tips ferromagnetic enough on their own; for HDMI the tip glues into a small steel washer. Base houses three 10×3 mm magnets in hex pockets. Stops three cables from sliding behind the desk.",
+    "sl": "USB-C in Lightning konektorji so dovolj feromagnetni; pri HDMI se konica zalepi v jekleno podložko. V osnovo so vstavljeni trije magneti 10×3 mm v šestrobne žepe. Trije kabli več ne zdrsnejo za mizo."
+  },
+  "materials": ["PLA"],
+  "tools": ["SolidWorks", "N42 magnets"],
+  "photos": []
+}

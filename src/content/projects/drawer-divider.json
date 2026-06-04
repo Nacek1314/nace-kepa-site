@@ -1,0 +1,22 @@
+{
+  "slug": "drawer-divider",
+  "order": 12,
+  "title": {
+    "en": "Modular drawer divider system",
+    "sl": "Modularni razdelilniki za predale"
+  },
+  "date": "2025",
+  "category": "cad",
+  "clientType": "Personal / educational",
+  "short": {
+    "en": "Tile-and-spacer divider set sized parametrically to any drawer.",
+    "sl": "Razdelilni sistem (ploščice + distančniki), parametrično dimenzioniran za poljuben predal."
+  },
+  "description": {
+    "en": "Drawer width and depth go into a Fusion 360 user parameter; the assembly recomputes the tile count and the half-tile filler. PLA prints with 15 % infill and ~2 mm walls, stays rigid in kitchen and workshop drawers.",
+    "sl": "Širino in globino predala se vpiše v uporabniški parameter v Fusion 360; sestav samodejno preračuna število ploščic in polovični polnilnik. PLA s 15 % polnilom in ~2 mm stenami ostane togo v kuhinjskih in delavniških predalih."
+  },
+  "materials": ["PLA"],
+  "tools": ["Fusion 360"],
+  "photos": []
+}
