@@ -418,50 +418,84 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
     try {
       // Preferred path: POST to Cloudflare Worker which emails Nace.
       if (base) {
-        try {
-          const res = await fetch(base + '/', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-              code,
-              subject,
-              summary: body,
-              contact: state.email || state.name || '',
-              lang,
-              attachments: uploaded,
-              website: '' // honeypot — must stay empty
-            })
-          });
-          if (res.ok) {
-            setProgress(null);
-            setDone({ code, channel: 'instant' });
-            return;
+        const payload = JSON.stringify({
+          code,
+          subject,
+          summary: body,
+          contact: state.email || state.name || '',
+          lang,
+          attachments: uploaded,
+          website: '' // honeypot — must stay empty
+        });
+
+        // Use text/plain to keep this as a CORS-simple request and AVOID the
+        // preflight OPTIONS round-trip. Some mobile browsers (Android Chrome
+        // over HTTP/3, Firefox) flake on preflight to *.workers.dev and the
+        // fetch promise rejects with a generic TypeError.
+        // The worker accepts text/plain and JSON-parses the body itself.
+        const tryPost = (mode: 'simple' | 'json') => fetch(base + '/', {
+          method: 'POST',
+          mode: 'cors',
+          credentials: 'omit',
+          referrerPolicy: 'origin',
+          cache: 'no-store',
+          headers: mode === 'simple'
+            ? { 'content-type': 'text/plain;charset=UTF-8' }
+            : { 'content-type': 'application/json' },
+          body: payload
+        });
+
+        let res: Response | null = null;
+        let lastErr: any = null;
+        for (const mode of ['simple', 'json'] as const) {
+          try {
+            res = await tryPost(mode);
+            break;
+          } catch (e: any) {
+            lastErr = e;
+            // try the other mode before giving up
           }
-          if (res.status === 429) {
-            const retry = res.headers.get('Retry-After');
-            const mins = retry ? Math.ceil(parseInt(retry, 10) / 60) : null;
-            setErr(lang === 'sl'
-              ? `Preveč povpraševanj s te povezave.${mins ? ` Poskusi znova čez ~${mins} min.` : ''}`
-              : `Too many requests from this connection.${mins ? ` Try again in ~${mins} min.` : ''}`);
-            setProgress(null);
-            setSubmitting(false);
-            return;
-          }
-          // other non-ok → surface as error
+        }
+
+        if (!res) {
           setProgress(null);
+          const detail = lastErr?.name && lastErr.name !== 'TypeError'
+            ? `${lastErr.name}: ${lastErr.message || ''}`
+            : (lastErr?.message || 'fetch_failed');
           setErr(lang === 'sl'
-            ? `Pošiljanje ni uspelo (HTTP ${res.status}). Poskusi znova čez nekaj sekund.`
-            : `Submission failed (HTTP ${res.status}). Please try again in a few seconds.`);
-          setSubmitting(false);
-          return;
-        } catch (e: any) {
-          setProgress(null);
-          setErr(lang === 'sl'
-            ? `Povezava ni uspela${e?.message ? ` (${e.message})` : ''}. Preveri internet in poskusi znova.`
-            : `Network error${e?.message ? ` (${e.message})` : ''}. Check your connection and try again.`);
+            ? `Povezava do strežnika ni uspela (${detail}). Poskusi znova ali piši na ${contactEmail}.`
+            : `Could not reach the server (${detail}). Please try again or email ${contactEmail}.`);
           setSubmitting(false);
           return;
         }
+
+        if (res.ok) {
+          setProgress(null);
+          setDone({ code, channel: 'instant' });
+          return;
+        }
+        if (res.status === 429) {
+          const retry = res.headers.get('Retry-After');
+          const mins = retry ? Math.ceil(parseInt(retry, 10) / 60) : null;
+          setErr(lang === 'sl'
+            ? `Preveč povpraševanj s te povezave.${mins ? ` Poskusi znova čez ~${mins} min.` : ''}`
+            : `Too many requests from this connection.${mins ? ` Try again in ~${mins} min.` : ''}`);
+          setProgress(null);
+          setSubmitting(false);
+          return;
+        }
+        // Try to surface the actual server-side error code (e.g. forbidden_origin).
+        let serverErr = '';
+        try {
+          const j = await res.json();
+          if (j && j.error) serverErr = ` — ${j.error}`;
+        } catch { /* ignore */ }
+        setProgress(null);
+        setErr(lang === 'sl'
+          ? `Pošiljanje ni uspelo (HTTP ${res.status}${serverErr}). Poskusi znova čez nekaj sekund.`
+          : `Submission failed (HTTP ${res.status}${serverErr}). Please try again in a few seconds.`);
+        setSubmitting(false);
+        return;
       } else {
         setProgress(null);
         setErr(lang === 'sl'

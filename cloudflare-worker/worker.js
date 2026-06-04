@@ -178,8 +178,11 @@ async function handleDownload(url, env, sec) {
 // =====================================================================
 
 async function handleOrder(request, env, headers) {
-  const ct = request.headers.get('Content-Type') || '';
-  if (!ct.toLowerCase().includes('application/json')) {
+  // Accept application/json AND text/plain. Mobile browsers (Chrome Android,
+  // Firefox) sometimes choke on CORS preflight; sending text/plain makes it a
+  // CORS-simple request — no preflight — and we just try to JSON.parse the body.
+  const ct = (request.headers.get('Content-Type') || '').toLowerCase();
+  if (ct && !ct.includes('application/json') && !ct.includes('text/plain')) {
     return json({ ok: false, error: 'unsupported_media_type' }, 415, headers);
   }
 
