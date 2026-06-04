@@ -275,7 +275,6 @@ function boot() {
   mountMagnetic();
   mountTilt();
   mountParallax();
-  mountCursor();
 }
 
 if (document.readyState === 'loading') {
@@ -294,7 +293,6 @@ document.addEventListener('astro:page-load', () => {
     mountMagnetic();
     mountTilt();
     mountParallax();
-    mountCursor();
   }
 });
 

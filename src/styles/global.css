@@ -469,49 +469,9 @@ body:hover > main::before { opacity: 1; }
    NEXT-LEVEL — custom cursor, film grain, split-char, marquee, view-trans
    ========================================================================== */
 
-/* Custom cursor — dot + ring. JS postavlja transform. */
-@media (pointer: fine) {
-  body { cursor: none; }
-  a, button, input, textarea, select, [role="button"], [data-magnetic], [data-tilt] {
-    cursor: none;
-  }
-}
+/* Custom cursor disabled — using native cursor. */
 .cursor-dot,
-.cursor-ring {
-  position: fixed;
-  top: 0; left: 0;
-  pointer-events: none;
-  z-index: 999;
-  border-radius: 50%;
-  will-change: transform, opacity;
-  transition: opacity 0.2s ease, width 0.25s ease, height 0.25s ease,
-              background 0.25s ease, border-color 0.25s ease;
-  mix-blend-mode: difference;
-}
-.cursor-dot {
-  width: 8px; height: 8px;
-  background: #fff;
-}
-.cursor-ring {
-  width: 36px; height: 36px;
-  border: 1.5px solid rgba(255, 255, 255, 0.6);
-}
-html.cursor-hover .cursor-dot {
-  width: 0; height: 0;
-}
-html.cursor-hover .cursor-ring {
-  width: 56px; height: 56px;
-  border-color: var(--barva-sekundarna);
-  background: rgba(188, 185, 172, 0.10);
-  mix-blend-mode: normal;
-}
-html.cursor-down .cursor-ring {
-  transform-origin: center;
-  width: 28px; height: 28px;
-}
-@media (pointer: coarse) {
-  .cursor-dot, .cursor-ring { display: none; }
-}
+.cursor-ring { display: none !important; }
 
 /* Film grain overlay — animiran SVG noise */
 body::after {
