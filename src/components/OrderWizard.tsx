@@ -247,7 +247,7 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
   const [stlStats, setStlStats] = useState<Stats | null>(null);
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState<{ code: string; channel: 'instant' | 'mailto' } | null>(null);
+  const [done, setDone] = useState<{ code: string; channel: 'instant' | 'mailto'; body?: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -355,7 +355,7 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
 
       setProgress(null);
       setErr(null);
-      setDone({ code, channel: 'mailto' });
+      setDone({ code, channel: 'mailto', body: briefBody });
       setSubmitting(false);
     };
 
@@ -477,8 +477,20 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
   }
 
   if (done) {
-    const mailtoFallback = `mailto:${contactEmail}?subject=${encodeURIComponent(`[${done.code}] ${lang === 'sl' ? 'Povpraševanje' : 'Project request'}`)}`;
+    const subjectLine = `[${done.code}] ${lang === 'sl' ? 'Povpraševanje' : 'Project request'}`;
+    const mailtoFallback = `mailto:${contactEmail}?subject=${encodeURIComponent(subjectLine)}`;
+    const gmailCompose = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(contactEmail)}&su=${encodeURIComponent(subjectLine)}` +
+      (done.body ? `&body=${encodeURIComponent(done.body)}` : '');
     const isInstant = done.channel === 'instant';
+    const copyBrief = () => {
+      if (!done.body) return;
+      navigator.clipboard?.writeText(done.body);
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
+    };
+    const copyEmail = () => {
+      navigator.clipboard?.writeText(contactEmail);
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
+    };
     return (
       <div className="rounded-2xl border border-accent-300 dark:border-accent-700 bg-accent-50 dark:bg-accent-900/30 p-8 text-center">
         <div className="w-12 h-12 mx-auto rounded-full bg-accent-600 text-white flex items-center justify-center text-2xl">✓</div>
@@ -513,10 +525,40 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
             </>
           ) : (
             <>
+              <p className="font-medium mb-2">{lang === 'sl' ? 'Pošlji povpraševanje na e-pošto:' : 'Send the brief by email to:'}</p>
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <a href={`mailto:${contactEmail}`}
+                   className="font-display font-bold text-xl sm:text-2xl text-accent-600 dark:text-accent-300 hover:underline break-all">
+                  {contactEmail}
+                </a>
+                <button type="button" onClick={copyEmail}
+                        className="text-xs px-2 py-1 rounded bg-accent-600 text-white hover:bg-accent-700">
+                  {lang === 'sl' ? 'Kopiraj' : 'Copy'}
+                </button>
+              </div>
+              <p className="font-medium mb-2">{lang === 'sl' ? 'Najhitrejši način:' : 'Fastest options:'}</p>
+              <div className="flex flex-wrap gap-2 mb-3">
+                <a href={mailtoFallback}
+                   className="text-xs font-medium px-3 py-1.5 rounded-md bg-accent-600 text-white hover:bg-accent-700">
+                  {lang === 'sl' ? 'Odpri e-poštni odjemalec' : 'Open email client'}
+                </a>
+                <a href={gmailCompose} target="_blank" rel="noopener noreferrer"
+                   className="text-xs font-medium px-3 py-1.5 rounded-md border border-accent-600 text-accent-700 dark:text-accent-300 hover:bg-accent-50 dark:hover:bg-accent-900/30">
+                  {lang === 'sl' ? 'Odpri v Gmailu' : 'Open in Gmail'}
+                </a>
+                {done.body && (
+                  <button type="button" onClick={copyBrief}
+                          className="text-xs font-medium px-3 py-1.5 rounded-md border border-ink-300 dark:border-ink-700 hover:bg-ink-100 dark:hover:bg-ink-800/50">
+                    {lang === 'sl' ? 'Kopiraj povpraševanje' : 'Copy brief'}
+                  </button>
+                )}
+              </div>
               <p className="font-medium mb-2">{lang === 'sl' ? 'Kaj se je pravkar zgodilo:' : 'What just happened:'}</p>
               <ol className="list-decimal pl-5 space-y-1 text-ink-600 dark:text-ink-300">
                 <li>{lang === 'sl' ? `Datoteka ${done.code}-brief.txt se je prenesla na tvoj računalnik.` : `The file ${done.code}-brief.txt was downloaded to your computer.`}</li>
-                <li>{lang === 'sl' ? 'Odprl se je tvoj e-poštni odjemalec z že izpolnjenim povpraševanjem.' : 'Your email client opened with the request pre-filled.'}</li>
+                <li>{lang === 'sl'
+                  ? 'Če imaš nameščen e-poštni odjemalec, se je odprl z že izpolnjenim povpraševanjem.'
+                  : 'If you have an email client installed, it opened with the request pre-filled.'}</li>
                 {state.files.length > 0 && (
                   <li className="font-medium text-ink-700 dark:text-ink-200">
                     {lang === 'sl'
@@ -527,11 +569,9 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
                 <li>{lang === 'sl' ? 'Pritisni Pošlji v e-poštnem odjemalcu.' : 'Hit Send in your email client.'}</li>
               </ol>
               <p className="mt-3 text-xs text-ink-500">
-                {lang === 'sl' ? 'Se e-pošta ni odprla? ' : 'Email did not open? '}
-                <a href={mailtoFallback} className="text-accent-600 dark:text-accent-300 underline">
-                  {lang === 'sl' ? 'Klikni tukaj' : 'Click here'}
-                </a>
-                {lang === 'sl' ? ' in priloži preneseno datoteko.' : ' and attach the downloaded file.'}
+                {lang === 'sl'
+                  ? 'Ni e-poštnega odjemalca? Klikni "Odpri v Gmailu" ali kopiraj povpraševanje in ga prilepi v svojo spletno pošto.'
+                  : 'No email client? Click "Open in Gmail" or copy the brief and paste it into your webmail.'}
               </p>
             </>
           )}
