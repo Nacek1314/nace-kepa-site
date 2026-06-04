@@ -923,6 +923,27 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
             </p>
           )}
           {err && <p className="text-sm text-ink-700 dark:text-ink-200">{err}</p>}
+          {err && (
+            <div className="text-sm text-ink-700 dark:text-ink-200 rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3">
+              <p className="font-medium">
+                {lang === 'sl' ? 'Pošiljanje ne deluje? Kontaktiraj me direktno:' : 'Sending not working? Contact me directly:'}
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                <li>
+                  {lang === 'sl' ? 'E-pošta: ' : 'Email: '}
+                  <a href={`mailto:${contactEmail}?subject=${encodeURIComponent(`[${trackingCode}] ${lang === 'sl' ? 'Povpraševanje' : 'Project request'}`)}`}
+                     className="text-accent-600 dark:text-accent-300 underline">
+                    {contactEmail}
+                  </a>
+                </li>
+                <li className="text-xs text-ink-600 dark:text-ink-300">
+                  {lang === 'sl'
+                    ? `Pripiši kodo ${trackingCode}, da ti hitreje odgovorim.`
+                    : `Mention code ${trackingCode} so I can reply faster.`}
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
