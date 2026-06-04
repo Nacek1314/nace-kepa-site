@@ -322,6 +322,43 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
 
     const base = endpointBase;
 
+    // Fallback path used whenever the Cloudflare Worker is unreachable or returns an
+    // error (Safari surfaces these as "Load failed"). Downloads a brief.txt and opens
+    // the user's email client pre-addressed to contactEmail (kepanace@gmail.com), so
+    // the request still reaches Nace.
+    const goMailtoFallback = (briefBody: string) => {
+      try {
+        const blob = new Blob([briefBody], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${code}-brief.txt`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      } catch { /* ignore download failures */ }
+
+      // mailto: bodies are length-limited (~2 KB on most clients); truncate and
+      // point the user at the downloaded brief for the full content.
+      const MAX_MAILTO_BODY = 1500;
+      const truncated = briefBody.length > MAX_MAILTO_BODY
+        ? briefBody.slice(0, MAX_MAILTO_BODY) +
+          '\n\n' + (lang === 'sl'
+            ? `[…povpraševanje skrajšano — celoten opis je v priloženi datoteki ${code}-brief.txt]`
+            : `[…brief truncated — full details in the attached file ${code}-brief.txt]`)
+        : briefBody;
+      const mailto = `mailto:${contactEmail}`
+        + `?subject=${encodeURIComponent(subject)}`
+        + `&body=${encodeURIComponent(truncated)}`;
+      try { window.location.href = mailto; } catch { /* ignore */ }
+
+      setProgress(null);
+      setErr(null);
+      setDone({ code, channel: 'mailto' });
+      setSubmitting(false);
+    };
+
     // 1) Files were auto-uploaded on attach. Await any in-flight promises,
     //    retry failed/missing ones inline, then collect URLs.
     const uploaded: { name: string; size: number; url: string }[] = [];
@@ -360,11 +397,18 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
           setUploads((u) => ({ ...u, [k]: { progress: 100, done: true, url: res.url } }));
           uploaded.push({ name: res.name || f.name, size: res.size || f.size, url: res.url });
         } catch (e: any) {
+          // File upload to the Worker failed (often shows as "Load failed" in
+          // Safari when the Worker is unreachable). Fall back to the mailto flow
+          // so the brief still reaches Nace at kepanace@gmail.com — the user
+          // will be prompted to attach the file(s) manually.
           setProgress(null);
-          setErr(lang === 'sl'
-            ? `Datoteka ${f.name} ni bila poslana (${e?.message || 'napaka'}). Poskusi znova ali odstrani datoteko.`
-            : `File ${f.name} failed to upload (${e?.message || 'error'}). Retry or remove the file.`);
-          setSubmitting(false);
+          const manualNote = '\n\n' + (lang === 'sl'
+            ? `— Datoteke (priloži ročno v e-pošto, prenos ni uspel: ${e?.message || 'napaka'}):`
+            : `— Files (please attach manually to the email, upload failed: ${e?.message || 'error'}):`)
+            + '\n' + state.files.map((sf) => `• ${sf.name} (${fmtSize(sf.size)})`).join('\n');
+          const fallbackBody = summary + manualNote + '\n\n' +
+            (lang === 'sl' ? '— Poslano prek nacekepa.work' : '— Sent via nacekepa.work');
+          goMailtoFallback(fallbackBody);
           return;
         }
       }
@@ -410,27 +454,19 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
             setSubmitting(false);
             return;
           }
-          // other non-ok → surface as error
-          setProgress(null);
-          setErr(lang === 'sl'
-            ? `Pošiljanje ni uspelo (HTTP ${res.status}). Poskusi znova čez nekaj sekund.`
-            : `Submission failed (HTTP ${res.status}). Please try again in a few seconds.`);
-          setSubmitting(false);
+          // Any other non-ok response → fall back to mailto so the brief still
+          // reaches Nace at kepanace@gmail.com.
+          goMailtoFallback(body);
           return;
         } catch (e: any) {
-          setProgress(null);
-          setErr(lang === 'sl'
-            ? `Povezava ni uspela${e?.message ? ` (${e.message})` : ''}. Preveri internet in poskusi znova.`
-            : `Network error${e?.message ? ` (${e.message})` : ''}. Check your connection and try again.`);
-          setSubmitting(false);
+          // Network error (Safari shows this as "Load failed"). Fall back to
+          // mailto so the user can still send the brief to kepanace@gmail.com.
+          goMailtoFallback(body);
           return;
         }
       } else {
-        setProgress(null);
-        setErr(lang === 'sl'
-          ? 'Strežnik ni nastavljen. Obvesti administratorja.'
-          : 'Server endpoint not configured. Please notify the admin.');
-        setSubmitting(false);
+        // Worker endpoint not configured → fall back to mailto.
+        goMailtoFallback(body);
         return;
       }
     } catch (e: any) {
