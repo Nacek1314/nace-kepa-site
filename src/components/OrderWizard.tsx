@@ -985,6 +985,18 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
           </button>
         )}
       </div>
+
+      {/* Contact fallback — shown big at the bottom so users can reach Nace
+          directly if anything in the wizard misbehaves. */}
+      <div className="mt-8 pt-6 border-t border-ink-200 dark:border-ink-800 text-center">
+        <p className="text-sm text-ink-500 dark:text-ink-400">
+          {lang === 'sl' ? 'Imaš težave? Piši mi na' : 'If you have any problems please contact'}
+        </p>
+        <a href={`mailto:${contactEmail}`}
+           className="mt-2 inline-block font-display font-bold text-2xl sm:text-3xl text-accent-600 dark:text-accent-300 hover:underline break-all">
+          {contactEmail}
+        </a>
+      </div>
     </div>
   );
 }
