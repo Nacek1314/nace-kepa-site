@@ -9,6 +9,7 @@ interface Props {
     date: string;
     category: string;
     materials?: string[];
+    cover?: string;
   };
   accent?: string;
 }
@@ -19,17 +20,38 @@ const categoryLabel: Record<string, { en: string; sl: string }> = {
   embedded: { en: 'Embedded', sl: 'Vgrajeno' },
   mechanical: { en: 'Mechanical', sl: 'Mehansko' }
 };
+// Deterministic accent hue per project so card placeholders aren't all the same.
+let hash = 0;
+for (let i = 0; i < project.slug.length; i++) hash = (hash * 31 + project.slug.charCodeAt(i)) | 0;
+const hue = Math.abs(hash) % 360;
+const initials = project.slug.split('-').map((w) => w[0]?.toUpperCase()).join('').slice(0, 3);
 ---
 <a href={localePath(lang, `/portfolio/${project.slug}`)}
    data-tilt="8"
    style={accent ? `--kartica-akcent: ${accent}` : undefined}
    class="premium-kartica group block overflow-hidden">
-  <div class="aspect-[4/3] relative bg-gradient-to-br from-ink-100 via-ink-50 to-accent-50 dark:from-ink-800 dark:via-ink-900 dark:to-accent-900/30 flex items-center justify-center">
-    <span class="font-display text-3xl text-ink-300 dark:text-ink-700 select-none">{project.slug.split('-').map(w => w[0]?.toUpperCase()).join('')}</span>
-    <span class="absolute top-3 left-3 text-[10px] uppercase tracking-wider px-2 py-1 rounded bg-white/80 dark:bg-ink-950/70 text-ink-700 dark:text-ink-200 backdrop-blur">
+  <div class="aspect-[4/3] relative flex items-center justify-center overflow-hidden">
+    {project.cover ? (
+      <img src={project.cover} alt={project.title[lang]}
+           class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+           loading="lazy" decoding="async" />
+    ) : (
+      <>
+        <div class="absolute inset-0"
+             style={`background:
+               radial-gradient(circle at 30% 20%, hsl(${hue} 55% 28% / 0.55), transparent 55%),
+               radial-gradient(circle at 75% 75%, hsl(${(hue + 60) % 360} 50% 22% / 0.5), transparent 60%),
+               linear-gradient(135deg, #131518 0%, #0d0f12 100%);`}></div>
+        <div class="absolute inset-0 opacity-[0.06]"
+             style="background-image: linear-gradient(0deg, currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px); background-size: 16px 16px;"></div>
+        <span class="relative font-display text-5xl font-bold tabular-nums tracking-tighter"
+              style={`color: hsl(${hue} 35% 78%); text-shadow: 0 2px 24px hsl(${hue} 50% 30% / 0.4);`}>{initials}</span>
+      </>
+    )}
+    <span class="absolute top-3 left-3 text-[10px] uppercase tracking-wider px-2 py-1 rounded bg-white/85 dark:bg-ink-950/80 text-ink-700 dark:text-ink-200 backdrop-blur-sm">
       {categoryLabel[project.category]?.[lang] ?? project.category}
     </span>
-    <span class="absolute top-3 right-3 text-[10px] text-ink-500 dark:text-ink-400">{project.date}</span>
+    <span class="absolute top-3 right-3 text-[10px] text-ink-300 bg-ink-950/60 px-1.5 py-0.5 rounded backdrop-blur-sm">{project.date}</span>
   </div>
   <div class="p-5">
     <h3 class="font-display text-lg font-bold leading-tight mb-1 group-hover:text-accent-600 dark:group-hover:text-accent-300 transition-colors">{project.title[lang]}</h3>

@@ -308,8 +308,45 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
       return { ...s, [k]: arr as any };
     });
   };
-  const next = () => setStep((s) => Math.min(s + 1, steps.length - 1));
-  const back = () => setStep((s) => Math.max(0, s - 1));
+
+  // Per-step validation gate. Returns null if step is valid, else an error message.
+  function validateStep(key: string): string | null {
+    const SL = lang === 'sl';
+    switch (key) {
+      case 'services':
+        if (state.services.length === 0) {
+          return SL ? 'Izberi vsaj eno storitev za nadaljevanje.' : 'Please select at least one service to continue.';
+        }
+        return null;
+      case 'description':
+        if (state.description.trim().length < 20) {
+          return SL
+            ? 'Opis projekta naj ima vsaj 20 znakov, da znamo realno oceniti.'
+            : 'Please describe the project in at least 20 characters so we can estimate properly.';
+        }
+        return null;
+      case 'contact': {
+        if (!state.name.trim()) {
+          return SL ? 'Vpiši svoje ime.' : 'Please enter your name.';
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email.trim())) {
+          return SL ? 'Vpiši veljaven e-poštni naslov.' : 'Please enter a valid email address.';
+        }
+        return null;
+      }
+      default:
+        return null;
+    }
+  }
+
+  const next = () => {
+    const v = validateStep(stepKey);
+    if (v) { setErr(v); return; }
+    setErr(null);
+    setStep((s) => Math.min(s + 1, steps.length - 1));
+  };
+  const back = () => { setErr(null); setStep((s) => Math.max(0, s - 1)); };
+  const stepValid = validateStep(stepKey) === null;
 
   const estimate = useMemo(() => estimateEUR(state, stlStats), [state, stlStats]);
   const breakdown = useMemo(() => estimateOrder(state, stlStats, lang), [state, stlStats, lang]);
@@ -555,6 +592,9 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
               );
             })}
           </div>
+          {err && stepKey === 'services' && (
+            <p className="text-sm text-amber-400">{err}</p>
+          )}
         </div>
       )}
 
@@ -853,6 +893,14 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
           <AiAssistant lang={lang} onSuggest={(text) => update('description', state.description ? state.description + '\n\n' + text : text)} />
           <textarea rows={6} value={state.description} onChange={(e) => update('description', e.target.value)}
                     className="w-full px-3 py-2 rounded-md border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950" />
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-ink-500 dark:text-ink-400 tabular-nums">
+              {state.description.trim().length} / 20+ {lang === 'sl' ? 'znakov' : 'characters'}
+            </span>
+          </div>
+          {err && stepKey === 'description' && (
+            <p className="text-sm text-amber-400">{err}</p>
+          )}
         </div>
       )}
 
@@ -890,17 +938,22 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
 
       {stepKey === 'contact' && (
         <div className="space-y-3">
-          <p className="font-display text-xl font-bold">{labels.name}</p>
+          <p className="font-display text-xl font-bold">
+            {labels.name} <span className="text-amber-400" aria-hidden>*</span>
+          </p>
           <div className="grid sm:grid-cols-2 gap-3">
-            <input placeholder={labels.name} required value={state.name} onChange={(e) => update('name', e.target.value)}
+            <input placeholder={`${labels.name} *`} required value={state.name} onChange={(e) => update('name', e.target.value)}
                    className="px-3 py-2 rounded-md border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950" />
-            <input type="email" placeholder={labels.email} required value={state.email} onChange={(e) => update('email', e.target.value)}
+            <input type="email" placeholder={`${labels.email} *`} required value={state.email} onChange={(e) => update('email', e.target.value)}
                    className="px-3 py-2 rounded-md border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950" />
             <input placeholder={labels.phone} value={state.phone} onChange={(e) => update('phone', e.target.value)}
                    className="px-3 py-2 rounded-md border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950" />
             <input placeholder={labels.company} value={state.company} onChange={(e) => update('company', e.target.value)}
                    className="px-3 py-2 rounded-md border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950" />
           </div>
+          {err && stepKey === 'contact' && (
+            <p className="text-sm text-amber-400">{err}</p>
+          )}
         </div>
       )}
 
@@ -938,8 +991,8 @@ export default function OrderWizard({ lang, dict, contactEmail }: Props) {
         </button>
         {stepKey !== 'review' ? (
           <button type="button" onClick={next}
-                  disabled={stepKey === 'services' && state.services.length === 0}
-                  className="text-sm font-medium px-5 py-2 rounded-md bg-accent-600 text-white hover:bg-accent-700 disabled:opacity-50">
+                  disabled={!stepValid}
+                  className="text-sm font-medium px-5 py-2 rounded-md bg-accent-600 text-white hover:bg-accent-700 disabled:opacity-50 disabled:cursor-not-allowed">
             {L.next} →
           </button>
         ) : (
