@@ -1,0 +1,12 @@
+{
+  "order": 3,
+  "author": "Matej P.",
+  "role": { "en": "Engineering student", "sl": "Študent inženirstva" },
+  "rating": 5,
+  "date": "2025-04-19",
+  "quote": {
+    "en": "Embedded firmware and a custom enclosure for my school project — everything tested and documented. I learned a lot from the handover notes.",
+    "sl": "Vgrajeni firmware in ohišje po meri za moj šolski projekt — vse testirano in dokumentirano. Iz predajnih zapiskov sem se veliko naučil."
+  },
+  "project": "smart-money-saver"
+}

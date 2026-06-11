@@ -71,3 +71,14 @@ public/
 2. Drop photos into `public/projects/my-project/` and reference them from the
    `photos` array (paths are relative to the site root).
 3. Push. The portfolio grid + case-study page rebuild automatically.
+
+## Reviews
+
+Reviews are a file-based "database": each review is a bilingual JSON entry in
+`src/content/reviews/` (see existing entries for the schema). They render on the
+`/reviews` page (EN + SL).
+
+Visitors leave a review the same way orders work — the **Leave a review** button
+opens their own email client (`mailto:`) pre-filled and addressed to
+`kepanace@gmail.com`. Nothing is uploaded. To publish a received review, add a
+new JSON file under `src/content/reviews/` and push.

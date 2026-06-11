@@ -1,0 +1,12 @@
+{
+  "order": 2,
+  "author": "Sara K.",
+  "role": { "en": "Product designer", "sl": "Produktna oblikovalka" },
+  "rating": 5,
+  "date": "2025-07-02",
+  "quote": {
+    "en": "The CAD work was precise and the STEP files dropped straight into our pipeline. Fast turnaround and great communication on tolerances.",
+    "sl": "CAD je bil natančen, STEP datoteke pa so se brez težav vključile v naš proces. Hitra izvedba in odlična komunikacija glede toleranc."
+  },
+  "project": "famfive"
+}
