@@ -7,7 +7,7 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
   site: 'https://nacekepa.work',
   trailingSlash: 'ignore',
-  integrations: [sitemap({ filter: (page) => !/\/(services|portfolio|skills|about|order|sl)(\/|$)/.test(new URL(page).pathname) })],
+  integrations: [sitemap({ filter: (page) => !/\/(services|portfolio|skills|about|order|sl|admin)(\/|$)/.test(new URL(page).pathname) })],
   redirects: {
     "/services": "/#services",
     "/portfolio": "/#work",

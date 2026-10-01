@@ -158,3 +158,29 @@ main { display: grid; }
 .sent { display: grid; gap: var(--space-3); justify-items: start; padding-bottom: var(--space-2); }
 .sent .nk-tag { margin-bottom: var(--space-1); }
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+/* Project sheets as links, photos, 3D */
+a.nk-sheet { cursor: pointer; }
+.nk-sheet__art .sheet-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+.has3d { color: var(--redline); font-weight: 500; }
+
+/* Project page */
+.back { font: 500 13px/20px var(--font-mono); color: var(--ink-muted); text-decoration: none; justify-self: start; }
+.back:hover { color: var(--redline); }
+.project-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--space-8); align-items: start; }
+.project-stage { display: grid; gap: var(--space-2); min-width: 0; }
+.project-art { border: 1px solid var(--line-strong); }
+.nk-viewer { position: relative; aspect-ratio: 4 / 3; max-width: 100%; border: 1px solid var(--line-strong); background-color: var(--paper-raised);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 16px 16px; overflow: hidden; touch-action: none; }
+.nk-viewer__canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; display: block; cursor: grab; }
+.nk-viewer__canvas:active { cursor: grabbing; }
+.nk-viewer__msg { position: absolute; inset: 0; display: grid; place-items: center; font: 500 12px/16px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); }
+.viewer-hint { font: 12px/16px var(--font-mono); color: var(--ink-muted); }
+.project-side { display: grid; gap: var(--space-6); align-content: start; background: var(--paper-raised); border: 1px solid var(--line-strong); padding: var(--space-6); min-width: 0; }
+.project-details { display: grid; gap: var(--space-3); color: var(--ink); }
+.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-4); }
+.photos a { display: block; border: 1px solid var(--line-strong); background: var(--paper-raised); }
+.photos img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.next-project { display: grid; gap: var(--space-1); justify-items: end; text-decoration: none; padding-top: var(--space-6); border-top: 1px solid var(--line); }
+.next-project:hover .sub { color: var(--redline); }
+@media (max-width: 860px) { .project-grid { grid-template-columns: 1fr; } }

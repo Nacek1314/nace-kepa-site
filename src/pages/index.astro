@@ -6,10 +6,12 @@ import componentsCss from '../site/components.css?raw';
 import drawings from '../site/drawings.js?raw';
 import content from '../site/content.js?raw';
 import app from '../site/app.js?raw';
+import projects from '../data/projects.json';
 
 const endpoint = (import.meta.env.PUBLIC_ORDER_ENDPOINT || '').trim();
 const contactEmail = 'kepanace@gmail.com';
-const script = [drawings, content, app.split('__ORDER_ENDPOINT__').join(endpoint || '__ORDER_ENDPOINT__').split('__CONTACT_EMAIL__').join(contactEmail)].join('\n');
+const projectsJs = 'window.NK_PROJECTS = ' + JSON.stringify(projects).replace(/</g, '\\u003c') + ';';
+const script = [drawings, content, projectsJs, app.split('__ORDER_ENDPOINT__').join(endpoint || '__ORDER_ENDPOINT__').split('__CONTACT_EMAIL__').join(contactEmail)].join('\n');
 const css = pageCss + '\n' + componentsCss;
 const title = 'Nace Kepa · Engineering Studio';
 const description = 'One-person engineering studio in Škofja Loka, Slovenia: SolidWorks CAD, 3D printing, ESP32 firmware and full custom builds — from the first sketch to the firmware.';
@@ -48,5 +50,11 @@ const description = 'One-person engineering studio in Škofja Loka, Slovenia: So
       <noscript><p style="padding:24px;font-family:sans-serif">Nace Kepa · Engineering Studio — CAD, 3D printing, embedded systems and full custom builds in Škofja Loka. Enable JavaScript to browse the site, or email kepanace@gmail.com.</p></noscript>
     </div>
     <script is:inline set:html={script}></script>
+    <script>
+      // three.js (~600 KB) loads only when a project page with a 3D model is opened.
+      let loading: Promise<unknown> | null = null;
+      (window as any).NKViewerLoad = () => (loading ??= import('../site/viewer.js'));
+      if (document.getElementById('viewer')) (window as any).NKViewerLoad();
+    </script>
   </body>
 </html>

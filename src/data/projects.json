@@ -1,0 +1,640 @@
+[
+  {
+    "slug": "famfive",
+    "title": {
+      "en": "FamFive",
+      "sl": "FamFive"
+    },
+    "year": 2025,
+    "category": "IoT",
+    "description": {
+      "en": "ESP32 redesign of the smart piggy bank, packaged as a product.",
+      "sl": "Pametni hranilnik, prenovljen z ESP32 in zapakiran kot izdelek."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "famfive",
+    "featured": true,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "automated-cocktail-dispenser",
+    "title": {
+      "en": "Automated cocktail dispenser",
+      "sl": "Avtomatski točilnik koktajlov"
+    },
+    "year": 2025,
+    "category": "Mechanical",
+    "description": {
+      "en": "Eight-channel solenoid manifold, microcontroller, and a recipe book.",
+      "sl": "Razdelilnik z osmimi elektromagnetnimi ventili, mikrokrmilnik in knjiga receptov."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "cocktail",
+    "featured": true,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "engineered-backpack-buckle",
+    "title": {
+      "en": "Engineered backpack buckle",
+      "sl": "Inženirska zaponka za nahrbtnik"
+    },
+    "year": 2025,
+    "category": "CAD",
+    "description": {
+      "en": "Functional 3D-printed buckle with full strength calculation and material trade-off.",
+      "sl": "Funkcionalna natisnjena zaponka s celotnim trdnostnim izračunom in izbiro materiala."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "buckle",
+    "featured": true,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "440-hz-precision-whistle",
+    "title": {
+      "en": "440 Hz precision whistle",
+      "sl": "Piščalka 440 Hz"
+    },
+    "year": 2025,
+    "category": "CAD",
+    "description": {
+      "en": "A 3D-printed whistle tuned to musical A — designed from acoustic first principles.",
+      "sl": "Natisnjena piščalka, uglašena na ton A — zasnovana iz osnov akustike."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "whistle",
+    "featured": true,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "garden-hose-universal-adapter",
+    "title": {
+      "en": "Garden hose universal adapter",
+      "sl": "Univerzalni adapter za vrtno cev"
+    },
+    "year": 2025,
+    "category": "Mechanical",
+    "description": {
+      "en": "Bridges Gardena quick-connect to G3/4 male threads when the OEM piece breaks.",
+      "sl": "Poveže hitro spojko Gardena z zunanjim navojem G3/4, ko se originalni del zlomi."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "modular-drawer-divider-system",
+    "title": {
+      "en": "Modular drawer divider system",
+      "sl": "Modularni predalčnik"
+    },
+    "year": 2025,
+    "category": "CAD",
+    "description": {
+      "en": "Tile-and-spacer divider set sized parametrically to any drawer.",
+      "sl": "Komplet pregrad, parametrično prilagojen kateremukoli predalu."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "replacement-bike-light-bracket",
+    "title": {
+      "en": "Replacement bike light bracket",
+      "sl": "Nadomestni nosilec kolesarske luči"
+    },
+    "year": 2025,
+    "category": "Mechanical",
+    "description": {
+      "en": "Drop-in replacement for a snapped OEM front-light bracket — no need to buy a new lamp.",
+      "sl": "Neposredna zamenjava za zlomljen originalni nosilec — nove luči ni treba kupiti."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "universal-vacuum-hose-adapter",
+    "title": {
+      "en": "Universal vacuum hose adapter",
+      "sl": "Univerzalni adapter za sesalno cev"
+    },
+    "year": 2025,
+    "category": "Mechanical",
+    "description": {
+      "en": "Stepped cone that connects shop-vac hoses to power-tool dust ports of any size.",
+      "sl": "Stopničast stožec, ki poveže cev sesalnika s priključkom za prah na orodju."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "scheduled-pet-feeder",
+    "title": {
+      "en": "Scheduled pet feeder",
+      "sl": "Časovni hranilnik za ljubljenčke"
+    },
+    "year": 2025,
+    "category": "IoT",
+    "description": {
+      "en": "ESP32 and auger servo dispense a measured portion on schedule, with manual override in the web UI.",
+      "sl": "ESP32 in polžni servo ob določenem času odmerita obrok, z ročnim upravljanjem v spletnem vmesniku."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "plant-moisture-monitor",
+    "title": {
+      "en": "Plant moisture monitor",
+      "sl": "Merilnik vlage za rastline"
+    },
+    "year": 2025,
+    "category": "IoT",
+    "description": {
+      "en": "ESP32-C3 and a capacitive probe light an LED and ping Telegram when the soil gets dry.",
+      "sl": "ESP32-C3 s kapacitivno sondo prižge LED in pošlje sporočilo na Telegram, ko se zemlja izsuši."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "door-open-telegram-bot",
+    "title": {
+      "en": "Door-open Telegram bot",
+      "sl": "Telegram obvestilo za vrata"
+    },
+    "year": 2025,
+    "category": "IoT",
+    "description": {
+      "en": "Reed switch and ESP32 send a Telegram message every time a chosen door opens.",
+      "sl": "Reed stikalo in ESP32 pošljeta sporočilo na Telegram ob vsakem odprtju izbranih vrat."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "wi-fi-fridge-thermometer",
+    "title": {
+      "en": "Wi-Fi fridge thermometer",
+      "sl": "Wi-Fi termometer za hladilnik"
+    },
+    "year": 2025,
+    "category": "IoT",
+    "description": {
+      "en": "DS18B20 inside, ESP32-C3 outside; pushes temperature to a local dashboard and alerts on excursion.",
+      "sl": "DS18B20 v hladilniku, ESP32-C3 zunaj; temperaturo pošilja na lokalno nadzorno ploščo in opozori ob odstopanju."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "rfid-drawer-lock",
+    "title": {
+      "en": "RFID drawer lock",
+      "sl": "RFID ključavnica za predal"
+    },
+    "year": 2025,
+    "category": "Embedded",
+    "description": {
+      "en": "ESP32 and an MFRC522 reader unlock a 9 g servo bolt when an enrolled card is presented.",
+      "sl": "ESP32 in bralnik MFRC522 odkleneta zapah s 9 g servom, ko prislonite registrirano kartico."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "heat-set-insert-wall-anchor",
+    "title": {
+      "en": "Heat-set insert wall anchor",
+      "sl": "Stenski vložek z navojno pušo"
+    },
+    "year": 2025,
+    "category": "CAD",
+    "description": {
+      "en": "Drywall anchor with an embedded M3 brass insert for reusable, removable threaded mounts.",
+      "sl": "Vložek za mavčne plošče z medeninasto pušo M3 za večkratno snemljivo pritrditev."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "arca-swiss-quick-release-plate",
+    "title": {
+      "en": "Arca-Swiss quick-release plate",
+      "sl": "Arca-Swiss hitrovpenjalna plošča"
+    },
+    "year": 2025,
+    "category": "Mechanical",
+    "description": {
+      "en": "Printed dovetail plate that fits standard Arca-Swiss clamps — a backup for when the metal one walks away.",
+      "sl": "Natisnjena plošča z lastovičjim repom za standardne Arca-Swiss objemke — rezerva, ko kovinska izgine."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "reinforced-shelf-bracket",
+    "title": {
+      "en": "Reinforced shelf bracket",
+      "sl": "Ojačan nosilec police"
+    },
+    "year": 2025,
+    "category": "Mechanical",
+    "description": {
+      "en": "Triangular bracket calculated for 15 kg per shelf, printed in PETG with three perimeters.",
+      "sl": "Trikotni nosilec, preračunan za 15 kg na polico, natisnjen v PETG s tremi obodi."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "tpu-scooter-handlebar-grip",
+    "title": {
+      "en": "TPU scooter handlebar grip",
+      "sl": "TPU ročaj za skiro"
+    },
+    "year": 2025,
+    "category": "CAD",
+    "description": {
+      "en": "Custom-fit grip printed in TPU 95A with a knurled pattern for wet-hand traction.",
+      "sl": "Ročaj po meri iz TPU 95A z narebričenim vzorcem za oprijem z mokrimi rokami."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "snap-on-desk-cable-clip",
+    "title": {
+      "en": "Snap-on desk cable clip",
+      "sl": "Sponka za kable na mizi"
+    },
+    "year": 2024,
+    "category": "CAD",
+    "description": {
+      "en": "Edge-mounted clip that keeps charger and headphone cables from sliding off the desk.",
+      "sl": "Sponka na robu mize, ki prepreči, da bi kabli zdrsnili na tla."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "adjustable-door-wedge",
+    "title": {
+      "en": "Adjustable door wedge",
+      "sl": "Nastavljiv zagozd za vrata"
+    },
+    "year": 2024,
+    "category": "CAD",
+    "description": {
+      "en": "Door wedge with a thumb-screw to dial in the holding force on uneven floors.",
+      "sl": "Zagozd z vijakom za nastavitev sile na neravnih tleh."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "under-desk-headphone-hook",
+    "title": {
+      "en": "Under-desk headphone hook",
+      "sl": "Kavelj za slušalke pod mizo"
+    },
+    "year": 2024,
+    "category": "CAD",
+    "description": {
+      "en": "3M-mounted hook with a wide saddle so the headband doesn’t deform.",
+      "sl": "Kavelj na 3M lepilo s širokim sedlom, da se lok slušalk ne deformira."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "childproof-blind-cord-cleat",
+    "title": {
+      "en": "Childproof blind cord cleat",
+      "sl": "Varno držalo za vrvico žaluzij"
+    },
+    "year": 2024,
+    "category": "CAD",
+    "description": {
+      "en": "Wall-mounted cleat that wraps blind cords above child-reach height.",
+      "sl": "Stensko držalo, ki vrvico žaluzij navije izven dosega otrok."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "magnetic-back-drill-bit-rack",
+    "title": {
+      "en": "Magnetic-back drill bit rack",
+      "sl": "Magnetno stojalo za svedre"
+    },
+    "year": 2024,
+    "category": "CAD",
+    "description": {
+      "en": "Stepped rack for HSS bits 1.0–10.0 mm with neodymium magnets that stick to the toolbox lid.",
+      "sl": "Stopničasto stojalo za HSS svedre 1,0–10,0 mm z neodimovimi magneti za pokrov kovčka."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "bedside-phone-wall-dock",
+    "title": {
+      "en": "Bedside phone wall dock",
+      "sl": "Stensko držalo za telefon"
+    },
+    "year": 2024,
+    "category": "CAD",
+    "description": {
+      "en": "Wall-mounted dock with a hidden cable channel — the phone charges flat against the wall.",
+      "sl": "Stensko držalo s skritim kanalom za kabel — telefon se polni ob steni."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "adjustable-tablet-stand",
+    "title": {
+      "en": "Adjustable tablet stand",
+      "sl": "Nastavljivo stojalo za tablico"
+    },
+    "year": 2024,
+    "category": "CAD",
+    "description": {
+      "en": "Two-piece stand with a friction hinge that holds 30°–80° viewing angles.",
+      "sl": "Dvodelno stojalo s tornim tečajem, ki drži kot 30°–80°."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "ergonomic-laptop-riser",
+    "title": {
+      "en": "Ergonomic laptop riser",
+      "sl": "Ergonomsko stojalo za prenosnik"
+    },
+    "year": 2024,
+    "category": "CAD",
+    "description": {
+      "en": "Two L-shaped feet that lift any 13–16\" laptop to eye level.",
+      "sl": "Dve L-nogici, ki prenosnik 13–16\" dvigneta v višino oči."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "replacement-washing-machine-knob",
+    "title": {
+      "en": "Replacement washing machine knob",
+      "sl": "Nadomestni gumb pralnega stroja"
+    },
+    "year": 2024,
+    "category": "CAD",
+    "description": {
+      "en": "Direct replacement for a snapped D-shaft knob — saves a €40 service call.",
+      "sl": "Neposredna zamenjava za zlomljen gumb na D-osi — prihrani 40 € za servis."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "wall-mount-screwdriver-rack",
+    "title": {
+      "en": "Wall-mount screwdriver rack",
+      "sl": "Stensko stojalo za izvijače"
+    },
+    "year": 2024,
+    "category": "CAD",
+    "description": {
+      "en": "12-slot rack sized to the actual diameters of a mixed Wera/Wiha set.",
+      "sl": "Stojalo z 12 mesti, prilagojeno dejanskim premerom kompleta Wera/Wiha."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "magnetic-desk-cable-holder",
+    "title": {
+      "en": "Magnetic desk cable holder",
+      "sl": "Magnetno držalo za kable"
+    },
+    "year": 2024,
+    "category": "CAD",
+    "description": {
+      "en": "Loose-cable catcher with a magnetic base — pull a cable, the magnet stays.",
+      "sl": "Lovilec kablov z magnetnim podnožjem — kabel potegnete, magnet ostane."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  },
+  {
+    "slug": "laptop-charger-strain-relief",
+    "title": {
+      "en": "Laptop charger strain relief",
+      "sl": "Zaščita kabla polnilca"
+    },
+    "year": 2024,
+    "category": "CAD",
+    "description": {
+      "en": "Slip-on TPU spring that doubles the cable’s life at the brick exit.",
+      "sl": "Nataknjena TPU vzmet, ki podvoji življenjsko dobo kabla ob polnilcu."
+    },
+    "details": {
+      "en": "",
+      "sl": ""
+    },
+    "materials": "",
+    "drawing": "",
+    "featured": false,
+    "model": null,
+    "photos": []
+  }
+]

@@ -40,6 +40,7 @@ var T = {
     sendVia: 'Send it to', edit: 'Edit answers', linkedin: 'Message me on LinkedIn',
     footerNote: 'Designed and built in Škofja Loka. Printed parts come off a Bambu Lab P1S in the next room.',
     sending: 'Sending…', sentTag: 'Sent', sentTitle: 'Thanks — your project is on my desk.', sentBody: 'I reply with a fixed-price quote or an hourly estimate within 48 hours. A copy of what you sent is below.', sendFail: 'Sending didn\u2019t work. Copy the brief below and send it to me directly.', sendLimited: 'Too many requests from this connection. Wait a few minutes, or copy the brief and send it directly.',
+    with3d: '3D models', viewerLabel: '3D model', loading3d: 'Loading 3D model…', viewerHint: 'Drag to rotate · scroll or pinch to zoom · right-drag to pan', viewerFail: 'The 3D model could not be loaded.', pCategory: 'Category', pYear: 'Year', pMaterials: 'Materials', pModel: '3D model', downloadModel: 'Download model', allWork: 'All work', nextProject: 'Next project',
     tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale' }
   },
   sl: {
@@ -83,6 +84,7 @@ var T = {
     sendVia: 'Pošljite na', edit: 'Uredi odgovore', linkedin: 'Pišite mi na LinkedIn',
     footerNote: 'Zasnovano in izdelano v Škofji Loki. Natisnjeni deli prihajajo z Bambu Lab P1S v sosednji sobi.',
     sending: 'Pošiljam…', sentTag: 'Poslano', sentTitle: 'Hvala — vaš projekt je na moji mizi.', sentBody: 'V 48 urah odgovorim s ponudbo s fiksno ceno ali urno oceno. Spodaj je kopija poslanega.', sendFail: 'Pošiljanje ni uspelo. Kopirajte povzetek spodaj in mi ga pošljite neposredno.', sendLimited: 'Preveč zahtevkov s te povezave. Počakajte nekaj minut ali kopirajte povzetek in mi ga pošljite.',
+    with3d: '3D modeli', viewerLabel: '3D model', loading3d: 'Nalagam 3D model…', viewerHint: 'Povlecite za vrtenje · kolešček ali prsta za povečavo · desni klik za premik', viewerFail: '3D modela ni bilo mogoče naložiti.', pCategory: 'Področje', pYear: 'Leto', pMaterials: 'Materiali', pModel: '3D model', downloadModel: 'Prenesi model', allWork: 'Vsi projekti', nextProject: 'Naslednji projekt',
     tb: { title: 'Naslov', drawn: 'Risal', loc: 'Lokacija', sheet: 'List', rev: 'Rev', date: 'Datum', scale: 'Merilo' }
   }
 };
@@ -112,37 +114,7 @@ var SERVICES = [
 
 var CATS = { CAD: { en: 'CAD', sl: 'CAD', d: 'cad' }, Mechanical: { en: 'Mechanical', sl: 'Strojno', d: 'mech' }, IoT: { en: 'IoT', sl: 'IoT', d: 'iot' }, Embedded: { en: 'Embedded', sl: 'Vgrajeno', d: 'embedded' } };
 
-var PROJECTS = [
-  ['FamFive', 'FamFive', 2025, 'IoT', 'ESP32 redesign of the smart piggy bank, packaged as a product.', 'Pametni hranilnik, prenovljen z ESP32 in zapakiran kot izdelek.', 'famfive', 1],
-  ['Automated cocktail dispenser', 'Avtomatski točilnik koktajlov', 2025, 'Mechanical', 'Eight-channel solenoid manifold, microcontroller, and a recipe book.', 'Razdelilnik z osmimi elektromagnetnimi ventili, mikrokrmilnik in knjiga receptov.', 'cocktail', 1],
-  ['Engineered backpack buckle', 'Inženirska zaponka za nahrbtnik', 2025, 'CAD', 'Functional 3D-printed buckle with full strength calculation and material trade-off.', 'Funkcionalna natisnjena zaponka s celotnim trdnostnim izračunom in izbiro materiala.', 'buckle', 1],
-  ['440 Hz precision whistle', 'Piščalka 440 Hz', 2025, 'CAD', 'A 3D-printed whistle tuned to musical A — designed from acoustic first principles.', 'Natisnjena piščalka, uglašena na ton A — zasnovana iz osnov akustike.', 'whistle', 1],
-  ['Garden hose universal adapter', 'Univerzalni adapter za vrtno cev', 2025, 'Mechanical', 'Bridges Gardena quick-connect to G3/4 male threads when the OEM piece breaks.', 'Poveže hitro spojko Gardena z zunanjim navojem G3/4, ko se originalni del zlomi.'],
-  ['Modular drawer divider system', 'Modularni predalčnik', 2025, 'CAD', 'Tile-and-spacer divider set sized parametrically to any drawer.', 'Komplet pregrad, parametrično prilagojen kateremukoli predalu.'],
-  ['Replacement bike light bracket', 'Nadomestni nosilec kolesarske luči', 2025, 'Mechanical', 'Drop-in replacement for a snapped OEM front-light bracket — no need to buy a new lamp.', 'Neposredna zamenjava za zlomljen originalni nosilec — nove luči ni treba kupiti.'],
-  ['Universal vacuum hose adapter', 'Univerzalni adapter za sesalno cev', 2025, 'Mechanical', 'Stepped cone that connects shop-vac hoses to power-tool dust ports of any size.', 'Stopničast stožec, ki poveže cev sesalnika s priključkom za prah na orodju.'],
-  ['Scheduled pet feeder', 'Časovni hranilnik za ljubljenčke', 2025, 'IoT', 'ESP32 and auger servo dispense a measured portion on schedule, with manual override in the web UI.', 'ESP32 in polžni servo ob določenem času odmerita obrok, z ročnim upravljanjem v spletnem vmesniku.'],
-  ['Plant moisture monitor', 'Merilnik vlage za rastline', 2025, 'IoT', 'ESP32-C3 and a capacitive probe light an LED and ping Telegram when the soil gets dry.', 'ESP32-C3 s kapacitivno sondo prižge LED in pošlje sporočilo na Telegram, ko se zemlja izsuši.'],
-  ['Door-open Telegram bot', 'Telegram obvestilo za vrata', 2025, 'IoT', 'Reed switch and ESP32 send a Telegram message every time a chosen door opens.', 'Reed stikalo in ESP32 pošljeta sporočilo na Telegram ob vsakem odprtju izbranih vrat.'],
-  ['Wi-Fi fridge thermometer', 'Wi-Fi termometer za hladilnik', 2025, 'IoT', 'DS18B20 inside, ESP32-C3 outside; pushes temperature to a local dashboard and alerts on excursion.', 'DS18B20 v hladilniku, ESP32-C3 zunaj; temperaturo pošilja na lokalno nadzorno ploščo in opozori ob odstopanju.'],
-  ['RFID drawer lock', 'RFID ključavnica za predal', 2025, 'Embedded', 'ESP32 and an MFRC522 reader unlock a 9 g servo bolt when an enrolled card is presented.', 'ESP32 in bralnik MFRC522 odkleneta zapah s 9 g servom, ko prislonite registrirano kartico.'],
-  ['Heat-set insert wall anchor', 'Stenski vložek z navojno pušo', 2025, 'CAD', 'Drywall anchor with an embedded M3 brass insert for reusable, removable threaded mounts.', 'Vložek za mavčne plošče z medeninasto pušo M3 za večkratno snemljivo pritrditev.'],
-  ['Arca-Swiss quick-release plate', 'Arca-Swiss hitrovpenjalna plošča', 2025, 'Mechanical', 'Printed dovetail plate that fits standard Arca-Swiss clamps — a backup for when the metal one walks away.', 'Natisnjena plošča z lastovičjim repom za standardne Arca-Swiss objemke — rezerva, ko kovinska izgine.'],
-  ['Reinforced shelf bracket', 'Ojačan nosilec police', 2025, 'Mechanical', 'Triangular bracket calculated for 15 kg per shelf, printed in PETG with three perimeters.', 'Trikotni nosilec, preračunan za 15 kg na polico, natisnjen v PETG s tremi obodi.'],
-  ['TPU scooter handlebar grip', 'TPU ročaj za skiro', 2025, 'CAD', 'Custom-fit grip printed in TPU 95A with a knurled pattern for wet-hand traction.', 'Ročaj po meri iz TPU 95A z narebričenim vzorcem za oprijem z mokrimi rokami.'],
-  ['Snap-on desk cable clip', 'Sponka za kable na mizi', 2024, 'CAD', 'Edge-mounted clip that keeps charger and headphone cables from sliding off the desk.', 'Sponka na robu mize, ki prepreči, da bi kabli zdrsnili na tla.'],
-  ['Adjustable door wedge', 'Nastavljiv zagozd za vrata', 2024, 'CAD', 'Door wedge with a thumb-screw to dial in the holding force on uneven floors.', 'Zagozd z vijakom za nastavitev sile na neravnih tleh.'],
-  ['Under-desk headphone hook', 'Kavelj za slušalke pod mizo', 2024, 'CAD', '3M-mounted hook with a wide saddle so the headband doesn’t deform.', 'Kavelj na 3M lepilo s širokim sedlom, da se lok slušalk ne deformira.'],
-  ['Childproof blind cord cleat', 'Varno držalo za vrvico žaluzij', 2024, 'CAD', 'Wall-mounted cleat that wraps blind cords above child-reach height.', 'Stensko držalo, ki vrvico žaluzij navije izven dosega otrok.'],
-  ['Magnetic-back drill bit rack', 'Magnetno stojalo za svedre', 2024, 'CAD', 'Stepped rack for HSS bits 1.0–10.0 mm with neodymium magnets that stick to the toolbox lid.', 'Stopničasto stojalo za HSS svedre 1,0–10,0 mm z neodimovimi magneti za pokrov kovčka.'],
-  ['Bedside phone wall dock', 'Stensko držalo za telefon', 2024, 'CAD', 'Wall-mounted dock with a hidden cable channel — the phone charges flat against the wall.', 'Stensko držalo s skritim kanalom za kabel — telefon se polni ob steni.'],
-  ['Adjustable tablet stand', 'Nastavljivo stojalo za tablico', 2024, 'CAD', 'Two-piece stand with a friction hinge that holds 30°–80° viewing angles.', 'Dvodelno stojalo s tornim tečajem, ki drži kot 30°–80°.'],
-  ['Ergonomic laptop riser', 'Ergonomsko stojalo za prenosnik', 2024, 'CAD', 'Two L-shaped feet that lift any 13–16" laptop to eye level.', 'Dve L-nogici, ki prenosnik 13–16" dvigneta v višino oči.'],
-  ['Replacement washing machine knob', 'Nadomestni gumb pralnega stroja', 2024, 'CAD', 'Direct replacement for a snapped D-shaft knob — saves a €40 service call.', 'Neposredna zamenjava za zlomljen gumb na D-osi — prihrani 40 € za servis.'],
-  ['Wall-mount screwdriver rack', 'Stensko stojalo za izvijače', 2024, 'CAD', '12-slot rack sized to the actual diameters of a mixed Wera/Wiha set.', 'Stojalo z 12 mesti, prilagojeno dejanskim premerom kompleta Wera/Wiha.'],
-  ['Magnetic desk cable holder', 'Magnetno držalo za kable', 2024, 'CAD', 'Loose-cable catcher with a magnetic base — pull a cable, the magnet stays.', 'Lovilec kablov z magnetnim podnožjem — kabel potegnete, magnet ostane.'],
-  ['Laptop charger strain relief', 'Zaščita kabla polnilca', 2024, 'CAD', 'Slip-on TPU spring that doubles the cable’s life at the brick exit.', 'Nataknjena TPU vzmet, ki podvoji življenjsko dobo kabla ob polnilcu.']
-];
+
 
 var SKILLS = [
   { en: 'Design & CAD', sl: 'Konstruiranje in CAD', items: [['SolidWorks', '4 yrs · CSWA, CSWA-AM'], ['Fusion 360', { en: 'Secondary CAD', sl: 'Drugi CAD' }], ['SimulationXpress', { en: 'Static stress analysis', sl: 'Statična trdnostna analiza' }], [{ en: 'Mold design', sl: 'Kalupi' }, { en: 'Fiber composites', sl: 'Vlaknasti kompoziti' }], [{ en: 'Methods', sl: 'Metode' }, { en: 'Tolerance stack-up, material selection, acoustic resonance', sl: 'Verige toleranc, izbira materiala, akustična resonanca' }]] },

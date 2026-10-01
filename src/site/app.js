@@ -9,6 +9,9 @@
   try { var s = localStorage.getItem('nk-lang'); if (s === 'sl' || s === 'en') lang = s; } catch (e) {}
   var state = { send: 'idle', filter: 'all', step: 0, order: { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '' }, errors: {} };
   var app = document.getElementById('app');
+  // Projects come from src/data/projects.json, inlined at build time (the admin dashboard edits that file).
+  var PROJECTS = (window.NK_PROJECTS || []).filter(function (p) { return !p.hidden; });
+  var viewer = null;
 
   // NK monogram — the same N/K geometry as the original logo, redrawn as a drawing-sheet mark.
   function logo(cls) {
@@ -20,21 +23,33 @@
   function t() { return T[lang]; }
   function L(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v[lang] : v; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function sheetNo(p, i) { return 'NK-' + String(p[2]).slice(2) + '-' + String(i + 1).padStart(2, '0'); }
+  function sheetNo(p) { return 'NK-' + String(p.year).slice(2) + '-' + String(PROJECTS.indexOf(p) + 1).padStart(2, '0'); }
+  function P(p, k) { var v = p[k]; return v && typeof v === 'object' ? (v[lang] || v.en || '') : (v || ''); }
+  function cat(p) { return CATS[p.category] ? CATS[p.category][lang] : p.category; }
+  function bySlug(s) { for (var i = 0; i < PROJECTS.length; i++) if (PROJECTS[i].slug === s) return PROJECTS[i]; return null; }
+  function asset(path) { return '/' + String(path).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/'); }
   function page() {
     var h = (location.hash || '').replace('#', '');
     var m = /^(en|sl)-?(.*)$/.exec(h);
-    if (m) { lang = m[1]; try { localStorage.setItem('nk-lang', lang); } catch (e) {} h = m[2]; } return ['home', 'services', 'work', 'skills', 'about', 'order'].indexOf(h) >= 0 ? h : 'home'; }
+    if (m) { lang = m[1]; try { localStorage.setItem('nk-lang', lang); } catch (e) {} h = m[2]; }
+    if (/^p-/.test(h) && bySlug(h.slice(2))) return 'project';
+    return ['home', 'services', 'work', 'skills', 'about', 'order'].indexOf(h) >= 0 ? h : 'home'; }
+  function currentSlug() { var h = (location.hash || '').replace('#', '').replace(/^(en|sl)-?/, ''); return h.slice(2); }
 
   function btn(label, href, variant, size, arrow) {
     return '<a class="nk-btn' + (variant ? ' nk-btn--' + variant : '') + (size ? ' nk-btn--' + size : '') + '" href="' + href + '">' + esc(label) + (arrow ? '<span class="nk-btn__arrow" aria-hidden="true">→</span>' : '') + '</a>';
   }
   function specs(items) { return '<dl class="nk-specs">' + items.map(function (i) { return '<div><dt>' + esc(L(i[0])) + '</dt><dd>' + esc(L(i[1])) + '</dd></div>'; }).join('') + '</dl>'; }
-  function sheet(p, i) {
-    var d = p[6] || CATS[p[3]].d;
-    return '<article class="nk-sheet" data-cat="' + p[3] + '"><div class="nk-sheet__head"><span class="nk-label">' + sheetNo(p, i) + '</span><span class="nk-label">' + esc(CATS[p[3]][lang]) + ' · ' + p[2] + '</span></div>' +
-      '<div class="nk-sheet__art">' + NK_DRAWINGS[d] + '</div><div class="nk-sheet__foot"><h3 class="nk-sheet__title">' + esc(lang === 'sl' ? p[1] : p[0]) + '</h3><p class="nk-sheet__desc">' + esc(lang === 'sl' ? p[5] : p[4]) + '</p></div></article>';
+  function art(p) {
+    if (p.photos && p.photos.length) return '<img class="sheet-photo" src="' + asset(p.photos[0]) + '" alt="" loading="lazy" decoding="async">';
+    var d = p.drawing || (CATS[p.category] && CATS[p.category].d) || 'cad';
+    return NK_DRAWINGS[d] || NK_DRAWINGS.cad;
   }
+  function sheet(p) {
+    return '<a class="nk-sheet" href="#p-' + esc(p.slug) + '" data-cat="' + esc(p.category) + '"><div class="nk-sheet__head"><span class="nk-label">' + sheetNo(p) + '</span><span class="nk-label">' + (p.model ? '<b class="has3d">3D · </b>' : '') + esc(cat(p)) + ' · ' + esc(p.year) + '</span></div>' +
+      '<div class="nk-sheet__art">' + art(p) + '</div><div class="nk-sheet__foot"><h3 class="nk-sheet__title">' + esc(P(p, 'title')) + '</h3><p class="nk-sheet__desc">' + esc(P(p, 'description')) + '</p></div></a>';
+  }
+  function featured() { var f = PROJECTS.filter(function (p) { return p.featured; }); return (f.length ? f : PROJECTS).slice(0, 4); }
   function service(s, full) {
     var x = t();
     return '<article class="nk-service" id="' + s.id + '"><div class="nk-service__top"><span class="nk-service__code">' + s.code + '</span><span class="nk-label">' + esc(s.time ? L(s.time) : x.onRequest) + '</span></div>' +
@@ -61,10 +76,10 @@
       return '<section class="hero"><div class="hero-text"><p class="nk-label"><b>' + esc(x.status) + ' · </b>' + esc(x.heroLabel) + '</p>' +
         '<h1 class="display">' + esc(x.heroA) + '<br>' + esc(x.heroB) + '<em>' + esc(x.heroEm) + '</em></h1><p class="lead">' + esc(x.heroLead) + '</p>' +
         '<div class="cta-row">' + btn(x.cta, '#order', 'primary', 'lg', true) + btn(x.seeWork, '#work', null, 'lg') + '</div></div>' +
-        '<div class="hero-sheet">' + sheet(PROJECTS[0], 0) + specs(x.heroSpecs) + '</div></section>' +
+        '<div class="hero-sheet">' + (PROJECTS.length ? sheet(featured()[0]) : '') + specs([x.heroSpecs[0], [x.heroSpecs[1][0], String(PROJECTS.length)]].concat(x.heroSpecs.slice(2))) + '</div></section>' +
         '<section class="block">' + head(x.servicesLabel, x.servicesTitle, x.servicesLead) + '<div class="grid-4">' + SERVICES.map(function (s) { return service(s, false); }).join('') + '</div></section>' +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' +
-        '<section class="block">' + head(x.workLabel, x.workTitle) + '<div class="grid-4 sheets">' + PROJECTS.slice(0, 4).map(sheet).join('') + '</div><div class="more">' + btn(x.seeWork, '#work', null, null, true) + '</div></section>' +
+        '<section class="block">' + head(x.workLabel, x.workTitle) + '<div class="grid-4 sheets">' + featured().map(sheet).join('') + '</div><div class="more">' + btn(x.seeWork, '#work', null, null, true) + '</div></section>' +
         '<section class="block about-strip"><div>' + '<p class="nk-label">' + esc(x.aboutLabel) + '</p><h2 class="sec-title">' + esc(x.aboutTitle) + '</h2></div><div><p class="lead">' + esc(x.aboutBody) + '</p>' + timelineDims() + '</div></section>' +
         ctaBand();
     },
@@ -75,13 +90,15 @@
     },
     work: function () {
       var x = t(), cats = ['all'].concat(Object.keys(CATS));
-      var list = PROJECTS.map(function (p, i) { return [p, i]; }).filter(function (e) { return state.filter === 'all' || e[0][3] === state.filter; });
+      var list = PROJECTS.filter(function (p) { return state.filter === 'all' || (state.filter === '3d' ? !!p.model : p.category === state.filter); });
+      var has3d = PROJECTS.some(function (p) { return p.model; });
+      if (has3d) cats.splice(1, 0, '3d');
       return '<section class="block first">' + head(PROJECTS.length + ' ' + x.shown, x.workPageTitle, x.workPageLead, true) +
         '<div class="filters" role="group" aria-label="Filter">' + cats.map(function (c) {
-          var n = c === 'all' ? PROJECTS.length : PROJECTS.filter(function (p) { return p[3] === c; }).length;
-          return '<button type="button" class="chip" data-filter="' + c + '" aria-pressed="' + (state.filter === c) + '">' + esc(c === 'all' ? x.all : CATS[c][lang]) + ' <span>' + n + '</span></button>';
+          var n = c === 'all' ? PROJECTS.length : PROJECTS.filter(function (p) { return c === '3d' ? !!p.model : p.category === c; }).length;
+          return '<button type="button" class="chip" data-filter="' + c + '" aria-pressed="' + (state.filter === c) + '">' + esc(c === 'all' ? x.all : c === '3d' ? x.with3d : CATS[c][lang]) + ' <span>' + n + '</span></button>';
         }).join('') + '</div>' +
-        '<div class="grid-4 sheets">' + list.map(function (e) { return sheet(e[0], e[1]); }).join('') + '</div></section>' + ctaBand();
+        '<div class="grid-4 sheets">' + list.map(sheet).join('') + '</div></section>' + ctaBand();
     },
     skills: function () {
       var x = t();
@@ -95,8 +112,45 @@
         specs([[lang === 'sl' ? 'Lokacija' : 'Location', 'Škofja Loka, Slovenia'], [lang === 'sl' ? 'Šola' : 'School', 'Šolski center Kranj'], ['CAD', 'SolidWorks 4 yrs · CSWA · CSWA-AM']].concat(x.heroSpecs.slice(2))) + '</div></div></section>' +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
-    order: orderView
+    order: orderView,
+    project: projectView
   };
+
+  function projectView() {
+    var x = t(), p = bySlug(currentSlug()), i = PROJECTS.indexOf(p);
+    var next = PROJECTS[(i + 1) % PROJECTS.length];
+    var m = p.model;
+    var stage = m
+      ? '<div class="nk-viewer" id="viewer" data-src="' + esc(asset(m.file)) + '" data-format="' + esc(m.format || '') + '" role="img" aria-label="' + esc(x.viewerLabel + ': ' + P(p, 'title')) + '"><div class="nk-viewer__msg" id="viewer-msg">' + esc(x.loading3d) + '</div></div>' +
+        '<p class="viewer-hint">' + esc(x.viewerHint) + '</p>'
+      : '<div class="nk-sheet__art project-art">' + art(p) + '</div>';
+    var rows = [[x.pCategory, cat(p)], [x.pYear, String(p.year)]];
+    if (p.materials) rows.push([x.pMaterials, p.materials]);
+    if (m) rows.push([x.pModel, (m.format || '').toUpperCase() + (m.size ? ' · ' + (m.size < 1048576 ? Math.max(1, Math.round(m.size / 1024)) + ' KB' : (m.size / 1048576).toFixed(1) + ' MB') : '')]);
+    var details = P(p, 'details');
+    var photos = (p.photos || []).slice(m ? 0 : 1);
+    return '<section class="block first project">' +
+      '<a class="back" href="#work">← ' + esc(x.allWork) + '</a>' +
+      head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
+      '<div class="project-grid"><div class="project-stage">' + stage + '</div><aside class="project-side">' + specs(rows) +
+      (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
+      (m && m.download ? '<a class="nk-btn nk-btn--sm" href="' + esc(asset(m.file)) + '" download>' + esc(x.downloadModel) + '<span class="nk-btn__arrow" aria-hidden="true">↓</span></a>' : '') +
+      '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div></aside></div>' +
+      (photos.length ? '<div class="photos">' + photos.map(function (ph) { return '<a href="' + esc(asset(ph)) + '" target="_blank" rel="noopener"><img src="' + esc(asset(ph)) + '" alt="' + esc(P(p, 'title')) + '" loading="lazy" decoding="async"></a>'; }).join('') + '</div>' : '') +
+      (next && next !== p ? '<a class="next-project" href="#p-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.nextProject) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
+      '</section>' + ctaBand();
+  }
+  function mountViewer() {
+    var el = document.getElementById('viewer');
+    if (!el) return;
+    var go = function () {
+      window.NKViewer.mount(el, { url: el.dataset.src, format: el.dataset.format }).then(function (v) {
+        if (!document.body.contains(el)) { v.dispose(); return; }
+        viewer = v; var msg = document.getElementById('viewer-msg'); if (msg) msg.remove();
+      }, function () { var msg = document.getElementById('viewer-msg'); if (msg) msg.textContent = t().viewerFail; });
+    };
+    if (window.NKViewer) go(); else { window.addEventListener('nkviewer:ready', go, { once: true }); if (window.NKViewerLoad) window.NKViewerLoad(); }
+  }
 
   function timelineDims() {
     var x = t(), w = ['38%', '52%', '100%'];
@@ -164,9 +218,9 @@
     var zones = '<div class="zones zones-top" aria-hidden="true">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (n) { return '<span>' + n + '</span>'; }).join('') + '</div>' +
       '<div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div><div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>';
     var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="nacekepa.work — home">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="Main">' +
-      ['services', 'work', 'skills', 'about'].map(function (k) { return '<a href="#' + k + '"' + (p === k ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
+      ['services', 'work', 'skills', 'about'].map(function (k) { return '<a href="#' + k + '"' + (p === k || (p === 'project' && k === 'work') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
       '</nav><div class="top-act"><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="' + (lang === 'en') + '">EN</button><button type="button" data-lang="sl" aria-pressed="' + (lang === 'sl') + '">SL</button></div>' + btn(x.cta, '#order', 'primary', 'sm') + '</div></header>';
-    var idx = ['home', 'services', 'work', 'skills', 'about', 'order'].indexOf(p) + 1;
+    var idx = ['home', 'services', 'work', 'skills', 'about', 'order'].indexOf(p === 'project' ? 'work' : p) + 1;
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / 06') +
@@ -181,8 +235,10 @@
   function render(keepScroll) {
     var p = page();
     document.documentElement.lang = lang === 'sl' ? 'sl' : 'en';
+    if (viewer) { viewer.dispose(); viewer = null; }
     app.innerHTML = frame(views[p]());
     if (!keepScroll) window.scrollTo(0, 0);
+    if (p === 'project') mountViewer();
   }
 
   function readForm() {

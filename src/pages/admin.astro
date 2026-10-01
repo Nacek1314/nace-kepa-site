@@ -1,0 +1,29 @@
+---
+// Admin dashboard: edit projects, upload 3D models and photos. Commits to GitHub with a token kept in the browser.
+import pageCss from '../site/page.css?raw';
+import componentsCss from '../site/components.css?raw';
+import adminCss from '../site/admin.css?raw';
+import drawings from '../site/drawings.js?raw';
+const css = pageCss + '\n' + componentsCss + '\n' + adminCss;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin · nacekepa.work</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <style is:inline set:html={css}></style>
+  </head>
+  <body>
+    <div id="admin"><noscript>The admin dashboard needs JavaScript.</noscript></div>
+    <script is:inline set:html={drawings}></script>
+    <script>
+      import '../site/admin.js';
+    </script>
+  </body>
+</html>
