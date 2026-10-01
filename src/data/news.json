@@ -1,0 +1,21 @@
+[
+  {
+    "slug": "bambu-lab-x2d",
+    "date": "2026-10-01",
+    "title": {
+      "en": "New in the workshop: Bambu Lab X2D",
+      "sl": "Novo v delavnici: Bambu Lab X2D"
+    },
+    "summary": {
+      "en": "A dual-nozzle printer with an actively heated chamber now runs next to the P1S, so strong engineering materials and cleaner supports are part of every quote.",
+      "sl": "Ob P1S zdaj tiska še tiskalnik z dvema šobama in aktivno ogrevano komoro, zato so trdni inženirski materiali in čistejše podpore del vsake ponudbe."
+    },
+    "body": {
+      "en": "The Bambu Lab X2D is now printing in the workshop, next to the P1S. Here is what it changes for your parts:\n\n- Two nozzles: one prints the part, the second prints a dedicated support material, so overhangs come out cleaner with less waste and less post-processing.\n- An actively heated chamber (up to 65 °C) and a 300 °C hotend: ABS, ASA, nylon (PA), carbon-fibre nylon (PA-CF) and PC print reliably, without warping.\n- 256 × 256 × 260 mm build volume.\n- AMS for multi-colour and multi-material jobs.\n- Built-in HEPA and activated-carbon filtration for engineering plastics.\n\nNeed a part that has to handle heat, load or wear? Start a project and I will suggest the right material.",
+      "sl": "V delavnici zdaj ob P1S tiska tudi Bambu Lab X2D. Kaj to pomeni za vaše dele:\n\n- Dve šobi: ena tiska del, druga namenski podporni material, zato so previsi čistejši, z manj odpadka in manj dodelave.\n- Aktivno ogrevana komora (do 65 °C) in šoba do 300 °C: ABS, ASA, najlon (PA), najlon z ogljikovimi vlakni (PA-CF) in PC se tiskajo zanesljivo, brez zvijanja.\n- Delovni prostor 256 × 256 × 260 mm.\n- AMS za večbarvne in večmaterialne izdelke.\n- Vgrajeno filtriranje HEPA in z aktivnim ogljem za inženirske plastike.\n\nPotrebujete del, ki mora zdržati toploto, obremenitev ali obrabo? Začnite projekt in predlagal bom pravi material."
+    },
+    "photos": [],
+    "pinned": true,
+    "hidden": false
+  }
+]

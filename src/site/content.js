@@ -1,6 +1,7 @@
 var T = {
   en: {
-    nav: { home: 'Home', services: 'Services', work: 'Work', skills: 'Skills', about: 'About' },
+    nav: { home: 'Home', services: 'Services', work: 'Work', news: 'News', skills: 'Skills', about: 'About' },
+    newsLabel: 'News', newsTitle: 'From the workshop.', newsLead: 'New machines, materials and finished jobs.', allNews: 'All news', readMore: 'Read', pinned: 'Pinned', newsPageTitle: 'News', newsEmpty: 'No news yet.',
     cta: 'Start a project', seeWork: 'See all work', allServices: 'All services', quote: 'Request a quote',
     status: 'Taking projects',
     heroLabel: 'Engineering studio · Škofja Loka, SI',
@@ -31,20 +32,21 @@ var T = {
     q2: 'Tell me about the project', q3: 'Where do I reply?',
     fWhat: 'What should it do?', fWhatPh: 'A bracket that holds a 60 mm fan to a 2020 extrusion…', fWhatH: 'Function, size, where it lives, what it touches.',
     fQty: 'Quantity', fDeadline: 'Deadline', fFiles: 'Do you have files?', fFilesO: ['No, starting from scratch', 'Sketch or photos', 'STL / STEP / 3MF', 'Native CAD'],
-    fMat: 'Material', fMatO: ['Not sure — recommend one', 'PLA', 'PETG', 'TPU / flexible'],
+    fMat: 'Material', fMatO: ['Not sure — recommend one', 'PLA', 'PETG', 'TPU / flexible', 'ABS / ASA', 'Nylon / PA-CF', 'PC'],
     fName: 'Your name', fEmail: 'Your email', fNote: 'Anything else?', fNoteH: 'Budget, constraints, links to references.',
     back: 'Back', next: 'Next', finish: 'Send project',
     errService: 'Pick at least one service to continue.', errWhat: 'Describe the project in a sentence or two.', errName: 'Tell me who to reply to.', errEmail: 'Use an email like you@company.si',
     briefTitle: 'Your brief', briefLead: 'Copy it and send it to me. I reply with a fixed-price quote or an hourly estimate within 48 hours.',
     estimate: 'Indicative turnaround', copy: 'Copy brief', copied: 'Copied', copyFail: 'Select the text and copy it manually',
     sendVia: 'Send it to', edit: 'Edit answers', linkedin: 'Message me on LinkedIn',
-    footerNote: 'Designed and built in Škofja Loka. Printed parts come off a Bambu Lab P1S in the next room.',
+    footerNote: 'Designed and built in Škofja Loka. Printed parts come off a Bambu Lab X2D and P1S in the next room.',
     sending: 'Sending…', sentTag: 'Sent', sentTitle: 'Thanks — your project is on my desk.', sentBody: 'I reply with a fixed-price quote or an hourly estimate within 48 hours. A copy of what you sent is below.', sendFail: 'Sending didn\u2019t work. Copy the brief below and send it to me directly.', sendLimited: 'Too many requests from this connection. Wait a few minutes, or copy the brief and send it directly.',
     with3d: '3D models', viewerLabel: '3D model', loading3d: 'Loading 3D model…', viewerHint: 'Drag to rotate · scroll or pinch to zoom · right-drag to pan', viewerFail: 'The 3D model could not be loaded.', pCategory: 'Category', pYear: 'Year', pMaterials: 'Materials', pModel: '3D model', interactive: 'Interactive preview', photos: 'Photos', openPhoto: 'Open photo', lbClose: 'Close', lbPrev: 'Previous photo', lbNext: 'Next photo', allWork: 'All work', nextProject: 'Next project',
     tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale' }
   },
   sl: {
-    nav: { home: 'Domov', services: 'Storitve', work: 'Projekti', skills: 'Znanja', about: 'O meni' },
+    nav: { home: 'Domov', services: 'Storitve', work: 'Projekti', news: 'Novice', skills: 'Znanja', about: 'O meni' },
+    newsLabel: 'Novice', newsTitle: 'Iz delavnice.', newsLead: 'Novi stroji, materiali in zaključeni projekti.', allNews: 'Vse novice', readMore: 'Preberi', pinned: 'Pripeto', newsPageTitle: 'Novice', newsEmpty: 'Novic še ni.',
     cta: 'Začni projekt', seeWork: 'Vsi projekti', allServices: 'Vse storitve', quote: 'Zahtevaj ponudbo',
     status: 'Sprejemam projekte',
     heroLabel: 'Inženirski studio · Škofja Loka, SI',
@@ -75,14 +77,14 @@ var T = {
     q2: 'Opišite projekt', q3: 'Kam naj odgovorim?',
     fWhat: 'Kaj naj izdelek počne?', fWhatPh: 'Nosilec, ki drži 60 mm ventilator na profil 2020…', fWhatH: 'Funkcija, velikost, kje bo, s čim je v stiku.',
     fQty: 'Količina', fDeadline: 'Rok', fFiles: 'Imate datoteke?', fFilesO: ['Ne, začenjamo od začetka', 'Skica ali fotografije', 'STL / STEP / 3MF', 'Izvorni CAD'],
-    fMat: 'Material', fMatO: ['Ne vem — priporočite', 'PLA', 'PETG', 'TPU / fleksibilni'],
+    fMat: 'Material', fMatO: ['Ne vem — priporočite', 'PLA', 'PETG', 'TPU / fleksibilni', 'ABS / ASA', 'Najlon / PA-CF', 'PC'],
     fName: 'Ime', fEmail: 'E-pošta', fNote: 'Še kaj?', fNoteH: 'Proračun, omejitve, povezave do referenc.',
     back: 'Nazaj', next: 'Naprej', finish: 'Pošlji projekt',
     errService: 'Za nadaljevanje izberite vsaj eno storitev.', errWhat: 'Opišite projekt v stavku ali dveh.', errName: 'Napišite, komu naj odgovorim.', errEmail: 'Vpišite e-pošto, npr. vi@podjetje.si',
     briefTitle: 'Vaš povzetek', briefLead: 'Kopirajte ga in mi ga pošljite. V 48 urah odgovorim s ponudbo s fiksno ceno ali urno oceno.',
     estimate: 'Okviren rok', copy: 'Kopiraj povzetek', copied: 'Kopirano', copyFail: 'Označite besedilo in ga kopirajte ročno',
     sendVia: 'Pošljite na', edit: 'Uredi odgovore', linkedin: 'Pišite mi na LinkedIn',
-    footerNote: 'Zasnovano in izdelano v Škofji Loki. Natisnjeni deli prihajajo z Bambu Lab P1S v sosednji sobi.',
+    footerNote: 'Zasnovano in izdelano v Škofji Loki. Natisnjeni deli prihajajo z Bambu Lab X2D in P1S v sosednji sobi.',
     sending: 'Pošiljam…', sentTag: 'Poslano', sentTitle: 'Hvala — vaš projekt je na moji mizi.', sentBody: 'V 48 urah odgovorim s ponudbo s fiksno ceno ali urno oceno. Spodaj je kopija poslanega.', sendFail: 'Pošiljanje ni uspelo. Kopirajte povzetek spodaj in mi ga pošljite neposredno.', sendLimited: 'Preveč zahtevkov s te povezave. Počakajte nekaj minut ali kopirajte povzetek in mi ga pošljite.',
     with3d: '3D modeli', viewerLabel: '3D model', loading3d: 'Nalagam 3D model…', viewerHint: 'Povlecite za vrtenje · kolešček ali prsta za povečavo · desni klik za premik', viewerFail: '3D modela ni bilo mogoče naložiti.', pCategory: 'Področje', pYear: 'Leto', pMaterials: 'Materiali', pModel: '3D model', interactive: 'Interaktivni predogled', photos: 'Fotografije', openPhoto: 'Odpri fotografijo', lbClose: 'Zapri', lbPrev: 'Prejšnja fotografija', lbNext: 'Naslednja fotografija', allWork: 'Vsi projekti', nextProject: 'Naslednji projekt',
     tb: { title: 'Naslov', drawn: 'Risal', loc: 'Lokacija', sheet: 'List', rev: 'Rev', date: 'Datum', scale: 'Merilo' }
@@ -97,7 +99,7 @@ var SERVICES = [
     need: { en: ['Part description', 'Critical dimensions', 'Reference photos or files', 'Manufacturing process'], sl: ['Opis dela', 'Ključne mere', 'Referenčne slike ali datoteke', 'Način izdelave'] } },
   { id: '3d-printing', code: 'S-02', key: 'print', time: { en: '1–4 days + post-processing', sl: '1–4 dni + obdelava' },
     title: { en: '3D printing & prototyping', sl: '3D tisk in prototipi' },
-    body: { en: 'FDM printing on a Bambu Lab P1S in PLA, PETG and flexibles, with calibration and post-processing.', sl: 'FDM tisk na Bambu Lab P1S v PLA, PETG in fleksibilnih materialih, s kalibracijo in obdelavo.' },
+    body: { en: 'FDM printing on a Bambu Lab X2D (two nozzles, heated chamber) and P1S: PLA and PETG, flexibles, and engineering materials such as ABS, ASA, nylon, PA-CF and PC, with calibration and post-processing.', sl: 'FDM tisk na Bambu Lab X2D (dve šobi, ogrevana komora) in P1S: PLA in PETG, fleksibilni materiali ter inženirski materiali, kot so ABS, ASA, najlon, PA-CF in PC, s kalibracijo in dodelavo.' },
     get: { en: ['Printed parts', 'Slicer profiles', 'Optional finishing', 'Quality photos'], sl: ['Natisnjeni deli', 'Profili za rezalnik', 'Dodelava po želji', 'Fotografije kakovosti'] },
     need: { en: ['STL / STEP / 3MF file', 'Material and colour', 'Functional requirements', 'Quantity and deadline'], sl: ['Datoteka STL / STEP / 3MF', 'Material in barva', 'Funkcionalne zahteve', 'Količina in rok'] } },
   { id: 'embedded-iot', code: 'S-03', key: 'iot', time: null,
@@ -119,6 +121,6 @@ var CATS = { CAD: { en: 'CAD', sl: 'CAD', d: 'cad' }, Mechanical: { en: 'Mechani
 var SKILLS = [
   { en: 'Design & CAD', sl: 'Konstruiranje in CAD', items: [['SolidWorks', '4 yrs · CSWA, CSWA-AM'], ['Fusion 360', { en: 'Secondary CAD', sl: 'Drugi CAD' }], ['SimulationXpress', { en: 'Static stress analysis', sl: 'Statična trdnostna analiza' }], [{ en: 'Mold design', sl: 'Kalupi' }, { en: 'Fiber composites', sl: 'Vlaknasti kompoziti' }], [{ en: 'Methods', sl: 'Metode' }, { en: 'Tolerance stack-up, material selection, acoustic resonance', sl: 'Verige toleranc, izbira materiala, akustična resonanca' }]] },
   { en: 'Embedded & firmware', sl: 'Vgrajeni sistemi in firmware', items: [['MCU', 'ESP32 · ESP32-S3 · ESP32-C3 · Raspberry Pi'], [{ en: 'Languages', sl: 'Jeziki' }, 'C/C++ · MicroPython'], [{ en: 'Toolchain', sl: 'Orodja' }, 'Arduino IDE · KiCad · EasyEDA'], [{ en: 'Buses', sl: 'Vodila' }, 'I²C · SPI'], [{ en: 'Connectivity', sl: 'Povezljivost' }, 'Wi-Fi · BLE · MQTT · Telegram'], [{ en: 'Displays', sl: 'Zasloni' }, 'OLED SH1106 · U8g2']] },
-  { en: 'Manufacturing', sl: 'Izdelava', items: [[{ en: 'Printer', sl: 'Tiskalnik' }, 'Bambu Lab P1S · 2 yrs'], [{ en: 'Materials', sl: 'Materiali' }, 'PLA · PETG · TPU 95A'], [{ en: 'Hardware', sl: 'Spojni elementi' }, { en: 'Heat-set inserts, magnets, 3M mounts', sl: 'Navojne puše, magneti, 3M lepila' }]] },
+  { en: 'Manufacturing', sl: 'Izdelava', items: [[{ en: 'Printers', sl: 'Tiskalnika' }, 'Bambu Lab X2D · P1S'], [{ en: 'X2D', sl: 'X2D' }, { en: '2 nozzles · heated chamber 65 °C · 300 °C · AMS', sl: '2 šobi · ogrevana komora 65 °C · 300 °C · AMS' }], [{ en: 'Materials', sl: 'Materiali' }, 'PLA · PETG · TPU 95A · ABS · ASA · PA · PA-CF · PC'], [{ en: 'Hardware', sl: 'Spojni elementi' }, { en: 'Heat-set inserts, magnets, 3M mounts', sl: 'Navojne puše, magneti, 3M lepila' }]] },
   { en: 'Industrial automation', sl: 'Industrijska avtomatika', items: [['PLC', 'Siemens S7-1200'], [{ en: 'Software', sl: 'Programska oprema' }, 'TIA Portal · HMI'], [{ en: 'Logic', sl: 'Logika' }, { en: 'TON/TOF timers, marker bit logic, VFD mode switching', sl: 'Časovniki TON/TOF, merker logika, preklop načinov frekvenčnika' }]] }
 ];

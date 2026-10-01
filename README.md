@@ -39,11 +39,12 @@ Push to `main`. GitHub Actions builds and publishes to GitHub Pages.
 
 In repository settings: **Pages → Source = GitHub Actions**.
 
-## Admin dashboard (projects, 3D models, photos)
+## Admin dashboard (projects, 3D models, photos, news)
 
 Open **https://nacekepa.work/admin/** (not linked from the site, `noindex`).
 
-It edits `src/data/projects.json` and stores files under `public/models/<project>/`, by committing
+It edits `src/data/projects.json` and `src/data/news.json` and stores files under `public/models/<project>/`
+and `public/news/<post>/`, by committing
 straight to this repo with your own GitHub token. GitHub Pages then rebuilds (about a minute); the
 dashboard shows when the change is live.
 
@@ -62,6 +63,10 @@ stored in the repo. If a device is lost, revoke the token on GitHub.
 **What you can do:** add, edit, hide, reorder and delete projects (EN + SL text, category, year,
 materials, featured on home); attach a 3D model (STL, 3MF, OBJ, GLB/GLTF up to 50 MB); add photos (the first
 one is the cover on the project sheet). Visitors open photos in a full-screen gallery and rotate models.
+
+**News:** the *News* tab adds posts with an EN + SL headline, summary and article (blank line =
+new paragraph, lines starting with `- ` become a list), a date, photos, *pinned* and *draft*. The newest
+three appear on the home page; all are at `/#news`, each at `/#n-<url-name>`.
 
 ## Protection
 
@@ -89,6 +94,7 @@ private repo needs a paid GitHub plan).
 src/pages/index.astro   the site (inlines src/site/*, projects from src/data/projects.json)
 src/pages/admin.astro   the admin dashboard (src/site/admin.js)
 src/data/projects.json  all projects, edited by the dashboard
+src/data/news.json      news posts, edited by the dashboard
 src/site/viewer.js      3D model viewer (three.js), loaded only on project pages
 src/site/nkm.js         protected preview-mesh format (simplify, encode, decode)
 src/pages/404.astro     not-found page

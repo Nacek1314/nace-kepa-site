@@ -11,6 +11,9 @@
   var app = document.getElementById('app');
   // Projects come from src/data/projects.json, inlined at build time (the admin dashboard edits that file).
   var PROJECTS = (window.NK_PROJECTS || []).filter(function (p) { return !p.hidden; });
+  // News comes from src/data/news.json (also edited in the admin): pinned first, then newest.
+  var NEWS = (window.NK_NEWS || []).filter(function (n) { return !n.hidden; }).sort(function (x, y) { return (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0) || String(y.date).localeCompare(String(x.date)); });
+  var PAGES = ['home', 'services', 'work', 'news', 'skills', 'about', 'order'];
   var viewer = null;
 
   // NK monogram — the same N/K geometry as the original logo, redrawn as a drawing-sheet mark.
@@ -27,13 +30,16 @@
   function P(p, k) { var v = p[k]; return v && typeof v === 'object' ? (v[lang] || v.en || '') : (v || ''); }
   function cat(p) { return CATS[p.category] ? CATS[p.category][lang] : p.category; }
   function bySlug(s) { for (var i = 0; i < PROJECTS.length; i++) if (PROJECTS[i].slug === s) return PROJECTS[i]; return null; }
+  function newsBySlug(s) { for (var i = 0; i < NEWS.length; i++) if (NEWS[i].slug === s) return NEWS[i]; return null; }
+  function fmtDate(d) { try { return new Date(d + 'T12:00:00').toLocaleDateString(lang === 'sl' ? 'sl-SI' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return d; } }
   function asset(path) { return '/' + String(path).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/'); }
   function page() {
     var h = (location.hash || '').replace('#', '');
     var m = /^(en|sl)-?(.*)$/.exec(h);
     if (m) { lang = m[1]; try { localStorage.setItem('nk-lang', lang); } catch (e) {} h = m[2]; }
     if (/^p-/.test(h) && bySlug(h.slice(2))) return 'project';
-    return ['home', 'services', 'work', 'skills', 'about', 'order'].indexOf(h) >= 0 ? h : 'home'; }
+    if (/^n-/.test(h) && newsBySlug(h.slice(2))) return 'post';
+    return PAGES.indexOf(h) >= 0 ? h : 'home'; }
   function currentSlug() { var h = (location.hash || '').replace('#', '').replace(/^(en|sl)-?/, ''); return h.slice(2); }
 
   function btn(label, href, variant, size, arrow) {
@@ -80,6 +86,7 @@
         '<section class="block">' + head(x.servicesLabel, x.servicesTitle, x.servicesLead) + '<div class="grid-4">' + SERVICES.map(function (s) { return service(s, false); }).join('') + '</div></section>' +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' +
         '<section class="block">' + head(x.workLabel, x.workTitle) + '<div class="grid-4 sheets">' + featured().map(sheet).join('') + '</div><div class="more">' + btn(x.seeWork, '#work', null, null, true) + '</div></section>' +
+        (NEWS.length ? '<section class="block">' + head(x.newsLabel, x.newsTitle, x.newsLead) + '<div class="news-list">' + NEWS.slice(0, 3).map(newsCard).join('') + '</div>' + (NEWS.length > 3 ? '<div class="more">' + btn(x.allNews, '#news', null, null, true) + '</div>' : '') + '</section>' : '') +
         '<section class="block about-strip"><div>' + '<p class="nk-label">' + esc(x.aboutLabel) + '</p><h2 class="sec-title">' + esc(x.aboutTitle) + '</h2></div><div><p class="lead">' + esc(x.aboutBody) + '</p>' + timelineDims() + '</div></section>' +
         ctaBand();
     },
@@ -113,8 +120,43 @@
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     order: orderView,
-    project: projectView
+    project: projectView,
+    news: function () {
+      var x = t();
+      return '<section class="block first">' + head(x.newsLabel + ' · ' + NEWS.length, x.newsPageTitle, x.newsLead, true) +
+        (NEWS.length ? '<div class="news-list">' + NEWS.map(newsCard).join('') + '</div>' : '<p class="lead">' + esc(x.newsEmpty) + '</p>') + '</section>' + ctaBand();
+    },
+    post: postView
   };
+
+  function newsCard(n) {
+    var x = t();
+    return '<a class="news-card" href="#n-' + esc(n.slug) + '">' +
+      (n.photos && n.photos.length ? '<span class="news-card__img"><img src="' + esc(asset(n.photos[0])) + '" alt="" loading="lazy" decoding="async" draggable="false"></span>' : '<span class="news-card__img news-card__img--none" aria-hidden="true">' + logo() + '</span>') +
+      '<span class="news-card__body"><span class="nk-label">' + (n.pinned ? '<b>' + esc(x.pinned) + ' · </b>' : '') + esc(fmtDate(n.date)) + '</span>' +
+      '<span class="news-card__title">' + esc(P(n, 'title')) + '</span><span class="news-card__sum">' + esc(P(n, 'summary')) + '</span>' +
+      '<span class="news-card__more">' + esc(x.readMore) + ' →</span></span></a>';
+  }
+  function richText(s) {
+    return String(s || '').split(/\n{2,}/).map(function (block) {
+      var lines = block.split('\n');
+      if (lines.every(function (l) { return /^\s*-\s+/.test(l); })) return '<ul>' + lines.map(function (l) { return '<li>' + esc(l.replace(/^\s*-\s+/, '')) + '</li>'; }).join('') + '</ul>';
+      return '<p>' + lines.map(esc).join('<br>') + '</p>';
+    }).join('');
+  }
+  function postView() {
+    var x = t(), n = newsBySlug(currentSlug()), photos = n.photos || [];
+    var i = NEWS.indexOf(n), next = NEWS[i + 1];
+    return '<section class="block first post">' +
+      '<a class="back" href="#news">← ' + esc(x.allNews) + '</a>' +
+      head(fmtDate(n.date) + (n.pinned ? ' · ' + x.pinned : ''), P(n, 'title'), P(n, 'summary'), true) +
+      '<div class="post-grid">' +
+      (photos.length ? '<button type="button" class="nk-sheet__art project-art post-cover" data-lb="0" aria-label="' + esc(x.openPhoto) + '"><img class="sheet-photo" src="' + esc(asset(photos[0])) + '" alt="" draggable="false"></button>' : '') +
+      '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div></div></div>' +
+      (photos.length > 1 ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, k) { return '<button type="button" data-lb="' + k + '" aria-label="' + esc(x.openPhoto + ' ' + (k + 1) + ' / ' + photos.length) + '"><img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
+      (next ? '<a class="next-project" href="#n-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.newsLabel) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
+      '</section>' + ctaBand();
+  }
 
   function projectView() {
     var x = t(), p = bySlug(currentSlug()), i = PROJECTS.indexOf(p);
@@ -279,12 +321,12 @@
     var zones = '<div class="zones zones-top" aria-hidden="true">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (n) { return '<span>' + n + '</span>'; }).join('') + '</div>' +
       '<div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div><div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>';
     var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="nacekepa.work — home">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="Main">' +
-      ['services', 'work', 'skills', 'about'].map(function (k) { return '<a href="#' + k + '"' + (p === k || (p === 'project' && k === 'work') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
+      ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a href="#' + k + '"' + (p === k || (p === 'project' && k === 'work') || (p === 'post' && k === 'news') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
       '</nav><div class="top-act"><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="' + (lang === 'en') + '">EN</button><button type="button" data-lang="sl" aria-pressed="' + (lang === 'sl') + '">SL</button></div>' + btn(x.cta, '#order', 'primary', 'sm') + '</div></header>';
-    var idx = ['home', 'services', 'work', 'skills', 'about', 'order'].indexOf(p === 'project' ? 'work' : p) + 1;
+    var idx = PAGES.indexOf(p === 'project' ? 'work' : p === 'post' ? 'news' : p) + 1;
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
-      cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / 06') +
+      cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
       cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell('Contact', '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell('Order', '<a href="#order">' + esc(x.cta) + ' →</a>', 'wide', false, true) +
       cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa</p></footer>';
     return '<div class="frame">' + zones + nav + '<main id="main">' + inner + '</main>' + tb + '</div>';
@@ -318,7 +360,7 @@
     var el = ev.target.closest('button, a'); if (!el) return;
     if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} render(true); return; }
     if (el.dataset.filter) { state.filter = el.dataset.filter; render(true); return; }
-    if (el.dataset.lb != null) { var pr = bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
+    if (el.dataset.lb != null) { var pr = page() === 'post' ? newsBySlug(currentSlug()) : bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
     if (el.id === 'next') { ev.preventDefault(); readForm(); var ok = validate(); if (ok) state.step++; if (ok && state.step === 3) submitOrder(); render(true); var w = document.getElementById('wiz'); if (w) w.scrollIntoView({ block: 'start' }); return; }
     if (el.id === 'back') { ev.preventDefault(); readForm(); state.errors = {}; state.send = 'idle'; state.step = state.step === 3 ? 0 : state.step - 1; render(true); return; }
     if (el.id === 'copy') {

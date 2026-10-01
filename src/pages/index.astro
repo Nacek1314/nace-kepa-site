@@ -7,11 +7,12 @@ import drawings from '../site/drawings.js?raw';
 import content from '../site/content.js?raw';
 import app from '../site/app.js?raw';
 import projects from '../data/projects.json';
+import news from '../data/news.json';
 import { createHash } from 'node:crypto';
 
 const endpoint = (import.meta.env.PUBLIC_ORDER_ENDPOINT || '').trim();
 const contactEmail = 'kepanace@gmail.com';
-const projectsJs = 'window.NK_PROJECTS = ' + JSON.stringify(projects).replace(/</g, '\\u003c') + ';';
+const projectsJs = 'window.NK_PROJECTS = ' + JSON.stringify(projects).replace(/</g, '\\u003c') + ';\nwindow.NK_NEWS = ' + JSON.stringify(news).replace(/</g, '\\u003c') + ';';
 // Refuse to run inside another site's frame (clickjacking); GitHub Pages can't send X-Frame-Options.
 const frameGuard = 'if (window.top !== window.self) { document.documentElement.style.display = "none"; try { window.top.location.replace(window.self.location.href); } catch (e) {} }';
 const script = [frameGuard, drawings, content, projectsJs, app.split('__ORDER_ENDPOINT__').join(endpoint || '__ORDER_ENDPOINT__').split('__CONTACT_EMAIL__').join(contactEmail)].join('\n');

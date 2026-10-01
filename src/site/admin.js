@@ -1,5 +1,6 @@
 // nacekepa.work admin dashboard.
-// Edits src/data/projects.json and the files under public/models/ by committing straight to GitHub
+// Edits src/data/projects.json, src/data/news.json and the files under public/models/ and public/news/
+// by committing straight to GitHub
 // (Git Data API) with a fine-grained token that lives only in this browser. GitHub Pages rebuilds on push.
 import { mount as mountViewer, loadObject, FORMATS, THREE } from './viewer.js';
 import { flatten, simplify, encode } from './nkm.js';
@@ -8,6 +9,7 @@ const OWNER = 'Nacek1314';
 const REPO = 'nace-kepa-site';
 const BRANCH = 'main';
 const DATA_PATH = 'src/data/projects.json';
+const NEWS_PATH = 'src/data/news.json';
 const PUBLIC_DIR = 'public/';
 const MAX_MODEL = 50 * 1024 * 1024;
 const MAX_PHOTO_EDGE = 2000;
@@ -23,6 +25,8 @@ const S = {
   token: null, user: null,
   headSha: null, dataSha: null,
   projects: [], savedJson: '',
+  news: [], savedNews: '[]\n', newsSha: null, selNews: null,
+  tab: 'projects',
   sel: null, query: '',
   uploads: new Map(),   // repoPath -> File|Blob
   deletes: new Set(),   // repoPath of committed files to remove
@@ -38,9 +42,14 @@ const slugify = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[
 const fmtMB = (n) => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + ' MB';
 const sitePath = (repoPath) => repoPath.replace(/^public\//, '');
 const repoPath = (site) => PUBLIC_DIR + String(site).replace(/^\/+/, '');
-const cur = () => S.projects.find((p) => p.slug === S.sel) || null;
-const dirty = () => JSON.stringify(S.projects, null, 2) + '\n' !== S.savedJson || S.uploads.size > 0 || S.deletes.size > 0;
-const changeCount = () => S.uploads.size + S.deletes.size + (JSON.stringify(S.projects, null, 2) + '\n' !== S.savedJson ? 1 : 0);
+const isNews = () => S.tab === 'news';
+const cur = () => isNews() ? (S.news.find((n) => n.slug === S.selNews) || null) : (S.projects.find((p) => p.slug === S.sel) || null);
+const projectsChanged = () => JSON.stringify(S.projects, null, 2) + '\n' !== S.savedJson;
+const newsChanged = () => JSON.stringify(S.news, null, 2) + '\n' !== S.savedNews;
+const dirty = () => projectsChanged() || newsChanged() || S.uploads.size > 0 || S.deletes.size > 0;
+const changeCount = () => S.uploads.size + S.deletes.size + (projectsChanged() ? 1 : 0) + (newsChanged() ? 1 : 0);
+const today = () => new Date().toISOString().slice(0, 10);
+const sortNews = (list) => list.slice().sort((x, y) => (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0) || String(y.date).localeCompare(String(x.date)));
 
 // ---------- token vault (PBKDF2 → AES-GCM; the PIN never leaves the browser) ----------
 const enc = new TextEncoder();
@@ -199,6 +208,12 @@ function blankProject() {
   };
 }
 
+function blankNews() {
+  let base = 'news-' + today(), slug = base, n = 2;
+  while (S.news.some((p) => p.slug === slug)) slug = base + '-' + n++;
+  return { slug, _new: true, date: today(), title: { en: '', sl: '' }, summary: { en: '', sl: '' }, body: { en: '', sl: '' }, photos: [], pinned: false, hidden: false };
+}
+
 function stageDelete(site) {
   const rp = repoPath(site);
   if (S.uploads.has(rp)) S.uploads.delete(rp); // uploaded in this session, never committed
@@ -237,14 +252,23 @@ async function signIn(tok, pin) {
   }
 }
 
+async function getNews(ref) {
+  try { return await gh(repo(`/contents/${NEWS_PATH}?ref=${ref}`)); }
+  catch (e) { if (e.status === 404) return null; throw e; }
+}
+
 async function load() {
-  S.busy = 'Loading projects…'; render();
+  S.busy = 'Loading projects and news…'; render();
   const ref = await gh(repo(`/git/ref/heads/${BRANCH}`));
-  const file = await gh(repo(`/contents/${DATA_PATH}?ref=${ref.object.sha}`));
+  const [file, news] = await Promise.all([gh(repo(`/contents/${DATA_PATH}?ref=${ref.object.sha}`)), getNews(ref.object.sha)]);
   S.headSha = ref.object.sha;
   S.dataSha = file.sha;
+  S.newsSha = news ? news.sha : null;
   S.projects = JSON.parse(b64ToUtf8(file.content));
   S.savedJson = JSON.stringify(S.projects, null, 2) + '\n';
+  S.news = news ? JSON.parse(b64ToUtf8(news.content)) : [];
+  S.savedNews = JSON.stringify(S.news, null, 2) + '\n';
+  if (!S.news.some((n) => n.slug === S.selNews)) S.selNews = sortNews(S.news)[0]?.slug || null;
   S.uploads.clear(); S.deletes.clear();
   if (!S.projects.some((p) => p.slug === S.sel)) S.sel = S.projects[0]?.slug || null;
   S.busy = ''; S.error = '';
@@ -261,6 +285,14 @@ function validate() {
     if (!CATEGORIES.includes(p.category)) return `“${p.title.en}” has an unknown category.`;
     if (!(+p.year >= 1990 && +p.year <= 2100)) return `“${p.title.en}” needs a year like 2026.`;
   }
+  const ns = new Set();
+  for (const n of S.news) {
+    if (!n.title.en.trim()) return `A news post (${n.date}) needs an English title.`;
+    if (!/^[a-z0-9-]+$/.test(n.slug)) return `News “${n.title.en}” has an invalid URL name.`;
+    if (ns.has(n.slug)) return `Two news posts use the URL name “${n.slug}”.`;
+    ns.add(n.slug);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(n.date)) return `News “${n.title.en}” needs a date.`;
+  }
   return '';
 }
 
@@ -273,13 +305,17 @@ async function publish() {
     const ref = await gh(repo(`/git/ref/heads/${BRANCH}`));
     const head = ref.object.sha;
     if (head !== S.headSha) {
-      const f = await gh(repo(`/contents/${DATA_PATH}?ref=${head}`));
-      if (f.sha !== S.dataSha) throw new Error('The projects were changed somewhere else since you opened the dashboard. Copy anything you need, then press “Reload”.');
+      const [f, nf] = await Promise.all([gh(repo(`/contents/${DATA_PATH}?ref=${head}`)), getNews(head)]);
+      if (f.sha !== S.dataSha || (nf ? nf.sha : null) !== S.newsSha) throw new Error('Projects or news were changed somewhere else since you opened the dashboard. Copy anything you need, then press “Reload”.');
     }
     const base = await gh(repo(`/git/commits/${head}`));
     const clean = S.projects.map(({ _new, _slugTouched, ...p }) => (p.model ? { ...p, model: { file: p.model.file, format: p.model.format, size: p.model.size, triangles: p.model.triangles } } : p));
     const json = JSON.stringify(clean, null, 2) + '\n';
-    const tree = [{ path: DATA_PATH, mode: '100644', type: 'blob', content: json }];
+    const cleanNews = sortNews(S.news).map(({ _new, _slugTouched, ...n }) => n);
+    const newsJson = JSON.stringify(cleanNews, null, 2) + '\n';
+    const tree = [];
+    if (projectsChanged()) tree.push({ path: DATA_PATH, mode: '100644', type: 'blob', content: json });
+    if (newsChanged()) tree.push({ path: NEWS_PATH, mode: '100644', type: 'blob', content: newsJson });
 
     let i = 0;
     for (const [path, file] of S.uploads) {
@@ -298,8 +334,12 @@ async function publish() {
 
     S.projects = clean;
     S.savedJson = json;
+    S.news = cleanNews;
+    S.savedNews = newsJson;
     S.headSha = commit.sha;
-    S.dataSha = (await gh(repo(`/contents/${DATA_PATH}?ref=${commit.sha}`))).sha;
+    const [df, nf] = await Promise.all([gh(repo(`/contents/${DATA_PATH}?ref=${commit.sha}`)), getNews(commit.sha)]);
+    S.dataSha = df.sha;
+    S.newsSha = nf ? nf.sha : null;
     S.uploads.forEach((f) => f._url && URL.revokeObjectURL(f._url));
     S.uploads.clear(); S.deletes.clear();
     S.busy = '';
@@ -323,11 +363,16 @@ function summarize() {
   const parts = [];
   if (added.length) parts.push('add ' + added.join(', '));
   if (removed.length) parts.push('remove ' + removed.join(', '));
+  const before2 = JSON.parse(S.savedNews || '[]');
+  const nb = new Set(before2.map((n) => n.slug));
+  const addedNews = S.news.filter((n) => !nb.has(n.slug)).map((n) => n.title.en || n.slug);
+  if (addedNews.length) parts.push('news: ' + addedNews.join(', '));
+  else if (newsChanged()) parts.push('update news');
   const models = [...S.uploads.keys()].filter((p) => p.endsWith('.nkm')).length;
   const photos = S.uploads.size - models;
   if (models) parts.push(models + ' model' + (models > 1 ? 's' : ''));
   if (photos) parts.push(photos + ' photo' + (photos > 1 ? 's' : ''));
-  if (!parts.length) parts.push('update projects');
+  if (!parts.length) parts.push(projectsChanged() ? 'update projects' : 'update');
   return parts.join('; ').slice(0, 120);
 }
 
@@ -358,7 +403,7 @@ function loginView() {
     <a class="wordmark" href="/">${logo()}<span class="wm-text">nacekepa<span>.work</span></span></a>
     <p class="nk-label">Admin · Sheet NK-ADM</p>
     <h1 class="page-title">Dashboard</h1>
-    <p class="lead">Add projects, 3D models and photos. Changes are saved to your GitHub repository and the site updates about a minute later.</p>
+    <p class="lead">Add projects, 3D models, photos and news. Changes are saved to your GitHub repository and the site updates about a minute later.</p>
     <form class="ad-card" id="login" novalidate>
       <div class="nk-field">
         <label class="nk-field__label" for="tok">GitHub access token</label>
@@ -409,10 +454,39 @@ function deployPill() {
   return `<a class="nk-tag nk-tag--rev" href="${esc(d.url)}" target="_blank" rel="noopener">Build failed ↗</a>`;
 }
 
+function tabsView() {
+  return `<div class="ad-tabs" role="tablist" aria-label="Content">
+    <button type="button" role="tab" data-tab="projects" aria-selected="${!isNews()}">Projects <span>${S.projects.length}</span></button>
+    <button type="button" role="tab" data-tab="news" aria-selected="${isNews()}">News <span>${S.news.length}</span></button>
+  </div>`;
+}
+
+function newsListView() {
+  const q = S.query.toLowerCase();
+  const items = sortNews(S.news).filter((n) => !q || (n.title.en + ' ' + n.title.sl).toLowerCase().includes(q));
+  return `<div class="ad-list">
+    ${tabsView()}
+    <div class="ad-list__top">
+      <input class="nk-input" id="q" type="search" placeholder="Search ${S.news.length} posts" value="${esc(S.query)}" aria-label="Search news">
+      <button class="nk-btn nk-btn--sm" type="button" data-act="new">+ New</button>
+    </div>
+    <ol class="ad-items">${items.length ? items.map((n) => `
+      <li class="ad-item${n.slug === S.selNews ? ' is-sel' : ''}${n.hidden ? ' is-hidden' : ''}">
+        <button type="button" class="ad-item__main" data-sel="${esc(n.slug)}">
+          <span class="ad-item__t">${esc(n.title.en || 'Untitled')}</span>
+          <span class="ad-item__m">${esc(n.date)}${n.pinned ? ' · ★ pinned' : ''}${n.photos.length ? ` · ${n.photos.length} ph` : ''}${n.hidden ? ' · draft' : ''}</span>
+        </button>
+      </li>`).join('') : '<li class="ad-item"><span class="ad-item__main"><span class="ad-item__m">No posts yet. Press “+ New”.</span></span></li>'}
+    </ol>
+  </div>`;
+}
+
 function listView() {
+  if (isNews()) return newsListView();
   const q = S.query.toLowerCase();
   const items = S.projects.map((p, i) => ({ p, i })).filter(({ p }) => !q || (p.title.en + ' ' + p.title.sl + ' ' + p.category).toLowerCase().includes(q));
   return `<div class="ad-list">
+    ${tabsView()}
     <div class="ad-list__top">
       <input class="nk-input" id="q" type="search" placeholder="Search ${S.projects.length} projects" value="${esc(S.query)}" aria-label="Search projects">
       <button class="nk-btn nk-btn--sm" type="button" data-act="new">+ New</button>
@@ -438,7 +512,54 @@ function fld(id, label, control, hint, full) {
 function inp(id, val, attrs = '') { return `<input class="nk-input" id="${id}" data-k="${id}" value="${esc(val)}" ${attrs}>`; }
 function area(id, val, rows = 3) { return `<textarea class="nk-input" id="${id}" data-k="${id}" rows="${rows}">${esc(val)}</textarea>`; }
 
+function photosSection(p) {
+  return `<fieldset class="ad-sec"><legend class="nk-label">Photos</legend>
+      <div class="ad-photos">
+        ${p.photos.map((ph, i) => `<figure class="ad-photo">
+          <img src="${esc(previewUrl(ph))}" alt="">
+          <figcaption>${i === 0 ? '<span class="nk-tag nk-tag--ok">Cover</span>' : `<button type="button" data-cover="${i}">Make cover</button>`}<button type="button" data-rm-photo="${i}" aria-label="Remove photo">Remove</button></figcaption>
+        </figure>`).join('')}
+        <label class="ad-photo ad-drop" for="photo-in"><span class="sub">+ Photos</span><span class="nk-field__hint">Watermarked, resized to ${MAX_PHOTO_EDGE} px, location data removed</span></label>
+        <input type="file" id="photo-in" accept="image/jpeg,image/png,image/webp" multiple hidden>
+      </div>
+    </fieldset>`;
+}
+
+function newsEditorView() {
+  const n = cur();
+  if (!n) return `<div class="ad-empty"><p class="lead">No news post selected.</p><button class="nk-btn" data-act="new" type="button">+ New post</button></div>`;
+  const committed = !n._new;
+  return `<div class="ad-editor">
+    <div class="ad-editor__head">
+      <div><p class="nk-label">${committed ? 'News · ' + esc(n.date) : 'New post · not published yet'}</p><h2 class="sub">${esc(n.title.en || 'Untitled')}</h2></div>
+      ${committed && !n.hidden ? `<a class="nk-btn nk-btn--sm nk-btn--ghost" href="/#n-${esc(n.slug)}" target="_blank" rel="noopener">View on site ↗</a>` : ''}
+    </div>
+    <fieldset class="ad-sec"><legend class="nk-label">Post</legend><div class="form">
+      ${fld('n-t-en', 'Headline · English', inp('n-t-en', n.title.en, 'required'))}
+      ${fld('n-t-sl', 'Headline · Slovenian', inp('n-t-sl', n.title.sl))}
+      ${fld('n-s-en', 'Summary · EN', area('n-s-en', n.summary.en, 2), 'One or two sentences, shown in lists and on the home page.')}
+      ${fld('n-s-sl', 'Summary · SL', area('n-s-sl', n.summary.sl, 2))}
+      ${fld('n-b-en', 'Article · EN', area('n-b-en', n.body.en, 9), 'Blank line = new paragraph. A line starting with “- ” becomes a list item.')}
+      ${fld('n-b-sl', 'Article · SL', area('n-b-sl', n.body.sl, 9))}
+    </div></fieldset>
+    <fieldset class="ad-sec"><legend class="nk-label">Settings</legend><div class="form form-3">
+      ${fld('n-date', 'Date', inp('n-date', n.date, 'type="date"'))}
+      ${fld('n-slug', 'URL name', inp('n-slug', n.slug, committed ? 'readonly' : ''), committed ? 'nacekepa.work/#n-' + esc(n.slug) : 'Lowercase, numbers, dashes.')}
+      <div class="nk-field"><span class="nk-field__label">Visibility</span>
+        <label class="ad-check"><input type="checkbox" data-k="n-pin" ${n.pinned ? 'checked' : ''}> Pinned to the top</label>
+        <label class="ad-check"><input type="checkbox" data-k="n-hid" ${n.hidden ? 'checked' : ''}> Draft (not on the site)</label>
+      </div>
+    </div></fieldset>
+    ${photosSection(n)}
+    <div class="ad-danger">
+      ${S.confirmDelete ? `<span>Delete “${esc(n.title.en || n.slug)}” and its photos?</span><button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-act="del-yes">Delete</button><button type="button" class="nk-btn nk-btn--sm" data-act="del-no">Keep</button>`
+        : `<button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="del">Delete post</button>`}
+    </div>
+  </div>`;
+}
+
 function editorView() {
+  if (isNews()) return newsEditorView();
   const p = cur();
   if (!p) return `<div class="ad-empty"><p class="lead">No project selected.</p><button class="nk-btn" data-act="new" type="button">+ New project</button></div>`;
   const committed = !p._new;
@@ -483,16 +604,7 @@ function editorView() {
       </div>
     </fieldset>
 
-    <fieldset class="ad-sec"><legend class="nk-label">Photos</legend>
-      <div class="ad-photos">
-        ${p.photos.map((ph, i) => `<figure class="ad-photo">
-          <img src="${esc(previewUrl(ph))}" alt="">
-          <figcaption>${i === 0 ? '<span class="nk-tag nk-tag--ok">Cover</span>' : `<button type="button" data-cover="${i}">Make cover</button>`}<button type="button" data-rm-photo="${i}" aria-label="Remove photo">Remove</button></figcaption>
-        </figure>`).join('')}
-        <label class="ad-photo ad-drop" for="photo-in"><span class="sub">+ Photos</span><span class="nk-field__hint">Watermarked, resized to ${MAX_PHOTO_EDGE} px, location data removed</span></label>
-        <input type="file" id="photo-in" accept="image/jpeg,image/png,image/webp" multiple hidden>
-      </div>
-    </fieldset>
+    ${photosSection(p)}
 
     <div class="ad-danger">
       ${S.confirmDelete ? `<span>Delete “${esc(p.title.en || p.slug)}” and its files?</span><button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-act="del-yes">Delete</button><button type="button" class="nk-btn nk-btn--sm" data-act="del-no">Keep</button>`
@@ -530,7 +642,7 @@ function render() {
     if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} }
   }
   const p = cur();
-  if (S.user && !S.locked && p && p.model) {
+  if (S.user && !S.locked && !isNews() && p && p.model) {
     const box = document.getElementById('ad-viewer');
     const rp = repoPath(p.model.file);
     const local = S.uploads.get(rp);
@@ -578,6 +690,24 @@ root.addEventListener('input', (e) => {
   if (e.target.id === 'q') { S.query = e.target.value; render(); return; }
   if (!k || !p) return;
   const v = e.target.value;
+  if (isNews()) {
+    if (k === 'n-t-en') { p.title.en = v; if (p._new && !p._slugTouched) { p.slug = slugify(v) || p.slug; S.selNews = p.slug; } }
+    else if (k === 'n-t-sl') p.title.sl = v;
+    else if (k === 'n-s-en') p.summary.en = v;
+    else if (k === 'n-s-sl') p.summary.sl = v;
+    else if (k === 'n-b-en') p.body.en = v;
+    else if (k === 'n-b-sl') p.body.sl = v;
+    else if (k === 'n-date') p.date = v;
+    else if (k === 'n-slug' && p._new) { p.slug = slugify(v); p._slugTouched = true; S.selNews = p.slug; }
+    else return;
+    S.notice = '';
+    const head = root.querySelector('.ad-editor__head .sub');
+    if (head && k === 'n-t-en') head.textContent = p.title.en || 'Untitled';
+    const list = root.querySelector('.ad-list');
+    if (list && (k === 'n-t-en' || k === 'n-date')) list.outerHTML = listView();
+    updatePublish();
+    return;
+  }
   if (k === 't-en') { p.title.en = v; if (p._new && !p._slugTouched) p.slug = slugify(v) || p.slug, S.sel = p.slug; }
   else if (k === 't-sl') p.title.sl = v;
   else if (k === 'd-en') p.description.en = v;
@@ -627,13 +757,16 @@ root.addEventListener('change', async (e) => {
       let ready;
       try { ready = await preparePhoto(f); } catch (err) { S.error = err.message; continue; }
       const ext = (ready.name.split('.').pop() || 'jpg').toLowerCase();
-      const site = `models/${p.slug}/photos/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+      const name = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+      const site = isNews() ? `news/${p.slug}/${name}` : `models/${p.slug}/photos/${name}`;
       S.uploads.set(repoPath(site), ready);
       p.photos.push(site);
     }
     S.busy = ''; render(); return;
   }
   if (!k || !p) return;
+  if (k === 'n-pin') { p.pinned = e.target.checked; render(); return; }
+  if (k === 'n-hid') { p.hidden = e.target.checked; render(); return; }
   if (k === 'cat') p.category = e.target.value;
   else if (k === 'drw') p.drawing = e.target.value;
   else if (k === 'feat') p.featured = e.target.checked;
@@ -647,7 +780,8 @@ root.addEventListener('click', (e) => {
   if (!b) return;
   const p = cur();
   const act = b.dataset.act;
-  if (b.dataset.sel != null) { S.sel = b.dataset.sel; S.confirmDelete = false; render(); return; }
+  if (b.dataset.tab) { S.tab = b.dataset.tab; S.query = ''; S.confirmDelete = false; render(); return; }
+  if (b.dataset.sel != null) { if (isNews()) S.selNews = b.dataset.sel; else S.sel = b.dataset.sel; S.confirmDelete = false; render(); return; }
   if (b.dataset.up != null || b.dataset.down != null) {
     const i = +(b.dataset.up ?? b.dataset.down), j = b.dataset.up != null ? i - 1 : i + 1;
     [S.projects[i], S.projects[j]] = [S.projects[j], S.projects[i]];
@@ -655,10 +789,17 @@ root.addEventListener('click', (e) => {
   }
   if (b.dataset.rmPhoto != null && p) { const [ph] = p.photos.splice(+b.dataset.rmPhoto, 1); stageDelete(ph); render(); return; }
   if (b.dataset.cover != null && p) { const [ph] = p.photos.splice(+b.dataset.cover, 1); p.photos.unshift(ph); render(); return; }
+  if (act === 'new' && isNews()) { const nn = blankNews(); S.news.unshift(nn); S.selNews = nn.slug; S.query = ''; render(); document.getElementById('n-t-en')?.focus(); return; }
   if (act === 'new') { const np = blankProject(); S.projects.unshift(np); S.sel = np.slug; S.query = ''; render(); document.getElementById('t-en')?.focus(); return; }
   if (act === 'rm-model' && p && p.model) { stageDelete(p.model.file); p.model = null; render(); return; }
   if (act === 'del') { S.confirmDelete = true; render(); return; }
   if (act === 'del-no') { S.confirmDelete = false; render(); return; }
+  if (act === 'del-yes' && p && isNews()) {
+    p.photos.forEach(stageDelete);
+    S.news = S.news.filter((x) => x !== p);
+    S.selNews = sortNews(S.news)[0]?.slug || null;
+    S.confirmDelete = false; render(); return;
+  }
   if (act === 'del-yes' && p) {
     if (p.model) stageDelete(p.model.file);
     p.photos.forEach(stageDelete);
