@@ -349,7 +349,9 @@ async function publish() {
     watchDeploy(commit.sha);
   } catch (e) {
     S.busy = '';
-    S.error = e.status === 409 || e.status === 422 ? 'GitHub refused the commit (' + e.message + '). Press “Reload” and try again.' : e.message;
+    S.error = e.status === 403
+      ? 'Your GitHub token can read the repository but isn’t allowed to save to it. On GitHub open Settings → Developer settings → Fine-grained tokens → your token → Edit, set Repository permissions → Contents to “Read and write”, press Update, then press Publish again (nothing is lost).'
+      : e.status === 409 || e.status === 422 ? 'GitHub refused the commit (' + e.message + '). Press “Reload” and try again.' : e.message;
     render();
   }
 }
