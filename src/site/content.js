@@ -40,7 +40,7 @@ var T = {
     sendVia: 'Send it to', edit: 'Edit answers', linkedin: 'Message me on LinkedIn',
     footerNote: 'Designed and built in Škofja Loka. Printed parts come off a Bambu Lab P1S in the next room.',
     sending: 'Sending…', sentTag: 'Sent', sentTitle: 'Thanks — your project is on my desk.', sentBody: 'I reply with a fixed-price quote or an hourly estimate within 48 hours. A copy of what you sent is below.', sendFail: 'Sending didn\u2019t work. Copy the brief below and send it to me directly.', sendLimited: 'Too many requests from this connection. Wait a few minutes, or copy the brief and send it directly.',
-    with3d: '3D models', viewerLabel: '3D model', loading3d: 'Loading 3D model…', viewerHint: 'Drag to rotate · scroll or pinch to zoom · right-drag to pan', viewerFail: 'The 3D model could not be loaded.', pCategory: 'Category', pYear: 'Year', pMaterials: 'Materials', pModel: '3D model', downloadModel: 'Download model', allWork: 'All work', nextProject: 'Next project',
+    with3d: '3D models', viewerLabel: '3D model', loading3d: 'Loading 3D model…', viewerHint: 'Drag to rotate · scroll or pinch to zoom · right-drag to pan', viewerFail: 'The 3D model could not be loaded.', pCategory: 'Category', pYear: 'Year', pMaterials: 'Materials', pModel: '3D model', interactive: 'Interactive preview', photos: 'Photos', openPhoto: 'Open photo', lbClose: 'Close', lbPrev: 'Previous photo', lbNext: 'Next photo', allWork: 'All work', nextProject: 'Next project',
     tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale' }
   },
   sl: {
@@ -84,7 +84,7 @@ var T = {
     sendVia: 'Pošljite na', edit: 'Uredi odgovore', linkedin: 'Pišite mi na LinkedIn',
     footerNote: 'Zasnovano in izdelano v Škofji Loki. Natisnjeni deli prihajajo z Bambu Lab P1S v sosednji sobi.',
     sending: 'Pošiljam…', sentTag: 'Poslano', sentTitle: 'Hvala — vaš projekt je na moji mizi.', sentBody: 'V 48 urah odgovorim s ponudbo s fiksno ceno ali urno oceno. Spodaj je kopija poslanega.', sendFail: 'Pošiljanje ni uspelo. Kopirajte povzetek spodaj in mi ga pošljite neposredno.', sendLimited: 'Preveč zahtevkov s te povezave. Počakajte nekaj minut ali kopirajte povzetek in mi ga pošljite.',
-    with3d: '3D modeli', viewerLabel: '3D model', loading3d: 'Nalagam 3D model…', viewerHint: 'Povlecite za vrtenje · kolešček ali prsta za povečavo · desni klik za premik', viewerFail: '3D modela ni bilo mogoče naložiti.', pCategory: 'Področje', pYear: 'Leto', pMaterials: 'Materiali', pModel: '3D model', downloadModel: 'Prenesi model', allWork: 'Vsi projekti', nextProject: 'Naslednji projekt',
+    with3d: '3D modeli', viewerLabel: '3D model', loading3d: 'Nalagam 3D model…', viewerHint: 'Povlecite za vrtenje · kolešček ali prsta za povečavo · desni klik za premik', viewerFail: '3D modela ni bilo mogoče naložiti.', pCategory: 'Področje', pYear: 'Leto', pMaterials: 'Materiali', pModel: '3D model', interactive: 'Interaktivni predogled', photos: 'Fotografije', openPhoto: 'Odpri fotografijo', lbClose: 'Zapri', lbPrev: 'Prejšnja fotografija', lbNext: 'Naslednja fotografija', allWork: 'Vsi projekti', nextProject: 'Naslednji projekt',
     tb: { title: 'Naslov', drawn: 'Risal', loc: 'Lokacija', sheet: 'List', rev: 'Rev', date: 'Datum', scale: 'Merilo' }
   }
 };

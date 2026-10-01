@@ -8,6 +8,8 @@ export default defineConfig({
   site: 'https://nacekepa.work',
   trailingSlash: 'ignore',
   integrations: [sitemap({ filter: (page) => !/\/(services|portfolio|skills|about|order|sl|admin)(\/|$)/.test(new URL(page).pathname) })],
+  // Never inline built scripts into the HTML: the Content-Security-Policy only trusts files from this site.
+  vite: { build: { assetsInlineLimit: 0 } },
   redirects: {
     "/services": "/#services",
     "/portfolio": "/#work",

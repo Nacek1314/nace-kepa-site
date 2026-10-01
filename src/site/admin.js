@@ -1,7 +1,8 @@
 // nacekepa.work admin dashboard.
 // Edits src/data/projects.json and the files under public/models/ by committing straight to GitHub
 // (Git Data API) with a fine-grained token that lives only in this browser. GitHub Pages rebuilds on push.
-import { mount as mountViewer, FORMATS } from './viewer.js';
+import { mount as mountViewer, loadObject, FORMATS, THREE } from './viewer.js';
+import { flatten, simplify, encode } from './nkm.js';
 
 const OWNER = 'Nacek1314';
 const REPO = 'nace-kepa-site';
@@ -12,7 +13,10 @@ const MAX_MODEL = 50 * 1024 * 1024;
 const MAX_PHOTO_EDGE = 2000;
 const CATEGORIES = ['CAD', 'Mechanical', 'IoT', 'Embedded'];
 const DRAWINGS = Object.keys(window.NK_DRAWINGS || {});
-const TOKEN_KEY = 'nk-admin-token';
+const VAULT_KEY = 'nk-admin-vault';      // GitHub token, AES-GCM encrypted with your admin PIN
+const LOCK_AFTER_MS = 15 * 60 * 1000;     // lock the dashboard after 15 minutes without activity
+const PREVIEW_TRIANGLES = 150000;         // published 3D previews are simplified to at most this
+for (const k of ['nk-admin-token']) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch {} } // old plain-text storage
 
 const root = document.getElementById('admin');
 const S = {
@@ -38,16 +42,38 @@ const cur = () => S.projects.find((p) => p.slug === S.sel) || null;
 const dirty = () => JSON.stringify(S.projects, null, 2) + '\n' !== S.savedJson || S.uploads.size > 0 || S.deletes.size > 0;
 const changeCount = () => S.uploads.size + S.deletes.size + (JSON.stringify(S.projects, null, 2) + '\n' !== S.savedJson ? 1 : 0);
 
-function getToken() {
-  try { return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
+// ---------- token vault (PBKDF2 → AES-GCM; the PIN never leaves the browser) ----------
+const enc = new TextEncoder();
+const b64 = (u8) => btoa(String.fromCharCode(...u8));
+const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+async function pinKey(pin, salt) {
+  const base = await crypto.subtle.importKey('raw', enc.encode(pin), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 600000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
 }
-function saveToken(tok, remember) {
-  try {
-    (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, tok);
-    (remember ? sessionStorage : localStorage).removeItem(TOKEN_KEY);
-  } catch { /* private mode: keep it in memory only */ }
+async function sealToken(tok, pin) {
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await pinKey(pin, salt), enc.encode(tok)));
+  try { localStorage.setItem(VAULT_KEY, JSON.stringify({ v: 1, salt: b64(salt), iv: b64(iv), ct: b64(ct), user: S.user })); } catch {}
 }
-function clearToken() { try { localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(TOKEN_KEY); } catch {} }
+async function openVault(pin) {
+  const v = vault();
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(v.iv) }, await pinKey(pin, unb64(v.salt)), unb64(v.ct));
+  return new TextDecoder().decode(pt);
+}
+function vault() { try { return JSON.parse(localStorage.getItem(VAULT_KEY) || 'null'); } catch { return null; } }
+function clearToken() { try { localStorage.removeItem(VAULT_KEY); } catch {} }
+
+// ---------- auto-lock ----------
+let lastActive = Date.now();
+['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach((ev) => window.addEventListener(ev, () => { lastActive = Date.now(); }, { passive: true }));
+setInterval(() => {
+  if (S.user && !S.locked && !S.busy && Date.now() - lastActive > LOCK_AFTER_MS) lock('Locked after 15 minutes without activity.');
+}, 15000);
+document.addEventListener('visibilitychange', () => { if (document.hidden) lastActive = Math.min(lastActive, Date.now()); });
+function lock(msg) {
+  S.token = null; S.locked = true; S.error = ''; S.notice = msg || '';
+  render();
+}
 
 async function gh(path, opts = {}) {
   const r = await fetch('https://api.github.com' + path, {
@@ -86,13 +112,13 @@ function fileToB64(file) {
   });
 }
 
-// Shrink photos to at most 2000 px on the long edge as JPEG, so the repo stays small.
+// Every photo is re-drawn: resized to at most 2000 px, stripped of camera metadata (GPS etc.) and
+// watermarked with the NK mark + nacekepa.work. Only this copy is published; the original stays on your device.
 async function preparePhoto(file) {
-  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
-  const img = await createImageBitmap(file).catch(() => null);
-  if (!img) return file;
+  if (!/^image\/(jpeg|png|webp|heic|heif)$/.test(file.type) && !/\.(jpe?g|png|webp)$/i.test(file.name)) throw new Error(`“${file.name}” isn’t a JPG, PNG or WebP photo.`);
+  const img = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
+  if (!img) throw new Error(`“${file.name}” couldn’t be opened as an image.`);
   const scale = Math.min(1, MAX_PHOTO_EDGE / Math.max(img.width, img.height));
-  if (scale === 1 && file.size < 1.5 * 1048576) return file;
   const c = document.createElement('canvas');
   c.width = Math.round(img.width * scale);
   c.height = Math.round(img.height * scale);
@@ -100,8 +126,66 @@ async function preparePhoto(file) {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, c.width, c.height);
   ctx.drawImage(img, 0, 0, c.width, c.height);
+  watermark(ctx, c.width, c.height);
   const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.86));
-  return blob ? new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file;
+  if (!blob) throw new Error(`“${file.name}” couldn’t be converted.`);
+  return new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+}
+
+function watermark(ctx, w, h) {
+  const u = Math.max(w, h) / 100; // 1% of the long edge
+  // 1. A faint diagonal repeat across the whole photo, so a crop can't remove it.
+  ctx.save();
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate(-Math.PI / 7);
+  ctx.font = `600 ${Math.round(u * 2.2)}px "JetBrains Mono", ui-monospace, monospace`;
+  ctx.fillStyle = 'rgba(255,255,255,0.13)';
+  ctx.strokeStyle = 'rgba(0,0,0,0.07)';
+  ctx.lineWidth = Math.max(1, u * 0.08);
+  const step = u * 22, span = Math.hypot(w, h);
+  for (let y = -span; y < span; y += u * 9) {
+    for (let x = -span + ((y / (u * 9)) % 2) * step / 2; x < span; x += step) {
+      ctx.strokeText('NACEKEPA.WORK', x, y);
+      ctx.fillText('NACEKEPA.WORK', x, y);
+    }
+  }
+  ctx.restore();
+  // 2. A solid corner mark: the NK monogram + wordmark on a paper plate.
+  const s = Math.round(u * 5.2), pad = Math.round(u * 1.6), text = 'nacekepa.work';
+  ctx.font = `800 ${Math.round(s * 0.5)}px "Schibsted Grotesk", Arial, sans-serif`;
+  const tw = ctx.measureText(text).width;
+  const bw = s + u * 1.2 + tw + u * 2.4, bh = s + u * 1.6;
+  const bx = w - bw - pad, by = h - bh - pad;
+  ctx.fillStyle = 'rgba(250,251,248,0.92)';
+  ctx.fillRect(bx, by, bw, bh);
+  const mx = bx + u * 0.8, my = by + u * 0.8, k = s / 64;
+  ctx.save(); ctx.translate(mx, my); ctx.scale(k, k);
+  ctx.fillStyle = '#fafbf8'; ctx.fillRect(3, 3, 58, 58);
+  ctx.strokeStyle = '#1a1c1e'; ctx.lineWidth = 3.5; ctx.strokeRect(3, 3, 58, 58);
+  ctx.lineWidth = 5; ctx.lineJoin = 'miter'; ctx.lineCap = 'butt';
+  ctx.beginPath(); ctx.moveTo(14, 48); ctx.lineTo(14, 16); ctx.lineTo(30, 48); ctx.lineTo(30, 16);
+  ctx.moveTo(38, 16); ctx.lineTo(38, 48); ctx.moveTo(38, 32); ctx.lineTo(52, 16); ctx.moveTo(38, 32); ctx.lineTo(52, 48); ctx.stroke();
+  ctx.fillStyle = '#b52b16'; ctx.fillRect(53, 40, 6, 6);
+  ctx.restore();
+  ctx.fillStyle = '#1a1c1e';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('nacekepa', mx + s + u * 1.2, by + bh / 2);
+  const w1 = ctx.measureText('nacekepa').width;
+  ctx.fillStyle = '#b52b16';
+  ctx.fillText('.work', mx + s + u * 1.2 + w1, by + bh / 2);
+}
+
+// Turn an uploaded CAD export into the published preview: one simplified, quantised, scrambled NKM mesh.
+async function makePreview(file, ext) {
+  const obj = await loadObject(await file.arrayBuffer(), ext);
+  if (ext === 'stl' || ext === '3mf') obj.rotation.x = -Math.PI / 2; // CAD is Z-up; store Y-up
+  const holder = new THREE.Group();
+  holder.add(obj);
+  const soup = flatten(holder);
+  if (!soup.length) throw new Error(`“${file.name}” contains no surfaces.`);
+  const out = simplify(soup, PREVIEW_TRIANGLES);
+  const blob = encode(out);
+  return { file: new File([blob], 'model.nkm', { type: 'application/octet-stream' }), original: out.original, triangles: out.indices.length / 3 };
 }
 
 function blankProject() {
@@ -132,18 +216,20 @@ function previewUrl(site) {
 }
 
 // ---------- data ----------
-async function signIn(tok, remember) {
+async function signIn(tok, pin) {
   S.token = tok.trim();
   S.busy = 'Checking access…'; S.error = ''; render();
   try {
     const [user, r] = await Promise.all([gh('/user'), gh(repo(''))]);
     if (!r.permissions || !r.permissions.push) throw new Error(`This token can read ${OWNER}/${REPO} but not write to it. Give it “Contents: Read and write”.`);
     S.user = user.login;
-    saveToken(S.token, remember);
-    await load();
+    if (pin) await sealToken(S.token, pin);
+    S.locked = false;
+    if (S.projects.length && S.headSha) { S.busy = ''; render(); } else await load();
   } catch (e) {
     S.token = null;
     S.busy = '';
+    if (e.status === 401) clearToken();
     S.error = e.status === 401 ? 'GitHub rejected this token. Check it was copied whole and hasn’t expired.'
       : e.status === 404 ? `This token can’t see ${OWNER}/${REPO}. Under “Repository access”, select that repository.`
       : e.message;
@@ -191,7 +277,7 @@ async function publish() {
       if (f.sha !== S.dataSha) throw new Error('The projects were changed somewhere else since you opened the dashboard. Copy anything you need, then press “Reload”.');
     }
     const base = await gh(repo(`/git/commits/${head}`));
-    const clean = S.projects.map(({ _new, ...p }) => p);
+    const clean = S.projects.map(({ _new, _slugTouched, ...p }) => (p.model ? { ...p, model: { file: p.model.file, format: p.model.format, size: p.model.size, triangles: p.model.triangles } } : p));
     const json = JSON.stringify(clean, null, 2) + '\n';
     const tree = [{ path: DATA_PATH, mode: '100644', type: 'blob', content: json }];
 
@@ -237,7 +323,7 @@ function summarize() {
   const parts = [];
   if (added.length) parts.push('add ' + added.join(', '));
   if (removed.length) parts.push('remove ' + removed.join(', '));
-  const models = [...S.uploads.keys()].filter((p) => FORMATS.includes(p.split('.').pop())).length;
+  const models = [...S.uploads.keys()].filter((p) => p.endsWith('.nkm')).length;
   const photos = S.uploads.size - models;
   if (models) parts.push(models + ' model' + (models > 1 ? 's' : ''));
   if (photos) parts.push(photos + ' photo' + (photos > 1 ? 's' : ''));
@@ -280,11 +366,36 @@ function loginView() {
         <span class="nk-field__hint">A fine-grained token for ${OWNER}/${REPO} only, with <b>Contents: Read and write</b> (add <b>Actions: Read-only</b> to see deploy status).
           <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create one on GitHub ↗</a></span>
       </div>
-      <label class="ad-check"><input type="checkbox" id="remember" checked> Keep me signed in on this device</label>
+      <div class="nk-field">
+        <label class="nk-field__label" for="pin">Admin PIN for this device</label>
+        <input class="nk-input" id="pin" type="password" inputmode="text" autocomplete="new-password" minlength="6" placeholder="At least 6 characters">
+        <span class="nk-field__hint">Encrypts the token on this device. Next time you only type the PIN. Leave empty to not remember the token at all.</span>
+      </div>
       ${S.error ? `<p class="err" role="alert">${esc(S.error)}</p>` : ''}
       ${S.busy ? `<p class="nk-label" role="status">${esc(S.busy)}</p>` : ''}
       <button class="nk-btn nk-btn--primary" type="submit" ${S.busy ? 'disabled' : ''}>Sign in<span class="nk-btn__arrow" aria-hidden="true">→</span></button>
-      <p class="ad-small">The token is stored only in this browser and is sent only to GitHub. Never paste it anywhere else.</p>
+      <p class="ad-small">The token is sent only to GitHub. With a PIN it is kept encrypted on this device; the dashboard locks itself after 15 minutes without activity.</p>
+    </form>
+  </div>`;
+}
+
+function unlockView() {
+  const v = vault();
+  return `<div class="ad-login">
+    <a class="wordmark" href="/">${logo()}<span class="wm-text">nacekepa<span>.work</span></span></a>
+    <p class="nk-label">Admin · Locked</p>
+    <h1 class="page-title">Unlock</h1>
+    ${S.notice ? `<p class="lead">${esc(S.notice)}</p>` : ''}
+    <form class="ad-card" id="unlock" novalidate>
+      <div class="nk-field">
+        <label class="nk-field__label" for="pin">Admin PIN${v && v.user ? ' · ' + esc(v.user) : ''}</label>
+        <input class="nk-input" id="pin" type="password" autocomplete="current-password" autofocus>
+      </div>
+      ${S.error ? `<p class="err" role="alert">${esc(S.error)}</p>` : ''}
+      ${S.busy ? `<p class="nk-label" role="status">${esc(S.busy)}</p>` : ''}
+      <button class="nk-btn nk-btn--primary" type="submit" ${S.busy ? 'disabled' : ''}>Unlock<span class="nk-btn__arrow" aria-hidden="true">→</span></button>
+      <button class="nk-btn nk-btn--sm nk-btn--ghost" type="button" data-act="forget">Use a different token</button>
+      ${S.projects.length && dirty() ? '<p class="ad-small">Your unpublished changes are still here and come back after unlocking.</p>' : ''}
     </form>
   </div>`;
 }
@@ -363,12 +474,11 @@ function editorView() {
       <div class="ad-model">
         <div class="nk-viewer" id="ad-viewer">${m ? '<div class="nk-viewer__msg" id="ad-viewer-msg">Loading model…</div>' : `<label class="ad-drop" for="model-in"><span class="sub">Add a 3D model</span><span class="nk-field__hint">${FORMATS.map((f) => f.toUpperCase()).join(' · ')} · up to ${MAX_MODEL / 1048576} MB</span></label>`}</div>
         <div class="ad-model__side">
-          ${m ? `<dl class="nk-specs"><div><dt>File</dt><dd>${esc(m.file.split('/').pop())}${S.uploads.has(repoPath(m.file)) ? ' · <b class="has3d">unpublished</b>' : ''}</dd></div><div><dt>Format</dt><dd>${esc((m.format || '').toUpperCase())}</dd></div><div><dt>Size</dt><dd>${m.size ? fmtMB(m.size) : '—'}</dd></div><div><dt>Shape</dt><dd id="ad-viewer-info">—</dd></div></dl>` : ''}
+          ${m ? `<dl class="nk-specs"><div><dt>Source</dt><dd>${esc(m.source || m.file.split('/').pop())}${S.uploads.has(repoPath(m.file)) ? ' · <b class="has3d">unpublished</b>' : ''}</dd></div><div><dt>Published</dt><dd>Protected preview${m.triangles ? ' · ' + m.triangles.toLocaleString() + ' tri' : ''}</dd></div><div><dt>Size</dt><dd>${m.size ? fmtMB(m.size) : '—'}</dd></div><div><dt>Shape</dt><dd id="ad-viewer-info">—</dd></div></dl>` : ''}
           <label class="nk-btn nk-btn--sm" for="model-in">${m ? 'Replace model' : 'Choose file'}</label>
           <input type="file" id="model-in" accept="${FORMATS.map((f) => '.' + f).join(',')}" hidden>
-          ${m ? `<label class="ad-check"><input type="checkbox" data-k="dl" ${m.download ? 'checked' : ''}> Visitors can download the file</label>
-          <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="rm-model">Remove model</button>` : ''}
-          <p class="ad-small">Exports from SolidWorks or Fusion: STL or 3MF in millimetres. Large meshes load slowly on phones; under 20 MB is best.</p>
+          ${m ? `<button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="rm-model">Remove model</button>` : ''}
+          <p class="ad-small"><b>Protected:</b> only a simplified preview (max ${PREVIEW_TRIANGLES.toLocaleString()} triangles, scrambled .nkm) is published. Your original STL/3MF never leaves this computer and visitors can't download a model.</p>
         </div>
       </div>
     </fieldset>
@@ -379,7 +489,7 @@ function editorView() {
           <img src="${esc(previewUrl(ph))}" alt="">
           <figcaption>${i === 0 ? '<span class="nk-tag nk-tag--ok">Cover</span>' : `<button type="button" data-cover="${i}">Make cover</button>`}<button type="button" data-rm-photo="${i}" aria-label="Remove photo">Remove</button></figcaption>
         </figure>`).join('')}
-        <label class="ad-photo ad-drop" for="photo-in"><span class="sub">+ Photos</span><span class="nk-field__hint">JPG · PNG · WebP, resized to ${MAX_PHOTO_EDGE} px</span></label>
+        <label class="ad-photo ad-drop" for="photo-in"><span class="sub">+ Photos</span><span class="nk-field__hint">Watermarked, resized to ${MAX_PHOTO_EDGE} px, location data removed</span></label>
         <input type="file" id="photo-in" accept="image/jpeg,image/png,image/webp" multiple hidden>
       </div>
     </fieldset>
@@ -399,7 +509,8 @@ function dashView() {
       <span class="nk-label">Admin · ${esc(S.user)}</span>
       <span class="ad-top__status">${deployPill()}</span>
       <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="reload" ${S.busy ? 'disabled' : ''}>Reload</button>
-      <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="logout">Sign out</button>
+      ${vault() ? '<button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="lock">Lock</button>' : ''}
+      <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="logout" title="Signs out and erases the saved token on this device">Sign out</button>
       <button type="button" class="nk-btn nk-btn--primary" data-act="publish" ${!n || S.busy ? 'disabled' : ''}>Publish${n ? ` ${n} change${n > 1 ? 's' : ''}` : ''}<span class="nk-btn__arrow" aria-hidden="true">→</span></button>
     </header>
     ${S.busy ? `<p class="ad-bar" role="status"><span class="nk-label">${esc(S.busy)}</span></p>` : ''}
@@ -413,13 +524,13 @@ function render() {
   if (viewer) { viewer.dispose(); viewer = null; }
   const focus = document.activeElement && document.activeElement.id;
   const caret = focus && document.activeElement.selectionStart;
-  root.innerHTML = S.user ? dashView() : loginView();
+  root.innerHTML = S.locked || (!S.user && vault() && !S.forceLogin) ? unlockView() : S.user ? dashView() : loginView();
   if (focus) {
     const el = document.getElementById(focus);
     if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} }
   }
   const p = cur();
-  if (S.user && p && p.model) {
+  if (S.user && !S.locked && p && p.model) {
     const box = document.getElementById('ad-viewer');
     const rp = repoPath(p.model.file);
     const local = S.uploads.get(rp);
@@ -429,7 +540,7 @@ function render() {
         viewer = v;
         document.getElementById('ad-viewer-msg')?.remove();
         const s = v.info.size, info = document.getElementById('ad-viewer-info');
-        if (info) info.textContent = `${s.x.toFixed(1)} × ${s.z.toFixed(1)} × ${s.y.toFixed(1)} mm · ${v.info.tris.toLocaleString()} triangles`;
+        if (info) info.textContent = `${s.x.toFixed(1)} × ${s.z.toFixed(1)} × ${s.y.toFixed(1)} mm`;
       })
       .catch(() => {
         const msg = document.getElementById('ad-viewer-msg');
@@ -444,7 +555,21 @@ root.addEventListener('submit', (e) => {
   if (e.target.id === 'login') {
     const tok = document.getElementById('tok').value;
     if (!tok.trim()) { S.error = 'Paste your GitHub token first.'; render(); return; }
-    signIn(tok, document.getElementById('remember').checked);
+    const pin = document.getElementById('pin').value;
+    if (pin && pin.length < 6) { S.error = 'Use a PIN of at least 6 characters, or leave it empty.'; render(); return; }
+    S.forceLogin = false;
+    signIn(tok, pin);
+  }
+  if (e.target.id === 'unlock') {
+    const pin = document.getElementById('pin').value;
+    S.busy = 'Unlocking…'; S.error = ''; render();
+    openVault(pin).then((tok) => { S.busy = ''; S.notice = ''; return signIn(tok, null); }, () => {
+      S.busy = '';
+      S.fails = (S.fails || 0) + 1;
+      if (S.fails >= 5) { clearToken(); S.locked = false; S.user = null; S.forceLogin = true; S.error = 'Too many wrong PINs. The saved token was erased; sign in with your GitHub token again.'; }
+      else S.error = `Wrong PIN (${5 - S.fails} tries left before the saved token is erased).`;
+      render();
+    });
   }
 });
 
@@ -480,18 +605,27 @@ root.addEventListener('change', async (e) => {
     const ext = f.name.split('.').pop().toLowerCase();
     if (!FORMATS.includes(ext)) { S.error = `Use ${FORMATS.join(', ').toUpperCase()} — “${f.name}” isn’t a supported 3D format.`; render(); return; }
     if (f.size > MAX_MODEL) { S.error = `“${f.name}” is ${fmtMB(f.size)}. Keep models under ${MAX_MODEL / 1048576} MB (export a coarser mesh).`; render(); return; }
-    if (p.model) stageDelete(p.model.file);
-    const site = `models/${p.slug}/${p.slug}.${ext}`;
-    S.deletes.delete(repoPath(site));
-    S.uploads.set(repoPath(site), f);
-    p.model = { file: site, format: ext, size: f.size, download: p.model ? !!p.model.download : false };
-    S.error = ''; render(); return;
+    S.busy = `Making a protected preview of ${f.name}…`; S.error = ''; render();
+    try {
+      const prev = await makePreview(f, ext);
+      if (p.model) stageDelete(p.model.file);
+      const site = `models/${p.slug}/${p.slug}-${Date.now().toString(36)}.nkm`;
+      S.uploads.set(repoPath(site), prev.file);
+      p.model = { file: site, format: 'nkm', size: prev.file.size, triangles: prev.triangles, source: f.name };
+      S.notice = prev.original > prev.triangles
+        ? `Preview made: ${prev.triangles.toLocaleString()} of ${prev.original.toLocaleString()} triangles. Your original file is not uploaded.`
+        : `Preview made (${prev.triangles.toLocaleString()} triangles). Your original file is not uploaded.`;
+    } catch (err) {
+      S.error = `“${f.name}” couldn’t be read as a 3D model (${err.message}).`;
+    }
+    S.busy = ''; render(); return;
   }
   if (e.target.id === 'photo-in' && p) {
     const files = [...e.target.files];
     S.busy = 'Preparing photos…'; render();
     for (const f of files) {
-      const ready = await preparePhoto(f);
+      let ready;
+      try { ready = await preparePhoto(f); } catch (err) { S.error = err.message; continue; }
       const ext = (ready.name.split('.').pop() || 'jpg').toLowerCase();
       const site = `models/${p.slug}/photos/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
       S.uploads.set(repoPath(site), ready);
@@ -504,7 +638,6 @@ root.addEventListener('change', async (e) => {
   else if (k === 'drw') p.drawing = e.target.value;
   else if (k === 'feat') p.featured = e.target.checked;
   else if (k === 'hid') p.hidden = e.target.checked;
-  else if (k === 'dl' && p.model) p.model.download = e.target.checked;
   else return;
   render();
 });
@@ -538,7 +671,9 @@ root.addEventListener('click', (e) => {
     if (dirty() && !b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Discard changes?'; return; }
     S.notice = ''; load().catch((err) => { S.busy = ''; S.error = err.message; render(); }); return;
   }
-  if (act === 'logout') { clearToken(); Object.assign(S, { token: null, user: null, projects: [], error: '', notice: '' }); S.uploads.clear(); S.deletes.clear(); render(); }
+  if (act === 'logout') { clearToken(); Object.assign(S, { token: null, user: null, locked: false, forceLogin: true, projects: [], headSha: null, error: '', notice: '' }); S.uploads.clear(); S.deletes.clear(); render(); }
+  if (act === 'lock') { lock('Locked.'); }
+  if (act === 'forget') { clearToken(); Object.assign(S, { locked: false, user: null, forceLogin: true, error: '', notice: '' }); render(); }
 });
 
 function updatePublish() {
@@ -552,6 +687,4 @@ function updatePublish() {
 window.addEventListener('beforeunload', (e) => { if (S.user && dirty()) { e.preventDefault(); e.returnValue = ''; } });
 
 // ---------- start ----------
-const saved = getToken();
-if (saved) signIn(saved, !!(localStorage.getItem && (() => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } })()));
-else render();
+render();

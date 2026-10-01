@@ -123,23 +123,84 @@
     var stage = m
       ? '<div class="nk-viewer" id="viewer" data-src="' + esc(asset(m.file)) + '" data-format="' + esc(m.format || '') + '" role="img" aria-label="' + esc(x.viewerLabel + ': ' + P(p, 'title')) + '"><div class="nk-viewer__msg" id="viewer-msg">' + esc(x.loading3d) + '</div></div>' +
         '<p class="viewer-hint">' + esc(x.viewerHint) + '</p>'
-      : '<div class="nk-sheet__art project-art">' + art(p) + '</div>';
+      : (photos.length ? '<button type="button" class="nk-sheet__art project-art" data-lb="0" aria-label="' + esc(x.openPhoto) + '">' + art(p) + '</button>' : '<div class="nk-sheet__art project-art">' + art(p) + '</div>');
     var rows = [[x.pCategory, cat(p)], [x.pYear, String(p.year)]];
     if (p.materials) rows.push([x.pMaterials, p.materials]);
-    if (m) rows.push([x.pModel, (m.format || '').toUpperCase() + (m.size ? ' · ' + (m.size < 1048576 ? Math.max(1, Math.round(m.size / 1024)) + ' KB' : (m.size / 1048576).toFixed(1) + ' MB') : '')]);
+    if (m) rows.push([x.pModel, x.interactive]);
     var details = P(p, 'details');
-    var photos = (p.photos || []).slice(m ? 0 : 1);
+    var photos = p.photos || [];
     return '<section class="block first project">' +
       '<a class="back" href="#work">← ' + esc(x.allWork) + '</a>' +
       head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
       '<div class="project-grid"><div class="project-stage">' + stage + '</div><aside class="project-side">' + specs(rows) +
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
-      (m && m.download ? '<a class="nk-btn nk-btn--sm" href="' + esc(asset(m.file)) + '" download>' + esc(x.downloadModel) + '<span class="nk-btn__arrow" aria-hidden="true">↓</span></a>' : '') +
       '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div></aside></div>' +
-      (photos.length ? '<div class="photos">' + photos.map(function (ph) { return '<a href="' + esc(asset(ph)) + '" target="_blank" rel="noopener"><img src="' + esc(asset(ph)) + '" alt="' + esc(P(p, 'title')) + '" loading="lazy" decoding="async"></a>'; }).join('') + '</div>' : '') +
+      (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       (next && next !== p ? '<a class="next-project" href="#p-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.nextProject) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
       '</section>' + ctaBand();
   }
+  // ---------- full-screen photo viewer ----------
+  var lb = null;
+  function openLightbox(list, start, title) {
+    closeLightbox();
+    var x = t(), i = start;
+    var el = document.createElement('div');
+    el.className = 'lb'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', title);
+    el.innerHTML = '<div class="lb__top"><span class="nk-label lb__count"></span><span class="lb__title"></span><button type="button" class="lb__btn" data-lb-close aria-label="' + esc(x.lbClose) + '">✕</button></div>' +
+      '<div class="lb__stage"><div class="lb__img" role="img"></div><div class="lb__shield"></div>' +
+      '<button type="button" class="lb__btn lb__prev" data-lb-prev aria-label="' + esc(x.lbPrev) + '">←</button><button type="button" class="lb__btn lb__next" data-lb-next aria-label="' + esc(x.lbNext) + '">→</button></div>' +
+      '<div class="lb__thumbs">' + list.map(function (ph, k) { return '<button type="button" data-lb-go="' + k + '" aria-label="' + (k + 1) + '"><span style="background-image:url(\'' + asset(ph) + '\')"></span></button>'; }).join('') + '</div>';
+    var prevFocus = document.activeElement;
+    function show(n) {
+      i = (n + list.length) % list.length;
+      el.querySelector('.lb__img').style.backgroundImage = 'url("' + asset(list[i]) + '")';
+      el.querySelector('.lb__img').setAttribute('aria-label', title + ' — ' + (i + 1) + ' / ' + list.length);
+      el.querySelector('.lb__count').textContent = String(i + 1).padStart(2, '0') + ' / ' + String(list.length).padStart(2, '0');
+      el.querySelector('.lb__title').textContent = title;
+      Array.prototype.forEach.call(el.querySelectorAll('[data-lb-go]'), function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+      var single = list.length < 2;
+      el.querySelector('.lb__prev').hidden = single; el.querySelector('.lb__next').hidden = single; el.querySelector('.lb__thumbs').hidden = single;
+    }
+    function key(e) {
+      if (e.key === 'Escape') closeLightbox();
+      else if (e.key === 'ArrowLeft') show(i - 1);
+      else if (e.key === 'ArrowRight') show(i + 1);
+      else if (e.key === 'Tab') { var f = el.querySelectorAll('button:not([hidden])'); if (!f.length) return; var first = f[0], last = f[f.length - 1]; if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } }
+    }
+    var sx = null;
+    el.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) { if (e.target === el || e.target.classList.contains('lb__stage')) closeLightbox(); return; }
+      if (b.hasAttribute('data-lb-close')) closeLightbox();
+      else if (b.hasAttribute('data-lb-prev')) show(i - 1);
+      else if (b.hasAttribute('data-lb-next')) show(i + 1);
+      else if (b.dataset.lbGo != null) show(+b.dataset.lbGo);
+    });
+    el.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; }, { passive: true });
+    el.addEventListener('touchend', function (e) { if (sx == null) return; var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 40) show(i + (dx < 0 ? 1 : -1)); sx = null; });
+    document.addEventListener('keydown', key);
+    document.body.appendChild(el);
+    document.documentElement.classList.add('lb-open');
+    show(i);
+    el.querySelector('[data-lb-close]').focus();
+    lb = { el: el, key: key, prevFocus: prevFocus };
+  }
+  function closeLightbox() {
+    if (!lb) return;
+    document.removeEventListener('keydown', lb.key);
+    lb.el.remove();
+    document.documentElement.classList.remove('lb-open');
+    if (lb.prevFocus && document.body.contains(lb.prevFocus)) lb.prevFocus.focus();
+    lb = null;
+  }
+
+  // ---------- no saving of project media ----------
+  // Blocks right-click "Save image", dragging images out and long-press saving on phones.
+  // (Anything shown on screen can still be screenshotted; this stops the casual copy.)
+  function guarded(t) { return t && t.closest && t.closest('img, .nk-sheet__art, .nk-viewer, .lb, .photos'); }
+  document.addEventListener('contextmenu', function (e) { if (guarded(e.target)) e.preventDefault(); });
+  document.addEventListener('dragstart', function (e) { if (guarded(e.target)) e.preventDefault(); });
+
   function mountViewer() {
     var el = document.getElementById('viewer');
     if (!el) return;
@@ -236,6 +297,7 @@
     var p = page();
     document.documentElement.lang = lang === 'sl' ? 'sl' : 'en';
     if (viewer) { viewer.dispose(); viewer = null; }
+    closeLightbox();
     app.innerHTML = frame(views[p]());
     if (!keepScroll) window.scrollTo(0, 0);
     if (p === 'project') mountViewer();
@@ -256,6 +318,7 @@
     var el = ev.target.closest('button, a'); if (!el) return;
     if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} render(true); return; }
     if (el.dataset.filter) { state.filter = el.dataset.filter; render(true); return; }
+    if (el.dataset.lb != null) { var pr = bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
     if (el.id === 'next') { ev.preventDefault(); readForm(); var ok = validate(); if (ok) state.step++; if (ok && state.step === 3) submitOrder(); render(true); var w = document.getElementById('wiz'); if (w) w.scrollIntoView({ block: 'start' }); return; }
     if (el.id === 'back') { ev.preventDefault(); readForm(); state.errors = {}; state.send = 'idle'; state.step = state.step === 3 ? 0 : state.step - 1; render(true); return; }
     if (el.id === 'copy') {

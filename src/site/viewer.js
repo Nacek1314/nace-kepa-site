@@ -7,8 +7,11 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { ThreeMFLoader } from 'three/examples/jsm/loaders/3MFLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { decode as decodeNkm } from './nkm.js';
 
+// Formats the admin accepts for upload. The site itself only ever serves 'nkm' preview meshes.
 export const FORMATS = ['stl', 'obj', '3mf', 'glb', 'gltf'];
+const VIEWABLE = FORMATS.concat('nkm');
 
 function css(name, fallback) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -25,7 +28,8 @@ function palette() {
   };
 }
 
-async function loadObject(buffer, format) {
+export async function loadObject(buffer, format) {
+  if (format === 'nkm') return new THREE.Mesh(decodeNkm(buffer));
   if (format === 'stl') {
     const geo = new STLLoader().parse(buffer);
     // Many exporters write zero normals; recompute flat face normals so shading is always right.
@@ -67,14 +71,16 @@ function styleObject(root, pal) {
 export async function mount(container, opts) {
   const pal = palette();
   const format = (opts.format || (opts.url || opts.file?.name || '').split('.').pop() || '').toLowerCase();
-  if (!FORMATS.includes(format)) throw new Error('unsupported_format');
+  if (!VIEWABLE.includes(format)) throw new Error('unsupported_format');
 
   const buffer = opts.file ? await opts.file.arrayBuffer() : await fetch(opts.url).then((r) => {
     if (!r.ok) throw new Error('fetch_failed');
     return r.arrayBuffer();
   });
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: !!opts.capture });
+  // preserveDrawingBuffer stays off, so the canvas can't simply be saved as an image.
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: false });
+  renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   container.appendChild(renderer.domElement);
@@ -89,7 +95,7 @@ export async function mount(container, opts) {
 
   const obj = await loadObject(buffer, format);
   // Most CAD exports (STL/3MF) are Z-up; three.js is Y-up.
-  if (format === 'stl' || format === '3mf') obj.rotation.x = -Math.PI / 2;
+  if (format === 'stl' || format === '3mf') obj.rotation.x = -Math.PI / 2; // NKM is stored Y-up already
   const info = styleObject(obj, pal);
   const holder = new THREE.Group();
   holder.add(obj);
@@ -162,7 +168,6 @@ export async function mount(container, opts) {
 
   return {
     info: { ...info, size: { x: size.x, y: size.y, z: size.z }, format },
-    capture: () => { renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); },
     reset: () => { controls.reset(); },
     dispose: () => {
       alive = false;
@@ -182,4 +187,5 @@ export async function mount(container, opts) {
 }
 
 window.NKViewer = { mount, FORMATS };
+export { THREE };
 window.dispatchEvent(new Event('nkviewer:ready'));

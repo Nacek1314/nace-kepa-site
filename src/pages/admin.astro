@@ -4,7 +4,23 @@ import pageCss from '../site/page.css?raw';
 import componentsCss from '../site/components.css?raw';
 import adminCss from '../site/admin.css?raw';
 import drawings from '../site/drawings.js?raw';
+import { createHash } from 'node:crypto';
 const css = pageCss + '\n' + componentsCss + '\n' + adminCss;
+const inline = 'if (window.top !== window.self) { document.documentElement.style.display = "none"; try { window.top.location.replace(window.self.location.href); } catch (e) {} }\n' + drawings;
+const hash = "'sha256-" + createHash('sha256').update(inline, 'utf8').digest('base64') + "'";
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' ${hash}`,
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data: blob:",
+  "connect-src 'self' blob: https://api.github.com",
+  "object-src 'none'",
+  "frame-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  'upgrade-insecure-requests'
+].join('; ');
 ---
 <!doctype html>
 <html lang="en">
@@ -12,6 +28,8 @@ const css = pageCss + '\n' + componentsCss + '\n' + adminCss;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
+    <meta http-equiv="Content-Security-Policy" content={csp} />
+    <meta name="referrer" content="no-referrer" />
     <title>Admin · nacekepa.work</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -21,7 +39,7 @@ const css = pageCss + '\n' + componentsCss + '\n' + adminCss;
   </head>
   <body>
     <div id="admin"><noscript>The admin dashboard needs JavaScript.</noscript></div>
-    <script is:inline set:html={drawings}></script>
+    <script is:inline set:html={inline}></script>
     <script>
       import '../site/admin.js';
     </script>

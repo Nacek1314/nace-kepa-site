@@ -7,12 +7,34 @@ import drawings from '../site/drawings.js?raw';
 import content from '../site/content.js?raw';
 import app from '../site/app.js?raw';
 import projects from '../data/projects.json';
+import { createHash } from 'node:crypto';
 
 const endpoint = (import.meta.env.PUBLIC_ORDER_ENDPOINT || '').trim();
 const contactEmail = 'kepanace@gmail.com';
 const projectsJs = 'window.NK_PROJECTS = ' + JSON.stringify(projects).replace(/</g, '\\u003c') + ';';
-const script = [drawings, content, projectsJs, app.split('__ORDER_ENDPOINT__').join(endpoint || '__ORDER_ENDPOINT__').split('__CONTACT_EMAIL__').join(contactEmail)].join('\n');
+// Refuse to run inside another site's frame (clickjacking); GitHub Pages can't send X-Frame-Options.
+const frameGuard = 'if (window.top !== window.self) { document.documentElement.style.display = "none"; try { window.top.location.replace(window.self.location.href); } catch (e) {} }';
+const script = [frameGuard, drawings, content, projectsJs, app.split('__ORDER_ENDPOINT__').join(endpoint || '__ORDER_ENDPOINT__').split('__CONTACT_EMAIL__').join(contactEmail)].join('\n');
 const css = pageCss + '\n' + componentsCss;
+// Content-Security-Policy as a meta tag (GitHub Pages can't set headers): only this site's own scripts
+// (the inline one is pinned by hash), only the order Worker and this origin for network requests.
+const hash = (t: string) => "'sha256-" + createHash('sha256').update(t, 'utf8').digest('base64') + "'";
+let workerOrigin = '';
+try { workerOrigin = endpoint ? new URL(endpoint).origin : ''; } catch {}
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' ${hash(script)}`,
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data: blob:",
+  `connect-src 'self'${workerOrigin ? ' ' + workerOrigin : ''}`,
+  "object-src 'none'",
+  "frame-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "manifest-src 'self'",
+  'upgrade-insecure-requests'
+].join('; ');
 const title = 'Nace Kepa · Engineering Studio';
 const description = 'One-person engineering studio in Škofja Loka, Slovenia: SolidWorks CAD, 3D printing, ESP32 firmware and full custom builds — from the first sketch to the firmware.';
 ---
@@ -21,6 +43,8 @@ const description = 'One-person engineering studio in Škofja Loka, Slovenia: So
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta http-equiv="Content-Security-Policy" content={csp} />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href="https://nacekepa.work/" />
