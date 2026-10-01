@@ -213,7 +213,11 @@
     state.send = 'sending';
     var svc = SERVICES.filter(function (s) { return o.services.indexOf(s.key) >= 0; }).map(function (s) { return s.title.en; }).join(', ');
     var payload = JSON.stringify({ code: CODE, subject: (lang === 'sl' ? 'Novo povpraševanje' : 'New project') + ': ' + svc + ' — ' + o.name, summary: 'Tracking code: ' + CODE + '\n\n' + briefText(), contact: o.email, lang: lang, attachments: [], website: o.website || '' });
-    fetch(ORDER_ENDPOINT.replace(/\/+$/, '') + '/', { method: 'POST', mode: 'cors', credentials: 'omit', referrerPolicy: 'origin', cache: 'no-store', headers: { 'content-type': 'text/plain;charset=UTF-8' }, body: payload })
+    var url = ORDER_ENDPOINT.replace(/\/+$/, '') + '/';
+    var post = function (type) { return fetch(url, { method: 'POST', mode: 'cors', credentials: 'omit', referrerPolicy: 'origin', cache: 'no-store', headers: { 'content-type': type }, body: payload }); };
+    // text/plain avoids a CORS preflight; a Worker that only takes JSON answers 415, so retry as JSON.
+    post('text/plain;charset=UTF-8')
+      .then(function (r) { return r.status === 415 ? post('application/json') : r; }, function () { return post('application/json'); })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok && j.ok !== false, status: r.status }; }); })
       .then(function (r) { state.send = r.ok ? 'sent' : (r.status === 429 ? 'limited' : 'error'); render(true); }, function () { state.send = 'error'; render(true); });
   }
