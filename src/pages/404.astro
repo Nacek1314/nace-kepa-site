@@ -1,20 +1,23 @@
 ---
-import BaseLayout from '~/layouts/BaseLayout.astro';
-import { detectLang, t, localePath } from '~/i18n';
-const lang = detectLang(Astro.url.pathname);
-const dict = t(lang);
 ---
-<BaseLayout lang={lang} title="404">
-  <section class="mx-auto max-w-2xl px-5 py-32 text-center">
-    <p class="font-display text-7xl font-bold text-accent-600">404</p>
-    <h1 class="font-display text-3xl font-bold mt-4">
-      {lang === 'sl' ? 'Te strani ni.' : 'This page does not exist.'}
-    </h1>
-    <p class="mt-2 text-ink-500 dark:text-ink-400">
-      {lang === 'sl' ? 'Vrniva se, kjer se gradi.' : 'Let us go back to where things get built.'}
-    </p>
-    <a href={localePath(lang, '/')} class="mt-6 inline-flex items-center px-5 py-3 rounded-md bg-accent-600 text-white font-medium hover:bg-accent-700">
-      {dict.nav.home} →
-    </a>
-  </section>
-</BaseLayout>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sheet not found · Nace Kepa</title>
+    <meta http-equiv="refresh" content="4; url=/" />
+    <style>
+      :root { --paper:#eef0ec; --ink:#1a1c1e; --muted:#53585e; --red:#b52b16; }
+      @media (prefers-color-scheme: dark) { :root { --paper:#131517; --ink:#e8e9e4; --muted:#a1a6ac; --red:#ff6b4f; } }
+      body { margin:0; min-height:100vh; display:grid; place-items:center; background:var(--paper); color:var(--ink); font-family:"Helvetica Neue",Arial,sans-serif; padding:16px; }
+      p { margin:8px 0; } code { font-family:ui-monospace,Menlo,monospace; color:var(--muted); } a { color:var(--red); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <code>ERR 404 · SHEET NOT FOUND</code>
+      <p><strong>This page moved.</strong> Taking you to the <a href="/">home page</a>…</p>
+    </main>
+  </body>
+</html>

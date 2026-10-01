@@ -1,23 +1,82 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import react from '@astrojs/react';
-import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
-import tailwindcss from '@tailwindcss/vite';
 
-// Deployed at https://nacekepa.work/ via GitHub Pages with a custom domain.
-// (CNAME file in public/ tells GitHub which domain to serve.)
+// Deployed at https://nacekepa.work/ via GitHub Pages with a custom domain (public/CNAME).
+// The site is one page (src/pages/index.astro) with in-page sections; old URLs redirect into it.
 export default defineConfig({
   site: 'https://nacekepa.work',
   trailingSlash: 'ignore',
-  integrations: [react(), mdx(), sitemap({ i18n: { defaultLocale: 'en', locales: { en: 'en', sl: 'sl' } } })],
-  i18n: {
-    defaultLocale: 'en',
-    locales: ['en', 'sl'],
-    routing: { prefixDefaultLocale: false }
-  },
-  vite: {
-    plugins: [tailwindcss()],
-    ssr: { noExternal: ['three'] }
+  integrations: [sitemap({ filter: (page) => !/\/(services|portfolio|skills|about|order|sl)(\/|$)/.test(new URL(page).pathname) })],
+  redirects: {
+    "/services": "/#services",
+    "/portfolio": "/#work",
+    "/skills": "/#skills",
+    "/about": "/#about",
+    "/order": "/#order",
+    "/sl": "/#sl",
+    "/sl/services": "/#sl-services",
+    "/sl/portfolio": "/#sl-work",
+    "/sl/skills": "/#sl-skills",
+    "/sl/about": "/#sl-about",
+    "/sl/order": "/#sl-order",
+    "/portfolio/backpack-buckle": "/#work",
+    "/sl/portfolio/backpack-buckle": "/#sl-work",
+    "/portfolio/bike-light-bracket": "/#work",
+    "/sl/portfolio/bike-light-bracket": "/#sl-work",
+    "/portfolio/blind-cord-cleat": "/#work",
+    "/sl/portfolio/blind-cord-cleat": "/#sl-work",
+    "/portfolio/cable-clip": "/#work",
+    "/sl/portfolio/cable-clip": "/#sl-work",
+    "/portfolio/charger-strain-relief": "/#work",
+    "/sl/portfolio/charger-strain-relief": "/#sl-work",
+    "/portfolio/cocktail-dispenser": "/#work",
+    "/sl/portfolio/cocktail-dispenser": "/#sl-work",
+    "/portfolio/door-sensor-bot": "/#work",
+    "/sl/portfolio/door-sensor-bot": "/#sl-work",
+    "/portfolio/door-stopper-wedge": "/#work",
+    "/sl/portfolio/door-stopper-wedge": "/#sl-work",
+    "/portfolio/drawer-divider": "/#work",
+    "/sl/portfolio/drawer-divider": "/#sl-work",
+    "/portfolio/drill-bit-rack": "/#work",
+    "/sl/portfolio/drill-bit-rack": "/#sl-work",
+    "/portfolio/famfive": "/#work",
+    "/sl/portfolio/famfive": "/#sl-work",
+    "/portfolio/fridge-thermometer": "/#work",
+    "/sl/portfolio/fridge-thermometer": "/#sl-work",
+    "/portfolio/headphone-hook": "/#work",
+    "/sl/portfolio/headphone-hook": "/#sl-work",
+    "/portfolio/heatset-wall-anchor": "/#work",
+    "/sl/portfolio/heatset-wall-anchor": "/#sl-work",
+    "/portfolio/hose-adapter": "/#work",
+    "/sl/portfolio/hose-adapter": "/#sl-work",
+    "/portfolio/laptop-riser": "/#work",
+    "/sl/portfolio/laptop-riser": "/#sl-work",
+    "/portfolio/magnetic-cable-holder": "/#work",
+    "/sl/portfolio/magnetic-cable-holder": "/#sl-work",
+    "/portfolio/phone-wall-dock": "/#work",
+    "/sl/portfolio/phone-wall-dock": "/#sl-work",
+    "/portfolio/plant-moisture-monitor": "/#work",
+    "/sl/portfolio/plant-moisture-monitor": "/#sl-work",
+    "/portfolio/rfid-drawer-lock": "/#work",
+    "/sl/portfolio/rfid-drawer-lock": "/#sl-work",
+    "/portfolio/scooter-grip-tpu": "/#work",
+    "/sl/portfolio/scooter-grip-tpu": "/#sl-work",
+    "/portfolio/screwdriver-rack": "/#work",
+    "/sl/portfolio/screwdriver-rack": "/#sl-work",
+    "/portfolio/shelf-bracket": "/#work",
+    "/sl/portfolio/shelf-bracket": "/#sl-work",
+    "/portfolio/smart-pet-feeder": "/#work",
+    "/sl/portfolio/smart-pet-feeder": "/#sl-work",
+    "/portfolio/tablet-stand": "/#work",
+    "/sl/portfolio/tablet-stand": "/#sl-work",
+    "/portfolio/tripod-qr-plate": "/#work",
+    "/sl/portfolio/tripod-qr-plate": "/#sl-work",
+    "/portfolio/vacuum-hose-adapter": "/#work",
+    "/sl/portfolio/vacuum-hose-adapter": "/#sl-work",
+    "/portfolio/washing-machine-knob": "/#work",
+    "/sl/portfolio/washing-machine-knob": "/#sl-work",
+    "/portfolio/whistle-440hz": "/#work",
+    "/sl/portfolio/whistle-440hz": "/#sl-work"
   }
 });
