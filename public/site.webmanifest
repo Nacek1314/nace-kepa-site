@@ -1,0 +1,8 @@
+{
+  "name": "Nace Kepa · Engineering Studio",
+  "short_name": "nacekepa",
+  "icons": [{ "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }, { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }],
+  "theme_color": "#eef0ec",
+  "background_color": "#eef0ec",
+  "display": "browser"
+}

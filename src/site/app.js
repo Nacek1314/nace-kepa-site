@@ -10,6 +10,13 @@
   var state = { send: 'idle', filter: 'all', step: 0, order: { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '' }, errors: {} };
   var app = document.getElementById('app');
 
+  // NK monogram — the same N/K geometry as the original logo, redrawn as a drawing-sheet mark.
+  function logo(cls) {
+    return '<svg class="nk-mark' + (cls ? ' ' + cls : '') + '" viewBox="0 0 64 64" aria-hidden="true" focusable="false">' +
+      '<rect class="nk-mark__frame" x="3" y="3" width="58" height="58"/>' +
+      '<path class="nk-mark__ln" d="M14 48 V16 L30 48 V16"/><path class="nk-mark__ln" d="M38 16 V48 M38 32 L52 16 M38 32 L52 48"/>' +
+      '<rect class="nk-mark__dot" x="53" y="40" width="6" height="6"/></svg>';
+  }
   function t() { return T[lang]; }
   function L(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v[lang] : v; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -156,13 +163,13 @@
     var x = t(), p = page();
     var zones = '<div class="zones zones-top" aria-hidden="true">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (n) { return '<span>' + n + '</span>'; }).join('') + '</div>' +
       '<div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div><div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>';
-    var nav = '<header class="top"><a class="wordmark" href="#home"><i aria-hidden="true"></i>nacekepa<span>.work</span></a><nav aria-label="Main">' +
+    var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="nacekepa.work — home">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="Main">' +
       ['services', 'work', 'skills', 'about'].map(function (k) { return '<a href="#' + k + '"' + (p === k ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
       '</nav><div class="top-act"><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="' + (lang === 'en') + '">EN</button><button type="button" data-lang="sl" aria-pressed="' + (lang === 'sl') + '">SL</button></div>' + btn(x.cta, '#order', 'primary', 'sm') + '</div></header>';
     var idx = ['home', 'services', 'work', 'skills', 'about', 'order'].indexOf(p) + 1;
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
-      cell(x.tb.title, 'Nace Kepa · Engineering Studio', 'wide', true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / 06') +
+      cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / 06') +
       cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell('Contact', '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell('Order', '<a href="#order">' + esc(x.cta) + ' →</a>', 'wide', false, true) +
       cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa</p></footer>';
     return '<div class="frame">' + zones + nav + '<main id="main">' + inner + '</main>' + tb + '</div>';
