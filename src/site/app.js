@@ -109,14 +109,14 @@
     },
     skills: function () {
       var x = t();
-      return '<section class="block first">' + head('Skills', x.skillsPageTitle, x.skillsPageLead, true) + '<div class="grid-2 skills">' +
+      return '<section class="block first">' + head(x.nav.skills, x.skillsPageTitle, x.skillsPageLead, true) + '<div class="grid-2 skills">' +
         SKILLS.map(function (g) { return '<div class="skill-group"><h2 class="sub">' + esc(g[lang]) + '</h2>' + specs(g.items) + '</div>'; }).join('') + '</div></section>' +
         '<section class="block"><p class="nk-label">' + esc(x.certs) + '</p><div class="certs"><div class="cert"><span class="nk-tag nk-tag--ok">CSWA</span><span>Certified SolidWorks Associate</span></div><div class="cert"><span class="nk-tag nk-tag--ok">CSWA-AM</span><span>Certified SolidWorks Associate — Additive Manufacturing</span></div></div></section>' + ctaBand();
     },
     about: function () {
       var x = t();
       return '<section class="block first about-page">' + head(x.aboutLabel, x.aboutTitle, null, true) + '<div class="about-cols"><div><p class="lead">' + esc(x.aboutBody) + '</p>' + timelineDims() + '</div><div><p class="nk-label">' + esc(x.facts) + '</p>' +
-        specs([[lang === 'sl' ? 'Lokacija' : 'Location', 'Škofja Loka, Slovenia'], [lang === 'sl' ? 'Šola' : 'School', 'Šolski center Kranj'], ['CAD', 'SolidWorks 4 yrs · CSWA · CSWA-AM']].concat(x.heroSpecs.slice(2))) + '</div></div></section>' +
+        specs([[lang === 'sl' ? 'Lokacija' : 'Location', lang === 'sl' ? 'Škofja Loka, Slovenija' : 'Škofja Loka, Slovenia'], [lang === 'sl' ? 'Šola' : 'School', 'Šolski center Kranj'], ['CAD', lang === 'sl' ? 'SolidWorks 4 leta · CSWA · CSWA-AM' : 'SolidWorks 4 yrs · CSWA · CSWA-AM']].concat(x.heroSpecs.slice(2))) + '</div></div></section>' +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     order: orderView,
@@ -162,6 +162,7 @@
     var x = t(), p = bySlug(currentSlug()), i = PROJECTS.indexOf(p);
     var next = PROJECTS[(i + 1) % PROJECTS.length];
     var m = p.model;
+    var photos = p.photos || [];
     var stage = m
       ? '<div class="nk-viewer" id="viewer" data-src="' + esc(asset(m.file)) + '" data-format="' + esc(m.format || '') + '" role="img" aria-label="' + esc(x.viewerLabel + ': ' + P(p, 'title')) + '"><div class="nk-viewer__msg" id="viewer-msg">' + esc(x.loading3d) + '</div></div>' +
         '<p class="viewer-hint">' + esc(x.viewerHint) + '</p>'
@@ -170,7 +171,6 @@
     if (p.materials) rows.push([x.pMaterials, p.materials]);
     if (m) rows.push([x.pModel, x.interactive]);
     var details = P(p, 'details');
-    var photos = p.photos || [];
     return '<section class="block first project">' +
       '<a class="back" href="#work">← ' + esc(x.allWork) + '</a>' +
       head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
@@ -327,7 +327,7 @@
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
-      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell('Contact', '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell('Order', '<a href="#order">' + esc(x.cta) + ' →</a>', 'wide', false, true) +
+      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(x.cta) + ' →</a>', 'wide', false, true) +
       cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa</p></footer>';
     return '<div class="frame">' + zones + nav + '<main id="main">' + inner + '</main>' + tb + '</div>';
   }

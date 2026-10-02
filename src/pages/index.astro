@@ -38,6 +38,30 @@ const csp = [
 ].join('; ');
 const title = 'Nace Kepa · Engineering Studio';
 const description = 'One-person engineering studio in Škofja Loka, Slovenia: SolidWorks CAD, 3D printing, ESP32 firmware and full custom builds — from the first sketch to the firmware.';
+// Structured data for search engines (a data block, not executed, so the CSP script hash doesn't apply).
+// Only facts already on the page: name, place, contact, services, LinkedIn.
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'ProfessionalService',
+  name: 'Nace Kepa · Engineering Studio',
+  url: 'https://nacekepa.work/',
+  image: 'https://nacekepa.work/og.png',
+  logo: 'https://nacekepa.work/apple-touch-icon.png',
+  description,
+  email: 'mailto:' + contactEmail,
+  address: { '@type': 'PostalAddress', addressLocality: 'Škofja Loka', addressCountry: 'SI' },
+  areaServed: 'EU',
+  availableLanguage: ['sl', 'en'],
+  founder: { '@type': 'Person', name: 'Nace Kepa', sameAs: ['https://www.linkedin.com/in/nace-kepa-82735038a'] },
+  sameAs: ['https://www.linkedin.com/in/nace-kepa-82735038a'],
+  knowsAbout: ['SolidWorks', 'CAD', '3D printing', 'ESP32', 'Embedded systems', 'IoT', 'Rapid prototyping'],
+  hasOfferCatalog: {
+    '@type': 'OfferCatalog',
+    name: 'Services',
+    itemListElement: ['3D design & CAD', '3D printing & prototyping', 'Embedded systems & IoT', 'Full custom builds']
+      .map((name) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name } }))
+  }
+}).replace(/</g, '\\u003c');
 ---
 <!doctype html>
 <html lang="en">
@@ -69,6 +93,7 @@ const description = 'One-person engineering studio in Škofja Loka, Slovenia: So
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
     <style is:inline set:html={css}></style>
+    <script is:inline type="application/ld+json" set:html={jsonLd}></script>
   </head>
   <body>
     <div id="app">

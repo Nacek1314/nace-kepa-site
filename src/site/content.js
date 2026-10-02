@@ -42,7 +42,7 @@ var T = {
     footerNote: 'Designed and built in Škofja Loka. Printed parts come off a Bambu Lab X2D and P1S in the next room.',
     sending: 'Sending…', sentTag: 'Sent', sentTitle: 'Thanks — your project is on my desk.', sentBody: 'I reply with a fixed-price quote or an hourly estimate within 48 hours. A copy of what you sent is below.', sendFail: 'Sending didn\u2019t work. Copy the brief below and send it to me directly.', sendLimited: 'Too many requests from this connection. Wait a few minutes, or copy the brief and send it directly.',
     with3d: '3D models', viewerLabel: '3D model', loading3d: 'Loading 3D model…', viewerHint: 'Drag to rotate · scroll or pinch to zoom · right-drag to pan', viewerFail: 'The 3D model could not be loaded.', pCategory: 'Category', pYear: 'Year', pMaterials: 'Materials', pModel: '3D model', interactive: 'Interactive preview', photos: 'Photos', openPhoto: 'Open photo', lbClose: 'Close', lbPrev: 'Previous photo', lbNext: 'Next photo', allWork: 'All work', nextProject: 'Next project',
-    tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale' }
+    tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale', contact: 'Contact', order: 'Order' }
   },
   sl: {
     nav: { home: 'Domov', services: 'Storitve', work: 'Projekti', news: 'Novice', skills: 'Znanja', about: 'O meni' },
@@ -87,7 +87,7 @@ var T = {
     footerNote: 'Zasnovano in izdelano v Škofji Loki. Natisnjeni deli prihajajo z Bambu Lab X2D in P1S v sosednji sobi.',
     sending: 'Pošiljam…', sentTag: 'Poslano', sentTitle: 'Hvala — vaš projekt je na moji mizi.', sentBody: 'V 48 urah odgovorim s ponudbo s fiksno ceno ali urno oceno. Spodaj je kopija poslanega.', sendFail: 'Pošiljanje ni uspelo. Kopirajte povzetek spodaj in mi ga pošljite neposredno.', sendLimited: 'Preveč zahtevkov s te povezave. Počakajte nekaj minut ali kopirajte povzetek in mi ga pošljite.',
     with3d: '3D modeli', viewerLabel: '3D model', loading3d: 'Nalagam 3D model…', viewerHint: 'Povlecite za vrtenje · kolešček ali prsta za povečavo · desni klik za premik', viewerFail: '3D modela ni bilo mogoče naložiti.', pCategory: 'Področje', pYear: 'Leto', pMaterials: 'Materiali', pModel: '3D model', interactive: 'Interaktivni predogled', photos: 'Fotografije', openPhoto: 'Odpri fotografijo', lbClose: 'Zapri', lbPrev: 'Prejšnja fotografija', lbNext: 'Naslednja fotografija', allWork: 'Vsi projekti', nextProject: 'Naslednji projekt',
-    tb: { title: 'Naslov', drawn: 'Risal', loc: 'Lokacija', sheet: 'List', rev: 'Rev', date: 'Datum', scale: 'Merilo' }
+    tb: { title: 'Naslov', drawn: 'Risal', loc: 'Lokacija', sheet: 'List', rev: 'Rev', date: 'Datum', scale: 'Merilo', contact: 'Kontakt', order: 'Naročilo' }
   }
 };
 
@@ -119,7 +119,7 @@ var CATS = { CAD: { en: 'CAD', sl: 'CAD', d: 'cad' }, Mechanical: { en: 'Mechani
 
 
 var SKILLS = [
-  { en: 'Design & CAD', sl: 'Konstruiranje in CAD', items: [['SolidWorks', '4 yrs · CSWA, CSWA-AM'], ['Fusion 360', { en: 'Secondary CAD', sl: 'Drugi CAD' }], ['SimulationXpress', { en: 'Static stress analysis', sl: 'Statična trdnostna analiza' }], [{ en: 'Mold design', sl: 'Kalupi' }, { en: 'Fiber composites', sl: 'Vlaknasti kompoziti' }], [{ en: 'Methods', sl: 'Metode' }, { en: 'Tolerance stack-up, material selection, acoustic resonance', sl: 'Verige toleranc, izbira materiala, akustična resonanca' }]] },
+  { en: 'Design & CAD', sl: 'Konstruiranje in CAD', items: [['SolidWorks', { en: '4 yrs · CSWA, CSWA-AM', sl: '4 leta · CSWA, CSWA-AM' }], ['Fusion 360', { en: 'Secondary CAD', sl: 'Drugi CAD' }], ['SimulationXpress', { en: 'Static stress analysis', sl: 'Statična trdnostna analiza' }], [{ en: 'Mold design', sl: 'Kalupi' }, { en: 'Fiber composites', sl: 'Vlaknasti kompoziti' }], [{ en: 'Methods', sl: 'Metode' }, { en: 'Tolerance stack-up, material selection, acoustic resonance', sl: 'Verige toleranc, izbira materiala, akustična resonanca' }]] },
   { en: 'Embedded & firmware', sl: 'Vgrajeni sistemi in firmware', items: [['MCU', 'ESP32 · ESP32-S3 · ESP32-C3 · Raspberry Pi'], [{ en: 'Languages', sl: 'Jeziki' }, 'C/C++ · MicroPython'], [{ en: 'Toolchain', sl: 'Orodja' }, 'Arduino IDE · KiCad · EasyEDA'], [{ en: 'Buses', sl: 'Vodila' }, 'I²C · SPI'], [{ en: 'Connectivity', sl: 'Povezljivost' }, 'Wi-Fi · BLE · MQTT · Telegram'], [{ en: 'Displays', sl: 'Zasloni' }, 'OLED SH1106 · U8g2']] },
   { en: 'Manufacturing', sl: 'Izdelava', items: [[{ en: 'Printers', sl: 'Tiskalnika' }, 'Bambu Lab X2D · P1S'], [{ en: 'X2D', sl: 'X2D' }, { en: '2 nozzles · heated chamber 65 °C · 300 °C · AMS', sl: '2 šobi · ogrevana komora 65 °C · 300 °C · AMS' }], [{ en: 'Materials', sl: 'Materiali' }, 'PLA · PETG · TPU 95A · ABS · ASA · PA · PA-CF · PC'], [{ en: 'Hardware', sl: 'Spojni elementi' }, { en: 'Heat-set inserts, magnets, 3M mounts', sl: 'Navojne puše, magneti, 3M lepila' }]] },
   { en: 'Industrial automation', sl: 'Industrijska avtomatika', items: [['PLC', 'Siemens S7-1200'], [{ en: 'Software', sl: 'Programska oprema' }, 'TIA Portal · HMI'], [{ en: 'Logic', sl: 'Logika' }, { en: 'TON/TOF timers, marker bit logic, VFD mode switching', sl: 'Časovniki TON/TOF, merker logika, preklop načinov frekvenčnika' }]] }
