@@ -3,6 +3,30 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-03
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-scheduled-pet-feeder, #news, #n-bambu-lab-x2d,
+#skills, #about, #order (all 4 steps on the local build, steps 1–3 only on purpose), /admin/ sign-in —
+1280 px + 390 px, light + dark, EN + SL. No JS errors, no CSP violations, no horizontal scroll, no
+clipped text, no broken images. (Live site and GitHub API are blocked from the cloud sandbox; checked via the laptop.)
+
+**Bugs fixed**
+- Occasional junk 404 for `/' + esc(asset(photos[0])) + '`: Chromium's preload scanner sometimes read the
+  `<img src="…">` HTML strings inside the inlined script as real tags. All `'<img ` strings in `app.js` are now
+  written as `'<' + 'img '`, so the scanner can't see a tag (no change in what is rendered).
+- SL: the label above the order form was English ("Order · NK-Q") → now `orderLabel` in `content.js`
+  ("Naročilo · NK-Q" on the Slovenian page).
+
+**Improvement:** old `/portfolio/<old-slug>` and `/sl/portfolio/<old-slug>` links (29 projects × 2 languages)
+now redirect to the matching project sheet `/#p-<new-slug>` / `/#sl-p-<new-slug>` instead of the project list.
+Mapping checked one-to-one against `projects.json`; all 58 tested in Playwright.
+
+**Ideas for next time**
+- If a project slug is ever renamed in /admin/, its old redirect falls back to the home page — update `astro.config.mjs` then.
+- SL process step "Test" could be "Testiranje" (Nace to decide; "Test" is also correct Slovene).
+- `/admin/` is English-only (fine, it's only for Nace).
+- Project sheets have no photos yet — real photos would help most (Nace adds via /admin/).
+
 ## 2026-10-02
 
 **Checked:** build, home, #services, #work, project pages, #news, #n-bambu-lab-x2d, #skills, #about,
