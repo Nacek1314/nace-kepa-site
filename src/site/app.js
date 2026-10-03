@@ -335,9 +335,19 @@
     return '<div class="nk-tb__cell' + (span === 'wide' ? ' nk-tb__cell--wide' : span === 'full' ? ' nk-tb__cell--full' : '') + '">' + (k ? '<span class="nk-tb__k">' + esc(k) + '</span>' : '') + '<span class="nk-tb__v' + (title ? ' nk-tb__v--title' : '') + '">' + (raw ? v : esc(v)) + '</span></div>';
   }
 
+  // Tab / history / screen-reader title for the current view, e.g. "FamFive · Nace Kepa".
+  function pageTitle(p) {
+    var x = t(), s = '';
+    if (p === 'project') { var pr = bySlug(currentSlug()); s = pr ? P(pr, 'title') : ''; }
+    else if (p === 'post') { var n = newsBySlug(currentSlug()); s = n ? P(n, 'title') : ''; }
+    else if (p === 'order') s = x.cta;
+    else if (p !== 'home') s = x.nav[p] || '';
+    return s ? s + ' · Nace Kepa' : 'Nace Kepa · ' + (lang === 'sl' ? 'Inženirski studio' : 'Engineering Studio');
+  }
   function render(keepScroll) {
     var p = page();
     document.documentElement.lang = lang === 'sl' ? 'sl' : 'en';
+    document.title = pageTitle(p);
     if (viewer) { viewer.dispose(); viewer = null; }
     closeLightbox();
     app.innerHTML = frame(views[p]());

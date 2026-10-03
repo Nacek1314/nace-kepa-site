@@ -3,6 +3,28 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-03 (second run)
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-automated-cocktail-dispenser, #news,
+#n-bambu-lab-x2d, #skills, #about, #order (steps 1–3, validation messages, not submitted), /admin/ sign-in —
+1280 px + 390 px, light + dark, EN + SL. Last Actions run (d29de12) succeeded; live site returns 200 (checked
+via the laptop). No JS errors, no CSP violations, no horizontal scroll, no clipped text, no broken images,
+no EN text on SL pages (only format names like STEP / IGES).
+
+**Bugs fixed:** none found.
+
+**Improvement:** the browser tab / history title now follows the open view and language
+(`FamFive · Nace Kepa`, `Projekti · Nace Kepa`, `Začni projekt · Nace Kepa`, …) instead of always
+"Nace Kepa · Engineering Studio". Helps bookmarks, shared tabs and screen readers (WCAG 2.4.2).
+`pageTitle()` in `app.js`; the static `<title>` in `index.astro` is unchanged.
+
+**Ideas for next time**
+- News photo `public/news/bambu-lab-x2d/*.jpg` is 1500×2000, 460 KB — the admin could resize/compress
+  uploads (e.g. max 1600 px, quality ~80) to make the news page lighter on mobile.
+- `meta description` / `og:*` are English only; an SL description can't be served from one static page
+  without a separate `/sl/` HTML — only worth it if Slovene search traffic matters to Nace.
+- Project sheets have no photos yet — real photos would help most (Nace adds via /admin/).
+
 ## 2026-10-03
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-scheduled-pet-feeder, #news, #n-bambu-lab-x2d,
