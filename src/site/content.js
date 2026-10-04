@@ -42,6 +42,14 @@ var T = {
     footerNote: 'Designed and built in Škofja Loka. Printed parts come off a Bambu Lab X2D and P1S in the next room.',
     sending: 'Sending…', sentTag: 'Sent', sentTitle: 'Thanks — your project is on my desk.', sentBody: 'I reply with a fixed-price quote or an hourly estimate within 48 hours. A copy of what you sent is below.', sendFail: 'Sending didn\u2019t work. Copy the brief below and send it to me directly.', sendLimited: 'Too many requests from this connection. Wait a few minutes, or copy the brief and send it directly.',
     with3d: '3D models', viewerLabel: '3D model', loading3d: 'Loading 3D model…', viewerHint: 'Drag to rotate · scroll or pinch to zoom · right-drag to pan', viewerFail: 'The 3D model could not be loaded.', pCategory: 'Category', pYear: 'Year', pMaterials: 'Materials', pModel: '3D model', interactive: 'Interactive preview', photos: 'Photos', openPhoto: 'Open photo', lbClose: 'Close', lbPrev: 'Previous photo', lbNext: 'Next photo', allWork: 'All work', nextProject: 'Next project',
+    skip: 'Skip to content',
+    // Fit check on #services (fitChecker in app.js). Build volume from the X2D news post: 256 × 256 × 260 mm.
+    fit: { label: 'Fit check · Bambu Lab X2D', title: 'Will it fit the printer?', lead: 'Enter the outer size of your part. It is checked against the X2D build volume, 256 × 256 × 260 mm, in every orientation.',
+      l: 'Length', w: 'Width', h: 'Height', empty: 'Enter all three sizes in millimetres.',
+      ok: 'Fits in one piece', okAsIs: 'Fits as entered: length along X, width along Y, height up.', okTurned: 'Fits when turned: print it as {o} mm (X × Y × height).',
+      no: 'Too big for one piece', noBody: 'Larger than the build volume by up to {d} mm. Big parts are often printed in sections and joined — describe it in your brief.',
+      note: 'Single-piece, axis-aligned check. The final fit is confirmed with your quote.', top: 'Top view', front: 'Front view', views: 'Part on the build plate',
+      cta: 'Start a project with this size', brief: 'Part size' },
     tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale', contact: 'Contact', order: 'Order' }
   },
   sl: {
@@ -87,6 +95,13 @@ var T = {
     footerNote: 'Zasnovano in izdelano v Škofji Loki. Natisnjeni deli prihajajo z Bambu Lab X2D in P1S v sosednji sobi.',
     sending: 'Pošiljam…', sentTag: 'Poslano', sentTitle: 'Hvala — vaš projekt je na moji mizi.', sentBody: 'V 48 urah odgovorim s ponudbo s fiksno ceno ali urno oceno. Spodaj je kopija poslanega.', sendFail: 'Pošiljanje ni uspelo. Kopirajte povzetek spodaj in mi ga pošljite neposredno.', sendLimited: 'Preveč zahtevkov s te povezave. Počakajte nekaj minut ali kopirajte povzetek in mi ga pošljite.',
     with3d: '3D modeli', viewerLabel: '3D model', loading3d: 'Nalagam 3D model…', viewerHint: 'Povlecite za vrtenje · kolešček ali prsta za povečavo · desni klik za premik', viewerFail: '3D modela ni bilo mogoče naložiti.', pCategory: 'Področje', pYear: 'Leto', pMaterials: 'Materiali', pModel: '3D model', interactive: 'Interaktivni predogled', photos: 'Fotografije', openPhoto: 'Odpri fotografijo', lbClose: 'Zapri', lbPrev: 'Prejšnja fotografija', lbNext: 'Naslednja fotografija', allWork: 'Vsi projekti', nextProject: 'Naslednji projekt',
+    skip: 'Preskoči na vsebino',
+    fit: { label: 'Preverjanje velikosti · Bambu Lab X2D', title: 'Ali gre v tiskalnik?', lead: 'Vpišite zunanje mere dela. Preverijo se glede na delovni prostor X2D, 256 × 256 × 260 mm, v vseh legah.',
+      l: 'Dolžina', w: 'Širina', h: 'Višina', empty: 'Vpišite vse tri mere v milimetrih.',
+      ok: 'Gre v enem kosu', okAsIs: 'Gre tako, kot je vpisano: dolžina po X, širina po Y, višina navzgor.', okTurned: 'Gre, če ga obrnete: natisne se kot {o} mm (X × Y × višina).',
+      no: 'Prevelik za en kos', noBody: 'Večji od delovnega prostora za največ {d} mm. Veliki deli se pogosto natisnejo po kosih in sestavijo — opišite ga v povzetku.',
+      note: 'Preverjanje za en kos, poravnan z osmi. Končno ustreznost potrdim v ponudbi.', top: 'Tloris', front: 'Naris', views: 'Del na tiskalni plošči',
+      cta: 'Začni projekt s to velikostjo', brief: 'Velikost dela' },
     tb: { title: 'Naslov', drawn: 'Risal', loc: 'Lokacija', sheet: 'List', rev: 'Rev', date: 'Datum', scale: 'Merilo', contact: 'Kontakt', order: 'Naročilo' }
   }
 };

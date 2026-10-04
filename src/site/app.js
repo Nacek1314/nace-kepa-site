@@ -93,6 +93,7 @@
     services: function () {
       var x = t();
       return '<section class="block first">' + head('S-01 … S-04', x.servicesPageTitle, x.servicesPageLead, true) + '<div class="grid-2">' + SERVICES.map(function (s) { return service(s, true); }).join('') + '</div></section>' +
+        fitChecker() +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     work: function () {
@@ -260,6 +261,73 @@
     return '<div class="dims">' + x.timelines.map(function (r, i) { return '<div class="dim-row"><span class="nk-label">' + esc(r[0]) + '</span><div class="nk-dim" style="width:' + w[i] + '"><span>' + esc(r[1]) + '</span></div></div>'; }).join('') + '</div>';
   }
 
+  // ---------- Fit check (#services): will a part fit the X2D build volume in one piece? ----------
+  // Self-contained: remove fitChecker()…fitToOrder(), the fitChecker() call in views.services, the two
+  // data-fit handlers below, T.*.fit in content.js and the .fit-* rules in page.css.
+  var BED = [256, 256, 260]; // X × Y × Z in mm, Bambu Lab X2D (from the news post "bambu-lab-x2d")
+  state.fit = { l: '', w: '', h: '' };
+  function fitNum(v) { var n = parseFloat(String(v).replace(',', '.')); return n > 0 && n < 100000 ? Math.round(n * 10) / 10 : 0; }
+  function fitFmt(n) { var s = String(n); return lang === 'sl' ? s.replace('.', ',') : s; }
+  function fitDims(a) { return a.map(fitFmt).join(' × '); }
+  function fitCalc() {
+    var d = [fitNum(state.fit.l), fitNum(state.fit.w), fitNum(state.fit.h)];
+    if (!d[0] || !d[1] || !d[2]) return null;
+    var perms = [[0, 1, 2], [1, 0, 2], [0, 2, 1], [2, 0, 1], [1, 2, 0], [2, 1, 0]];
+    for (var i = 0; i < perms.length; i++) {
+      var o = perms[i].map(function (k) { return d[k]; });
+      if (o[0] <= BED[0] && o[1] <= BED[1] && o[2] <= BED[2]) return { fits: true, asIs: i < 2 && o[2] === d[2], o: o, d: d };
+    }
+    var up = function (x, y) { return x - y; }, a = d.slice().sort(up), b = BED.slice().sort(up), over = 0;
+    for (var j = 0; j < 3; j++) over = Math.max(over, a[j] - b[j]);
+    return { fits: false, o: d, d: d, over: Math.round(over * 10) / 10 };
+  }
+  function fitResult(r) {
+    var f = t().fit;
+    if (!r) return '<p class="hint">' + esc(f.empty) + '</p>';
+    if (r.fits) return '<span class="nk-tag nk-tag--ok">' + esc(f.ok) + '</span><p>' + esc(r.asIs ? f.okAsIs : f.okTurned.replace('{o}', fitDims(r.o))) + '</p>';
+    return '<span class="nk-tag nk-tag--rev">' + esc(f.no) + '</span><p>' + esc(f.noBody.replace('{d}', fitFmt(r.over))) + '</p>';
+  }
+  // One orthographic view: build plate outline (dashed) and the part (red) at the same scale.
+  function fitView(label, bw, bh, pw, ph, onPlate) {
+    var s = 160 / Math.max(bw, bh, pw || 0, ph || 0), cx = 120, base = 186;
+    var BW = bw * s, BH = bh * s, mid = base - BH / 2;
+    var out = '<svg class="fit-svg" viewBox="0 0 240 230" aria-hidden="true" focusable="false"><text class="dimt" x="8" y="14">' + esc(label.toUpperCase()) + '</text>' +
+      '<rect class="hid" x="' + (cx - BW / 2) + '" y="' + (base - BH) + '" width="' + BW + '" height="' + BH + '"/>' +
+      (onPlate ? '<line class="ln" x1="' + (cx - BW / 2 - 8) + '" y1="' + base + '" x2="' + (cx + BW / 2 + 8) + '" y2="' + base + '"/>' : '') +
+      '<path class="dim" d="M' + (cx - BW / 2) + ' ' + (base + 10) + ' v10 M' + (cx + BW / 2) + ' ' + (base + 10) + ' v10 M' + (cx - BW / 2) + ' ' + (base + 15) + ' H' + (cx + BW / 2) + '"/>' +
+      '<text class="dimt" x="' + cx + '" y="' + (base + 32) + '" text-anchor="middle">' + fitFmt(bw) + ' × ' + fitFmt(bh) + '</text>';
+    if (pw && ph) {
+      var PW = pw * s, PH = ph * s, top = onPlate ? base - PH : mid - PH / 2;
+      out += '<rect class="fit-part" x="' + (cx - PW / 2) + '" y="' + top + '" width="' + PW + '" height="' + PH + '"/>';
+    }
+    return out + '<line class="ctr" x1="' + cx + '" y1="20" x2="' + cx + '" y2="' + (base + 4) + '"/></svg>';
+  }
+  function fitViews(r) {
+    var f = t().fit, o = r ? r.o : [0, 0, 0];
+    return '<div>' + fitView(f.top + ' · X × Y', BED[0], BED[1], o[0], o[1], false) + '</div><div>' + fitView(f.front + ' · X × Z', BED[0], BED[2], o[0], o[2], true) + '</div>';
+  }
+  function fitChecker() {
+    var f = t().fit, r = fitCalc();
+    var inp = function (k) { return '<div class="nk-field"><label class="nk-field__label" for="fit-' + k + '">' + esc(f[k]) + ' · mm</label><input class="nk-input" id="fit-' + k + '" data-fit="' + k + '" type="number" inputmode="decimal" min="0" step="any" value="' + esc(state.fit[k]) + '"></div>'; };
+    return '<section class="block fit">' + head(f.label, f.title, f.lead) + '<div class="fit-grid"><div class="fit-form"><div class="fit-inputs">' + inp('l') + inp('w') + inp('h') + '</div>' +
+      '<div class="fit-out" id="fit-out" role="status" aria-live="polite">' + fitResult(r) + '</div>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-fit-go>' + esc(f.cta) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button></div>' +
+      '<p class="fit-note">' + esc(f.note) + '</p></div>' +
+      '<figure class="fit-fig"><div class="nk-sheet__art fit-views" id="fit-views">' + fitViews(r) + '</div><figcaption class="nk-label">' + esc(f.views) + ' · ' + fitDims(BED) + ' mm</figcaption></figure></div></section>';
+  }
+  function fitUpdate() {
+    var r = fitCalc(), out = document.getElementById('fit-out'), v = document.getElementById('fit-views');
+    if (out) out.innerHTML = fitResult(r);
+    if (v) v.innerHTML = fitViews(r);
+  }
+  function fitToOrder() {
+    var r = fitCalc(), o = state.order;
+    if (o.services.indexOf('print') < 0) o.services.push('print');
+    if (r) { var line = t().fit.brief + ': ' + fitDims(r.d) + ' mm.'; if (o.what.indexOf(line) < 0) o.what = o.what ? o.what + '\n' + line : line; }
+    state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+
   function orderView() {
     var x = t(), o = state.order, e = state.errors, st = state.step, body = '';
     var keyMap = { cad: 0, print: 1, iot: 2, build: 3 };
@@ -329,7 +397,7 @@
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
       cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(x.cta) + ' →</a>', 'wide', false, true) +
       cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa</p></footer>';
-    return '<div class="frame">' + zones + nav + '<main id="main">' + inner + '</main>' + tb + '</div>';
+    return '<div class="frame"><a class="skip" href="#main" data-skip>' + esc(x.skip) + '</a>' + zones + nav + '<main id="main" tabindex="-1">' + inner + '</main>' + tb + '</div>';
   }
   function cell(k, v, span, title, raw) {
     return '<div class="nk-tb__cell' + (span === 'wide' ? ' nk-tb__cell--wide' : span === 'full' ? ' nk-tb__cell--full' : '') + '">' + (k ? '<span class="nk-tb__k">' + esc(k) + '</span>' : '') + '<span class="nk-tb__v' + (title ? ' nk-tb__v--title' : '') + '">' + (raw ? v : esc(v)) + '</span></div>';
@@ -368,6 +436,8 @@
 
   app.addEventListener('click', function (ev) {
     var el = ev.target.closest('button, a'); if (!el) return;
+    if (el.hasAttribute('data-skip')) { ev.preventDefault(); var mn = document.getElementById('main'); mn.focus({ preventScroll: true }); mn.scrollIntoView({ block: 'start' }); return; }
+    if (el.hasAttribute('data-fit-go')) { fitToOrder(); return; }
     if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} render(true); return; }
     if (el.dataset.filter) { state.filter = el.dataset.filter; render(true); return; }
     if (el.dataset.lb != null) { var pr = page() === 'post' ? newsBySlug(currentSlug()) : bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
@@ -379,6 +449,7 @@
       try { navigator.clipboard.writeText(txt).then(function () { msg.textContent = t().copied; }, fail); } catch (e) { fail(); }
     }
   });
+  app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
     var k = ev.target.dataset.svc; if (!k) return;
     var a = state.order.services, i = a.indexOf(k);
