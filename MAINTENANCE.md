@@ -3,6 +3,32 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-04 (second run)
+
+**Checked:** build, home, #services, #work, #p-scheduled-pet-feeder, #news, #n-bambu-lab-x2d, #skills, #about,
+#order (steps 1–3, validation, not submitted), /admin/ sign-in — 1280 px + 390 px, light + dark, EN + SL.
+Last Actions run (90758c2) succeeded; live site returns 200 (checked via the laptop). No JS errors, no CSP
+violations, no 404s, no horizontal scroll, no EN text on SL pages.
+
+**Bugs fixed:** none found.
+
+**Improvement:** screen-reader labels are now translated — main menu, language switch, the filter group on #work
+and the logo link were English on the Slovenian page ("Main", "Language", "Filter", "home"). `aria:` in both
+languages in `content.js`, used in `frame()` / `views.work` in `app.js`.
+
+**Innovation — Search on #work ("Search projects and news" / "Iskanje po projektih in novicah"):** a search box
+above the filter chips. Every word typed must match (case- and accent-insensitive, so "drzalo" finds "držalo");
+it searches project title, description, details, category, materials, year and sheet number, and news title,
+summary and article — in BOTH languages, so "bracket" and "nosilec" find the same sheets. Sheets that don't match
+are hidden (works together with the category chips); matching news posts are listed under the grid; with no hits
+it shows "Nothing matches … yet" with a Start-a-project button. `/` from any page jumps to the search, Esc clears it,
+the result count is a live `role="status"`. EN + SL, light + dark, phone + desktop.
+*To remove:* delete the "Search (#work)" block in `app.js` (`state.q` … `findApply()`), the `findBox()` /
+`findResults()` calls and `id="find-grid"` in `views.work`, the `find-q` / `data-find-clear` lines in the click and
+input handlers, the `findApply()` line in `render()`, the "Search keys" keydown listener, `find:` in both languages
+in `content.js` and the `.find-*` rules at the end of `page.css`.
+*Next step:* remember the query in the URL (e.g. `#work?q=esp32`) so a search can be shared as a link.
+
 ## 2026-10-04
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-door-open-telegram-bot, #news, #n-bambu-lab-x2d,
@@ -30,16 +56,18 @@ the two `data-fit` handler lines, `fit:` in both languages in `content.js` and t
 
 ## Innovation ideas
 
-Built: 2026-10-04 fit check (X2D build volume) on #services.
+Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search across projects and news on #work.
 
 - Admin: checklist of projects missing photos / 3D model / Slovenian text / details (today all 29 have no photos and
   empty details — the checklist would show Nace exactly what to fill in).
 - Admin: "Copy LinkedIn post" button for a news item (headline + summary + link, EN or SL).
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
-- Search across projects and news (title, description, category) on #work.
 - "Similar projects" row on project pages (same category).
 - Atom feed for news (`/news.xml`, built at build time from news.json).
 - Printable one-page project brief from the order wizard (print stylesheet only).
+- Shareable search links on #work (`#work?q=…`) and a "search" link in the 404 page.
+- Admin: "SL text missing" badge on each project/news row in the list (quick view of what still needs translating).
+- Materials index on #work: chips built from the `materials` field of the projects (click → filter by material).
 
 ## 2026-10-03 (second run)
 

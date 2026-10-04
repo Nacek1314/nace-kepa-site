@@ -102,11 +102,12 @@
       var has3d = PROJECTS.some(function (p) { return p.model; });
       if (has3d) cats.splice(1, 0, '3d');
       return '<section class="block first">' + head(PROJECTS.length + ' ' + x.shown, x.workPageTitle, x.workPageLead, true) +
-        '<div class="filters" role="group" aria-label="Filter">' + cats.map(function (c) {
+        findBox() +
+        '<div class="filters" role="group" aria-label="' + esc(x.aria.filter) + '">' + cats.map(function (c) {
           var n = c === 'all' ? PROJECTS.length : PROJECTS.filter(function (p) { return c === '3d' ? !!p.model : p.category === c; }).length;
           return '<button type="button" class="chip" data-filter="' + c + '" aria-pressed="' + (state.filter === c) + '">' + esc(c === 'all' ? x.all : c === '3d' ? x.with3d : CATS[c][lang]) + ' <span>' + n + '</span></button>';
         }).join('') + '</div>' +
-        '<div class="grid-4 sheets">' + list.map(sheet).join('') + '</div></section>' + ctaBand();
+        '<div class="grid-4 sheets" id="find-grid">' + list.map(sheet).join('') + '</div>' + findResults() + '</section>' + ctaBand();
     },
     skills: function () {
       var x = t();
@@ -261,6 +262,40 @@
     return '<div class="dims">' + x.timelines.map(function (r, i) { return '<div class="dim-row"><span class="nk-label">' + esc(r[0]) + '</span><div class="nk-dim" style="width:' + w[i] + '"><span>' + esc(r[1]) + '</span></div></div>'; }).join('') + '</div>';
   }
 
+  // ---------- Search (#work): find projects and news by any word, in EN or SL ----------
+  // Self-contained: remove findFold()…findApply(), the findBox()/findResults() calls and id="find-grid" in views.work,
+  // the find-q lines in the input/keydown handlers and render(), T.*.find in content.js and the .find-* rules in page.css.
+  state.q = '';
+  function findFold(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function findBoth(v) { return v && typeof v === 'object' ? [v.en, v.sl].join(' ') : (v || ''); }
+  function findHit(txt, q) { var w = findFold(q).split(/\s+/).filter(Boolean); return w.every(function (x) { return txt.indexOf(x) >= 0; }); }
+  function findProjectText(p) { return findFold([findBoth(p.title), findBoth(p.description), findBoth(p.details), p.category, CATS[p.category] ? CATS[p.category].sl : '', p.materials, p.year, sheetNo(p)].join(' ')); }
+  function findNewsText(n) { return findFold([findBoth(n.title), findBoth(n.summary), findBoth(n.body), n.date].join(' ')); }
+  function findBox() {
+    var f = t().find;
+    return '<div class="find" role="search"><label class="nk-label" for="find-q">' + esc(f.label) + ' <span class="find-key">' + esc(f.key) + '</span></label>' +
+      '<div class="find-row"><input class="nk-input" id="find-q" type="search" autocomplete="off" spellcheck="false" placeholder="' + esc(f.ph) + '" value="' + esc(state.q) + '" aria-describedby="find-out">' +
+      '<button type="button" class="chip find-clear" data-find-clear aria-label="' + esc(f.clear) + '"' + (state.q ? '' : ' hidden') + '>✕</button></div>' +
+      '<p class="nk-label find-out" id="find-out" role="status" aria-live="polite"></p></div>';
+  }
+  function findResults() { return '<div class="find-news" id="find-news" hidden></div><div class="find-none" id="find-none" hidden></div>'; }
+  function findApply() {
+    var grid = document.getElementById('find-grid'); if (!grid) return;
+    var f = t().find, q = state.q.trim(), shown = 0;
+    Array.prototype.forEach.call(grid.querySelectorAll('.nk-sheet'), function (a) {
+      var p = bySlug(a.getAttribute('href').slice(3)), hit = !q || (p && findHit(findProjectText(p), q));
+      a.hidden = !hit; if (hit) shown++;
+    });
+    var news = q ? NEWS.filter(function (n) { return findHit(findNewsText(n), q); }) : [];
+    var out = document.getElementById('find-out'), nw = document.getElementById('find-news'), none = document.getElementById('find-none'), clr = app.querySelector('[data-find-clear]');
+    out.textContent = q ? f.count.replace('{p}', shown).replace('{n}', news.length) : '';
+    nw.hidden = !news.length;
+    nw.innerHTML = news.length ? '<p class="nk-label">' + esc(f.news) + ' · ' + news.length + '</p><ul>' + news.map(function (n) { return '<li><a href="#n-' + esc(n.slug) + '"><span class="nk-label">' + esc(fmtDate(n.date)) + '</span><span>' + esc(P(n, 'title')) + ' →</span></a></li>'; }).join('') + '</ul>' : '';
+    none.hidden = !(q && !shown && !news.length);
+    none.innerHTML = none.hidden ? '' : '<p class="sub">' + esc(f.none.replace('{q}', q)) + '</p><p class="lead">' + esc(f.noneBody) + '</p><div class="cta-row">' + btn(t().cta, '#order', 'primary', null, true) + '</div>';
+    if (clr) clr.hidden = !state.q;
+  }
+
   // ---------- Fit check (#services): will a part fit the X2D build volume in one piece? ----------
   // Self-contained: remove fitChecker()…fitToOrder(), the fitChecker() call in views.services, the two
   // data-fit handlers below, T.*.fit in content.js and the .fit-* rules in page.css.
@@ -388,9 +423,9 @@
     var x = t(), p = page();
     var zones = '<div class="zones zones-top" aria-hidden="true">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (n) { return '<span>' + n + '</span>'; }).join('') + '</div>' +
       '<div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div><div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>';
-    var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="nacekepa.work — home">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="Main">' +
+    var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="' + esc(x.aria.home) + '">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="' + esc(x.aria.main) + '">' +
       ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a href="#' + k + '"' + (p === k || (p === 'project' && k === 'work') || (p === 'post' && k === 'news') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
-      '</nav><div class="top-act"><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="' + (lang === 'en') + '">EN</button><button type="button" data-lang="sl" aria-pressed="' + (lang === 'sl') + '">SL</button></div>' + btn(x.cta, '#order', 'primary', 'sm') + '</div></header>';
+      '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '"><button type="button" data-lang="en" aria-pressed="' + (lang === 'en') + '">EN</button><button type="button" data-lang="sl" aria-pressed="' + (lang === 'sl') + '">SL</button></div>' + btn(x.cta, '#order', 'primary', 'sm') + '</div></header>';
     var idx = PAGES.indexOf(p === 'project' ? 'work' : p === 'post' ? 'news' : p) + 1;
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
@@ -421,6 +456,7 @@
     app.innerHTML = frame(views[p]());
     if (!keepScroll) window.scrollTo(0, 0);
     if (p === 'project') mountViewer();
+    if (p === 'work') { findApply(); if (state.findFocus) { state.findFocus = false; var fq = document.getElementById('find-q'); if (fq) fq.focus(); } }
   }
 
   function readForm() {
@@ -438,6 +474,7 @@
     var el = ev.target.closest('button, a'); if (!el) return;
     if (el.hasAttribute('data-skip')) { ev.preventDefault(); var mn = document.getElementById('main'); mn.focus({ preventScroll: true }); mn.scrollIntoView({ block: 'start' }); return; }
     if (el.hasAttribute('data-fit-go')) { fitToOrder(); return; }
+    if (el.hasAttribute('data-find-clear')) { state.q = ''; var fq = document.getElementById('find-q'); fq.value = ''; findApply(); fq.focus(); return; }
     if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} render(true); return; }
     if (el.dataset.filter) { state.filter = el.dataset.filter; render(true); return; }
     if (el.dataset.lb != null) { var pr = page() === 'post' ? newsBySlug(currentSlug()) : bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
@@ -449,7 +486,7 @@
       try { navigator.clipboard.writeText(txt).then(function () { msg.textContent = t().copied; }, fail); } catch (e) { fail(); }
     }
   });
-  app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
+  app.addEventListener('input', function (ev) { if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
     var k = ev.target.dataset.svc; if (!k) return;
     var a = state.order.services, i = a.indexOf(k);
@@ -471,6 +508,15 @@
       .then(function (r) { state.send = r.ok ? 'sent' : (r.status === 429 ? 'limited' : 'error'); render(true); }, function () { state.send = 'error'; render(true); });
   }
   app.addEventListener('submit', function (ev) { ev.preventDefault(); });
+  // Search keys: "/" jumps to the search on #work from anywhere; Esc in the box clears it.
+  document.addEventListener('keydown', function (ev) {
+    var tg = ev.target, typing = tg && (/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName) || tg.isContentEditable);
+    if (ev.key === 'Escape' && tg && tg.id === 'find-q' && state.q) { state.q = ''; tg.value = ''; findApply(); ev.preventDefault(); return; }
+    if (ev.key !== '/' || typing || lb || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    ev.preventDefault();
+    if (page() === 'work') { var fq = document.getElementById('find-q'); if (fq) fq.focus(); }
+    else { state.findFocus = true; location.hash = 'work'; }
+  });
   window.addEventListener('hashchange', function () { render(false); });
   render(true);
 })();

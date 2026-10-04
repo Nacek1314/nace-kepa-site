@@ -50,6 +50,10 @@ var T = {
       no: 'Too big for one piece', noBody: 'Larger than the build volume by up to {d} mm. Big parts are often printed in sections and joined — describe it in your brief.',
       note: 'Single-piece, axis-aligned check. The final fit is confirmed with your quote.', top: 'Top view', front: 'Front view', views: 'Part on the build plate',
       cta: 'Start a project with this size', brief: 'Part size' },
+    // Screen-reader labels (nav, language switch, filters, logo link).
+    aria: { main: 'Main', lang: 'Language', filter: 'Filter by field', home: 'nacekepa.work — home' },
+    // Search on #work (findBox in app.js).
+    find: { label: 'Search projects and news', ph: 'e.g. ESP32, PETG, bracket', key: 'Press / to search', count: '{p} projects · {n} news', none: 'Nothing matches “{q}” yet.', noneBody: 'Describe what you need — most projects start from a sketch.', news: 'Matching news', clear: 'Clear search' },
     tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale', contact: 'Contact', order: 'Order' }
   },
   sl: {
@@ -102,6 +106,8 @@ var T = {
       no: 'Prevelik za en kos', noBody: 'Večji od delovnega prostora za največ {d} mm. Veliki deli se pogosto natisnejo po kosih in sestavijo — opišite ga v povzetku.',
       note: 'Preverjanje za en kos, poravnan z osmi. Končno ustreznost potrdim v ponudbi.', top: 'Tloris', front: 'Naris', views: 'Del na tiskalni plošči',
       cta: 'Začni projekt s to velikostjo', brief: 'Velikost dela' },
+    aria: { main: 'Glavni meni', lang: 'Jezik', filter: 'Filtriraj po področju', home: 'nacekepa.work — domov' },
+    find: { label: 'Iskanje po projektih in novicah', ph: 'npr. ESP32, PETG, nosilec', key: 'Za iskanje pritisnite /', count: 'projekti: {p} · novice: {n}', none: 'Za »{q}« še ni zadetkov.', noneBody: 'Opišite, kaj potrebujete — večina projektov se začne s skico.', news: 'Novice z zadetki', clear: 'Počisti iskanje' },
     tb: { title: 'Naslov', drawn: 'Risal', loc: 'Lokacija', sheet: 'List', rev: 'Rev', date: 'Datum', scale: 'Merilo', contact: 'Kontakt', order: 'Naročilo' }
   }
 };
