@@ -180,8 +180,48 @@
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
       '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div></aside></div>' +
       (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
+      relRow(p, next) +
       (next && next !== p ? '<a class="next-project" href="#p-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.nextProject) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
       '</section>' + ctaBand();
+  }
+  // ---------- Similar projects (project pages) ----------
+  // Self-contained: remove relScore()…relToOrder(), the relRow() call in projectView(), the data-rel-cat / data-rel-go
+  // lines in the click handler, rel: in both languages in content.js and the .rel-* rules at the end of page.css.
+  var REL_STOP = 'with,from,that,this,into,for,the,and,your,without,using,built,made,part,parts,design,printed,custom'.split(',');
+  function relWords(p) {
+    var w = {}, src = [P(p, 'title'), P(p, 'description'), p.materials].join(' ') + ' ' + [p.title && p.title.en, p.description && p.description.en].join(' ');
+    findFold(src).split(/[^a-z0-9]+/).forEach(function (x) { if (x.length > 3 && REL_STOP.indexOf(x) < 0) w[x] = 1; });
+    return w;
+  }
+  function relScore(p, q) {
+    var a = relWords(p), b = relWords(q), s = p.category === q.category ? 4 : 0;
+    Object.keys(a).forEach(function (k) { if (b[k]) s += 2; });
+    if (p.model && q.model) s += 1;
+    if (p.year === q.year) s += 1;
+    return s;
+  }
+  function relList(p, skip) {
+    return PROJECTS.filter(function (q) { return q !== p && q !== skip; })
+      .map(function (q, i) { return { q: q, s: relScore(p, q), i: i }; })
+      .filter(function (r) { return r.s > 0; })
+      .sort(function (x, y) { return y.s - x.s || x.i - y.i; })
+      .slice(0, 3).map(function (r) { return r.q; });
+  }
+  function relRow(p, skip) {
+    var x = t().rel, list = relList(p, skip);
+    if (!list.length) return '';
+    var n = PROJECTS.filter(function (q) { return q.category === p.category; }).length;
+    return '<section class="rel" aria-labelledby="rel-h"><div class="rel-head"><h2 class="sub" id="rel-h">' + esc(x.title) + '</h2>' +
+      '<div class="rel-act">' + (n > 1 ? '<a class="rel-all" href="#work" data-rel-cat="' + esc(p.category) + '">' + esc(x.all.replace('{n}', n).replace('{c}', cat(p))) + ' →</a>' : '') +
+      '<button type="button" class="nk-btn nk-btn--sm" data-rel-go>' + esc(x.start) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button></div></div>' +
+      '<div class="rel-grid">' + list.map(sheet).join('') + '</div></section>';
+  }
+  function relToOrder() {
+    var p = bySlug(currentSlug()), o = state.order; if (!p) return;
+    var line = t().rel.brief + ': ' + P(p, 'title') + ' (' + sheetNo(p) + ').';
+    if (o.what.indexOf(line) < 0) o.what = o.what ? o.what + '\n' + line : line;
+    state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
   }
   // ---------- full-screen photo viewer ----------
   var lb = null;
@@ -430,7 +470,7 @@
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
-      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(x.cta) + ' →</a>', 'wide', false, true) +
+      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '">' + esc(CONTACT_EMAIL) + '</a> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(x.cta) + ' →</a>', 'wide', false, true) +
       cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa</p></footer>';
     return '<div class="frame"><a class="skip" href="#main" data-skip>' + esc(x.skip) + '</a>' + zones + nav + '<main id="main" tabindex="-1">' + inner + '</main>' + tb + '</div>';
   }
@@ -477,6 +517,8 @@
     if (el.hasAttribute('data-find-clear')) { state.q = ''; var fq = document.getElementById('find-q'); fq.value = ''; findApply(); fq.focus(); return; }
     if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} render(true); return; }
     if (el.dataset.filter) { state.filter = el.dataset.filter; render(true); return; }
+    if (el.dataset.relCat) { state.filter = el.dataset.relCat; state.q = ''; return; }
+    if (el.hasAttribute('data-rel-go')) { relToOrder(); return; }
     if (el.dataset.lb != null) { var pr = page() === 'post' ? newsBySlug(currentSlug()) : bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
     if (el.id === 'next') { ev.preventDefault(); readForm(); var ok = validate(); if (ok) state.step++; if (ok && state.step === 3) submitOrder(); render(true); var w = document.getElementById('wiz'); if (w) w.scrollIntoView({ block: 'start' }); return; }
     if (el.id === 'back') { ev.preventDefault(); readForm(); state.errors = {}; state.send = 'idle'; state.step = state.step === 3 ? 0 : state.step - 1; render(true); return; }

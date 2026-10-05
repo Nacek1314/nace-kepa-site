@@ -52,6 +52,8 @@ var T = {
       cta: 'Start a project with this size', brief: 'Part size' },
     // Screen-reader labels (nav, language switch, filters, logo link).
     aria: { main: 'Main', lang: 'Language', filter: 'Filter by field', home: 'nacekepa.work — home' },
+    // Similar projects on project pages (relRow in app.js).
+    rel: { title: 'Similar projects', all: 'All {n} {c} projects', start: 'Start a project like this', brief: 'Similar to' },
     // Search on #work (findBox in app.js).
     find: { label: 'Search projects and news', ph: 'e.g. ESP32, PETG, bracket', key: 'Press / to search', count: '{p} projects · {n} news', none: 'Nothing matches “{q}” yet.', noneBody: 'Describe what you need — most projects start from a sketch.', news: 'Matching news', clear: 'Clear search' },
     tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale', contact: 'Contact', order: 'Order' }
@@ -107,6 +109,7 @@ var T = {
       note: 'Preverjanje za en kos, poravnan z osmi. Končno ustreznost potrdim v ponudbi.', top: 'Tloris', front: 'Naris', views: 'Del na tiskalni plošči',
       cta: 'Začni projekt s to velikostjo', brief: 'Velikost dela' },
     aria: { main: 'Glavni meni', lang: 'Jezik', filter: 'Filtriraj po področju', home: 'nacekepa.work — domov' },
+    rel: { title: 'Podobni projekti', all: 'Vsi projekti: {c} ({n})', start: 'Začni podoben projekt', brief: 'Podobno kot' },
     find: { label: 'Iskanje po projektih in novicah', ph: 'npr. ESP32, PETG, nosilec', key: 'Za iskanje pritisnite /', count: 'projekti: {p} · novice: {n}', none: 'Za »{q}« še ni zadetkov.', noneBody: 'Opišite, kaj potrebujete — večina projektov se začne s skico.', news: 'Novice z zadetki', clear: 'Počisti iskanje' },
     tb: { title: 'Naslov', drawn: 'Risal', loc: 'Lokacija', sheet: 'List', rev: 'Rev', date: 'Datum', scale: 'Merilo', contact: 'Kontakt', order: 'Naročilo' }
   }

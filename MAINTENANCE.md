@@ -3,6 +3,36 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-05
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-adjustable-door-wedge, #news, #n-bambu-lab-x2d, #skills,
+#about, #order (steps 1–2, not submitted), /admin/ sign-in — 1280 px + 390 px, light + dark, EN + SL. Last Actions
+run (cb96489) succeeded; live site returns 200 (checked via the laptop). No JS errors, no CSP violations, no 404s,
+no horizontal scroll, no broken images, no EN text on SL pages, no unlabeled inputs or unnamed links/buttons.
+
+**Bugs fixed:** none found.
+
+**Improvement:** the e-mail address is now a `mailto:` link in the footer title block ("Contact" cell, next to
+LinkedIn) on every page — before, the address only appeared at the last step of the order form. Same address as
+the order form and the JSON-LD (`CONTACT_EMAIL`). `frame()` in `app.js`.
+
+**Innovation — Similar projects on project pages ("Similar projects" / "Podobni projekti"):** under each project
+sheet, three related sheets picked from the existing projects: same category first, then shared words in title,
+description and materials (accent-insensitive), then both having a 3D model / same year. The "Next project" is left
+out so the row adds something new. Next to the heading: "All N <category> projects →" opens #work with that category
+filter on, and "Start a project like this" opens the order form with "Similar to: <title> (NK-YY-NN)." pre-filled in
+the project description. EN + SL, light + dark, phone (1 column) + tablet (2) + desktop (3), keyboard. Tested on all
+29 projects (each gets 3).
+*To remove:* delete the "Similar projects" block in `app.js` (`REL_STOP` … `relToOrder()`), the `relRow(p, next)` line in
+`projectView()`, the two `data-rel-cat` / `data-rel-go` lines in the click handler, `rel:` in both languages in
+`content.js` and the `.rel-*` rules at the end of `page.css`.
+*Next step:* once projects have photos, the cards show them automatically; could also show "Related news" on posts.
+
+**Ideas for next time** (added to the list below)
+- Shareable "Start a project like this" link (`#order?like=<slug>`) for Nace to paste in LinkedIn messages.
+- "Related project" link on news posts that mention a project title.
+- Admin: warn when two projects have the same title or an empty SL description before publishing.
+
 ## 2026-10-04 (second run)
 
 **Checked:** build, home, #services, #work, #p-scheduled-pet-feeder, #news, #n-bambu-lab-x2d, #skills, #about,
@@ -56,18 +86,21 @@ the two `data-fit` handler lines, `fit:` in both languages in `content.js` and t
 
 ## Innovation ideas
 
-Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search across projects and news on #work.
+Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search across projects and news on #work;
+2026-10-05 similar projects row on project pages.
 
 - Admin: checklist of projects missing photos / 3D model / Slovenian text / details (today all 29 have no photos and
   empty details — the checklist would show Nace exactly what to fill in).
 - Admin: "Copy LinkedIn post" button for a news item (headline + summary + link, EN or SL).
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
-- "Similar projects" row on project pages (same category).
 - Atom feed for news (`/news.xml`, built at build time from news.json).
 - Printable one-page project brief from the order wizard (print stylesheet only).
 - Shareable search links on #work (`#work?q=…`) and a "search" link in the 404 page.
 - Admin: "SL text missing" badge on each project/news row in the list (quick view of what still needs translating).
 - Materials index on #work: chips built from the `materials` field of the projects (click → filter by material).
+- Shareable "Start a project like this" link (`#order?like=<slug>`) for LinkedIn messages.
+- "Related project" link on news posts that mention a project title.
+- Admin: warn about duplicate titles / empty SL description before publishing.
 
 ## 2026-10-03 (second run)
 

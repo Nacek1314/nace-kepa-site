@@ -284,3 +284,14 @@ main:focus { outline: none; }
 .find-none { display: grid; gap: var(--space-3); justify-items: start; padding: var(--space-6); border: 1px dashed var(--line-strong); background: var(--paper-raised); }
 @media (max-width: 640px) { .find-news a { flex-direction: column; gap: var(--space-1); } }
 @media (hover: none) { .find-key { display: none; } }
+
+/* Similar projects on project pages (relRow in app.js). */
+.rel { margin-top: var(--space-12); padding-top: var(--space-6); border-top: 1px solid var(--line-strong); }
+.rel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-3) var(--space-6); margin-bottom: var(--space-5); }
+.rel-head .sub { margin: 0; }
+.rel-act { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
+.rel-all { font-family: var(--font-mono); font-size: 13px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.rel-all:hover { color: var(--redline); }
+.rel-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); }
+@media (max-width: 960px) { .rel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .rel-grid { grid-template-columns: 1fr; } .rel-head { flex-direction: column; align-items: flex-start; } }
