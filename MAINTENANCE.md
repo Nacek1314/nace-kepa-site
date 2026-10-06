@@ -3,6 +3,43 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-06
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-snap-on-desk-cable-clip, #news, #n-bambu-lab-x2d, #skills,
+#about, #order (all 4 steps on the local build, no endpoint → nothing sent), /admin/ sign-in, 404 page — 1280 px + 390 px,
+light + dark, EN + SL. Live site returns 200 (checked via the laptop). No JS errors, no CSP violations, no 404s, no
+horizontal scroll, no broken images, no EN text on SL pages.
+
+**Bugs fixed**
+- Yesterday's commits (08215fa, 655b963) never went live: both Actions runs built fine but the `deploy` job was never
+  picked up by a GitHub-hosted runner ("not acquired by Runner … after multiple attempts" — GitHub outage, not our
+  workflow). The live page was still on cb96489 (no "Similar projects", no footer e-mail link). Today's push redeploys
+  everything; nothing in the repo needed changing.
+
+**Improvement:** the 404 page ("Sheet not found") is now bilingual (EN + SL), has `noindex`, and offers direct links to
+Projects, Start a project and the e-mail address before the auto-redirect (now 6 s instead of 4 s), so a visitor from
+an old or mistyped link can still reach Nace. `src/pages/404.astro`.
+
+**Innovation — Admin "To do" checklist (`/admin/` → tab "To do"):** a third tab next to Projects / News that lists what
+the site still needs, per project and news post: photos, 3D model, EN description, EN details, materials, Slovenian
+title/description/details, and for news: photos, SL headline/summary/article, EN article (SL details/article are only
+asked for once the EN text exists). Left column: filters (Everything, Slovenian text, Photos, 3D models, Project details,
+Materials, News posts) with counts, plus "N / M projects and posts have everything". Each missing item is a button:
+it opens that project/post with the field focused (or the Photos / 3D model box highlighted). Counts include unpublished
+edits. Read-only — changes nothing by itself. Tested with a mocked GitHub API (light + dark, 1280 + 390 px, keyboard).
+Today: 113 open items (all 29 projects lack photos, 3D model, details and materials; the X2D post is complete).
+Also fixed in the same change: the Projects tab no longer looks selected while the To do tab is open.
+*To remove:* delete the "To do checklist" block in `admin.js` (`blank` … `todoGo()`), the "To do" button in `tabsView()`,
+the `isTodo()` lines in `listView()` / `editorView()` and `const isTodo`, the two `data-todo-*` lines in the click
+handler, and the "To do checklist tab" rules at the end of `admin.css`. (The `S.tab === 'projects'` checks in
+`tabsView()` / `render()` are harmless to keep.)
+*Next step:* a small "N to do" badge on each row of the Projects list; "Copy LinkedIn post" button on news.
+
+**Ideas for next time** (added to the list below)
+- Admin: "Copy LinkedIn post" button for a news item (still open).
+- `#order?like=<slug>` share links (still open); `#work?q=…` shareable search.
+- Public: "Related news" on project sheets once a post mentions a project title.
+
 ## 2026-10-05
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-adjustable-door-wedge, #news, #n-bambu-lab-x2d, #skills,
@@ -87,10 +124,8 @@ the two `data-fit` handler lines, `fit:` in both languages in `content.js` and t
 ## Innovation ideas
 
 Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search across projects and news on #work;
-2026-10-05 similar projects row on project pages.
+2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab.
 
-- Admin: checklist of projects missing photos / 3D model / Slovenian text / details (today all 29 have no photos and
-  empty details — the checklist would show Nace exactly what to fill in).
 - Admin: "Copy LinkedIn post" button for a news item (headline + summary + link, EN or SL).
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - Atom feed for news (`/news.xml`, built at build time from news.json).
@@ -101,6 +136,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Shareable "Start a project like this" link (`#order?like=<slug>`) for LinkedIn messages.
 - "Related project" link on news posts that mention a project title.
 - Admin: warn about duplicate titles / empty SL description before publishing.
+- Admin: "N to do" badge on each project row in the Projects list (reuses `TODO_CHECKS`).
+- Public: news posts as `BlogPosting` JSON-LD (data block, CSP-safe) so the X2D post can show in search.
+- Public: print stylesheet for a project sheet ("print this sheet" → clean A4 drawing sheet, no photos/3D).
 
 ## 2026-10-03 (second run)
 

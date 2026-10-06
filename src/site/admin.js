@@ -43,6 +43,7 @@ const fmtMB = (n) => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (
 const sitePath = (repoPath) => repoPath.replace(/^public\//, '');
 const repoPath = (site) => PUBLIC_DIR + String(site).replace(/^\/+/, '');
 const isNews = () => S.tab === 'news';
+const isTodo = () => S.tab === 'todo';
 const cur = () => isNews() ? (S.news.find((n) => n.slug === S.selNews) || null) : (S.projects.find((p) => p.slug === S.sel) || null);
 const projectsChanged = () => JSON.stringify(S.projects, null, 2) + '\n' !== S.savedJson;
 const newsChanged = () => JSON.stringify(S.news, null, 2) + '\n' !== S.savedNews;
@@ -458,8 +459,9 @@ function deployPill() {
 
 function tabsView() {
   return `<div class="ad-tabs" role="tablist" aria-label="Content">
-    <button type="button" role="tab" data-tab="projects" aria-selected="${!isNews()}">Projects <span>${S.projects.length}</span></button>
+    <button type="button" role="tab" data-tab="projects" aria-selected="${S.tab === 'projects'}">Projects <span>${S.projects.length}</span></button>
     <button type="button" role="tab" data-tab="news" aria-selected="${isNews()}">News <span>${S.news.length}</span></button>
+    <button type="button" role="tab" data-tab="todo" aria-selected="${isTodo()}">To do <span>${todoItems().length}</span></button>
   </div>`;
 }
 
@@ -484,6 +486,7 @@ function newsListView() {
 }
 
 function listView() {
+  if (isTodo()) return todoListView();
   if (isNews()) return newsListView();
   const q = S.query.toLowerCase();
   const items = S.projects.map((p, i) => ({ p, i })).filter(({ p }) => !q || (p.title.en + ' ' + p.title.sl + ' ' + p.category).toLowerCase().includes(q));
@@ -527,6 +530,93 @@ function photosSection(p) {
     </fieldset>`;
 }
 
+// ---------- To do checklist (what the site still needs: photos, 3D models, Slovenian text …) ----------
+// Read-only view over S.projects / S.news (including unpublished edits). Remove: this block, the "To do" tab
+// in tabsView(), the isTodo() lines in listView()/editorView(), the two data-todo-* lines in the click
+// handler, isTodo and the .td-* rules at the end of admin.css.
+const blank = (v) => !String(v ?? '').trim();
+const TODO_CHECKS = [
+  { id: 'photo', label: 'Photos', kind: 'p', field: 'photo-in', test: (p) => !p.photos.length },
+  { id: 'model', label: '3D model', kind: 'p', field: 'model-in', test: (p) => !p.model },
+  { id: 'd-en', label: 'Description EN', kind: 'p', field: 'd-en', test: (p) => blank(p.description?.en) },
+  { id: 'x-en', label: 'Details EN', kind: 'p', field: 'x-en', test: (p) => blank(p.details?.en) },
+  { id: 'mat', label: 'Materials', kind: 'p', field: 'mat', test: (p) => blank(p.materials) },
+  { id: 't-sl', label: 'Title SL', kind: 'p', field: 't-sl', test: (p) => blank(p.title?.sl), sl: true },
+  { id: 'd-sl', label: 'Description SL', kind: 'p', field: 'd-sl', test: (p) => blank(p.description?.sl), sl: true },
+  { id: 'x-sl', label: 'Details SL', kind: 'p', field: 'x-sl', test: (p) => !blank(p.details?.en) && blank(p.details?.sl), sl: true },
+  { id: 'n-photo', label: 'Photos', kind: 'n', field: 'photo-in', test: (n) => !n.photos.length },
+  { id: 'n-t-sl', label: 'Headline SL', kind: 'n', field: 'n-t-sl', test: (n) => blank(n.title?.sl), sl: true },
+  { id: 'n-s-sl', label: 'Summary SL', kind: 'n', field: 'n-s-sl', test: (n) => blank(n.summary?.sl), sl: true },
+  { id: 'n-b-en', label: 'Article EN', kind: 'n', field: 'n-b-en', test: (n) => blank(n.body?.en) },
+  { id: 'n-b-sl', label: 'Article SL', kind: 'n', field: 'n-b-sl', test: (n) => !blank(n.body?.en) && blank(n.body?.sl), sl: true },
+];
+const TODO_FILTERS = [['all', 'Everything'], ['sl', 'Slovenian text'], ['photo', 'Photos'], ['model', '3D models'], ['x-en', 'Project details'], ['mat', 'Materials'], ['news', 'News posts']];
+function todoMatch(c, f) {
+  return f === 'all' || (f === 'sl' && c.sl) || (f === 'news' && c.kind === 'n') || (f === 'photo' && (c.id === 'photo' || c.id === 'n-photo')) || c.id === f;
+}
+function todoItems(f = 'all') {
+  const out = [];
+  const add = (kind, list) => list.forEach((x) => TODO_CHECKS.forEach((c) => { if (c.kind === kind && todoMatch(c, f) && c.test(x)) out.push({ kind, x, c }); }));
+  add('p', S.projects);
+  add('n', sortNews(S.news));
+  return out;
+}
+function todoListView() {
+  const f = S.todoF || 'all';
+  const total = S.projects.length + S.news.length;
+  const done = S.projects.filter((p) => !TODO_CHECKS.some((c) => c.kind === 'p' && c.test(p))).length + S.news.filter((n) => !TODO_CHECKS.some((c) => c.kind === 'n' && c.test(n))).length;
+  return `<div class="ad-list">
+    ${tabsView()}
+    <p class="ad-small td-sum"><b>${done} / ${total}</b> projects and posts have everything.</p>
+    <ol class="ad-items" aria-label="Show">${TODO_FILTERS.map(([id, label]) => `
+      <li class="ad-item${id === f ? ' is-sel' : ''}">
+        <button type="button" class="ad-item__main" data-todo-f="${id}" aria-pressed="${id === f}">
+          <span class="ad-item__t">${label}</span>
+          <span class="ad-item__m">${todoItems(id).length} missing</span>
+        </button>
+      </li>`).join('')}
+    </ol>
+  </div>`;
+}
+function todoView() {
+  const f = S.todoF || 'all';
+  const rows = new Map();
+  todoItems(f).forEach((it) => {
+    const key = it.kind + '|' + it.x.slug;
+    if (!rows.has(key)) rows.set(key, { kind: it.kind, x: it.x, cs: [] });
+    rows.get(key).cs.push(it.c);
+  });
+  const label = TODO_FILTERS.find(([id]) => id === f)?.[1] || '';
+  const row = ({ kind, x, cs }) => `<li class="td-row">
+      <div class="td-row__h">
+        <span class="nk-label">${kind === 'n' ? 'News · ' + esc(x.date) : esc(x.category) + ' · ' + esc(x.year)}${x.hidden ? (kind === 'n' ? ' · draft' : ' · hidden') : ''}${x._new ? ' · new' : ''}</span>
+        <button type="button" class="td-row__t" data-todo-go="${kind}|${esc(x.slug)}|">${esc(x.title.en || 'Untitled')}</button>
+      </div>
+      <div class="td-row__miss">${cs.map((c) => `<button type="button" class="td-miss" data-todo-go="${kind}|${esc(x.slug)}|${c.field}" aria-label="Add ${esc(c.label)} to ${esc(x.title.en || x.slug)}">+ ${esc(c.label)}</button>`).join('')}</div>
+    </li>`;
+  return `<div class="ad-editor">
+    <div class="ad-editor__head"><div><p class="nk-label">To do · ${esc(label)}</p><h2 class="sub">What the site still needs</h2></div></div>
+    <p class="ad-small">Projects and news posts with something missing, in site order. Click an item to open it with that field ready.
+      Slovenian details/article are only listed when the English one exists. Includes your unpublished edits.</p>
+    ${rows.size ? `<ol class="td-list">${[...rows.values()].map(row).join('')}</ol>`
+      : `<div class="ad-empty"><span class="nk-tag nk-tag--ok">Complete</span><p class="lead">Nothing missing here.</p></div>`}
+  </div>`;
+}
+function todoGo(spec) {
+  const [kind, slug, field] = spec.split('|');
+  S.tab = kind === 'n' ? 'news' : 'projects';
+  if (kind === 'n') S.selNews = slug; else S.sel = slug;
+  S.query = ''; S.confirmDelete = false;
+  render();
+  const el = field && document.getElementById(field);
+  const target = !el ? null : el.hidden ? (document.querySelector(`label[for="${field}"]`) || el.closest('fieldset')) : el;
+  if (target) {
+    target.scrollIntoView({ block: 'center' });
+    if (!el.hidden) el.focus({ preventScroll: true });
+    else { const fs = target.closest('fieldset') || target; fs.classList.add('td-flash'); setTimeout(() => fs.classList.remove('td-flash'), 1600); target.setAttribute('tabindex', '-1'); target.focus({ preventScroll: true }); }
+  }
+}
+
 function newsEditorView() {
   const n = cur();
   if (!n) return `<div class="ad-empty"><p class="lead">No news post selected.</p><button class="nk-btn" data-act="new" type="button">+ New post</button></div>`;
@@ -561,6 +651,7 @@ function newsEditorView() {
 }
 
 function editorView() {
+  if (isTodo()) return todoView();
   if (isNews()) return newsEditorView();
   const p = cur();
   if (!p) return `<div class="ad-empty"><p class="lead">No project selected.</p><button class="nk-btn" data-act="new" type="button">+ New project</button></div>`;
@@ -644,7 +735,7 @@ function render() {
     if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch {} }
   }
   const p = cur();
-  if (S.user && !S.locked && !isNews() && p && p.model) {
+  if (S.user && !S.locked && S.tab === 'projects' && p && p.model) {
     const box = document.getElementById('ad-viewer');
     const rp = repoPath(p.model.file);
     const local = S.uploads.get(rp);
@@ -783,6 +874,8 @@ root.addEventListener('click', (e) => {
   const p = cur();
   const act = b.dataset.act;
   if (b.dataset.tab) { S.tab = b.dataset.tab; S.query = ''; S.confirmDelete = false; render(); return; }
+  if (b.dataset.todoF != null) { S.todoF = b.dataset.todoF; render(); return; }
+  if (b.dataset.todoGo != null) { todoGo(b.dataset.todoGo); return; }
   if (b.dataset.sel != null) { if (isNews()) S.selNews = b.dataset.sel; else S.sel = b.dataset.sel; S.confirmDelete = false; render(); return; }
   if (b.dataset.up != null || b.dataset.down != null) {
     const i = +(b.dataset.up ?? b.dataset.down), j = b.dataset.up != null ? i - 1 : i + 1;
