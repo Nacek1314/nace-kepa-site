@@ -53,6 +53,7 @@ var T = {
     // Screen-reader labels (nav, language switch, filters, logo link).
     aria: { main: 'Main', lang: 'Language', filter: 'Filter by field', home: 'nacekepa.work — home' },
     // Similar projects on project pages (relRow in app.js).
+    share: { label: 'Share this sheet', copy: 'Copy link', copied: 'Link copied.', copyFail: 'Could not copy — the link is selected, press Ctrl+C.', mail: 'E-mail', more: 'Share…', note: 'Opens in English.', subject: 'Have a look' },
     rel: { title: 'Similar projects', all: 'All {n} {c} projects', start: 'Start a project like this', brief: 'Similar to' },
     // Search on #work (findBox in app.js).
     find: { label: 'Search projects and news', ph: 'e.g. ESP32, PETG, bracket', key: 'Press / to search', count: '{p} projects · {n} news', none: 'Nothing matches “{q}” yet.', noneBody: 'Describe what you need — most projects start from a sketch.', news: 'Matching news', clear: 'Clear search' },
@@ -109,6 +110,7 @@ var T = {
       note: 'Preverjanje za en kos, poravnan z osmi. Končno ustreznost potrdim v ponudbi.', top: 'Tloris', front: 'Naris', views: 'Del na tiskalni plošči',
       cta: 'Začni projekt s to velikostjo', brief: 'Velikost dela' },
     aria: { main: 'Glavni meni', lang: 'Jezik', filter: 'Filtriraj po področju', home: 'nacekepa.work — domov' },
+    share: { label: 'Deli ta list', copy: 'Kopiraj povezavo', copied: 'Povezava je kopirana.', copyFail: 'Kopiranje ni uspelo — povezava je označena, pritisnite Ctrl+C.', mail: 'E-pošta', more: 'Deli …', note: 'Odpre se v slovenščini.', subject: 'Poglej si' },
     rel: { title: 'Podobni projekti', all: 'Vsi projekti: {c} ({n})', start: 'Začni podoben projekt', brief: 'Podobno kot' },
     find: { label: 'Iskanje po projektih in novicah', ph: 'npr. ESP32, PETG, nosilec', key: 'Za iskanje pritisnite /', count: 'projekti: {p} · novice: {n}', none: 'Za »{q}« še ni zadetkov.', noneBody: 'Opišite, kaj potrebujete — večina projektov se začne s skico.', news: 'Novice z zadetki', clear: 'Počisti iskanje' },
     tb: { title: 'Naslov', drawn: 'Risal', loc: 'Lokacija', sheet: 'List', rev: 'Rev', date: 'Datum', scale: 'Merilo', contact: 'Kontakt', order: 'Naročilo' }

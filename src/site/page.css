@@ -295,3 +295,17 @@ main:focus { outline: none; }
 .rel-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); }
 @media (max-width: 960px) { .rel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .rel-grid { grid-template-columns: 1fr; } .rel-head { flex-direction: column; align-items: flex-start; } }
+/* Share this sheet (project + news pages) — remove with shareBox() in app.js */
+.share { margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px dashed var(--line-strong); }
+.share .nk-label { margin: 0 0 var(--space-2); }
+.share-row { display: flex; gap: var(--space-2); align-items: stretch; }
+.share-url { flex: 1 1 auto; min-width: 0; font-family: var(--font-mono); font-size: 12px; color: var(--ink); background: var(--paper-raised); border: 1px solid var(--line-strong); border-radius: var(--radius-xs); padding: 6px 8px; text-overflow: ellipsis; }
+.share-url:focus-visible { outline: 2px solid var(--redline); outline-offset: 1px; }
+.share-act { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-4); margin-top: var(--space-3); }
+.share-link { font-family: var(--font-mono); font-size: 13px; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.share-link:hover { color: var(--redline); }
+.share-link:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+.share-note { font-family: var(--font-mono); font-size: 12px; color: var(--ink-muted); }
+.share-msg { margin: var(--space-2) 0 0; font-family: var(--font-mono); font-size: 12px; color: var(--ink); min-height: 1em; }
+.share-msg:empty { margin: 0; min-height: 0; }
+@media (max-width: 640px) { .share-row { flex-direction: column; } }

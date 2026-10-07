@@ -3,6 +3,37 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-07 (second run)
+
+**Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps on
+the local build, not submitted), /admin/ sign-in — 1280 px + 390 px, light + dark, EN + SL; axe-core WCAG 2 A/AA scan on 8
+views (light + dark): 0 violations. Last Actions run (efc5ffe) succeeded; live site returns 200 (checked via the laptop).
+No JS errors, no CSP violations, no 404s, no horizontal scroll, no broken images, no EN text on SL pages.
+
+**Bugs fixed:** none found.
+
+**Improvement:** link previews — added `og:site_name`, `og:locale` (en_GB) + `og:locale:alternate` (sl_SI),
+`twitter:title`, `twitter:description` and `twitter:image:alt` in `index.astro`, so shared links show the studio name and
+text everywhere (some apps don't fall back to the `og:` tags).
+
+**Innovation — "Share this sheet" / "Deli ta list" on every project sheet (`#p-<slug>`, under "Start a project") and news
+post (`#n-<slug>`, under the article):** shows the direct link in the current language (`https://nacekepa.work/#en-p-<slug>` /
+`#sl-…`) in a read-only field, a "Copy link" button (clipboard; if that fails the link is selected with a "press Ctrl+C"
+message; live `role="status"`), an "E-mail" link (opens the mail app with the title and link filled in), and "Share…" (the
+phone's own share sheet) only on devices that support it. Notes which language the link opens in. Tested: EN + SL, light +
+dark, 1280 + 390 px, keyboard (Tab → Enter), clipboard content, mailto text, native share (mocked), fallback path, and that
+the copied link opens the same sheet in the same language.
+*To remove:* delete the "Share this sheet" block in `app.js` (`shareUrl()` … `shareCopy()`), the two `shareBox(...)` calls in
+`projectView()` / `postView()`, the two `data-share-*` lines in the click handler, `share:` in both languages in
+`content.js` and the "Share this sheet" rules at the end of `page.css`.
+*Next step:* a QR code of the link for printed brochures/business cards would need a QR encoder (no dependency allowed) —
+could be a small hand-written one later.
+
+**Ideas for next time** (added to the list below)
+- Public: Atom feed for news (`/news.xml`) with a "Follow" link on #news (still open).
+- Public: "Copy sheet number" (NK-YY-NN) next to the title so clients can quote it in an e-mail.
+- Admin: show the public share link of each project/post next to its title (reuses the same `#en-p-` format).
+
 ## 2026-10-07
 
 **Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps
@@ -30,7 +61,8 @@ GitHub API: light + dark, 1280 + 390 px, keyboard, clipboard content checked.
 
 **Ideas for next time** (added to the list below)
 - Admin: "Share project" text (like the LinkedIn post) for project sheets.
-- Public: "Share" / copy-link button on news posts and project sheets (copies the `#en-`/`#sl-` link).
+- Public: "Copy sheet number" (NK-YY-NN) next to the title so clients can quote it in an e-mail.
+- Admin: show the public share link of each project/post next to its title.
 - Admin: preview a news post as it will look on the site before publishing.
 
 ## 2026-10-06
@@ -155,7 +187,7 @@ the two `data-fit` handler lines, `fit:` in both languages in `content.js` and t
 
 Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search across projects and news on #work;
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
-"LinkedIn post" copy box on news posts.
+"LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts.
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - Atom feed for news (`/news.xml`, built at build time from news.json).
@@ -168,7 +200,8 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: warn about duplicate titles / empty SL description before publishing.
 - Admin: "N to do" badge on each project row in the Projects list (reuses `TODO_CHECKS`).
 - Admin: "Share project" text (like the LinkedIn post) for project sheets.
-- Public: "Share" / copy-link button on news posts and project sheets (copies the `#en-`/`#sl-` link).
+- Public: "Copy sheet number" (NK-YY-NN) next to the title so clients can quote it in an e-mail.
+- Admin: show the public share link of each project/post next to its title.
 - Admin: preview a news post as it will look on the site before publishing.
 - Public: print stylesheet for a project sheet ("print this sheet" → clean A4 drawing sheet, no photos/3D).
 

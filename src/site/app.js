@@ -154,7 +154,7 @@
       head(fmtDate(n.date) + (n.pinned ? ' · ' + x.pinned : ''), P(n, 'title'), P(n, 'summary'), true) +
       '<div class="post-grid">' +
       (photos.length ? '<button type="button" class="nk-sheet__art project-art post-cover" data-lb="0" aria-label="' + esc(x.openPhoto) + '"><' + 'img class="sheet-photo" src="' + esc(asset(photos[0])) + '" alt="" draggable="false"></button>' : '') +
-      '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div></div></div>' +
+      '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div>' + shareBox('n', n) + '</div></div>' +
       (photos.length > 1 ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, k) { return '<button type="button" data-lb="' + k + '" aria-label="' + esc(x.openPhoto + ' ' + (k + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       (next ? '<a class="next-project" href="#n-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.newsLabel) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
       '</section>' + ctaBand();
@@ -178,11 +178,31 @@
       head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
       '<div class="project-grid"><div class="project-stage">' + stage + '</div><aside class="project-side">' + specs(rows) +
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
-      '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div></aside></div>' +
+      '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div>' + shareBox('p', p) + '</aside></div>' +
       (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       relRow(p, next) +
       (next && next !== p ? '<a class="next-project" href="#p-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.nextProject) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
       '</section>' + ctaBand();
+  }
+  // ---------- Share this sheet (project + news pages) ----------
+  // Self-contained: remove shareUrl()…shareCopy(), the two shareBox() calls in projectView() / postView(), the two
+  // data-share-* lines in the click handler, share: in both languages in content.js and the .share-* rules at the end of page.css.
+  function shareUrl(kind, item) { return 'https://nacekepa.work/#' + lang + '-' + kind + '-' + item.slug; }
+  function shareBox(kind, item) {
+    var x = t().share, url = shareUrl(kind, item), title = P(item, 'title');
+    var mail = 'mailto:?subject=' + encodeURIComponent(x.subject + ': ' + title) + '&body=' + encodeURIComponent(title + '\n' + url);
+    return '<div class="share" data-share-title="' + esc(title) + '"><p class="nk-label" id="share-l">' + esc(x.label) + '</p>' +
+      '<div class="share-row"><input class="share-url" id="share-url" type="text" readonly value="' + esc(url) + '" aria-labelledby="share-l" spellcheck="false">' +
+      '<button type="button" class="nk-btn nk-btn--sm" data-share-copy>' + esc(x.copy) + '</button></div>' +
+      '<div class="share-act"><a class="share-link" href="' + esc(mail) + '">' + esc(x.mail) + ' →</a>' +
+      (navigator.share ? '<button type="button" class="share-link" data-share-more>' + esc(x.more) + '</button>' : '') +
+      '<span class="share-note">' + esc(x.note) + '</span></div>' +
+      '<p class="share-msg" id="share-msg" role="status" aria-live="polite"></p></div>';
+  }
+  function shareCopy() {
+    var f = document.getElementById('share-url'), msg = document.getElementById('share-msg'), x = t().share; if (!f) return;
+    var fail = function () { f.focus(); f.select(); msg.textContent = x.copyFail; };
+    try { navigator.clipboard.writeText(f.value).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
   }
   // ---------- Similar projects (project pages) ----------
   // Self-contained: remove relScore()…relToOrder(), the relRow() call in projectView(), the data-rel-cat / data-rel-go
@@ -519,6 +539,8 @@
     if (el.dataset.filter) { state.filter = el.dataset.filter; render(true); return; }
     if (el.dataset.relCat) { state.filter = el.dataset.relCat; state.q = ''; return; }
     if (el.hasAttribute('data-rel-go')) { relToOrder(); return; }
+    if (el.hasAttribute('data-share-copy')) { shareCopy(); return; }
+    if (el.hasAttribute('data-share-more')) { var sb = el.closest('.share'); try { navigator.share({ title: sb.dataset.shareTitle, url: document.getElementById('share-url').value }).catch(function () {}); } catch (e) {} return; }
     if (el.dataset.lb != null) { var pr = page() === 'post' ? newsBySlug(currentSlug()) : bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
     if (el.id === 'next') { ev.preventDefault(); readForm(); var ok = validate(); if (ok) state.step++; if (ok && state.step === 3) submitOrder(); render(true); var w = document.getElementById('wiz'); if (w) w.scrollIntoView({ block: 'start' }); return; }
     if (el.id === 'back') { ev.preventDefault(); readForm(); state.errors = {}; state.send = 'idle'; state.step = state.step === 3 ? 0 : state.step - 1; render(true); return; }
