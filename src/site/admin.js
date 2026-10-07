@@ -617,6 +617,65 @@ function todoGo(spec) {
   }
 }
 
+// ---------- LinkedIn post (news editor: ready-to-paste text for a news post, EN or SL) ----------
+// Read-only: builds text from the post's own headline, summary and article; changes nothing in news.json.
+// Remove: this block, the liSection(n) call in newsEditorView(), the data-li-* lines in the click/change
+// handlers, the liRefresh call in the input handler and the "LinkedIn post" rules at the end of admin.css.
+const LI = { lang: 'en', full: false, msg: '' };
+function liText(n) {
+  const sl = LI.lang === 'sl';
+  const pick = (o) => (sl && o.sl.trim()) ? o.sl.trim() : o.en.trim();
+  const body = pick(n.body).replace(/^- /gm, '• ');
+  const link = 'https://nacekepa.work/#' + (sl ? 'sl' : 'en') + '-n-' + n.slug;
+  return [pick(n.title), pick(n.summary), LI.full ? body : '', (sl ? 'Več: ' : 'Read more: ') + link].filter(Boolean).join('\n\n');
+}
+function liMissing(n) {
+  if (LI.lang !== 'sl') return [];
+  return [['title', 'headline'], ['summary', 'summary'], ['body', 'article']].filter(([k]) => LI.full || k !== 'body').filter(([k]) => n[k].en.trim() && !n[k].sl.trim()).map(([, l]) => l);
+}
+function liNote(n) {
+  const miss = liMissing(n);
+  const parts = [];
+  if (miss.length) parts.push(`No Slovenian ${miss.join(', ')} yet — English is used there.`);
+  if (n._new || n.hidden) parts.push('The link works once the post is published and not a draft.');
+  return parts.join(' ');
+}
+function liSection(n) {
+  const t = liText(n);
+  return `<fieldset class="ad-sec li"><legend class="nk-label">LinkedIn post</legend>
+    <div class="li-bar">
+      <div class="li-lang" role="group" aria-label="Post language">
+        <button type="button" data-li-lang="en" aria-pressed="${LI.lang === 'en'}">EN</button><button type="button" data-li-lang="sl" aria-pressed="${LI.lang === 'sl'}">SL</button>
+      </div>
+      <label class="ad-check"><input type="checkbox" data-li-full ${LI.full ? 'checked' : ''}> Include the full article</label>
+    </div>
+    <label class="nk-field__label" for="li-text">Text to paste · <span id="li-count">${t.length}</span> characters</label>
+    <textarea class="nk-input li-text" id="li-text" rows="${LI.full ? 12 : 6}" readonly>${esc(t)}</textarea>
+    <p class="nk-field__hint li-note" id="li-note">${esc(liNote(n))}</p>
+    <div class="li-bar"><button type="button" class="nk-btn nk-btn--sm" data-li-copy>Copy post</button><span class="li-msg" id="li-msg" role="status">${esc(LI.msg)}</span></div>
+  </fieldset>`;
+}
+function liRefresh() {
+  const n = isNews() && cur(), ta = document.getElementById('li-text');
+  if (!n || !ta) return;
+  const t = liText(n);
+  ta.value = t;
+  document.getElementById('li-count').textContent = t.length;
+  document.getElementById('li-note').textContent = liNote(n);
+  const m = document.getElementById('li-msg'); if (m) m.textContent = LI.msg = '';
+}
+async function liCopy() {
+  const ta = document.getElementById('li-text'), m = document.getElementById('li-msg');
+  if (!ta) return;
+  let ok = false;
+  try { await navigator.clipboard.writeText(ta.value); ok = true; } catch {
+    try { ta.focus(); ta.select(); ok = document.execCommand('copy'); } catch {}
+  }
+  LI.msg = ok ? 'Copied — paste it into a new LinkedIn post.' : 'Couldn’t copy. Select the text and press Ctrl+C.';
+  if (m) m.textContent = LI.msg;
+  if (!ok) { ta.focus(); ta.select(); }
+}
+
 function newsEditorView() {
   const n = cur();
   if (!n) return `<div class="ad-empty"><p class="lead">No news post selected.</p><button class="nk-btn" data-act="new" type="button">+ New post</button></div>`;
@@ -643,6 +702,7 @@ function newsEditorView() {
       </div>
     </div></fieldset>
     ${photosSection(n)}
+    ${liSection(n)}
     <div class="ad-danger">
       ${S.confirmDelete ? `<span>Delete “${esc(n.title.en || n.slug)}” and its photos?</span><button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-act="del-yes">Delete</button><button type="button" class="nk-btn nk-btn--sm" data-act="del-no">Keep</button>`
         : `<button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="del">Delete post</button>`}
@@ -798,6 +858,7 @@ root.addEventListener('input', (e) => {
     if (head && k === 'n-t-en') head.textContent = p.title.en || 'Untitled';
     const list = root.querySelector('.ad-list');
     if (list && (k === 'n-t-en' || k === 'n-date')) list.outerHTML = listView();
+    liRefresh();
     updatePublish();
     return;
   }
@@ -822,6 +883,7 @@ root.addEventListener('input', (e) => {
 
 root.addEventListener('change', async (e) => {
   const k = e.target.dataset.k, p = cur();
+  if (e.target.dataset.liFull != null) { LI.full = e.target.checked; LI.msg = ''; render(); document.querySelector('[data-li-full]')?.focus(); return; }
   if (e.target.id === 'model-in' && p) {
     const f = e.target.files[0];
     if (!f) return;
@@ -876,6 +938,8 @@ root.addEventListener('click', (e) => {
   if (b.dataset.tab) { S.tab = b.dataset.tab; S.query = ''; S.confirmDelete = false; render(); return; }
   if (b.dataset.todoF != null) { S.todoF = b.dataset.todoF; render(); return; }
   if (b.dataset.todoGo != null) { todoGo(b.dataset.todoGo); return; }
+  if (b.dataset.liLang != null) { LI.lang = b.dataset.liLang; LI.msg = ''; render(); document.querySelector(`[data-li-lang="${LI.lang}"]`)?.focus(); return; }
+  if (b.dataset.liCopy != null) { liCopy(); return; }
   if (b.dataset.sel != null) { if (isNews()) S.selNews = b.dataset.sel; else S.sel = b.dataset.sel; S.confirmDelete = false; render(); return; }
   if (b.dataset.up != null || b.dataset.down != null) {
     const i = +(b.dataset.up ?? b.dataset.down), j = b.dataset.up != null ? i - 1 : i + 1;

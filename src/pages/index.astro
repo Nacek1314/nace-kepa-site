@@ -62,6 +62,23 @@ const jsonLd = JSON.stringify({
       .map((name) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name } }))
   }
 }).replace(/</g, '\\u003c');
+// News posts as BlogPosting (data block, not executed). Only published posts; text, date and photos from news.json.
+const posts = (news as any[]).filter((n) => !n.hidden);
+const newsLd = posts.length ? JSON.stringify({
+  '@context': 'https://schema.org',
+  '@graph': posts.map((n) => ({
+    '@type': 'BlogPosting',
+    headline: n.title.en,
+    description: n.summary.en,
+    datePublished: n.date,
+    url: 'https://nacekepa.work/#n-' + n.slug,
+    mainEntityOfPage: 'https://nacekepa.work/#n-' + n.slug,
+    inLanguage: 'en',
+    image: (n.photos || []).length ? n.photos.map((ph: string) => 'https://nacekepa.work/' + String(ph).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/')) : 'https://nacekepa.work/og.png',
+    author: { '@type': 'Person', name: 'Nace Kepa', url: 'https://nacekepa.work/' },
+    publisher: { '@type': 'Organization', name: 'Nace Kepa · Engineering Studio', logo: { '@type': 'ImageObject', url: 'https://nacekepa.work/apple-touch-icon.png' } }
+  }))
+}).replace(/</g, '\\u003c') : '';
 ---
 <!doctype html>
 <html lang="en">
@@ -94,6 +111,7 @@ const jsonLd = JSON.stringify({
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
     <style is:inline set:html={css}></style>
     <script is:inline type="application/ld+json" set:html={jsonLd}></script>
+    {newsLd && <script is:inline type="application/ld+json" set:html={newsLd}></script>}
   </head>
   <body>
     <div id="app">

@@ -80,3 +80,15 @@ body { padding-inline: 16px; padding-block: 16px; }
 .td-row__t:focus-visible, .td-miss:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
 .td-flash { outline: 2px solid var(--redline); outline-offset: 4px; transition: outline-color .3s; }
 @media (max-width: 900px) { .td-row { grid-template-columns: 1fr; } }
+
+/* LinkedIn post (see liSection() in admin.js) */
+.li { display: grid; gap: var(--space-2); }
+.li-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.li-lang { display: inline-flex; border: 1px solid var(--line-strong); }
+.li-lang button { font: 500 12px/16px var(--font-mono); letter-spacing: .06em; background: var(--paper-raised); border: 0; color: var(--ink-muted); padding: 8px 12px; cursor: pointer; }
+.li-lang button + button { border-left: 1px solid var(--line-strong); }
+.li-lang button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.li-lang button:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+.li-text { font: 13px/20px var(--font-mono); white-space: pre-wrap; resize: vertical; width: 100%; }
+.li-note:empty { display: none; }
+.li-msg { font: 12px/16px var(--font-mono); color: var(--ink-muted); }

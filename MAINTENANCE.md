@@ -3,6 +3,36 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-07
+
+**Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps
+on the local build, no endpoint → nothing sent), /admin/ sign-in — 1280 px + 390 px, light + dark, EN + SL. Last Actions
+run (dd420f5) succeeded and the live site returns 200 with yesterday's changes (checked via the laptop). No JS errors, no
+CSP violations, no 404s, no horizontal scroll, no broken images, no EN text on SL pages.
+
+**Bugs fixed:** none found.
+
+**Improvement:** news posts are now described to search engines as schema.org `BlogPosting` JSON-LD (headline, summary,
+date, link `#n-<slug>`, photos, author) — built at build time from `news.json`, published posts only. Data block, not
+executed, so the CSP script hash is unaffected. `newsLd` in `src/pages/index.astro`.
+
+**Innovation — Admin "LinkedIn post" (`/admin/` → News → open a post → "LinkedIn post" box under Photos):** ready-to-paste
+text for sharing a news post on LinkedIn: headline, summary, optionally the full article (list items as "•"), and a link
+that opens the post in the right language (`https://nacekepa.work/#en-n-<slug>` / `#sl-n-<slug>`). EN/SL switch,
+"Include the full article" checkbox, character count, "Copy post" button (clipboard, with select-and-Ctrl+C fallback;
+live `role="status"` message). Updates while typing; if Slovenian text is missing it says so and uses English there; warns
+when the post is a draft/unpublished (link won't work yet). Read-only — changes nothing in news.json. Tested with a mocked
+GitHub API: light + dark, 1280 + 390 px, keyboard, clipboard content checked.
+*To remove:* delete the "LinkedIn post" block in `admin.js` (`const LI` … `liCopy()`), the `${liSection(n)}` line in
+`newsEditorView()`, the two `data-li-*` lines in the click handler, the `data-li-full` line in the change handler, the
+`liRefresh();` line in the input handler, and the "LinkedIn post" rules at the end of `admin.css`.
+*Next step:* the same for projects ("Share this project" text with the `#p-<slug>` link).
+
+**Ideas for next time** (added to the list below)
+- Admin: "Share project" text (like the LinkedIn post) for project sheets.
+- Public: "Share" / copy-link button on news posts and project sheets (copies the `#en-`/`#sl-` link).
+- Admin: preview a news post as it will look on the site before publishing.
+
 ## 2026-10-06
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-snap-on-desk-cable-clip, #news, #n-bambu-lab-x2d, #skills,
@@ -124,9 +154,9 @@ the two `data-fit` handler lines, `fit:` in both languages in `content.js` and t
 ## Innovation ideas
 
 Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search across projects and news on #work;
-2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab.
+2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
+"LinkedIn post" copy box on news posts.
 
-- Admin: "Copy LinkedIn post" button for a news item (headline + summary + link, EN or SL).
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - Atom feed for news (`/news.xml`, built at build time from news.json).
 - Printable one-page project brief from the order wizard (print stylesheet only).
@@ -137,7 +167,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - "Related project" link on news posts that mention a project title.
 - Admin: warn about duplicate titles / empty SL description before publishing.
 - Admin: "N to do" badge on each project row in the Projects list (reuses `TODO_CHECKS`).
-- Public: news posts as `BlogPosting` JSON-LD (data block, CSP-safe) so the X2D post can show in search.
+- Admin: "Share project" text (like the LinkedIn post) for project sheets.
+- Public: "Share" / copy-link button on news posts and project sheets (copies the `#en-`/`#sl-` link).
+- Admin: preview a news post as it will look on the site before publishing.
 - Public: print stylesheet for a project sheet ("print this sheet" → clean A4 drawing sheet, no photos/3D).
 
 ## 2026-10-03 (second run)
