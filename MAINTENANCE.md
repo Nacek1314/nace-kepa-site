@@ -3,6 +3,39 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-08
+
+**Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps on
+the local build, no endpoint → nothing sent), /admin/ sign-in — 1280 px + 390 px, light + dark, EN + SL. Last Actions run
+(b2d76a7) succeeded; live site returns 200 and shows yesterday's "Share this sheet" (checked via the laptop). No JS
+errors, no CSP violations, no 404s, no horizontal scroll, no broken images, no EN text on SL pages.
+
+**Bugs fixed:** none found.
+
+**Improvement:** news dates are now machine-readable `<time datetime="YYYY-MM-DD">` on the news cards (home + #news) and
+in the header of each post (search engines and screen readers get the exact date; looks the same). `timeTag()` in
+`app.js`; `head()` got an optional `labelHtml` argument for it.
+
+**Innovation — Atom news feed + "Follow the news" box (`/news.xml` EN, `/news-sl.xml` SL; box at the bottom of #news):**
+both feeds are built at build time from `news.json` (published posts only, newest first): title, summary, full article
+(same paragraph/list rules as the site), first photo, date, and a link that opens the post in the right language
+(`#en-n-<slug>` / `#sl-n-<slug>`). Every time Nace publishes a post in /admin/, the feeds update with the rebuild.
+Feed readers find them automatically (two `<link rel="alternate" type="application/atom+xml">` in `<head>`). The box on
+#news ("Follow the news · Atom feed" / "Spremljajte novice · vir Atom") shows the feed link for the current language in
+a read-only field, "Copy feed link" (clipboard; on failure the link is selected with a "press Ctrl+C" message;
+`role="status"`) and "Open the feed". Tested: EN + SL, light + dark, 1280 + 390 px, keyboard, clipboard content,
+fallback path, both XML files parse, link targets open the right post.
+*To remove:* delete `src/site/feed.ts`, `src/pages/news.xml.ts`, `src/pages/news-sl.xml.ts`, the two
+`<link rel="alternate" … atom+xml>` lines in `index.astro`, the "Follow the news" block in `app.js` (`feedUrl()` …
+`feedCopy()`), the `feedBox()` call in `views.news`, the `data-feed-copy` line in the click handler, `feed:` in both
+languages in `content.js` and the "Follow the news" rules at the end of `page.css`.
+*Next step:* a small "Follow" link next to "All news" on the home page; a feed of new projects once Nace adds photos.
+
+**Ideas for next time** (added to the list below)
+- Public: "Last updated" line on #work (newest project year / post date), from data already in the repo.
+- Admin: after publishing a news post, show "Live in the feed" once `/news.xml` contains the slug.
+- Public: anchor links on headings inside long news articles (copy link to a section).
+
 ## 2026-10-07 (second run)
 
 **Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps on
@@ -187,10 +220,10 @@ the two `data-fit` handler lines, `fit:` in both languages in `content.js` and t
 
 Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search across projects and news on #work;
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
-"LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts.
+"LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
+2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news.
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
-- Atom feed for news (`/news.xml`, built at build time from news.json).
 - Printable one-page project brief from the order wizard (print stylesheet only).
 - Shareable search links on #work (`#work?q=…`) and a "search" link in the 404 page.
 - Admin: "SL text missing" badge on each project/news row in the list (quick view of what still needs translating).
@@ -204,6 +237,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: show the public share link of each project/post next to its title.
 - Admin: preview a news post as it will look on the site before publishing.
 - Public: print stylesheet for a project sheet ("print this sheet" → clean A4 drawing sheet, no photos/3D).
+- Public: "Last updated" line on #work (newest project year / post date), from data already in the repo.
+- Admin: after publishing a news post, show "Live in the feed" once `/news.xml` contains the slug.
+- Public: anchor links on headings inside long news articles (copy link to a section).
 
 ## 2026-10-03 (second run)
 

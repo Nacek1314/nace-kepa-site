@@ -64,9 +64,10 @@
         : '<ul>' + L(s.get).slice(0, 3).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>') +
       '<div class="svc-act">' + btn(full ? x.quote : x.allServices, full ? '#order' : '#services', null, 'sm', true) + '</div></article>';
   }
-  function head(label, title, lead, h1) {
+  // labelHtml (optional) replaces the escaped label, e.g. to wrap a date in <time>.
+  function head(label, title, lead, h1, labelHtml) {
     var tag = h1 ? 'h1' : 'h2';
-    return '<header class="sec-head"><div><p class="nk-label">' + esc(label) + '</p><' + tag + ' class="' + (h1 ? 'page-title' : 'sec-title') + '">' + esc(title) + '</' + tag + '></div>' + (lead ? '<p class="lead">' + esc(lead) + '</p>' : '') + '</header>';
+    return '<header class="sec-head"><div><p class="nk-label">' + (labelHtml || esc(label)) + '</p><' + tag + ' class="' + (h1 ? 'page-title' : 'sec-title') + '">' + esc(title) + '</' + tag + '></div>' + (lead ? '<p class="lead">' + esc(lead) + '</p>' : '') + '</header>';
   }
   function process(active) {
     return '<ol class="nk-process" style="--steps:8">' + t().process.map(function (s, i) { return '<li' + (i === active ? ' class="is-active"' : '') + '><span class="nk-process__n">' + String(i + 1).padStart(2, '0') + '</span><span class="nk-process__t">' + esc(s) + '</span></li>'; }).join('') + '</ol>';
@@ -126,16 +127,37 @@
     news: function () {
       var x = t();
       return '<section class="block first">' + head(x.newsLabel + ' · ' + NEWS.length, x.newsPageTitle, x.newsLead, true) +
-        (NEWS.length ? '<div class="news-list">' + NEWS.map(newsCard).join('') + '</div>' : '<p class="lead">' + esc(x.newsEmpty) + '</p>') + '</section>' + ctaBand();
+        (NEWS.length ? '<div class="news-list">' + NEWS.map(newsCard).join('') + '</div>' + feedBox() : '<p class="lead">' + esc(x.newsEmpty) + '</p>') + '</section>' + ctaBand();
     },
     post: postView
   };
+
+  // Machine-readable date for search engines and screen readers (<time datetime="YYYY-MM-DD">).
+  function timeTag(d) { return /^\d{4}-\d{2}-\d{2}$/.test(String(d)) ? '<time datetime="' + esc(d) + '">' + esc(fmtDate(d)) + '</time>' : esc(fmtDate(d)); }
+  // ---------- Follow the news: Atom feed box on #news ----------
+  // Self-contained: remove feedBox()…feedCopy(), its call in views.news, the data-feed-copy line in the click handler,
+  // feed: in both languages in content.js and the .feed-* rules at the end of page.css. The feed itself: src/site/feed.ts.
+  function feedUrl() { return 'https://nacekepa.work/' + (lang === 'sl' ? 'news-sl.xml' : 'news.xml'); }
+  function feedBox() {
+    var x = t().feed, url = feedUrl();
+    return '<aside class="feed" aria-labelledby="feed-l"><svg class="feed-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19h.01M5 12a7 7 0 0 1 7 7M5 5a14 14 0 0 1 14 14"/></svg>' +
+      '<div class="feed-main"><p class="nk-label" id="feed-l">' + esc(x.label) + '</p><p class="feed-body">' + esc(x.body) + '</p>' +
+      '<div class="feed-row"><input class="feed-url" id="feed-url" type="text" readonly value="' + esc(url) + '" aria-labelledby="feed-l" spellcheck="false">' +
+      '<button type="button" class="nk-btn nk-btn--sm" data-feed-copy>' + esc(x.copy) + '</button></div>' +
+      '<div class="feed-act"><a class="feed-link" href="' + esc(url.replace('https://nacekepa.work', '')) + '" type="application/atom+xml">' + esc(x.open) + ' →</a><span class="feed-note">' + esc(x.note) + '</span></div>' +
+      '<p class="feed-msg" id="feed-msg" role="status" aria-live="polite"></p></div></aside>';
+  }
+  function feedCopy() {
+    var f = document.getElementById('feed-url'), msg = document.getElementById('feed-msg'), x = t().feed; if (!f) return;
+    var fail = function () { f.focus(); f.select(); msg.textContent = x.copyFail; };
+    try { navigator.clipboard.writeText(f.value).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+  }
 
   function newsCard(n) {
     var x = t();
     return '<a class="news-card" href="#n-' + esc(n.slug) + '">' +
       (n.photos && n.photos.length ? '<span class="news-card__img"><' + 'img src="' + esc(asset(n.photos[0])) + '" alt="" loading="lazy" decoding="async" draggable="false"></span>' : '<span class="news-card__img news-card__img--none" aria-hidden="true">' + logo() + '</span>') +
-      '<span class="news-card__body"><span class="nk-label">' + (n.pinned ? '<b>' + esc(x.pinned) + ' · </b>' : '') + esc(fmtDate(n.date)) + '</span>' +
+      '<span class="news-card__body"><span class="nk-label">' + (n.pinned ? '<b>' + esc(x.pinned) + ' · </b>' : '') + timeTag(n.date) + '</span>' +
       '<span class="news-card__title">' + esc(P(n, 'title')) + '</span><span class="news-card__sum">' + esc(P(n, 'summary')) + '</span>' +
       '<span class="news-card__more">' + esc(x.readMore) + ' →</span></span></a>';
   }
@@ -151,7 +173,7 @@
     var i = NEWS.indexOf(n), next = NEWS[i + 1];
     return '<section class="block first post">' +
       '<a class="back" href="#news">← ' + esc(x.allNews) + '</a>' +
-      head(fmtDate(n.date) + (n.pinned ? ' · ' + x.pinned : ''), P(n, 'title'), P(n, 'summary'), true) +
+      head('', P(n, 'title'), P(n, 'summary'), true, timeTag(n.date) + (n.pinned ? ' · ' + esc(x.pinned) : '')) +
       '<div class="post-grid">' +
       (photos.length ? '<button type="button" class="nk-sheet__art project-art post-cover" data-lb="0" aria-label="' + esc(x.openPhoto) + '"><' + 'img class="sheet-photo" src="' + esc(asset(photos[0])) + '" alt="" draggable="false"></button>' : '') +
       '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div>' + shareBox('n', n) + '</div></div>' +
@@ -540,6 +562,7 @@
     if (el.dataset.relCat) { state.filter = el.dataset.relCat; state.q = ''; return; }
     if (el.hasAttribute('data-rel-go')) { relToOrder(); return; }
     if (el.hasAttribute('data-share-copy')) { shareCopy(); return; }
+    if (el.hasAttribute('data-feed-copy')) { feedCopy(); return; }
     if (el.hasAttribute('data-share-more')) { var sb = el.closest('.share'); try { navigator.share({ title: sb.dataset.shareTitle, url: document.getElementById('share-url').value }).catch(function () {}); } catch (e) {} return; }
     if (el.dataset.lb != null) { var pr = page() === 'post' ? newsBySlug(currentSlug()) : bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
     if (el.id === 'next') { ev.preventDefault(); readForm(); var ok = validate(); if (ok) state.step++; if (ok && state.step === 3) submitOrder(); render(true); var w = document.getElementById('wiz'); if (w) w.scrollIntoView({ block: 'start' }); return; }
