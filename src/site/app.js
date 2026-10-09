@@ -87,7 +87,7 @@
         '<section class="block">' + head(x.servicesLabel, x.servicesTitle, x.servicesLead) + '<div class="grid-4">' + SERVICES.map(function (s) { return service(s, false); }).join('') + '</div></section>' +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' +
         '<section class="block">' + head(x.workLabel, x.workTitle) + '<div class="grid-4 sheets">' + featured().map(sheet).join('') + '</div><div class="more">' + btn(x.seeWork, '#work', null, null, true) + '</div></section>' +
-        (NEWS.length ? '<section class="block">' + head(x.newsLabel, x.newsTitle, x.newsLead) + '<div class="news-list">' + NEWS.slice(0, 3).map(newsCard).join('') + '</div>' + (NEWS.length > 3 ? '<div class="more">' + btn(x.allNews, '#news', null, null, true) + '</div>' : '') + '</section>' : '') +
+        (NEWS.length ? '<section class="block">' + head(x.newsLabel, x.newsTitle, x.newsLead) + '<div class="news-list">' + NEWS.slice(0, 3).map(newsCard).join('') + '</div>' + '<div class="more">' + btn(x.allNews + ' · ' + NEWS.length, '#news', null, null, true) + '</div>' + '</section>' : '') +
         '<section class="block about-strip"><div>' + '<p class="nk-label">' + esc(x.aboutLabel) + '</p><h2 class="sec-title">' + esc(x.aboutTitle) + '</h2></div><div><p class="lead">' + esc(x.aboutBody) + '</p>' + timelineDims() + '</div></section>' +
         ctaBand();
     },
@@ -176,7 +176,7 @@
       head('', P(n, 'title'), P(n, 'summary'), true, timeTag(n.date) + (n.pinned ? ' · ' + esc(x.pinned) : '')) +
       '<div class="post-grid">' +
       (photos.length ? '<button type="button" class="nk-sheet__art project-art post-cover" data-lb="0" aria-label="' + esc(x.openPhoto) + '"><' + 'img class="sheet-photo" src="' + esc(asset(photos[0])) + '" alt="" draggable="false"></button>' : '') +
-      '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div>' + shareBox('n', n) + '</div></div>' +
+      '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div>' + shareBox('n', n) + printBox('n', n) + '</div></div>' +
       (photos.length > 1 ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, k) { return '<button type="button" data-lb="' + k + '" aria-label="' + esc(x.openPhoto + ' ' + (k + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       (next ? '<a class="next-project" href="#n-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.newsLabel) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
       '</section>' + ctaBand();
@@ -200,7 +200,7 @@
       head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
       '<div class="project-grid"><div class="project-stage">' + stage + '</div><aside class="project-side">' + specs(rows) +
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
-      '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div>' + shareBox('p', p) + '</aside></div>' +
+      '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div>' + shareBox('p', p) + printBox('p', p) + '</aside></div>' +
       (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       relRow(p, next) +
       (next && next !== p ? '<a class="next-project" href="#p-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.nextProject) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
@@ -226,6 +226,18 @@
     var fail = function () { f.focus(); f.select(); msg.textContent = x.copyFail; };
     try { navigator.clipboard.writeText(f.value).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
   }
+  // ---------- Print this sheet (project + news pages) ----------
+  // Self-contained: remove printBox()…printSheet(), the two printBox() calls in projectView() / postView(), the data-print
+  // line in the click handler, print: in both languages in content.js and the "Print this sheet" rules at the end of page.css.
+  // The print rules also apply to Ctrl+P on any page (clean A4 sheet: no menu, buttons, photos or 3D model).
+  function printBox(kind, item) {
+    var x = t().print, url = 'https://nacekepa.work/#' + lang + '-' + kind + '-' + item.slug;
+    return '<div class="print-act"><button type="button" class="nk-btn nk-btn--sm" data-print>' +
+      '<svg class="print-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>' + esc(x.btn) + '</button>' +
+      '<span class="print-note">' + esc(x.note) + '</span></div>' +
+      '<p class="print-only print-url"><span>' + esc(x.link) + '</span> ' + esc(url) + '</p>';
+  }
+  function printSheet() { try { window.print(); } catch (e) {} }
   // ---------- Similar projects (project pages) ----------
   // Self-contained: remove relScore()…relToOrder(), the relRow() call in projectView(), the data-rel-cat / data-rel-go
   // lines in the click handler, rel: in both languages in content.js and the .rel-* rules at the end of page.css.
@@ -563,6 +575,7 @@
     if (el.hasAttribute('data-rel-go')) { relToOrder(); return; }
     if (el.hasAttribute('data-share-copy')) { shareCopy(); return; }
     if (el.hasAttribute('data-feed-copy')) { feedCopy(); return; }
+    if (el.hasAttribute('data-print')) { printSheet(); return; }
     if (el.hasAttribute('data-share-more')) { var sb = el.closest('.share'); try { navigator.share({ title: sb.dataset.shareTitle, url: document.getElementById('share-url').value }).catch(function () {}); } catch (e) {} return; }
     if (el.dataset.lb != null) { var pr = page() === 'post' ? newsBySlug(currentSlug()) : bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
     if (el.id === 'next') { ev.preventDefault(); readForm(); var ok = validate(); if (ok) state.step++; if (ok && state.step === 3) submitOrder(); render(true); var w = document.getElementById('wiz'); if (w) w.scrollIntoView({ block: 'start' }); return; }

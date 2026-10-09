@@ -3,6 +3,36 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-09
+
+**Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps on
+the local build, no endpoint → nothing sent), /admin/ sign-in — 1280 px + 390 px, light + dark, EN + SL. Last Actions run
+(cab3fad) succeeded; live site checked via the laptop. No JS errors, no CSP violations, no 404s, no horizontal scroll, no
+broken images, no EN text on SL pages.
+
+**Bugs fixed:** none found.
+
+**Improvement:** the home page news block now always links to #news ("All news · N" / "Vse novice · N") — before, the
+button only appeared with more than 3 posts, so with 1 post there was no way from the home page to the news page (and its
+Follow box) except the menu. `views.home` in `app.js`.
+
+**Innovation — "Print this sheet" / "Natisni ta list" on every project sheet (`#p-<slug>`) and news post (`#n-<slug>`),
+under "Share this sheet":** a button that opens the browser's print dialog with a clean A4 drawing sheet: logo, sheet
+number, title, description, specs/details (or the article), "Online: https://nacekepa.work/#en-p-<slug>" so a printed copy
+leads back to the site, and the footer title block with the e-mail and date. Menu, buttons, share box, similar projects,
+CTA band, photos and the 3D model are left out (photos/3D stay protected); always light colours, even in dark mode. The same
+print rules apply to Ctrl+P on any page. Useful for clients who take a sheet to a meeting or pass it to a colleague. Tested:
+EN + SL, light + dark, 1280 + 390 px, keyboard (Tab → Enter), `window.print` call, print-media layout and A4 PDF output.
+*To remove:* delete the "Print this sheet" block in `app.js` (`printBox()` … `printSheet()`), the two `printBox(...)` calls
+in `projectView()` / `postView()`, the `data-print` line in the click handler, `print:` in both languages in `content.js`
+and the "Print this sheet" rules at the end of `page.css` (the older one-line `@media print` rule that hides photos stays).
+*Next step:* once projects have photos, an optional "include first photo" checkbox (would need Nace's OK, photos are protected now).
+
+**Ideas for next time** (added to the list below)
+- Public: "Ask about this project" — mailto link on project sheets with the sheet number in the subject.
+- Admin: character counter + warning when a news summary is longer than what fits the news card / link preview.
+- Public: "Back to top" mono link in the footer title block on long pages (phone).
+
 ## 2026-10-08
 
 **Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps on
@@ -35,6 +65,9 @@ languages in `content.js` and the "Follow the news" rules at the end of `page.cs
 - Public: "Last updated" line on #work (newest project year / post date), from data already in the repo.
 - Admin: after publishing a news post, show "Live in the feed" once `/news.xml` contains the slug.
 - Public: anchor links on headings inside long news articles (copy link to a section).
+- Public: "Ask about this project" — mailto link on project sheets with the sheet number in the subject.
+- Admin: character counter + warning when a news summary is too long for the news card / link preview.
+- Public: "Back to top" mono link in the footer title block on long pages (phone).
 
 ## 2026-10-07 (second run)
 
@@ -221,7 +254,8 @@ the two `data-fit` handler lines, `fit:` in both languages in `content.js` and t
 Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search across projects and news on #work;
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
-2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news.
+2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
+(A4 print layout) on project sheets and news posts.
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - Printable one-page project brief from the order wizard (print stylesheet only).
@@ -236,7 +270,6 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: "Copy sheet number" (NK-YY-NN) next to the title so clients can quote it in an e-mail.
 - Admin: show the public share link of each project/post next to its title.
 - Admin: preview a news post as it will look on the site before publishing.
-- Public: print stylesheet for a project sheet ("print this sheet" → clean A4 drawing sheet, no photos/3D).
 - Public: "Last updated" line on #work (newest project year / post date), from data already in the repo.
 - Admin: after publishing a news post, show "Live in the feed" once `/news.xml` contains the slug.
 - Public: anchor links on headings inside long news articles (copy link to a section).
