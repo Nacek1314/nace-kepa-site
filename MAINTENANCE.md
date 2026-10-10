@@ -3,6 +3,40 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-10
+
+**Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps on
+the local build, no endpoint → nothing sent), /admin/ sign-in — 1280 px + 390 px, light + dark, EN + SL. Last Actions run
+(bb205d0) succeeded; live site returns 200 and shows yesterday's "Print this sheet"; /news.xml, /admin/, sitemap and
+robots.txt return 200 (checked via the laptop). No JS errors, no CSP violations, no 404s, no horizontal scroll, no broken
+images, no EN text on SL pages.
+
+**Bugs fixed:** none found.
+
+**Improvement:** "Ask about this project" / "Vprašajte o projektu" button next to "Start a project" on every project sheet:
+opens an e-mail to the studio address with "Question about NK-YY-NN · <title>" in the subject and the sheet link in the
+body, so a quick question doesn't need the whole order form. Only shown when `CONTACT_EMAIL` is set. `askLink()` in
+`app.js`, `ask:` in `content.js`.
+
+**Innovation — Deadline check / "Preverba roka" in the order form (`#order`, step 2 "Project", under the fields):** as soon
+as the client picks a deadline, it shows the date and "N days from today", then for every service picked in step 1 a
+small scale drawing (today → usual turnaround band → red deadline line) and a verdict: "Enough time", "Tight — inside the
+usual range" or "Shorter than usual". The ranges are read from the published turnarounds in `SERVICES[].time`
+(2–5 days, 1–4 days + post-processing, 2–6 weeks); Embedded & IoT has no published time, so it says "Quoted per project".
+Past dates get "Check the date". Calendar days, each service on its own, and it says the real date is confirmed with the
+quote. If Nace changes a turnaround in `content.js`, the check follows. Tested: EN + SL, light + dark, 1280 + 390 px,
+keyboard, 3 / 10 / 60 / 0 days, stays filled after Next → Back.
+*To remove:* delete the "Deadline check" block in `app.js` (`dlRange()` … `dlUpdate()`), the `dlBox()` call in
+`orderView()`, the `f-deadline` line at the start of the input handler, `dl:` in both languages in `content.js` and the
+"Deadline check" rules at the end of `page.css`.
+*Next step:* if Nace publishes a turnaround for Embedded & IoT, add `time` to that service and it is checked too; could
+add the verdict as one line in the brief.
+
+**Ideas for next time** (added to the list below)
+- Public: deadline field `min` = today, so phones can't pick a past date.
+- Admin: edit the service turnarounds (`SERVICES[].time`) from the dashboard.
+- Public: "Ask about this post" e-mail button on news posts (same as on project sheets).
+
 ## 2026-10-09
 
 **Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps on
@@ -255,7 +289,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts.
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds).
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - Printable one-page project brief from the order wizard (print stylesheet only).
@@ -273,6 +307,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: "Last updated" line on #work (newest project year / post date), from data already in the repo.
 - Admin: after publishing a news post, show "Live in the feed" once `/news.xml` contains the slug.
 - Public: anchor links on headings inside long news articles (copy link to a section).
+- Public: deadline field `min` = today, so phones can't pick a past date.
+- Admin: edit the service turnarounds (`SERVICES[].time`) from the dashboard.
+- Public: "Ask about this post" e-mail button on news posts.
 
 ## 2026-10-03 (second run)
 

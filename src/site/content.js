@@ -56,6 +56,12 @@ var T = {
     // Follow the news (feedBox in app.js, feed built by src/site/feed.ts).
     feed: { label: 'Follow the news · Atom feed', body: 'Get new posts in your feed reader (Feedly, Inoreader, Thunderbird, Outlook…): copy this link and add it as a new feed.', copy: 'Copy feed link', copied: 'Feed link copied.', copyFail: 'Could not copy — the link is selected, press Ctrl+C.', open: 'Open the feed', note: 'Posts in English.' },
     share: { label: 'Share this sheet', copy: 'Copy link', copied: 'Link copied.', copyFail: 'Could not copy — the link is selected, press Ctrl+C.', mail: 'E-mail', more: 'Share…', note: 'Opens in English.', subject: 'Have a look' },
+    // Deadline check in the order form (dlBox in app.js). Uses only the published turnarounds in SERVICES[].time.
+    dl: { label: 'Deadline check', lead: 'Your date against my usual turnaround for each service you picked.', today: 'Today', due: 'Your deadline', days: '{n} days from today', day: '1 day from today',
+      pastTag: 'Check the date', past: 'This date is today or already past — pick a later date, or explain the rush in the note.', ok: 'Enough time', tight: 'Tight — inside the usual range', short: 'Shorter than usual',
+      usual: 'usual {r}', range: 'Usual turnaround', none: 'Quoted per project', noneBody: 'no fixed turnaround; the quote gives a date', pick: 'Pick a service in step 1 to compare.',
+      note: 'Calendar days from today. Each service is compared on its own; the real date is confirmed with your quote.' },
+    ask: { btn: 'Ask about this project', subject: 'Question about' },
     print: { btn: 'Print this sheet', note: 'A4 · photos and the 3D model are left out.', link: 'Online:' },
     rel: { title: 'Similar projects', all: 'All {n} {c} projects', start: 'Start a project like this', brief: 'Similar to' },
     // Search on #work (findBox in app.js).
@@ -115,6 +121,11 @@ var T = {
     aria: { main: 'Glavni meni', lang: 'Jezik', filter: 'Filtriraj po področju', home: 'nacekepa.work — domov' },
     feed: { label: 'Spremljajte novice · vir Atom', body: 'Nove objave prejmete v bralnik virov (Feedly, Inoreader, Thunderbird, Outlook …): kopirajte to povezavo in jo dodajte kot nov vir.', copy: 'Kopiraj povezavo vira', copied: 'Povezava vira kopirana.', copyFail: 'Kopiranje ni uspelo — povezava je izbrana, pritisnite Ctrl+C.', open: 'Odpri vir', note: 'Objave v slovenščini.' },
     share: { label: 'Deli ta list', copy: 'Kopiraj povezavo', copied: 'Povezava je kopirana.', copyFail: 'Kopiranje ni uspelo — povezava je označena, pritisnite Ctrl+C.', mail: 'E-pošta', more: 'Deli …', note: 'Odpre se v slovenščini.', subject: 'Poglej si' },
+    dl: { label: 'Preverba roka', lead: 'Vaš datum v primerjavi z mojim običajnim rokom za vsako izbrano storitev.', today: 'Danes', due: 'Vaš rok', days: 'čez {n} dni', day: 'čez 1 dan',
+      pastTag: 'Preverite datum', past: 'Ta datum je danes ali je že mimo — izberite poznejši datum ali v opombi pojasnite, zakaj se mudi.', ok: 'Dovolj časa', tight: 'Tesno — znotraj običajnega roka', short: 'Krajše od običajnega',
+      usual: 'običajno {r}', range: 'Običajen rok', none: 'Rok po dogovoru', noneBody: 'brez stalnega roka; datum je v ponudbi', pick: 'Za primerjavo v 1. koraku izberite storitev.',
+      note: 'Koledarski dnevi od danes. Vsaka storitev je primerjana posebej; pravi datum potrdim s ponudbo.' },
+    ask: { btn: 'Vprašajte o projektu', subject: 'Vprašanje o' },
     print: { btn: 'Natisni ta list', note: 'A4 · brez fotografij in 3D modela.', link: 'Na spletu:' },
     rel: { title: 'Podobni projekti', all: 'Vsi projekti: {c} ({n})', start: 'Začni podoben projekt', brief: 'Podobno kot' },
     find: { label: 'Iskanje po projektih in novicah', ph: 'npr. ESP32, PETG, nosilec', key: 'Za iskanje pritisnite /', count: 'projekti: {p} · novice: {n}', none: 'Za »{q}« še ni zadetkov.', noneBody: 'Opišite, kaj potrebujete — večina projektov se začne s skico.', news: 'Novice z zadetki', clear: 'Počisti iskanje' },

@@ -200,11 +200,17 @@
       head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
       '<div class="project-grid"><div class="project-stage">' + stage + '</div><aside class="project-side">' + specs(rows) +
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
-      '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div>' + shareBox('p', p) + printBox('p', p) + '</aside></div>' +
+      '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + askLink(p) + '</div>' + shareBox('p', p) + printBox('p', p) + '</aside></div>' +
       (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       relRow(p, next) +
       (next && next !== p ? '<a class="next-project" href="#p-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.nextProject) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
       '</section>' + ctaBand();
+  }
+  // "Ask about this project": e-mail with the sheet number and title in the subject (only when the studio address is set).
+  function askLink(p) {
+    if (!CONTACT_EMAIL) return '';
+    var x = t().ask, subj = x.subject + ' ' + sheetNo(p) + ' · ' + P(p, 'title');
+    return '<a class="nk-btn" href="mailto:' + esc(CONTACT_EMAIL) + '?subject=' + esc(encodeURIComponent(subj)) + '&amp;body=' + esc(encodeURIComponent(shareUrl('p', p) + '\n\n')) + '">' + esc(x.btn) + '</a>';
   }
   // ---------- Share this sheet (project + news pages) ----------
   // Self-contained: remove shareUrl()…shareCopy(), the two shareBox() calls in projectView() / postView(), the two
@@ -471,7 +477,7 @@
         field('qty', x.fQty, '<input class="nk-input" id="f-qty" data-f="qty" type="number" min="1" value="' + esc(o.qty) + '">') +
         field('deadline', x.fDeadline, '<input class="nk-input" id="f-deadline" data-f="deadline" type="date" value="' + esc(o.deadline) + '">') +
         field('files', x.fFiles, select('files', x.fFilesO, o.files)) +
-        field('mat', x.fMat, select('mat', x.fMatO, o.mat)) + '</div>';
+        field('mat', x.fMat, select('mat', x.fMatO, o.mat)) + dlBox() + '</div>';
     } else if (st === 2) {
       body = '<h2 class="sub">' + esc(x.q3) + '</h2><div class="form">' +
         field('name', x.fName, '<input class="nk-input" id="f-name" data-f="name" autocomplete="name" value="' + esc(o.name) + '">', e.name ? x.errName : null, e.name) +
@@ -497,6 +503,46 @@
       (st < 3 ? '<button type="button" class="nk-btn nk-btn--primary nk-btn--lg" id="next">' + esc(st === 2 ? x.finish : x.next) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' : '') + '</div>';
     return '<section class="block first">' + head(x.orderLabel, x.orderTitle, x.orderLead, true) + steps + '<form class="wiz-body" id="wiz" novalidate>' + body + nav + '</form></section>';
   }
+  // ---------- Deadline check (order form, step 2) ----------
+  // Compares the client's deadline with the published turnaround of each picked service (SERVICES[].time in content.js).
+  // Self-contained: remove dlRange()…dlUpdate(), the dlBox() call in orderView(), the f-deadline line in the input
+  // handler, dl: in both languages in content.js and the "Deadline check" rules at the end of page.css.
+  function dlRange(s) {
+    var m = s.time && /(\d+)\s*[–-]\s*(\d+)\s*(day|week)/.exec(s.time.en || '');
+    if (!m) return null; var k = m[3] === 'week' ? 7 : 1;
+    return [+m[1] * k, +m[2] * k];
+  }
+  function dlDays(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || '')); if (!m) return null;
+    var now = new Date(), a = new Date(now.getFullYear(), now.getMonth(), now.getDate()), b = new Date(+m[1], +m[2] - 1, +m[3]);
+    return Math.round((b - a) / 864e5);
+  }
+  function dlInner() {
+    var x = t().dl, o = state.order, d = dlDays(o.deadline);
+    if (d == null) return '';
+    var head = '<p class="nk-label">' + esc(x.label) + '</p><p class="dl-lead">' + esc(x.lead) + '</p>';
+    if (d <= 0) return head + '<p class="dl-past"><span class="nk-tag nk-tag--rev">' + esc(x.pastTag) + '</span> ' + esc(x.past) + '</p>';
+    var picked = SERVICES.filter(function (s) { return o.services.indexOf(s.key) >= 0; });
+    var when = '<p class="dl-when"><span class="nk-label">' + esc(x.due) + '</span> <b>' + timeTag(o.deadline) + '</b> · ' + esc(d === 1 ? x.day : x.days.replace('{n}', d)) + '</p>';
+    if (!picked.length) return head + when + '<p class="dl-note">' + esc(x.pick) + '</p>';
+    var span = Math.max.apply(null, [d].concat(picked.map(function (s) { var r = dlRange(s); return r ? r[1] : 0; }))) * 1.15;
+    var pct = function (n) { return (Math.min(n, span) / span * 100).toFixed(2) + '%'; };
+    var rows = picked.map(function (s) {
+      var r = dlRange(s), tag, bar = '';
+      if (!r) tag = '<span class="nk-tag">' + esc(x.none) + '</span><span class="dl-usual">' + esc(x.noneBody) + '</span>';
+      else {
+        var v = d < r[0] ? ['rev', x.short] : d < r[1] ? ['', x.tight] : ['ok', x.ok];
+        tag = '<span class="nk-tag' + (v[0] ? ' nk-tag--' + v[0] : '') + '">' + esc(v[1]) + '</span><span class="dl-usual">' + esc(x.usual.replace('{r}', L(s.time))) + '</span>';
+        bar = '<div class="dl-bar" aria-hidden="true"><span class="dl-range" style="left:' + pct(r[0]) + ';width:calc(' + pct(r[1]) + ' - ' + pct(r[0]) + ')"></span>' +
+          '<span class="dl-due" style="left:' + pct(d) + '"></span></div>';
+      }
+      return '<li class="dl-row"><div class="dl-top"><span class="dl-svc">' + esc(L(s.title)) + '</span><span class="dl-v">' + tag + '</span></div>' + bar + '</li>';
+    }).join('');
+    var legend = '<p class="dl-legend" aria-hidden="true"><span><i class="dl-k dl-k--today"></i>' + esc(x.today) + '</span><span><i class="dl-k dl-k--range"></i>' + esc(x.range) + '</span><span><i class="dl-k dl-k--due"></i>' + esc(x.due) + '</span></p>';
+    return head + when + '<ul class="dl-rows">' + rows + '</ul>' + legend + '<p class="dl-note">' + esc(x.note) + '</p>';
+  }
+  function dlBox() { var h = dlInner(); return '<div class="dl full" id="dl" aria-live="polite"' + (h ? '' : ' hidden') + '>' + h + '</div>'; }
+  function dlUpdate() { var el = document.getElementById('dl'); if (!el) return; var h = dlInner(); el.innerHTML = h; el.hidden = !h; }
   function field(k, label, ctl, hint, err, full) {
     return '<div class="nk-field' + (err ? ' nk-field--error' : '') + (full ? ' full' : '') + '"><label class="nk-field__label" for="f-' + k + '">' + esc(label) + '</label>' + ctl + (hint ? '<span class="nk-field__hint">' + esc(hint) + '</span>' : '') + '</div>';
   }
@@ -586,7 +632,7 @@
       try { navigator.clipboard.writeText(txt).then(function () { msg.textContent = t().copied; }, fail); } catch (e) { fail(); }
     }
   });
-  app.addEventListener('input', function (ev) { if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
+  app.addEventListener('input', function (ev) { if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
     var k = ev.target.dataset.svc; if (!k) return;
     var a = state.order.services, i = a.indexOf(k);
