@@ -676,6 +676,67 @@ async function liCopy() {
   if (!ok) { ta.focus(); ta.select(); }
 }
 
+// ---------- Site preview (news editor: how the post will look on nacekepa.work, EN or SL, before publishing) ----------
+// Read-only: renders the post's own fields with the site's styles (news card + post page); changes nothing in news.json.
+// Remove: this block, the pvSection(n) call in newsEditorView(), the data-pv-lang line in the click handler, the
+// pvRefresh call in the input handler and the "Site preview" rules at the end of admin.css.
+const PV = { lang: 'en' };
+const PV_T = { en: { read: 'Read', pinned: 'Pinned' }, sl: { read: 'Preberi', pinned: 'Pripeto' } }; // same words as content.js
+function pvPick(o, miss, label) {
+  const en = String(o?.en ?? ''), sl = String(o?.sl ?? '');
+  if (PV.lang !== 'sl' || sl.trim()) return { v: PV.lang === 'sl' ? sl : en, fb: false };
+  if (en.trim()) miss.push(label);
+  return { v: en, fb: !!en.trim() };
+}
+function pvWrap(h, fb, tag = 'span') { return fb ? `<${tag} class="pv-fb" title="English text — no Slovenian yet">${h}</${tag}>` : h; }
+function pvRich(s) { // same rules as richText() in app.js: blank line = paragraph, "- " lines = list
+  return String(s || '').split(/\n{2,}/).filter((b) => b.trim()).map((block) => {
+    const lines = block.split('\n');
+    if (lines.every((l) => /^\s*-\s+/.test(l))) return '<ul>' + lines.map((l) => `<li>${esc(l.replace(/^\s*-\s+/, ''))}</li>`).join('') + '</ul>';
+    return '<p>' + lines.map(esc).join('<br>') + '</p>';
+  }).join('');
+}
+function pvDate(d) {
+  try { const x = new Date(d + 'T12:00:00'); if (isNaN(x)) return d || '—'; return x.toLocaleDateString(PV.lang === 'sl' ? 'sl-SI' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return d || '—'; }
+}
+function pvInner(n) {
+  const miss = [], tx = PV_T[PV.lang];
+  const ti = pvPick(n.title, miss, 'headline'), su = pvPick(n.summary, miss, 'summary'), bo = pvPick(n.body, miss, 'article');
+  const title = pvWrap(esc(ti.v.trim() || 'Untitled'), ti.fb), sum = pvWrap(esc(su.v), su.fb);
+  const date = (n.pinned ? `<b>${esc(tx.pinned)} · </b>` : '') + esc(pvDate(n.date));
+  const cover = n.photos.length ? `<img src="${esc(previewUrl(n.photos[0]))}" alt="">` : '';
+  const notes = [];
+  if (miss.length) notes.push(`No Slovenian ${miss.join(', ')} yet — the SL page shows the English text (dashed).`);
+  if (!bo.v.trim()) notes.push('The article is empty — the post page shows only the headline and summary.');
+  if (n.hidden) notes.push('Draft — visitors won’t see this post until you untick “Draft” and publish.');
+  else if (n._new || dirty()) notes.push('Not live yet — press Publish to put these changes on the site.');
+  return `<p class="nk-field__hint pv-note">${esc(notes.join(' '))}</p>
+    <p class="nk-label">News list · home page</p>
+    <div class="news-card pv-card">${cover ? `<span class="news-card__img">${cover}</span>` : `<span class="news-card__img news-card__img--none" aria-hidden="true">${logo()}</span>`}
+      <span class="news-card__body"><span class="nk-label">${date}</span><span class="news-card__title">${title}</span><span class="news-card__sum">${sum}</span><span class="news-card__more">${esc(tx.read)} →</span></span></div>
+    <p class="nk-label">Post page · #n-${esc(n.slug)}</p>
+    <article class="pv-page post">
+      <p class="nk-label">${date}</p><h3 class="pv-title">${title}</h3>${su.v.trim() ? `<p class="lead">${sum}</p>` : ''}
+      <div class="post-grid">${cover ? `<div class="nk-sheet__art project-art post-cover">${cover.replace('alt=""', 'class="sheet-photo" alt=""')}</div>` : ''}
+        <div class="post-body">${bo.v.trim() ? pvWrap(pvRich(bo.v), bo.fb, 'div') : '<p class="pv-empty">—</p>'}</div></div>
+    </article>`;
+}
+function pvSection(n) {
+  return `<fieldset class="ad-sec pv"><legend class="nk-label">Preview on the site</legend>
+    <div class="li-bar">
+      <div class="li-lang" role="group" aria-label="Preview language">
+        <button type="button" data-pv-lang="en" aria-pressed="${PV.lang === 'en'}">EN</button><button type="button" data-pv-lang="sl" aria-pressed="${PV.lang === 'sl'}">SL</button>
+      </div>
+      <span class="nk-field__hint">Updates while you type. Photos are shown as uploaded.</span>
+    </div>
+    <div class="pv-box" id="pv-box">${pvInner(n)}</div>
+  </fieldset>`;
+}
+function pvRefresh() {
+  const n = isNews() && cur(), box = document.getElementById('pv-box');
+  if (n && box) box.innerHTML = pvInner(n);
+}
+
 function newsEditorView() {
   const n = cur();
   if (!n) return `<div class="ad-empty"><p class="lead">No news post selected.</p><button class="nk-btn" data-act="new" type="button">+ New post</button></div>`;
@@ -702,6 +763,7 @@ function newsEditorView() {
       </div>
     </div></fieldset>
     ${photosSection(n)}
+    ${pvSection(n)}
     ${liSection(n)}
     <div class="ad-danger">
       ${S.confirmDelete ? `<span>Delete “${esc(n.title.en || n.slug)}” and its photos?</span><button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-act="del-yes">Delete</button><button type="button" class="nk-btn nk-btn--sm" data-act="del-no">Keep</button>`
@@ -859,6 +921,7 @@ root.addEventListener('input', (e) => {
     const list = root.querySelector('.ad-list');
     if (list && (k === 'n-t-en' || k === 'n-date')) list.outerHTML = listView();
     liRefresh();
+    pvRefresh();
     updatePublish();
     return;
   }
@@ -940,6 +1003,7 @@ root.addEventListener('click', (e) => {
   if (b.dataset.todoGo != null) { todoGo(b.dataset.todoGo); return; }
   if (b.dataset.liLang != null) { LI.lang = b.dataset.liLang; LI.msg = ''; render(); document.querySelector(`[data-li-lang="${LI.lang}"]`)?.focus(); return; }
   if (b.dataset.liCopy != null) { liCopy(); return; }
+  if (b.dataset.pvLang != null) { PV.lang = b.dataset.pvLang; render(); document.querySelector(`[data-pv-lang="${PV.lang}"]`)?.focus(); return; }
   if (b.dataset.sel != null) { if (isNews()) S.selNews = b.dataset.sel; else S.sel = b.dataset.sel; S.confirmDelete = false; render(); return; }
   if (b.dataset.up != null || b.dataset.down != null) {
     const i = +(b.dataset.up ?? b.dataset.down), j = b.dataset.up != null ? i - 1 : i + 1;

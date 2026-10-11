@@ -3,6 +3,39 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-11
+
+**Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps on
+the local build, no endpoint → nothing sent), /admin/ sign-in — 1280 px + 390 px, light + dark, EN + SL. Last Actions run
+(53a06f2) succeeded; live site, /admin/, /news.xml, sitemap and robots.txt return 200 and show yesterday's deadline check
+(checked via the laptop). No JS errors, no CSP violations, no 404s, no horizontal scroll, no broken images, no EN text on
+SL pages.
+
+**Bugs fixed:** none found.
+
+**Improvement:** the deadline field in the order form (step 2) now has `min` = tomorrow (visitor's local date), so the
+date picker on phones and desktops can't offer today or a past date. `dlMin()` in `app.js` (next to `dlBox()`), used in
+`orderView()`. The deadline check still handles typed past dates.
+
+**Innovation — Admin "Preview on the site" (`/admin/` → News → open a post → box under Photos, above "LinkedIn post"):**
+shows the post exactly as visitors will see it, with the site's own styles: the news card (home page / #news list) and the
+post page (date, Pinned, headline, summary, cover photo, article with paragraphs and "- " lists, same rules as the site).
+EN/SL switch; updates while typing; photos that are uploaded but not yet published are shown too. Where the Slovenian
+headline/summary/article is missing it shows the English text with a dashed red outline and says so (the live SL page does
+the same fallback). Notes for an empty article, a draft, and unpublished changes. Read-only — changes nothing in
+news.json. Tested with a mocked GitHub API: light + dark, 1280 + 390 px, keyboard (Tab → Enter on EN/SL), live typing,
+list rendering, SL fallback marks.
+*To remove:* delete the "Site preview" block in `admin.js` (`const PV` … `pvRefresh()`), the `${pvSection(n)}` line in
+`newsEditorView()`, the `data-pv-lang` line in the click handler, the `pvRefresh();` line in the input handler and the
+"Site preview" rules at the end of `admin.css`.
+*Next step:* the same preview for projects (project sheet: title, description, specs, details, cover photo).
+
+**Ideas for next time** (added to the list below)
+- Admin: project sheet preview (like the news preview) in the project editor.
+- Public: "Ask about this post" e-mail button on news posts (already listed) — reuse `askLink()`.
+- Admin: word/character count under each EN/SL article field, with a hint when SL is much shorter than EN.
+- Public: "Back to top" link at the end of long news articles and project sheets on phones.
+
 ## 2026-10-10
 
 **Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps on
@@ -33,7 +66,6 @@ keyboard, 3 / 10 / 60 / 0 days, stays filled after Next → Back.
 add the verdict as one line in the brief.
 
 **Ideas for next time** (added to the list below)
-- Public: deadline field `min` = today, so phones can't pick a past date.
 - Admin: edit the service turnarounds (`SERVICES[].time`) from the dashboard.
 - Public: "Ask about this post" e-mail button on news posts (same as on project sheets).
 
@@ -163,7 +195,6 @@ GitHub API: light + dark, 1280 + 390 px, keyboard, clipboard content checked.
 - Admin: "Share project" text (like the LinkedIn post) for project sheets.
 - Public: "Copy sheet number" (NK-YY-NN) next to the title so clients can quote it in an e-mail.
 - Admin: show the public share link of each project/post next to its title.
-- Admin: preview a news post as it will look on the site before publishing.
 
 ## 2026-10-06
 
@@ -289,7 +320,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds).
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts.
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - Printable one-page project brief from the order wizard (print stylesheet only).
@@ -303,13 +334,14 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: "Share project" text (like the LinkedIn post) for project sheets.
 - Public: "Copy sheet number" (NK-YY-NN) next to the title so clients can quote it in an e-mail.
 - Admin: show the public share link of each project/post next to its title.
-- Admin: preview a news post as it will look on the site before publishing.
 - Public: "Last updated" line on #work (newest project year / post date), from data already in the repo.
 - Admin: after publishing a news post, show "Live in the feed" once `/news.xml` contains the slug.
 - Public: anchor links on headings inside long news articles (copy link to a section).
-- Public: deadline field `min` = today, so phones can't pick a past date.
 - Admin: edit the service turnarounds (`SERVICES[].time`) from the dashboard.
-- Public: "Ask about this post" e-mail button on news posts.
+- Public: "Ask about this post" e-mail button on news posts (reuse `askLink()`).
+- Admin: project sheet preview (like the news preview) in the project editor.
+- Admin: word/character count under each EN/SL article field, with a hint when SL is much shorter than EN.
+- Public: "Back to top" link at the end of long news articles and project sheets on phones.
 
 ## 2026-10-03 (second run)
 

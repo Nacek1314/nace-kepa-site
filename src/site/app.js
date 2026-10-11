@@ -475,7 +475,7 @@
       body = '<h2 class="sub">' + esc(x.q2) + '</h2><div class="form">' +
         field('what', x.fWhat, '<textarea class="nk-input" id="f-what" data-f="what" placeholder="' + esc(x.fWhatPh) + '">' + esc(o.what) + '</textarea>', e.what ? x.errWhat : x.fWhatH, e.what, true) +
         field('qty', x.fQty, '<input class="nk-input" id="f-qty" data-f="qty" type="number" min="1" value="' + esc(o.qty) + '">') +
-        field('deadline', x.fDeadline, '<input class="nk-input" id="f-deadline" data-f="deadline" type="date" value="' + esc(o.deadline) + '">') +
+        field('deadline', x.fDeadline, '<input class="nk-input" id="f-deadline" data-f="deadline" type="date" min="' + dlMin() + '" value="' + esc(o.deadline) + '">') +
         field('files', x.fFiles, select('files', x.fFilesO, o.files)) +
         field('mat', x.fMat, select('mat', x.fMatO, o.mat)) + dlBox() + '</div>';
     } else if (st === 2) {
@@ -541,6 +541,8 @@
     var legend = '<p class="dl-legend" aria-hidden="true"><span><i class="dl-k dl-k--today"></i>' + esc(x.today) + '</span><span><i class="dl-k dl-k--range"></i>' + esc(x.range) + '</span><span><i class="dl-k dl-k--due"></i>' + esc(x.due) + '</span></p>';
     return head + when + '<ul class="dl-rows">' + rows + '</ul>' + legend + '<p class="dl-note">' + esc(x.note) + '</p>';
   }
+  // Earliest date the picker offers: tomorrow (local time), so phones can't pick today or a past date.
+  function dlMin() { var d = new Date(); d.setDate(d.getDate() + 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function dlBox() { var h = dlInner(); return '<div class="dl full" id="dl" aria-live="polite"' + (h ? '' : ' hidden') + '>' + h + '</div>'; }
   function dlUpdate() { var el = document.getElementById('dl'); if (!el) return; var h = dlInner(); el.innerHTML = h; el.hidden = !h; }
   function field(k, label, ctl, hint, err, full) {
