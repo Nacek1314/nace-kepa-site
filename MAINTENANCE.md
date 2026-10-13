@@ -3,6 +3,42 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-13
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-automated-cocktail-dispenser, #news, #n-bambu-lab-x2d, #skills,
+#about, #order (all 4 steps on the local build, no endpoint → nothing sent), /admin/ sign-in — 1280 px + 390 px, light +
+dark, EN + SL. Last Actions run (9ac969b) succeeded; live site returns 200 (checked via the laptop). No JS errors, no CSP
+violations, no 404s, no horizontal scroll, no broken images, no EN text on SL pages. (No run on 2026-10-12.)
+
+**Bugs fixed**
+- The EN/SL switch did nothing on any address with a language prefix (`#en-p-…`, `#sl-n-…` — exactly the links from
+  "Share this sheet", the news feeds and the LinkedIn post): the page switched and was immediately switched back by the
+  prefix in the address. The buttons now rewrite the prefix to the chosen language (`langHash()` in `app.js`).
+
+**Improvement:** "Ask about this post" / "Vprašajte o objavi" button next to "Start a project" on news posts — opens an
+e-mail to the studio address with "Question about the post: <headline>" and the post link (same as the project button;
+only shown when `CONTACT_EMAIL` is set). `askLink(p, kind)` in `app.js`, `ask.btnPost` / `ask.subjectPost` in `content.js`.
+
+**Innovation — Search links on #work ("Link to these results" / "Povezava do teh zadetkov"):** the search box and the
+category filter on #work now live in the address (`#en-work?q=esp32&cat=IoT`). As soon as a visitor types a search or
+picks a category, a box under the search shows the link in the current language with "Copy link" (clipboard; on failure
+the link is selected with "press Ctrl+C"; `role="status"`). Opening such a link restores the search, the filter and the
+language — so Nace can send a client "all my IoT projects" or "everything with ESP32" in one link, and a visitor who
+opens a project and presses Back gets the same search again. Unknown categories and broken links are ignored; query max
+100 characters. Tested: EN + SL, light + dark, 1280 + 390 px, keyboard (Tab → Copy link, Esc clears), clipboard
+content, Back button, language switch with an active search.
+*To remove:* delete the "Search links" block in `app.js` (`findQuery()` … `findShareCopy()`), the `var qi = …` line in
+`page()`, the `findShareBox()` call in `findBox()`, the `findSync()` call at the end of `findApply()`, the
+`data-find-copy` line in the click handler, `link` / `linkNote` in `find:` in both languages in `content.js` and the
+"Search links" rules at the end of `page.css`.
+*Next step:* point the "All N <category> projects →" link under Similar projects and the 404 page at `#work?cat=…` /
+a search link; let the filter chip counts follow the search.
+
+**Ideas for next time** (added to the list below)
+- Public: filter chip counts follow the active search (e.g. "IoT 2" while searching "esp32").
+- Admin: "Link to all projects with …" helper that builds a `#work?q=` link from a word, for LinkedIn messages.
+- Public: "Copy sheet number" (NK-YY-NN) next to project titles (still open).
+
 ## 2026-10-11
 
 **Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps on
@@ -35,6 +71,9 @@ list rendering, SL fallback marks.
 - Public: "Ask about this post" e-mail button on news posts (already listed) — reuse `askLink()`.
 - Admin: word/character count under each EN/SL article field, with a hint when SL is much shorter than EN.
 - Public: "Back to top" link at the end of long news articles and project sheets on phones.
+- Public: filter chip counts on #work follow the active search.
+- Admin: build a `#work?q=…` link from a word (for LinkedIn messages).
+- Public: open the order form from a search link with the matching category's service pre-ticked.
 
 ## 2026-10-10
 
@@ -320,11 +359,11 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts.
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link".
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - Printable one-page project brief from the order wizard (print stylesheet only).
-- Shareable search links on #work (`#work?q=…`) and a "search" link in the 404 page.
+- A "search" link in the 404 page (search links on #work exist since 2026-10-13).
 - Admin: "SL text missing" badge on each project/news row in the list (quick view of what still needs translating).
 - Materials index on #work: chips built from the `materials` field of the projects (click → filter by material).
 - Shareable "Start a project like this" link (`#order?like=<slug>`) for LinkedIn messages.

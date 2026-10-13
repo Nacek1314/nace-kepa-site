@@ -61,11 +61,11 @@ var T = {
       pastTag: 'Check the date', past: 'This date is today or already past — pick a later date, or explain the rush in the note.', ok: 'Enough time', tight: 'Tight — inside the usual range', short: 'Shorter than usual',
       usual: 'usual {r}', range: 'Usual turnaround', none: 'Quoted per project', noneBody: 'no fixed turnaround; the quote gives a date', pick: 'Pick a service in step 1 to compare.',
       note: 'Calendar days from today. Each service is compared on its own; the real date is confirmed with your quote.' },
-    ask: { btn: 'Ask about this project', subject: 'Question about' },
+    ask: { btn: 'Ask about this project', btnPost: 'Ask about this post', subjectPost: 'Question about the post', subject: 'Question about' },
     print: { btn: 'Print this sheet', note: 'A4 · photos and the 3D model are left out.', link: 'Online:' },
     rel: { title: 'Similar projects', all: 'All {n} {c} projects', start: 'Start a project like this', brief: 'Similar to' },
     // Search on #work (findBox in app.js).
-    find: { label: 'Search projects and news', ph: 'e.g. ESP32, PETG, bracket', key: 'Press / to search', count: '{p} projects · {n} news', none: 'Nothing matches “{q}” yet.', noneBody: 'Describe what you need — most projects start from a sketch.', news: 'Matching news', clear: 'Clear search' },
+    find: { label: 'Search projects and news', ph: 'e.g. ESP32, PETG, bracket', key: 'Press / to search', count: '{p} projects · {n} news', none: 'Nothing matches “{q}” yet.', noneBody: 'Describe what you need — most projects start from a sketch.', news: 'Matching news', clear: 'Clear search', link: 'Link to these results', linkNote: 'Opens this search and filter in English — paste it in an e-mail or message.' },
     tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale', contact: 'Contact', order: 'Order' }
   },
   sl: {
@@ -125,10 +125,10 @@ var T = {
       pastTag: 'Preverite datum', past: 'Ta datum je danes ali je že mimo — izberite poznejši datum ali v opombi pojasnite, zakaj se mudi.', ok: 'Dovolj časa', tight: 'Tesno — znotraj običajnega roka', short: 'Krajše od običajnega',
       usual: 'običajno {r}', range: 'Običajen rok', none: 'Rok po dogovoru', noneBody: 'brez stalnega roka; datum je v ponudbi', pick: 'Za primerjavo v 1. koraku izberite storitev.',
       note: 'Koledarski dnevi od danes. Vsaka storitev je primerjana posebej; pravi datum potrdim s ponudbo.' },
-    ask: { btn: 'Vprašajte o projektu', subject: 'Vprašanje o' },
+    ask: { btn: 'Vprašajte o projektu', btnPost: 'Vprašajte o objavi', subjectPost: 'Vprašanje o objavi', subject: 'Vprašanje o' },
     print: { btn: 'Natisni ta list', note: 'A4 · brez fotografij in 3D modela.', link: 'Na spletu:' },
     rel: { title: 'Podobni projekti', all: 'Vsi projekti: {c} ({n})', start: 'Začni podoben projekt', brief: 'Podobno kot' },
-    find: { label: 'Iskanje po projektih in novicah', ph: 'npr. ESP32, PETG, nosilec', key: 'Za iskanje pritisnite /', count: 'projekti: {p} · novice: {n}', none: 'Za »{q}« še ni zadetkov.', noneBody: 'Opišite, kaj potrebujete — večina projektov se začne s skico.', news: 'Novice z zadetki', clear: 'Počisti iskanje' },
+    find: { label: 'Iskanje po projektih in novicah', ph: 'npr. ESP32, PETG, nosilec', key: 'Za iskanje pritisnite /', count: 'projekti: {p} · novice: {n}', none: 'Za »{q}« še ni zadetkov.', noneBody: 'Opišite, kaj potrebujete — večina projektov se začne s skico.', news: 'Novice z zadetki', clear: 'Počisti iskanje', link: 'Povezava do teh zadetkov', linkNote: 'Odpre to iskanje in filter v slovenščini — prilepite jo v e-pošto ali sporočilo.' },
     tb: { title: 'Naslov', drawn: 'Risal', loc: 'Lokacija', sheet: 'List', rev: 'Rev', date: 'Datum', scale: 'Merilo', contact: 'Kontakt', order: 'Naročilo' }
   }
 };

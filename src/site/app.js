@@ -37,9 +37,13 @@
     var h = (location.hash || '').replace('#', '');
     var m = /^(en|sl)-?(.*)$/.exec(h);
     if (m) { lang = m[1]; try { localStorage.setItem('nk-lang', lang); } catch (e) {} h = m[2]; }
+    var qi = h.indexOf('?'); if (qi >= 0) { if (h.slice(0, qi) === 'work' && location.hash !== state.findHash) findRead(h.slice(qi + 1)); h = h.slice(0, qi); }
     if (/^p-/.test(h) && bySlug(h.slice(2))) return 'project';
     if (/^n-/.test(h) && newsBySlug(h.slice(2))) return 'post';
     return PAGES.indexOf(h) >= 0 ? h : 'home'; }
+  // A hash with a language prefix (#en-…, #sl-… from shared links and feeds) would switch the language back on render,
+  // so the EN/SL buttons rewrite the prefix to the chosen language.
+  function langHash() { var h = location.hash; if (/^#(en|sl)-?/.test(h)) try { history.replaceState(history.state, '', h.replace(/^#(en|sl)/, '#' + lang)); } catch (e) {} }
   function currentSlug() { var h = (location.hash || '').replace('#', '').replace(/^(en|sl)-?/, ''); return h.slice(2); }
 
   function btn(label, href, variant, size, arrow) {
@@ -176,7 +180,7 @@
       head('', P(n, 'title'), P(n, 'summary'), true, timeTag(n.date) + (n.pinned ? ' · ' + esc(x.pinned) : '')) +
       '<div class="post-grid">' +
       (photos.length ? '<button type="button" class="nk-sheet__art project-art post-cover" data-lb="0" aria-label="' + esc(x.openPhoto) + '"><' + 'img class="sheet-photo" src="' + esc(asset(photos[0])) + '" alt="" draggable="false"></button>' : '') +
-      '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + '</div>' + shareBox('n', n) + printBox('n', n) + '</div></div>' +
+      '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + askLink(n, 'n') + '</div>' + shareBox('n', n) + printBox('n', n) + '</div></div>' +
       (photos.length > 1 ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, k) { return '<button type="button" data-lb="' + k + '" aria-label="' + esc(x.openPhoto + ' ' + (k + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       (next ? '<a class="next-project" href="#n-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.newsLabel) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
       '</section>' + ctaBand();
@@ -207,10 +211,10 @@
       '</section>' + ctaBand();
   }
   // "Ask about this project": e-mail with the sheet number and title in the subject (only when the studio address is set).
-  function askLink(p) {
+  function askLink(p, kind) {
     if (!CONTACT_EMAIL) return '';
-    var x = t().ask, subj = x.subject + ' ' + sheetNo(p) + ' · ' + P(p, 'title');
-    return '<a class="nk-btn" href="mailto:' + esc(CONTACT_EMAIL) + '?subject=' + esc(encodeURIComponent(subj)) + '&amp;body=' + esc(encodeURIComponent(shareUrl('p', p) + '\n\n')) + '">' + esc(x.btn) + '</a>';
+    var x = t().ask, k = kind || 'p', subj = (k === 'n' ? x.subjectPost + ': ' : x.subject + ' ' + sheetNo(p) + ' · ') + P(p, 'title');
+    return '<a class="nk-btn" href="mailto:' + esc(CONTACT_EMAIL) + '?subject=' + esc(encodeURIComponent(subj)) + '&amp;body=' + esc(encodeURIComponent(shareUrl(k, p) + '\n\n')) + '">' + esc(k === 'n' ? x.btnPost : x.btn) + '</a>';
   }
   // ---------- Share this sheet (project + news pages) ----------
   // Self-contained: remove shareUrl()…shareCopy(), the two shareBox() calls in projectView() / postView(), the two
@@ -376,7 +380,7 @@
     return '<div class="find" role="search"><label class="nk-label" for="find-q">' + esc(f.label) + ' <span class="find-key">' + esc(f.key) + '</span></label>' +
       '<div class="find-row"><input class="nk-input" id="find-q" type="search" autocomplete="off" spellcheck="false" placeholder="' + esc(f.ph) + '" value="' + esc(state.q) + '" aria-describedby="find-out">' +
       '<button type="button" class="chip find-clear" data-find-clear aria-label="' + esc(f.clear) + '"' + (state.q ? '' : ' hidden') + '>✕</button></div>' +
-      '<p class="nk-label find-out" id="find-out" role="status" aria-live="polite"></p></div>';
+      '<p class="nk-label find-out" id="find-out" role="status" aria-live="polite"></p>' + findShareBox() + '</div>';
   }
   function findResults() { return '<div class="find-news" id="find-news" hidden></div><div class="find-none" id="find-none" hidden></div>'; }
   function findApply() {
@@ -394,6 +398,51 @@
     none.hidden = !(q && !shown && !news.length);
     none.innerHTML = none.hidden ? '' : '<p class="sub">' + esc(f.none.replace('{q}', q)) + '</p><p class="lead">' + esc(f.noneBody) + '</p><div class="cta-row">' + btn(t().cta, '#order', 'primary', null, true) + '</div>';
     if (clr) clr.hidden = !state.q;
+    findSync();
+  }
+
+  // ---------- Search links (#work): the search and category filter live in the address, e.g. #en-work?q=esp32&cat=iot ----------
+  // Self-contained: remove findQuery()…findShareCopy(), the "?" line in page(), the findShareBox() call in findBox(),
+  // the findSync() call at the end of findApply(), the data-find-copy line in the click handler, find.link* in content.js
+  // and the "Search links" rules at the end of page.css.
+  function findQuery() {
+    var a = [], q = state.q.trim();
+    if (q) a.push('q=' + encodeURIComponent(q));
+    if (state.filter !== 'all') a.push('cat=' + encodeURIComponent(state.filter));
+    return a.length ? '?' + a.join('&') : '';
+  }
+  function findRead(qs) {
+    var q = '', c = 'all';
+    qs.split('&').forEach(function (kv) {
+      var i = kv.indexOf('='), k = i < 0 ? kv : kv.slice(0, i), v = i < 0 ? '' : kv.slice(i + 1);
+      try { v = decodeURIComponent(v.replace(/\+/g, ' ')); } catch (e) { v = ''; }
+      if (k === 'q') q = v.slice(0, 100);
+      if (k === 'cat' && (v === '3d' || CATS[v])) c = v;
+    });
+    state.q = q; state.filter = c;
+  }
+  function findLink() { return 'https://nacekepa.work/#' + lang + '-work' + findQuery(); }
+  function findSync() {
+    var h = location.hash, m = /^#(en|sl)-?/.exec(h), want = '#' + (m ? m[1] + '-' : '') + 'work' + findQuery();
+    if (h !== want) try { history.replaceState(history.state, '', want); } catch (e) {}
+    state.findHash = location.hash; // read back from the address only when it changes from outside (link, Back, typed)
+    var box = document.getElementById('find-share'); if (!box) return;
+    var on = !!findQuery(), url = document.getElementById('find-url');
+    box.hidden = !on;
+    if (url && url.value !== findLink()) { url.value = findLink(); document.getElementById('find-msg').textContent = ''; }
+  }
+  function findShareBox() {
+    var f = t().find, sh = t().share;
+    return '<div class="find-share" id="find-share" hidden><p class="nk-label" id="find-link-l">' + esc(f.link) + '</p>' +
+      '<div class="share-row"><input class="share-url" id="find-url" type="text" readonly value="" aria-labelledby="find-link-l" aria-describedby="find-link-n" spellcheck="false">' +
+      '<button type="button" class="nk-btn nk-btn--sm" data-find-copy>' + esc(sh.copy) + '</button></div>' +
+      '<p class="find-link-n" id="find-link-n">' + esc(f.linkNote) + '</p>' +
+      '<p class="share-msg" id="find-msg" role="status" aria-live="polite"></p></div>';
+  }
+  function findShareCopy() {
+    var f = document.getElementById('find-url'), msg = document.getElementById('find-msg'), x = t().share; if (!f) return;
+    var fail = function () { f.focus(); f.select(); msg.textContent = x.copyFail; };
+    try { navigator.clipboard.writeText(f.value).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
   }
 
   // ---------- Fit check (#services): will a part fit the X2D build volume in one piece? ----------
@@ -617,11 +666,12 @@
     if (el.hasAttribute('data-skip')) { ev.preventDefault(); var mn = document.getElementById('main'); mn.focus({ preventScroll: true }); mn.scrollIntoView({ block: 'start' }); return; }
     if (el.hasAttribute('data-fit-go')) { fitToOrder(); return; }
     if (el.hasAttribute('data-find-clear')) { state.q = ''; var fq = document.getElementById('find-q'); fq.value = ''; findApply(); fq.focus(); return; }
-    if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} render(true); return; }
+    if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); render(true); return; }
     if (el.dataset.filter) { state.filter = el.dataset.filter; render(true); return; }
     if (el.dataset.relCat) { state.filter = el.dataset.relCat; state.q = ''; return; }
     if (el.hasAttribute('data-rel-go')) { relToOrder(); return; }
     if (el.hasAttribute('data-share-copy')) { shareCopy(); return; }
+    if (el.hasAttribute('data-find-copy')) { findShareCopy(); return; }
     if (el.hasAttribute('data-feed-copy')) { feedCopy(); return; }
     if (el.hasAttribute('data-print')) { printSheet(); return; }
     if (el.hasAttribute('data-share-more')) { var sb = el.closest('.share'); try { navigator.share({ title: sb.dataset.shareTitle, url: document.getElementById('share-url').value }).catch(function () {}); } catch (e) {} return; }

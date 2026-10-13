@@ -373,3 +373,10 @@ main:focus { outline: none; }
 .dl-k--due { width: 2px; background: var(--redline); }
 @media (max-width: 640px) { .dl { padding: var(--space-4); } }
 @media print { .dl { break-inside: avoid; } }
+
+/* Search links (#work, findShareBox in app.js). Reuses the .share-row / .share-url / .share-msg rules. */
+.find-share { display: grid; gap: var(--space-2); margin-top: var(--space-3); padding: var(--space-4); background: var(--paper-raised); border: 1px dashed var(--line-strong); }
+.find-share[hidden] { display: none; }
+.find-share p { margin: 0; }
+.find-link-n { font-family: var(--font-mono); font-size: 12px; color: var(--ink-muted); }
+.find-share .share-msg:empty { display: none; }
