@@ -622,7 +622,7 @@
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
       cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '">' + esc(CONTACT_EMAIL) + '</a> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(x.cta) + ' →</a>', 'wide', false, true) +
-      cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa</p></footer>';
+      cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa' + kbdBtn() + '</p></footer>';
     return '<div class="frame"><a class="skip" href="#main" data-skip>' + esc(x.skip) + '</a>' + zones + nav + '<main id="main" tabindex="-1">' + inner + '</main>' + tb + '</div>';
   }
   function cell(k, v, span, title, raw) {
@@ -674,6 +674,7 @@
     if (el.hasAttribute('data-find-copy')) { findShareCopy(); return; }
     if (el.hasAttribute('data-feed-copy')) { feedCopy(); return; }
     if (el.hasAttribute('data-print')) { printSheet(); return; }
+    if (el.hasAttribute('data-kbd')) { kbdOpen(); return; }
     if (el.hasAttribute('data-share-more')) { var sb = el.closest('.share'); try { navigator.share({ title: sb.dataset.shareTitle, url: document.getElementById('share-url').value }).catch(function () {}); } catch (e) {} return; }
     if (el.dataset.lb != null) { var pr = page() === 'post' ? newsBySlug(currentSlug()) : bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
     if (el.id === 'next') { ev.preventDefault(); readForm(); var ok = validate(); if (ok) state.step++; if (ok && state.step === 3) submitOrder(); render(true); var w = document.getElementById('wiz'); if (w) w.scrollIntoView({ block: 'start' }); return; }
@@ -706,10 +707,56 @@
       .then(function (r) { state.send = r.ok ? 'sent' : (r.status === 429 ? 'limited' : 'error'); render(true); }, function () { state.send = 'error'; render(true); });
   }
   app.addEventListener('submit', function (ev) { ev.preventDefault(); });
+  // ---------- Keyboard shortcuts: "?" opens a list; ← / → previous/next sheet; H S W N O jump; L switches EN/SL ----------
+  // Self-contained: remove this block (KBD_GO … kbdKey()), kbdBtn() in frame(), the data-kbd line in the click handler,
+  // the kbdKey(ev) line in the keydown handler, keys: in both languages in content.js and the "Keyboard shortcuts" rules in page.css.
+  var KBD_GO = { h: 'home', s: 'services', w: 'work', n: 'news', o: 'order' };
+  function kbdBtn() { return '<button type="button" class="kbd-open" data-kbd aria-haspopup="dialog">' + esc(t().keys.btn) + ' <kbd>?</kbd></button>'; }
+  function kbdRows() {
+    var x = t(), k = x.keys, r = [['?', k.help], ['/', k.find], ['← →', k.prevNext]];
+    Object.keys(KBD_GO).forEach(function (c) { var v = KBD_GO[c]; if (v === 'news' && !NEWS.length) return; r.push([c.toUpperCase(), v === 'order' ? x.cta : v === 'home' ? x.nav.home : x.nav[v]]); });
+    return r.concat([['L', k.lang], ['Esc', k.close]]);
+  }
+  function kbdClose() { var d = document.getElementById('kbd'); if (d && d.open) d.close(); }
+  function kbdOpen() {
+    if (document.getElementById('kbd')) return;
+    var k = t().keys, back = document.activeElement, d = document.createElement('dialog');
+    d.id = 'kbd'; d.className = 'kbd'; d.setAttribute('aria-labelledby', 'kbd-t'); d.lang = lang;
+    d.innerHTML = '<div class="kbd-head"><div><p class="nk-label">' + esc(k.label) + '</p><h2 class="sub" id="kbd-t">' + esc(k.title) + '</h2></div>' +
+      '<button type="button" class="chip kbd-x" data-kbd-close aria-label="' + esc(k.close) + '">✕</button></div>' +
+      '<dl class="kbd-list">' + kbdRows().map(function (r) { return '<div><dt>' + r[0].split(' ').map(function (c) { return '<kbd>' + esc(c) + '</kbd>'; }).join(' ') + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('') + '</dl>' +
+      '<p class="kbd-note">' + esc(k.note) + '</p>';
+    d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-kbd-close]')) d.close(); });
+    d.addEventListener('close', function () { d.remove(); if (back && back.focus && document.contains(back)) back.focus(); });
+    document.body.appendChild(d);
+    try { d.showModal(); } catch (e) { d.setAttribute('open', ''); }
+    var x = d.querySelector('.kbd-x'); if (x) x.focus();
+  }
+  function kbdStep(dir) {
+    var p = page(), list = p === 'project' ? PROJECTS : p === 'post' ? NEWS : null; if (!list || list.length < 2) return false;
+    var cur = p === 'project' ? bySlug(currentSlug()) : newsBySlug(currentSlug()), i = list.indexOf(cur);
+    var to = list[(i + dir + list.length) % list.length];
+    location.hash = (p === 'project' ? 'p-' : 'n-') + to.slug; return true;
+  }
+  // Returns true when the key was handled. Not while typing, in the photo viewer, the 3D viewer or with Ctrl/Alt/Cmd.
+  function kbdKey(ev, typing) {
+    var dlg = document.getElementById('kbd');
+    if (ev.key === '?' && !typing && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !lb) { ev.preventDefault(); if (dlg) kbdClose(); else kbdOpen(); return true; }
+    if (dlg || typing || lb || ev.ctrlKey || ev.metaKey || ev.altKey || ev.defaultPrevented) return false;
+    if (ev.target && ev.target.closest && ev.target.closest('.nk-viewer')) return false;
+    if ((ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') && !ev.shiftKey) { if (kbdStep(ev.key === 'ArrowRight' ? 1 : -1)) { ev.preventDefault(); return true; } return false; }
+    if (ev.shiftKey || !ev.key || ev.key.length !== 1) return false;
+    var c = ev.key.toLowerCase();
+    if (c === 'l') { lang = lang === 'en' ? 'sl' : 'en'; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); render(true); ev.preventDefault(); return true; }
+    var to = KBD_GO[c]; if (!to || (to === 'news' && !NEWS.length)) return false;
+    ev.preventDefault(); if (page() === to) window.scrollTo(0, 0); else location.hash = to; return true;
+  }
+  window.addEventListener('hashchange', kbdClose);
   // Search keys: "/" jumps to the search on #work from anywhere; Esc in the box clears it.
   document.addEventListener('keydown', function (ev) {
     var tg = ev.target, typing = tg && (/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName) || tg.isContentEditable);
     if (ev.key === 'Escape' && tg && tg.id === 'find-q' && state.q) { state.q = ''; tg.value = ''; findApply(); ev.preventDefault(); return; }
+    if (kbdKey(ev, typing)) return;
     if (ev.key !== '/' || typing || lb || ev.ctrlKey || ev.metaKey || ev.altKey) return;
     ev.preventDefault();
     if (page() === 'work') { var fq = document.getElementById('find-q'); if (fq) fq.focus(); }

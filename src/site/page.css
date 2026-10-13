@@ -380,3 +380,23 @@ main:focus { outline: none; }
 .find-share p { margin: 0; }
 .find-link-n { font-family: var(--font-mono); font-size: 12px; color: var(--ink-muted); }
 .find-share .share-msg:empty { display: none; }
+
+/* Keyboard shortcuts (kbdBtn / kbdOpen in app.js): footer button + "?" dialog. */
+.copy { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2) var(--space-4); }
+.kbd-open { font: 12px/16px var(--font-mono); color: var(--ink-muted); background: none; border: 0; padding: 0; cursor: pointer; }
+.kbd-open:hover { color: var(--redline); }
+.kbd-open:focus-visible, .kbd-x:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+.kbd-open kbd, .kbd kbd { display: inline-block; min-width: 1.6em; padding: 1px 6px; font: 500 12px/16px var(--font-mono); text-align: center; color: var(--ink); background: var(--paper-raised); border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: var(--radius-xs); }
+.kbd { box-sizing: border-box; width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: var(--space-6); color: var(--ink); background: var(--paper); border: 1.5px solid var(--line-strong); border-top: 3px solid var(--redline); border-radius: 0;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 24px 24px; background-position: -1px -1px; }
+.kbd::backdrop { background: color-mix(in srgb, var(--paper-sunk) 70%, transparent); }
+.kbd-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-4); }
+.kbd-head p, .kbd-head h2 { margin: 0; }
+.kbd-x { padding: 4px 10px; }
+.kbd-list { margin: 0; display: grid; border-top: 1px solid var(--line-strong); background: var(--paper-raised); }
+.kbd-list > div { display: grid; grid-template-columns: 6.5em 1fr; gap: var(--space-3); align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.kbd-list dt, .kbd-list dd { margin: 0; }
+.kbd-list dd { font-size: 14px; line-height: 20px; }
+.kbd-note { margin: var(--space-3) 0 0; font: 12px/16px var(--font-mono); color: var(--ink-muted); }
+@media (hover: none) and (pointer: coarse) { .kbd-open { display: none; } }
+@media print { .kbd-open, .kbd { display: none !important; } }

@@ -3,6 +3,37 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-13 (second run)
+
+**Checked:** build, home, #services, #work, #work?q=esp32, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all
+4 steps on the local build, no endpoint → nothing sent), /admin/ sign-in — 1280 px + 390 px, light + dark, EN + SL. Last
+Actions run (0232a82) succeeded; live site returns 200 (checked via the laptop). No JS errors, no CSP violations, no 404s,
+no horizontal scroll, no broken images, no EN text on SL pages.
+
+**Bugs fixed:** none found.
+
+**Improvement:** projects are now described to search engines as a schema.org `ItemList` of `CreativeWork` (name, short
+description, year, category, link `#p-<slug>`, author) — built at build time from `projects.json`, published projects
+only. Data block, not executed, so the CSP script hash is unaffected. `projectsLd` in `src/pages/index.astro`.
+
+**Innovation — Keyboard shortcuts / "Bližnjice na tipkovnici" (press `?` anywhere, or the "Keyboard shortcuts ?" button
+at the bottom right of every page, under the title block):** a small drawing-sheet dialog listing the keys, and the keys
+themselves: `?` show/hide the list, `/` search (existed), `←` / `→` previous / next project sheet (wraps around; on news
+posts once there are 2+ posts), `H` home, `S` services, `W` projects, `N` news (only when there is news), `O` start a
+project, `L` switch EN/SL, `Esc` close. Off while typing in a field, with Ctrl/Alt/Cmd, in the photo viewer and while
+focus is in the 3D viewer. Native modal `<dialog>` (focus goes to Close, Esc / click outside closes, focus returns to the
+button). The footer button is hidden on touch-only phones and in print. Tested: EN + SL, light + dark, 1280 + 390 px,
+every key, typing "h?l" in the search doesn't trigger anything, Ctrl+L untouched, button via Tab + Enter.
+*To remove:* delete the "Keyboard shortcuts" block in `app.js` (`KBD_GO` … `window.addEventListener('hashchange', kbdClose)`),
+`+ kbdBtn()` in `frame()`, the `data-kbd` line in the click handler, the `if (kbdKey(ev, typing)) return;` line in the
+keydown handler, `keys:` in both languages in `content.js` and the "Keyboard shortcuts" rules at the end of `page.css`.
+*Next step:* `G` then a number to jump to sheet NK-YY-NN; show the shortcut hint (`← →`) next to "Next project".
+
+**Ideas for next time** (added to the list below)
+- Public: "← Previous project" link next to "Next project" on project sheets (mouse/touch version of the ← key).
+- Admin: keyboard shortcut Ctrl+S = publish in the project/news editor.
+- Public: project count per year on #work as a small timeline strip (click a year → filter), from `year` in projects.json.
+
 ## 2026-10-13
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-automated-cocktail-dispenser, #news, #n-bambu-lab-x2d, #skills,
@@ -359,7 +390,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link".
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list.
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - Printable one-page project brief from the order wizard (print stylesheet only).
@@ -381,6 +412,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: project sheet preview (like the news preview) in the project editor.
 - Admin: word/character count under each EN/SL article field, with a hint when SL is much shorter than EN.
 - Public: "Back to top" link at the end of long news articles and project sheets on phones.
+- Public: "← Previous project" link next to "Next project" on project sheets.
+- Admin: Ctrl+S = publish in the project/news editor.
+- Public: projects-per-year strip on #work (click a year → filter).
 
 ## 2026-10-03 (second run)
 

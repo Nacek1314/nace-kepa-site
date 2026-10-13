@@ -65,6 +65,7 @@ var T = {
     print: { btn: 'Print this sheet', note: 'A4 · photos and the 3D model are left out.', link: 'Online:' },
     rel: { title: 'Similar projects', all: 'All {n} {c} projects', start: 'Start a project like this', brief: 'Similar to' },
     // Search on #work (findBox in app.js).
+    keys: { btn: 'Keyboard shortcuts', label: 'Shortcuts · keyboard', title: 'Get around without the mouse.', help: 'Show or hide this list', find: 'Search projects and news', prevNext: 'Previous / next sheet (on a project or news post)', lang: 'Switch EN / SL', close: 'Close', note: 'Shortcuts are off while you type in a field.' },
     find: { label: 'Search projects and news', ph: 'e.g. ESP32, PETG, bracket', key: 'Press / to search', count: '{p} projects · {n} news', none: 'Nothing matches “{q}” yet.', noneBody: 'Describe what you need — most projects start from a sketch.', news: 'Matching news', clear: 'Clear search', link: 'Link to these results', linkNote: 'Opens this search and filter in English — paste it in an e-mail or message.' },
     tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale', contact: 'Contact', order: 'Order' }
   },
@@ -128,6 +129,7 @@ var T = {
     ask: { btn: 'Vprašajte o projektu', btnPost: 'Vprašajte o objavi', subjectPost: 'Vprašanje o objavi', subject: 'Vprašanje o' },
     print: { btn: 'Natisni ta list', note: 'A4 · brez fotografij in 3D modela.', link: 'Na spletu:' },
     rel: { title: 'Podobni projekti', all: 'Vsi projekti: {c} ({n})', start: 'Začni podoben projekt', brief: 'Podobno kot' },
+    keys: { btn: 'Bližnjice na tipkovnici', label: 'Bližnjice · tipkovnica', title: 'Po strani brez miške.', help: 'Pokaži ali skrij ta seznam', find: 'Iskanje po projektih in novicah', prevNext: 'Prejšnji / naslednji list (na projektu ali novici)', lang: 'Preklop EN / SL', close: 'Zapri', note: 'Med tipkanjem v polje so bližnjice izklopljene.' },
     find: { label: 'Iskanje po projektih in novicah', ph: 'npr. ESP32, PETG, nosilec', key: 'Za iskanje pritisnite /', count: 'projekti: {p} · novice: {n}', none: 'Za »{q}« še ni zadetkov.', noneBody: 'Opišite, kaj potrebujete — večina projektov se začne s skico.', news: 'Novice z zadetki', clear: 'Počisti iskanje', link: 'Povezava do teh zadetkov', linkNote: 'Odpre to iskanje in filter v slovenščini — prilepite jo v e-pošto ali sporočilo.' },
     tb: { title: 'Naslov', drawn: 'Risal', loc: 'Lokacija', sheet: 'List', rev: 'Rev', date: 'Datum', scale: 'Merilo', contact: 'Kontakt', order: 'Naročilo' }
   }

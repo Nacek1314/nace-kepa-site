@@ -79,6 +79,29 @@ const newsLd = posts.length ? JSON.stringify({
     publisher: { '@type': 'Organization', name: 'Nace Kepa · Engineering Studio', logo: { '@type': 'ImageObject', url: 'https://nacekepa.work/apple-touch-icon.png' } }
   }))
 }).replace(/</g, '\\u003c') : '';
+// Published projects as an ItemList of CreativeWork (data block, not executed). Text, year and category from projects.json.
+const shown = (projects as any[]).filter((p) => !p.hidden);
+const projectsLd = shown.length ? JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'Projects · Nace Kepa',
+  url: 'https://nacekepa.work/#work',
+  numberOfItems: shown.length,
+  itemListElement: shown.map((p, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    item: {
+      '@type': 'CreativeWork',
+      name: p.title?.en || p.title,
+      description: p.description?.en || p.description || undefined,
+      url: 'https://nacekepa.work/#p-' + p.slug,
+      dateCreated: p.year ? String(p.year) : undefined,
+      genre: p.category || undefined,
+      inLanguage: 'en',
+      creator: { '@type': 'Person', name: 'Nace Kepa', url: 'https://nacekepa.work/' }
+    }
+  }))
+}).replace(/</g, '\\u003c') : '';
 ---
 <!doctype html>
 <html lang="en">
@@ -120,6 +143,7 @@ const newsLd = posts.length ? JSON.stringify({
     <style is:inline set:html={css}></style>
     <script is:inline type="application/ld+json" set:html={jsonLd}></script>
     {newsLd && <script is:inline type="application/ld+json" set:html={newsLd}></script>}
+    {projectsLd && <script is:inline type="application/ld+json" set:html={projectsLd}></script>}
   </head>
   <body>
     <div id="app">
