@@ -3,6 +3,42 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-14
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-automated-cocktail-dispenser, #news, #n-bambu-lab-x2d, #skills,
+#about, #order (all 4 steps on the local build, no endpoint → nothing sent), /admin/ sign-in — 1280 px + 390 px, light +
+dark, EN + SL. Last Actions run (1e80e12) succeeded; live site, /admin/, /news.xml and the sitemap return 200 (checked via
+the laptop — the cloud session can't reach nacekepa.work). No JS errors, no CSP violations, no 404s, no horizontal scroll,
+no broken images, no EN text on SL pages.
+
+**Bugs fixed:** none found.
+
+**Improvement:** project sheets now have "← Previous project" / "← Prejšnji projekt" next to "Next project" (a
+`<nav class="sheet-nav">` with `rel="prev"` / `rel="next"`; on phones the two stack, next first) — the mouse/touch version
+of the ← key. `prev` in `projectView()` in `app.js`, `prevProject` / `sheetNav` in `content.js`, `.sheet-nav` in `page.css`.
+
+**Innovation — Printable brief / "Natisni ali shrani kot PDF" (`#order`, step 4 "Brief", button under "Copy brief"; also
+under the copy after a sent enquiry):** prints (or saves as PDF via the browser's print dialog) a clean one-page A4 brief
+instead of the whole form: "Project brief · <date>" (+ the tracking code when the enquiry was sent), "Your brief", a table of
+the answers (services, what it should do, quantity, deadline, files, material, name, e-mail, note), the indicative
+turnaround of the picked services (published `SERVICES[].time`), the next step (existing brief/sent text) and the contact
+line. Ctrl+P on step 4 gives the same sheet. Lets a client keep the brief or get it approved internally before or after
+sending. Uses only what the visitor typed and texts already on the site; nothing is sent anywhere. Tested: EN + SL, light
++ dark (prints light), 1280 + 390 px, keyboard (Tab → Enter calls print once), sent state with a mocked Worker, Edit →
+back to step 1, PDF render = 1 A4 page.
+*To remove:* delete the "Printable brief" block in `app.js` (`bpBtn()`, `bpSheet()`), the two `bpBtn()` calls and the
+`bp-page` / `bpSheet()` parts of the `return` in `orderView()`, the `data-bp-print` line in the click handler, `bp:` in both
+languages in `content.js` and the "Printable brief" rules at the end of `page.css`.
+*Next step:* add the reference project to the brief when the client came from "Start a project like this" (Similar
+projects row) as its own row instead of inside "What should it do?".
+
+**Ideas for next time** (added to the list below)
+- Public: make the Similar-projects "Start a project like this" a shareable link (`#order?like=<slug>`) with a visible,
+  removable "Reference project" card on the order form (a first version was tried today and left out: it duplicated the
+  existing button — reuse `relToOrder()` instead).
+- Admin: "Copy enquiry link" for each project (the `#order?like=` link above), EN + SL.
+- Public: "Email this brief" button on step 4 (mailto: with the brief as body, only when `CONTACT_EMAIL` is set).
+
 ## 2026-10-13 (second run)
 
 **Checked:** build, home, #services, #work, #work?q=esp32, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all
@@ -390,10 +426,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list.
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4.
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
-- Printable one-page project brief from the order wizard (print stylesheet only).
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
 - Admin: "SL text missing" badge on each project/news row in the list (quick view of what still needs translating).
 - Materials index on #work: chips built from the `materials` field of the projects (click → filter by material).
@@ -412,9 +447,10 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: project sheet preview (like the news preview) in the project editor.
 - Admin: word/character count under each EN/SL article field, with a hint when SL is much shorter than EN.
 - Public: "Back to top" link at the end of long news articles and project sheets on phones.
-- Public: "← Previous project" link next to "Next project" on project sheets.
 - Admin: Ctrl+S = publish in the project/news editor.
 - Public: projects-per-year strip on #work (click a year → filter).
+- Admin: "Copy enquiry link" (`#order?like=<slug>`) for each project, EN + SL.
+- Public: "Email this brief" (mailto: with the brief) on order step 4 when `CONTACT_EMAIL` is set.
 
 ## 2026-10-03 (second run)
 

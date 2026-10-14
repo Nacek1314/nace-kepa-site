@@ -188,7 +188,7 @@
 
   function projectView() {
     var x = t(), p = bySlug(currentSlug()), i = PROJECTS.indexOf(p);
-    var next = PROJECTS[(i + 1) % PROJECTS.length];
+    var next = PROJECTS[(i + 1) % PROJECTS.length], prev = PROJECTS[(i - 1 + PROJECTS.length) % PROJECTS.length];
     var m = p.model;
     var photos = p.photos || [];
     var stage = m
@@ -207,7 +207,9 @@
       '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + askLink(p) + '</div>' + shareBox('p', p) + printBox('p', p) + '</aside></div>' +
       (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       relRow(p, next) +
-      (next && next !== p ? '<a class="next-project" href="#p-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.nextProject) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
+      (next && next !== p ? '<nav class="sheet-nav" aria-label="' + esc(x.sheetNav) + '">' +
+        (prev !== next ? '<a class="next-project prev-project" href="#p-' + esc(prev.slug) + '" rel="prev"><span class="nk-label">' + esc(x.prevProject) + '</span><span class="sub">← ' + esc(P(prev, 'title')) + '</span></a>' : '<span></span>') +
+        '<a class="next-project" href="#p-' + esc(next.slug) + '" rel="next"><span class="nk-label">' + esc(x.nextProject) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a></nav>' : '') +
       '</section>' + ctaBand();
   }
   // "Ask about this project": e-mail with the sheet number and title in the subject (only when the studio address is set).
@@ -248,6 +250,31 @@
       '<p class="print-only print-url"><span>' + esc(x.link) + '</span> ' + esc(url) + '</p>';
   }
   function printSheet() { try { window.print(); } catch (e) {} }
+  // ---------- Printable brief (order form, step 4): "Print or save as PDF" gives a clean A4 brief sheet ----------
+  // On step 4 the page prints as the brief only (also with Ctrl+P): a table of the answers, the indicative turnaround,
+  // the next step and the contact line. Uses only what the visitor typed and the published turnarounds.
+  // Self-contained: remove bpBtn()…bpSheet(), the two bpBtn() calls and the bp-page / bpSheet() parts in orderView(),
+  // the data-bp-print line in the click handler, bp: in both languages in content.js and the "Printable brief" rules at
+  // the end of page.css.
+  function bpBtn() {
+    var x = t().bp;
+    return '<div class="print-act bp-act"><button type="button" class="nk-btn nk-btn--sm" data-bp-print>' +
+      '<svg class="print-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>' + esc(x.btn) + '</button>' +
+      '<span class="print-note">' + esc(x.note) + '</span></div>';
+  }
+  function bpSheet() {
+    var o = state.order, x = t(), b = x.bp, sent = state.send === 'sent';
+    var svc = SERVICES.filter(function (s) { return o.services.indexOf(s.key) >= 0; }).map(function (s) { return L(s.title); }).join(', ');
+    var d = new Date(), iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    var rows = [[x.steps[0], svc], [x.fWhat, o.what], [x.fQty, o.qty], [x.fDeadline, o.deadline ? fmtDate(o.deadline) : '—'], [x.fFiles, x.fFilesO[o.files]], [x.fMat, x.fMatO[o.mat]], [x.fName, o.name], [x.fEmail, o.email]];
+    if (o.note) rows.push([x.fNote, o.note]);
+    return '<div class="print-only bp" aria-hidden="true"><p class="nk-label">' + esc(b.label + ' · ' + fmtDate(iso) + (sent ? ' · ' + b.code + ' ' + CODE : '')) + '</p>' +
+      '<h2 class="sec-title">' + esc(x.briefTitle) + '</h2>' +
+      '<dl class="bp-rows">' + rows.map(function (r) { return '<div><dt>' + esc(String(r[0]).replace(/:\s*$/, '')) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('') + '</dl>' +
+      '<p class="nk-label bp-est">' + esc(x.estimate) + '</p>' + estimate() +
+      '<p class="bp-next">' + esc(sent ? x.sentBody.split('. ')[0] + '.' : x.briefLead) + '</p>' +
+      '<p class="bp-contact">' + (CONTACT_EMAIL ? esc(CONTACT_EMAIL) + ' · ' : '') + 'nacekepa.work · ' + esc(LINKEDIN.replace('https://www.', '')) + '</p></div>';
+  }
   // ---------- Similar projects (project pages) ----------
   // Self-contained: remove relScore()…relToOrder(), the relRow() call in projectView(), the data-rel-cat / data-rel-go
   // lines in the click handler, rel: in both languages in content.js and the .rel-* rules at the end of page.css.
@@ -537,12 +564,12 @@
       var brief = briefText();
       if (state.send === 'sent') {
         body = '<div class="sent" role="status"><span class="nk-tag nk-tag--ok">' + esc(x.sentTag) + '</span><h2 class="sub">' + esc(x.sentTitle) + '</h2><p class="hint">' + esc(x.sentBody) + '</p></div>' +
-          '<pre class="brief" tabindex="0">' + esc(briefText()) + '</pre>';
+          '<pre class="brief" tabindex="0">' + esc(briefText()) + '</pre>' + bpBtn();
       } else {
       body = (state.send === 'sending' ? '<p class="nk-label" role="status">' + esc(x.sending) + '</p>' : '') + (state.send === 'error' || state.send === 'limited' ? '<p class="err" role="alert">' + esc(state.send === 'limited' ? x.sendLimited : x.sendFail) + '</p>' : '') +
         '<h2 class="sub">' + esc(x.briefTitle) + '</h2><p class="hint">' + esc(x.briefLead) + '</p>' +
         '<div class="brief-grid"><pre class="brief" id="brief" tabindex="0">' + esc(brief) + '</pre><div class="brief-side"><p class="nk-label">' + esc(x.estimate) + '</p>' + estimate() +
-        '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" id="copy">' + esc(x.copy) + '</button><span class="copy-msg" id="copy-msg" role="status"></span></div>' +
+        '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" id="copy">' + esc(x.copy) + '</button><span class="copy-msg" id="copy-msg" role="status"></span></div>' + bpBtn() +
         '<p class="nk-label">' + esc(x.sendVia) + '</p>' + (CONTACT_EMAIL ? '<p class="mail">' + esc(CONTACT_EMAIL) + '</p>' : '') +
         '<a class="nk-btn nk-btn--sm" href="' + LINKEDIN + '" target="_blank" rel="noopener">' + esc(x.linkedin) + '<span class="nk-btn__arrow" aria-hidden="true">↗</span></a></div></div>';
       }
@@ -550,7 +577,7 @@
     var steps = '<ol class="nk-process wiz" style="--steps:4">' + x.steps.map(function (s, i) { return '<li' + (i === st ? ' class="is-active"' : '') + '><span class="nk-process__n">' + String(i + 1).padStart(2, '0') + ' / 04</span><span class="nk-process__t">' + esc(s) + '</span></li>'; }).join('') + '</ol>';
     var nav = '<div class="wiz-nav">' + (st > 0 ? '<button type="button" class="nk-btn" id="back">' + esc(st === 3 ? x.edit : x.back) + '</button>' : '<span></span>') +
       (st < 3 ? '<button type="button" class="nk-btn nk-btn--primary nk-btn--lg" id="next">' + esc(st === 2 ? x.finish : x.next) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' : '') + '</div>';
-    return '<section class="block first">' + head(x.orderLabel, x.orderTitle, x.orderLead, true) + steps + '<form class="wiz-body" id="wiz" novalidate>' + body + nav + '</form></section>';
+    return '<section class="block first' + (st === 3 ? ' bp-page' : '') + '">' + head(x.orderLabel, x.orderTitle, x.orderLead, true) + steps + '<form class="wiz-body" id="wiz" novalidate>' + body + nav + '</form>' + (st === 3 ? bpSheet() : '') + '</section>';
   }
   // ---------- Deadline check (order form, step 2) ----------
   // Compares the client's deadline with the published turnaround of each picked service (SERVICES[].time in content.js).
@@ -674,6 +701,7 @@
     if (el.hasAttribute('data-find-copy')) { findShareCopy(); return; }
     if (el.hasAttribute('data-feed-copy')) { feedCopy(); return; }
     if (el.hasAttribute('data-print')) { printSheet(); return; }
+    if (el.hasAttribute('data-bp-print')) { printSheet(); return; }
     if (el.hasAttribute('data-kbd')) { kbdOpen(); return; }
     if (el.hasAttribute('data-share-more')) { var sb = el.closest('.share'); try { navigator.share({ title: sb.dataset.shareTitle, url: document.getElementById('share-url').value }).catch(function () {}); } catch (e) {} return; }
     if (el.dataset.lb != null) { var pr = page() === 'post' ? newsBySlug(currentSlug()) : bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
