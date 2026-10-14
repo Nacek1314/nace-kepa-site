@@ -3,6 +3,39 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-14 (second run)
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-engineered-backpack-buckle, #news, #n-bambu-lab-x2d, #skills,
+#about, #order (all 4 steps on the local build, no endpoint → nothing sent), /admin/ sign-in — 1280 px + 390 px, light +
+dark, EN + SL. Last Actions run (117140c) succeeded; live site returns 200 (checked via the laptop — the cloud session
+can't reach nacekepa.work). No JS errors, no CSP violations, no 404s, no horizontal scroll, no broken images, no EN text on
+SL pages.
+
+**Bugs fixed:** none found.
+
+**Improvement:** richer structured data for search engines — each service in the `ProfessionalService` JSON-LD now has
+its description and a link to #services, and Nace's two certifications (CSWA, CSWA-AM) are listed as `hasCredential`.
+Service names/descriptions are read at build time from `SERVICES` in `content.js`, so they can't drift from the page.
+`services` + `jsonLd` in `src/pages/index.astro` (data block, the CSP script hash is unaffected).
+
+**Innovation — What to prepare / "Kaj pripraviti" (`#services`, section under "Will it fit the printer?"):** the visitor
+picks the services they need (chips S-01 … S-04, pre-set from the order form if they already ticked some) and gets one
+combined, de-duplicated checklist of what to have ready — built only from the published "What I need" lists
+(`SERVICES[].need`), each item tagged with the service code it comes from. They tick what they already have ("2 of 8
+ready"), can "Copy checklist" (plain text with [x] / [ ]) and "Start a project with these services" (opens #order with the
+same services ticked). Keyboard: chips are buttons (focus stays on the chip after toggling), items are checkboxes. Tested:
+EN + SL (state kept when switching language), light + dark, 1280 + 390 px, copy, hand-off to the order form; hidden when
+printing.
+*To remove:* delete the "What to prepare" block in `app.js` (`prepSvc()` … `prepToOrder()`), the `prepBox()` call in
+`views.services`, the three `data-prep-*` lines in the click handler and the `prepHave` line in the change handler,
+`prep:` in both languages in `content.js` and the "What to prepare" rules at the end of `page.css`.
+*Next step:* carry the ticked / not-yet-ready items into the order brief (step 4) as their own row.
+
+**Ideas for next time** (added to the list below)
+- Public: "What to prepare" items inside the order form (step 2), so the brief says what the client already has.
+- Admin: edit the "What I need" / "What you get" lists of each service from the dashboard (EN + SL).
+- Public: "Copy contact e-mail" button next to the e-mail address in the footer/CTA band.
+
 ## 2026-10-14
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-automated-cocktail-dispenser, #news, #n-bambu-lab-x2d, #skills,
@@ -426,7 +459,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4.
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services.
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
@@ -451,6 +484,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: projects-per-year strip on #work (click a year → filter).
 - Admin: "Copy enquiry link" (`#order?like=<slug>`) for each project, EN + SL.
 - Public: "Email this brief" (mailto: with the brief) on order step 4 when `CONTACT_EMAIL` is set.
+- Public: "What to prepare" items inside the order form (step 2), carried into the brief.
+- Admin: edit each service's "What I need" / "What you get" lists from the dashboard (EN + SL).
+- Public: "Copy contact e-mail" button next to the e-mail address.
 
 ## 2026-10-03 (second run)
 

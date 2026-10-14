@@ -99,6 +99,7 @@
       var x = t();
       return '<section class="block first">' + head('S-01 … S-04', x.servicesPageTitle, x.servicesPageLead, true) + '<div class="grid-2">' + SERVICES.map(function (s) { return service(s, true); }).join('') + '</div></section>' +
         fitChecker() +
+        prepBox() +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     work: function () {
@@ -539,6 +540,68 @@
     location.hash = 'order';
   }
 
+  // ---------- What to prepare (#services): one checklist from the published SERVICES[].need lists ----------
+  // Self-contained: remove prepItems()…prepToOrder(), the prepBox() call in views.services, the data-prep-* lines in the
+  // click handler, the data-prep-have line in the change handler, T.*.prep in content.js and the "What to prepare"
+  // rules at the end of page.css.
+  state.prep = { svc: null, have: {} };
+  function prepSvc() { if (!state.prep.svc) state.prep.svc = state.order.services.slice(); return state.prep.svc; }
+  function prepItems() { // unique items (by EN text) in service order, each with the codes of the services that need it
+    var out = [], idx = {}, on = prepSvc();
+    SERVICES.forEach(function (s) {
+      if (on.indexOf(s.key) < 0) return;
+      s.need.en.forEach(function (en, i) {
+        if (idx[en] == null) { idx[en] = out.length; out.push({ id: en, text: { en: en, sl: s.need.sl[i] }, codes: [] }); }
+        out[idx[en]].codes.push(s.code);
+      });
+    });
+    return out;
+  }
+  function prepStatus(items) {
+    var f = t().prep, n = items.filter(function (it) { return state.prep.have[it.id]; }).length;
+    if (!items.length) return f.none;
+    return f.count.replace('{n}', n).replace('{t}', items.length) + (n === items.length ? ' · ' + f.all : '');
+  }
+  function prepList(items) {
+    if (!items.length) return '';
+    return '<ul class="prep-list">' + items.map(function (it, i) {
+      return '<li><label class="prep-item"><input type="checkbox" data-prep-have="' + i + '"' + (state.prep.have[it.id] ? ' checked' : '') + '>' +
+        '<span class="prep-t">' + esc(L(it.text)) + '</span><span class="nk-label prep-c">' + esc(it.codes.join(' · ')) + '</span></label></li>';
+    }).join('') + '</ul>';
+  }
+  function prepBox() {
+    var f = t().prep, on = prepSvc(), items = prepItems();
+    return '<section class="block prep" id="prep">' + head(f.label, f.title, f.lead) + '<div class="prep-sheet">' +
+      '<div class="filters prep-svc" role="group" aria-label="' + esc(f.pick) + '">' + SERVICES.map(function (s) {
+        return '<button type="button" class="chip" data-prep-svc="' + s.key + '" aria-pressed="' + (on.indexOf(s.key) >= 0) + '">' + esc(L(s.title)) + ' <span>' + esc(s.code) + '</span></button>';
+      }).join('') + '</div>' +
+      '<div id="prep-list">' + prepList(items) + '</div>' +
+      '<p class="nk-label prep-out" id="prep-out" role="status" aria-live="polite">' + esc(prepStatus(items)) + '</p>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-prep-go' + (items.length ? '' : ' disabled') + '>' + esc(f.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
+      '<button type="button" class="nk-btn" data-prep-copy' + (items.length ? '' : ' disabled') + '>' + esc(f.copy) + '</button></div>' +
+      '<p class="share-msg" id="prep-msg" role="status" aria-live="polite"></p></div></section>';
+  }
+  function prepRefresh(focusKey) {
+    var box = document.getElementById('prep'); if (!box) return;
+    box.outerHTML = prepBox();
+    if (focusKey) { var b = app.querySelector('[data-prep-svc="' + focusKey + '"]'); if (b) b.focus(); }
+  }
+  function prepText() {
+    var f = t().prep;
+    return f.head + '\n' + prepItems().map(function (it) { return (state.prep.have[it.id] ? '[x] ' : '[ ] ') + L(it.text) + ' (' + it.codes.join(', ') + ')'; }).join('\n');
+  }
+  function prepCopy() {
+    var msg = document.getElementById('prep-msg'), f = t().prep;
+    var fail = function () { msg.textContent = f.copyFail; var l = app.querySelector('.prep-list'); if (l) { var r = document.createRange(); r.selectNodeContents(l); var s = getSelection(); s.removeAllRanges(); s.addRange(r); } };
+    try { navigator.clipboard.writeText(prepText()).then(function () { msg.textContent = f.copied; }, fail); } catch (e) { fail(); }
+  }
+  function prepToOrder() {
+    var o = state.order;
+    prepSvc().forEach(function (k) { if (o.services.indexOf(k) < 0) o.services.push(k); });
+    state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+
   function orderView() {
     var x = t(), o = state.order, e = state.errors, st = state.step, body = '';
     var keyMap = { cad: 0, print: 1, iot: 2, build: 3 };
@@ -692,6 +755,9 @@
     var el = ev.target.closest('button, a'); if (!el) return;
     if (el.hasAttribute('data-skip')) { ev.preventDefault(); var mn = document.getElementById('main'); mn.focus({ preventScroll: true }); mn.scrollIntoView({ block: 'start' }); return; }
     if (el.hasAttribute('data-fit-go')) { fitToOrder(); return; }
+    if (el.dataset.prepSvc) { var ps = prepSvc(), pk = el.dataset.prepSvc, pi = ps.indexOf(pk); if (pi < 0) ps.push(pk); else ps.splice(pi, 1); ps.sort(function (p, q) { return SERVICES.map(function (s) { return s.key; }).indexOf(p) - SERVICES.map(function (s) { return s.key; }).indexOf(q); }); prepRefresh(pk); return; }
+    if (el.hasAttribute('data-prep-go')) { prepToOrder(); return; }
+    if (el.hasAttribute('data-prep-copy')) { prepCopy(); return; }
     if (el.hasAttribute('data-find-clear')) { state.q = ''; var fq = document.getElementById('find-q'); fq.value = ''; findApply(); fq.focus(); return; }
     if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); render(true); return; }
     if (el.dataset.filter) { state.filter = el.dataset.filter; render(true); return; }
@@ -715,6 +781,7 @@
   });
   app.addEventListener('input', function (ev) { if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
+    if (ev.target.dataset.prepHave != null) { var it = prepItems()[+ev.target.dataset.prepHave]; if (it) { state.prep.have[it.id] = ev.target.checked; var po = document.getElementById('prep-out'); if (po) po.textContent = prepStatus(prepItems()); } return; }
     var k = ev.target.dataset.svc; if (!k) return;
     var a = state.order.services, i = a.indexOf(k);
     if (ev.target.checked && i < 0) a.push(k); if (!ev.target.checked && i >= 0) a.splice(i, 1);

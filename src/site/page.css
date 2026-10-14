@@ -423,3 +423,23 @@ main:focus { outline: none; }
   .bp-next { margin: var(--space-5) 0 var(--space-1); font-size: 13px; line-height: 18px; }
   .bp-contact { margin: 0; padding-top: var(--space-3); border-top: 1.5px solid var(--ink); font: 11px/16px var(--font-mono); color: var(--ink-muted); }
 }
+
+/* What to prepare (#services): checklist from SERVICES[].need — remove with prepBox() in app.js */
+.prep-sheet { display: grid; gap: var(--space-5); padding: var(--space-6); background: var(--paper-raised); border: 1px solid var(--line-strong); }
+.prep-svc { margin: 0; }
+.prep-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+.prep-list li { border-bottom: 1px solid var(--line); min-width: 0; }
+.prep-list li:nth-child(odd) { border-right: 1px solid var(--line); }
+.prep-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-3); cursor: pointer; }
+.prep-item input { width: 18px; height: 18px; margin: 0; accent-color: var(--redline); }
+.prep-item input:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+.prep-item:has(input:checked) .prep-t { text-decoration: line-through; text-decoration-color: var(--redline); color: var(--ink-muted); }
+.prep-c { white-space: nowrap; }
+.prep-out { margin: 0; }
+.prep .nk-btn[disabled] { opacity: .45; cursor: not-allowed; }
+@media (max-width: 720px) {
+  .prep-sheet { padding: var(--space-4); }
+  .prep-list { grid-template-columns: 1fr; }
+  .prep-list li:nth-child(odd) { border-right: 0; }
+}
+@media print { .prep { display: none; } }

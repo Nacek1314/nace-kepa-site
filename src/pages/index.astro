@@ -38,6 +38,8 @@ const csp = [
 ].join('; ');
 const title = 'Nace Kepa · Engineering Studio';
 const description = 'One-person engineering studio in Škofja Loka, Slovenia: SolidWorks CAD, 3D printing, ESP32 firmware and full custom builds — from the first sketch to the firmware.';
+// Service names and descriptions come from SERVICES in content.js (same text as on #services), read at build time.
+const services: any[] = new Function(content + '\nreturn SERVICES;')();
 // Structured data for search engines (a data block, not executed, so the CSP script hash doesn't apply).
 // Only facts already on the page: name, place, contact, services, LinkedIn.
 const jsonLd = JSON.stringify({
@@ -52,14 +54,15 @@ const jsonLd = JSON.stringify({
   address: { '@type': 'PostalAddress', addressLocality: 'Škofja Loka', addressCountry: 'SI' },
   areaServed: 'EU',
   availableLanguage: ['sl', 'en'],
-  founder: { '@type': 'Person', name: 'Nace Kepa', sameAs: ['https://www.linkedin.com/in/nace-kepa-82735038a'] },
+  founder: { '@type': 'Person', name: 'Nace Kepa', sameAs: ['https://www.linkedin.com/in/nace-kepa-82735038a'],
+    hasCredential: ['Certified SolidWorks Associate', 'Certified SolidWorks Associate — Additive Manufacturing']
+      .map((name) => ({ '@type': 'EducationalOccupationalCredential', name, credentialCategory: 'certification' })) },
   sameAs: ['https://www.linkedin.com/in/nace-kepa-82735038a'],
   knowsAbout: ['SolidWorks', 'CAD', '3D printing', 'ESP32', 'Embedded systems', 'IoT', 'Rapid prototyping'],
   hasOfferCatalog: {
     '@type': 'OfferCatalog',
     name: 'Services',
-    itemListElement: ['3D design & CAD', '3D printing & prototyping', 'Embedded systems & IoT', 'Full custom builds']
-      .map((name) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name } }))
+    itemListElement: services.map((s: any) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: s.title.en, description: s.body.en, url: 'https://nacekepa.work/#services', provider: { '@type': 'Person', name: 'Nace Kepa' } } }))
   }
 }).replace(/</g, '\\u003c');
 // News posts as BlogPosting (data block, not executed). Only published posts; text, date and photos from news.json.
