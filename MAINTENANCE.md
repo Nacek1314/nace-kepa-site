@@ -3,6 +3,39 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-17
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-garden-hose-universal-adapter, #news, #n-bambu-lab-x2d, #skills,
+#about, #order (all 4 steps on the local build, no endpoint → nothing sent), /admin/ sign-in — 1280 px + 390 px, light +
+dark, EN + SL. Last Actions run (57ade3e) succeeded; live site, /admin/, /news.xml, the sitemap and og.png return 200
+(checked via the laptop — the cloud session can't reach nacekepa.work). No JS errors, no CSP violations, no 404s, no
+horizontal scroll, no broken images, no EN text on SL pages.
+
+**Bugs fixed:** none found.
+
+**Improvement:** "Copy e-mail" / "Kopiraj e-naslov" button under the e-mail address on order step 4 ("Send it to"), with a
+"copied" message (falls back to selecting the address). Only shown when `CONTACT_EMAIL` is set. `mailCopy()` in `app.js`,
+`mailCopy` / `mailCopied` / `mailFail` in `content.js`.
+
+**Innovation — What do you already have? / "Kaj že imate?" (`#order`, step 2 "Project", box under the deadline check):**
+the published "What I need" lists (`SERVICES[].need`) of the services picked in step 1, de-duplicated, as checkboxes with
+the service code (S-01 …) and an "N of M ready" counter. Ticks are shared with "What to prepare" on #services (tick there
+→ already ticked here, and back). Once at least one item is ticked, the brief (copy text, sent enquiry, printable A4
+brief) gets "Ready: …" and "Still to prepare: …" rows, so Nace sees at once what the client already has and what to ask
+for. Uses only texts already on the site; nothing new is sent anywhere except inside the existing brief. Tested: EN + SL,
+light + dark, 1280 + 390 px, keyboard (Tab + Space), ticks kept after "Edit answers", brief text with and without ticks,
+printable brief rows.
+*To remove:* delete the "What do you already have?" block in `app.js` (`ocItems()` … `ocRows()`), the `ocBox()` call in
+`orderView()`, the `ocRows()` parts in `briefText()` and `bpSheet()`, the `data-oc-have` line in the change handler,
+`oc:` in both languages in `content.js` and the "What do you already have" rules at the end of `page.css`.
+*Next step:* in the admin, show the "Ready / Still to prepare" rows of incoming enquiries as a checklist (needs the Worker
+to pass them through — not touched today).
+
+**Ideas for next time** (added to the list below)
+- Public: "Copy e-mail" also in the footer title block and the 404 page.
+- Public: list the not-yet-ready checklist items on the "sent" screen as "Next, send me: …".
+- Public: "Start with what I have" — prefill "Do you have files?" in step 2 when "STL / STEP / 3MF file" is ticked.
+
 ## 2026-10-14 (second run)
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-engineered-backpack-buckle, #news, #n-bambu-lab-x2d, #skills,
@@ -459,7 +492,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services.
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief.
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
@@ -484,9 +517,10 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: projects-per-year strip on #work (click a year → filter).
 - Admin: "Copy enquiry link" (`#order?like=<slug>`) for each project, EN + SL.
 - Public: "Email this brief" (mailto: with the brief) on order step 4 when `CONTACT_EMAIL` is set.
-- Public: "What to prepare" items inside the order form (step 2), carried into the brief.
 - Admin: edit each service's "What I need" / "What you get" lists from the dashboard (EN + SL).
-- Public: "Copy contact e-mail" button next to the e-mail address.
+- Public: "Copy e-mail" also in the footer title block and the 404 page (order step 4 has it since 2026-10-17).
+- Public: list the not-yet-ready checklist items on the "sent" screen as "Next, send me: …".
+- Public: prefill "Do you have files?" in step 2 when "STL / STEP / 3MF file" is ticked in the checklist.
 
 ## 2026-10-03 (second run)
 

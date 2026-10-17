@@ -269,6 +269,7 @@
     var d = new Date(), iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     var rows = [[x.steps[0], svc], [x.fWhat, o.what], [x.fQty, o.qty], [x.fDeadline, o.deadline ? fmtDate(o.deadline) : '—'], [x.fFiles, x.fFilesO[o.files]], [x.fMat, x.fMatO[o.mat]], [x.fName, o.name], [x.fEmail, o.email]];
     if (o.note) rows.push([x.fNote, o.note]);
+    rows = rows.concat(ocRows());
     return '<div class="print-only bp" aria-hidden="true"><p class="nk-label">' + esc(b.label + ' · ' + fmtDate(iso) + (sent ? ' · ' + b.code + ' ' + CODE : '')) + '</p>' +
       '<h2 class="sec-title">' + esc(x.briefTitle) + '</h2>' +
       '<dl class="bp-rows">' + rows.map(function (r) { return '<div><dt>' + esc(String(r[0]).replace(/:\s*$/, '')) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('') + '</dl>' +
@@ -616,7 +617,7 @@
         field('qty', x.fQty, '<input class="nk-input" id="f-qty" data-f="qty" type="number" min="1" value="' + esc(o.qty) + '">') +
         field('deadline', x.fDeadline, '<input class="nk-input" id="f-deadline" data-f="deadline" type="date" min="' + dlMin() + '" value="' + esc(o.deadline) + '">') +
         field('files', x.fFiles, select('files', x.fFilesO, o.files)) +
-        field('mat', x.fMat, select('mat', x.fMatO, o.mat)) + dlBox() + '</div>';
+        field('mat', x.fMat, select('mat', x.fMatO, o.mat)) + dlBox() + ocBox() + '</div>';
     } else if (st === 2) {
       body = '<h2 class="sub">' + esc(x.q3) + '</h2><div class="form">' +
         field('name', x.fName, '<input class="nk-input" id="f-name" data-f="name" autocomplete="name" value="' + esc(o.name) + '">', e.name ? x.errName : null, e.name) +
@@ -633,7 +634,7 @@
         '<h2 class="sub">' + esc(x.briefTitle) + '</h2><p class="hint">' + esc(x.briefLead) + '</p>' +
         '<div class="brief-grid"><pre class="brief" id="brief" tabindex="0">' + esc(brief) + '</pre><div class="brief-side"><p class="nk-label">' + esc(x.estimate) + '</p>' + estimate() +
         '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" id="copy">' + esc(x.copy) + '</button><span class="copy-msg" id="copy-msg" role="status"></span></div>' + bpBtn() +
-        '<p class="nk-label">' + esc(x.sendVia) + '</p>' + (CONTACT_EMAIL ? '<p class="mail">' + esc(CONTACT_EMAIL) + '</p>' : '') +
+        '<p class="nk-label">' + esc(x.sendVia) + '</p>' + (CONTACT_EMAIL ? '<p class="mail" id="mail">' + esc(CONTACT_EMAIL) + '</p><div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mail-copy>' + esc(x.mailCopy) + '</button><span class="copy-msg" id="mail-msg" role="status"></span></div>' : '') +
         '<a class="nk-btn nk-btn--sm" href="' + LINKEDIN + '" target="_blank" rel="noopener">' + esc(x.linkedin) + '<span class="nk-btn__arrow" aria-hidden="true">↗</span></a></div></div>';
       }
     }
@@ -684,6 +685,51 @@
   function dlMin() { var d = new Date(); d.setDate(d.getDate() + 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function dlBox() { var h = dlInner(); return '<div class="dl full" id="dl" aria-live="polite"' + (h ? '' : ' hidden') + '>' + h + '</div>'; }
   function dlUpdate() { var el = document.getElementById('dl'); if (!el) return; var h = dlInner(); el.innerHTML = h; el.hidden = !h; }
+  // ---------- What do you already have? (order form, step 2) ----------
+  // The published "What I need" lists (SERVICES[].need) of the services picked in step 1 as checkboxes; the ticks are
+  // shared with "What to prepare" on #services (state.prep.have) and go into the brief / printable brief as "Ready" and
+  // "Still to prepare" — only once at least one item is ticked.
+  // Self-contained: remove ocItems()…ocRows(), the ocBox() call in orderView(), the ocRows() parts in briefText() and
+  // bpSheet(), the data-oc-have line in the change handler, oc: in both languages in content.js and the
+  // "What do you already have" rules at the end of page.css.
+  function ocItems() {
+    var out = [], idx = {}, on = state.order.services;
+    SERVICES.forEach(function (s) {
+      if (on.indexOf(s.key) < 0 || !s.need) return;
+      s.need.en.forEach(function (en, i) {
+        if (idx[en] == null) { idx[en] = out.length; out.push({ id: en, text: { en: en, sl: s.need.sl[i] }, codes: [] }); }
+        out[idx[en]].codes.push(s.code);
+      });
+    });
+    return out;
+  }
+  function ocStatus(items) {
+    var n = items.filter(function (it) { return state.prep.have[it.id]; }).length;
+    return t().oc.count.replace('{n}', n).replace('{t}', items.length);
+  }
+  function ocBox() {
+    var f = t().oc, items = ocItems();
+    if (!items.length) return '';
+    return '<fieldset class="oc full"><legend class="nk-label">' + esc(f.label) + '</legend><h3 class="oc-title">' + esc(f.title) + '</h3><p class="oc-lead">' + esc(f.lead) + '</p>' +
+      '<ul class="prep-list oc-list">' + items.map(function (it, i) {
+        return '<li><label class="prep-item"><input type="checkbox" data-oc-have="' + i + '"' + (state.prep.have[it.id] ? ' checked' : '') + '>' +
+          '<span class="prep-t">' + esc(L(it.text)) + '</span><span class="nk-label prep-c">' + esc(it.codes.join(' · ')) + '</span></label></li>';
+      }).join('') + '</ul><p class="nk-label oc-out" id="oc-out" role="status" aria-live="polite">' + esc(ocStatus(items)) + '</p></fieldset>';
+  }
+  function ocRows() { // [[label, text]] for the brief; empty until something is ticked
+    var f = t().oc, items = ocItems(), yes = [], no = [];
+    items.forEach(function (it) { (state.prep.have[it.id] ? yes : no).push(L(it.text)); });
+    if (!yes.length) return [];
+    var r = [[f.ready, yes.join(', ')]];
+    if (no.length) r.push([f.todo, no.join(', ')]);
+    return r;
+  }
+  // Order step 4: copy the contact e-mail address (falls back to selecting it).
+  function mailCopy() {
+    var x = t(), msg = document.getElementById('mail-msg'), el = document.getElementById('mail');
+    var fail = function () { msg.textContent = x.mailFail; var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+    try { navigator.clipboard.writeText(CONTACT_EMAIL).then(function () { msg.textContent = x.mailCopied; }, fail); } catch (e) { fail(); }
+  }
   function field(k, label, ctl, hint, err, full) {
     return '<div class="nk-field' + (err ? ' nk-field--error' : '') + (full ? ' full' : '') + '"><label class="nk-field__label" for="f-' + k + '">' + esc(label) + '</label>' + ctl + (hint ? '<span class="nk-field__hint">' + esc(hint) + '</span>' : '') + '</div>';
   }
@@ -697,7 +743,7 @@
     var o = state.order, x = t();
     var svc = SERVICES.filter(function (s) { return o.services.indexOf(s.key) >= 0; }).map(function (s) { return L(s.title); }).join(', ');
     return [x.orderTitle.toUpperCase() + ' — nacekepa.work', '', x.steps[0] + ': ' + svc, x.fWhat + ' ' + o.what, x.fQty + ': ' + o.qty, x.fDeadline + ': ' + (o.deadline || '—'),
-      x.fFiles + ' ' + x.fFilesO[o.files], x.fMat + ': ' + x.fMatO[o.mat], '', x.fName + ': ' + o.name, x.fEmail + ': ' + o.email, o.note ? x.fNote + ' ' + o.note : ''].join('\n').trim();
+      x.fFiles + ' ' + x.fFilesO[o.files], x.fMat + ': ' + x.fMatO[o.mat], '', x.fName + ': ' + o.name, x.fEmail + ': ' + o.email, o.note ? x.fNote + ' ' + o.note : ''].concat(ocRows().length ? [''].concat(ocRows().map(function (r) { return r[0] + ' ' + r[1]; })) : []).join('\n').replace(/\n{3,}/g, '\n\n').trim();
   }
 
   function frame(inner) {
@@ -758,6 +804,7 @@
     if (el.dataset.prepSvc) { var ps = prepSvc(), pk = el.dataset.prepSvc, pi = ps.indexOf(pk); if (pi < 0) ps.push(pk); else ps.splice(pi, 1); ps.sort(function (p, q) { return SERVICES.map(function (s) { return s.key; }).indexOf(p) - SERVICES.map(function (s) { return s.key; }).indexOf(q); }); prepRefresh(pk); return; }
     if (el.hasAttribute('data-prep-go')) { prepToOrder(); return; }
     if (el.hasAttribute('data-prep-copy')) { prepCopy(); return; }
+    if (el.hasAttribute('data-mail-copy')) { mailCopy(); return; }
     if (el.hasAttribute('data-find-clear')) { state.q = ''; var fq = document.getElementById('find-q'); fq.value = ''; findApply(); fq.focus(); return; }
     if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); render(true); return; }
     if (el.dataset.filter) { state.filter = el.dataset.filter; render(true); return; }
@@ -782,6 +829,7 @@
   app.addEventListener('input', function (ev) { if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
     if (ev.target.dataset.prepHave != null) { var it = prepItems()[+ev.target.dataset.prepHave]; if (it) { state.prep.have[it.id] = ev.target.checked; var po = document.getElementById('prep-out'); if (po) po.textContent = prepStatus(prepItems()); } return; }
+    if (ev.target.dataset.ocHave != null) { var oi = ocItems()[+ev.target.dataset.ocHave]; if (oi) { state.prep.have[oi.id] = ev.target.checked; var oo = document.getElementById('oc-out'); if (oo) oo.textContent = ocStatus(ocItems()); } return; }
     var k = ev.target.dataset.svc; if (!k) return;
     var a = state.order.services, i = a.indexOf(k);
     if (ev.target.checked && i < 0) a.push(k); if (!ev.target.checked && i >= 0) a.splice(i, 1);
