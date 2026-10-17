@@ -3,6 +3,40 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## 2026-10-17 (second run)
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-snap-on-desk-cable-clip, #news, #n-bambu-lab-x2d, #skills,
+#about, #order (steps 1–2 on the local build, nothing sent), /admin/ sign-in — 1280 px + 390 px, light + dark, EN + SL.
+Last Actions run (1bba310) succeeded; live site returns 200 (checked via the laptop — the cloud session can't reach
+nacekepa.work). No JS errors, no CSP violations, no 404s, no horizontal scroll, no broken images, no EN text on SL pages.
+
+**Bugs fixed:** none found.
+
+**Improvement:** "Copy" / "Kopiraj" next to the e-mail address in the footer title block ("Contact" cell, every page),
+with a "Copied." message (falls back to selecting the address) — for visitors whose `mailto:` link opens nothing. Only
+shown when `CONTACT_EMAIL` is set; hidden in print. `tbCopy()` in `app.js`, `tbCopy` / `tbCopied` in `content.js`,
+"Copy next to the e-mail" rules in `page.css`.
+
+**Innovation — Shortlist / "Izbor" (project sheets `#p-<slug>`: "☆ Add to shortlist" under "Start a project"; `#work`:
+"Your shortlist" box at the top once something is saved):** a visitor collects the sheets that are close to what they
+want while browsing, then on #work sees them as a list (sheet number, title, category, ✕ to remove) with "Start a project
+with these" (opens the order form with "Reference projects: FamFive (NK-25-01); …" added to "What should it do?"),
+"Copy list" (sheet numbers, titles and links in the current language) and "Clear shortlist". Kept only in the visitor's
+browser (`localStorage` "nk-shortlist", in memory if storage is blocked) — nothing is sent anywhere unless it goes into
+the brief. Removed or hidden projects drop out automatically. Uses only projects already on the site. Tested: EN + SL,
+light + dark, 1280 + 390 px, keyboard (Enter on the toggle keeps focus; ✕ moves focus to the next ✕ or the search),
+status messages, clipboard text, reload keeps the list, hand-off into order step 2; hidden in print.
+*To remove:* delete the "Shortlist" block in `app.js` (`SL_KEY` … `slToOrder()`), the `slToggle(p)` call in
+`projectView()`, the `slBox()` call in `views.work`, the five `data-sl-*` lines in the click handler, `sl:` in both
+languages in `content.js` and the "Shortlist" rules at the end of `page.css`.
+*Next step:* a small ★ on shortlisted cards in the #work grid; a shareable shortlist link (`#work?list=slug,slug`) so a
+client can send the selection to a colleague who sees the same list.
+
+**Ideas for next time** (added to the list below)
+- Public: ★ marker on shortlisted sheet cards in the #work grid and on "Similar projects".
+- Public: shareable shortlist link (`#work?list=…`) that opens the same shortlist on another device.
+- Admin: "Copy enquiry link" for a group of projects (the shortlist link above) to paste in LinkedIn replies.
+
 ## 2026-10-17
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-garden-hose-universal-adapter, #news, #n-bambu-lab-x2d, #skills,
@@ -492,7 +526,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief.
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form.
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
@@ -518,7 +552,10 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: "Copy enquiry link" (`#order?like=<slug>`) for each project, EN + SL.
 - Public: "Email this brief" (mailto: with the brief) on order step 4 when `CONTACT_EMAIL` is set.
 - Admin: edit each service's "What I need" / "What you get" lists from the dashboard (EN + SL).
-- Public: "Copy e-mail" also in the footer title block and the 404 page (order step 4 has it since 2026-10-17).
+- Public: "Copy e-mail" on the 404 page (order step 4 and the footer have it since 2026-10-17).
+- Public: ★ marker on shortlisted sheet cards in the #work grid and on "Similar projects".
+- Public: shareable shortlist link (`#work?list=…`) that opens the same shortlist on another device.
+- Admin: "Copy enquiry link" for a group of projects (the shortlist link) to paste in LinkedIn replies.
 - Public: list the not-yet-ready checklist items on the "sent" screen as "Next, send me: …".
 - Public: prefill "Do you have files?" in step 2 when "STL / STEP / 3MF file" is ticked in the checklist.
 

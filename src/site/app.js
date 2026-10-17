@@ -108,6 +108,7 @@
       var has3d = PROJECTS.some(function (p) { return p.model; });
       if (has3d) cats.splice(1, 0, '3d');
       return '<section class="block first">' + head(PROJECTS.length + ' ' + x.shown, x.workPageTitle, x.workPageLead, true) +
+        slBox() +
         findBox() +
         '<div class="filters" role="group" aria-label="' + esc(x.aria.filter) + '">' + cats.map(function (c) {
           var n = c === 'all' ? PROJECTS.length : PROJECTS.filter(function (p) { return c === '3d' ? !!p.model : p.category === c; }).length;
@@ -205,7 +206,7 @@
       head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
       '<div class="project-grid"><div class="project-stage">' + stage + '</div><aside class="project-side">' + specs(rows) +
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
-      '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + askLink(p) + '</div>' + shareBox('p', p) + printBox('p', p) + '</aside></div>' +
+      '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + askLink(p) + '</div>' + slToggle(p) + shareBox('p', p) + printBox('p', p) + '</aside></div>' +
       (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       relRow(p, next) +
       (next && next !== p ? '<nav class="sheet-nav" aria-label="' + esc(x.sheetNav) + '">' +
@@ -312,6 +313,68 @@
   function relToOrder() {
     var p = bySlug(currentSlug()), o = state.order; if (!p) return;
     var line = t().rel.brief + ': ' + P(p, 'title') + ' (' + sheetNo(p) + ').';
+    if (o.what.indexOf(line) < 0) o.what = o.what ? o.what + '\n' + line : line;
+    state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+  // ---------- Shortlist (project sheets + #work): visitors collect sheets they like and start a project with them ----------
+  // Kept only in this browser (localStorage "nk-shortlist", in memory if storage is blocked); nothing is sent anywhere
+  // unless the visitor puts it in the order brief. Self-contained: remove SL_KEY…slClear(), the slToggle() call in
+  // projectView(), the slBox() call in views.work, the five data-sl-* lines in the click handler, sl: in both languages in
+  // content.js and the "Shortlist" rules at the end of page.css.
+  var SL_KEY = 'nk-shortlist', slMem = null;
+  function slRead() {
+    if (!slMem) { slMem = []; try { var a = JSON.parse(localStorage.getItem(SL_KEY) || '[]'); if (Array.isArray(a)) slMem = a.filter(function (v) { return typeof v === 'string'; }); } catch (e) {} }
+    return slMem.filter(function (v, i, a) { return bySlug(v) && a.indexOf(v) === i; });
+  }
+  function slSave(a) { slMem = a.slice(); try { localStorage.setItem(SL_KEY, JSON.stringify(slMem)); } catch (e) {} }
+  function slToggle(p) {
+    var x = t().sl, on = slRead().indexOf(p.slug) >= 0, n = slRead().length;
+    return '<div class="sl-act"><div class="sl-row" id="sl-row"><button type="button" class="nk-btn nk-btn--sm sl-tog" data-sl-tog="' + esc(p.slug) + '"><span class="sl-star" aria-hidden="true">' + (on ? '★' : '☆') + '</span>' + esc(on ? x.remove : x.add) + '</button>' +
+      (n ? '<a class="share-link" href="#work">' + esc(x.see.replace('{n}', n)) + ' →</a>' : '') + '<span class="sl-note">' + esc(x.note) + '</span></div>' +
+      '<p class="share-msg" id="sl-amsg" role="status" aria-live="polite"></p></div>';
+  }
+  function slFlip(slug) {
+    var a = slRead(), i = a.indexOf(slug), x = t().sl, p = bySlug(slug); if (!p) return;
+    if (i < 0) a.push(slug); else a.splice(i, 1);
+    slSave(a);
+    var row = document.getElementById('sl-row'); if (!row) return;
+    var tmp = document.createElement('div'); tmp.innerHTML = slToggle(p);
+    row.replaceWith(tmp.querySelector('#sl-row'));
+    var b = document.querySelector('[data-sl-tog]'); if (b) b.focus();
+    document.getElementById('sl-amsg').textContent = i < 0 ? x.added.replace('{n}', a.length) : x.removed;
+  }
+  function slBox() {
+    var x = t().sl, a = slRead().map(bySlug);
+    if (!a.length) return '';
+    return '<section class="sl" aria-labelledby="sl-h"><div class="sl-head"><p class="nk-label">' + esc(x.label) + ' · ' + a.length + '</p><h2 class="sub" id="sl-h" tabindex="-1">' + esc(x.title) + '</h2><p class="sl-lead">' + esc(x.lead) + '</p></div>' +
+      '<ul class="sl-list" id="sl-list">' + a.map(function (p) {
+        return '<li><a href="#p-' + esc(p.slug) + '"><span class="nk-label">' + sheetNo(p) + '</span><span class="sl-t">' + esc(P(p, 'title')) + '</span><span class="nk-label sl-c">' + esc(cat(p)) + '</span></a>' +
+          '<button type="button" class="chip sl-x" data-sl-del="' + esc(p.slug) + '" aria-label="' + esc(x.del.replace('{t}', P(p, 'title'))) + '">✕</button></li>';
+      }).join('') + '</ul>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--sm" data-sl-go>' + esc(x.start) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
+      '<button type="button" class="nk-btn nk-btn--sm" data-sl-copy>' + esc(x.copy) + '</button><button type="button" class="share-link" data-sl-clear>' + esc(x.clear) + '</button></div>' +
+      '<p class="share-msg" id="sl-msg" role="status" aria-live="polite"></p></section>';
+  }
+  function slDel(slug) {
+    var a = slRead(), i = a.indexOf(slug); if (i < 0) return;
+    a.splice(i, 1); slSave(a); render(true);
+    var xs = document.querySelectorAll('[data-sl-del]'), f = xs[Math.min(i, xs.length - 1)] || document.getElementById('find-q');
+    if (f) f.focus();
+  }
+  function slClear() { slSave([]); render(true); var f = document.getElementById('find-q'); if (f) f.focus(); }
+  function slText() {
+    var x = t().sl;
+    return [x.title + ' — nacekepa.work', ''].concat(slRead().map(function (s) { var p = bySlug(s); return sheetNo(p) + ' · ' + P(p, 'title') + ' — ' + shareUrl('p', p); })).join('\n');
+  }
+  function slCopy() {
+    var x = t().sl, msg = document.getElementById('sl-msg'), list = document.getElementById('sl-list');
+    var fail = function () { msg.textContent = x.copyFail; var r = document.createRange(); r.selectNodeContents(list); var s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+    try { navigator.clipboard.writeText(slText()).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+  }
+  function slToOrder() {
+    var a = slRead(), o = state.order; if (!a.length) return;
+    var line = t().sl.brief + ': ' + a.map(function (s) { var p = bySlug(s); return P(p, 'title') + ' (' + sheetNo(p) + ')'; }).join('; ') + '.';
     if (o.what.indexOf(line) < 0) o.what = o.what ? o.what + '\n' + line : line;
     state.step = 0; state.errors = {}; state.send = 'idle';
     location.hash = 'order';
@@ -730,6 +793,12 @@
     var fail = function () { msg.textContent = x.mailFail; var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); };
     try { navigator.clipboard.writeText(CONTACT_EMAIL).then(function () { msg.textContent = x.mailCopied; }, fail); } catch (e) { fail(); }
   }
+  // Footer title block: copy the contact e-mail (for visitors without a mail app); falls back to selecting the address.
+  function tbCopy() {
+    var x = t(), msg = document.getElementById('tb-msg'), el = document.getElementById('tb-mail'); if (!msg || !el) return;
+    var fail = function () { msg.textContent = x.mailFail; var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+    try { navigator.clipboard.writeText(CONTACT_EMAIL).then(function () { msg.textContent = x.tbCopied; }, fail); } catch (e) { fail(); }
+  }
   function field(k, label, ctl, hint, err, full) {
     return '<div class="nk-field' + (err ? ' nk-field--error' : '') + (full ? ' full' : '') + '"><label class="nk-field__label" for="f-' + k + '">' + esc(label) + '</label>' + ctl + (hint ? '<span class="nk-field__hint">' + esc(hint) + '</span>' : '') + '</div>';
   }
@@ -757,7 +826,7 @@
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
-      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '">' + esc(CONTACT_EMAIL) + '</a> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(x.cta) + ' →</a>', 'wide', false, true) +
+      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '" id="tb-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-tb-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="tb-msg" role="status" aria-live="polite"></span> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(x.cta) + ' →</a>', 'wide', false, true) +
       cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa' + kbdBtn() + '</p></footer>';
     return '<div class="frame"><a class="skip" href="#main" data-skip>' + esc(x.skip) + '</a>' + zones + nav + '<main id="main" tabindex="-1">' + inner + '</main>' + tb + '</div>';
   }
@@ -805,6 +874,12 @@
     if (el.hasAttribute('data-prep-go')) { prepToOrder(); return; }
     if (el.hasAttribute('data-prep-copy')) { prepCopy(); return; }
     if (el.hasAttribute('data-mail-copy')) { mailCopy(); return; }
+    if (el.dataset.slTog) { slFlip(el.dataset.slTog); return; }
+    if (el.dataset.slDel) { slDel(el.dataset.slDel); return; }
+    if (el.hasAttribute('data-sl-go')) { slToOrder(); return; }
+    if (el.hasAttribute('data-sl-copy')) { slCopy(); return; }
+    if (el.hasAttribute('data-sl-clear')) { slClear(); return; }
+    if (el.hasAttribute('data-tb-copy')) { tbCopy(); return; }
     if (el.hasAttribute('data-find-clear')) { state.q = ''; var fq = document.getElementById('find-q'); fq.value = ''; findApply(); fq.focus(); return; }
     if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); render(true); return; }
     if (el.dataset.filter) { state.filter = el.dataset.filter; render(true); return; }
