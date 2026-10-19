@@ -480,3 +480,20 @@ main:focus { outline: none; }
 .sl .share-msg { margin: 0; }
 @media (max-width: 640px) { .sl { padding: var(--space-4); } .sl-c { display: none; } }
 @media print { .sl, .sl-act { display: none; } }
+/* Saved draft (order form, steps 1–3) — remove with drBar() in app.js */
+.dr { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-4); margin: 0 0 var(--space-6); padding: var(--space-3) var(--space-4); background: var(--paper-raised); border: 1px dashed var(--line-strong); border-left: 3px solid var(--redline); }
+.dr[hidden] { display: none; }
+.dr p { margin: 0; }
+.dr-l { flex: 0 0 auto; }
+.dr-txt { flex: 1 1 260px; min-width: 0; font-size: 14px; line-height: 20px; color: var(--ink-muted); }
+.dr-act { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.dr-ask { font-size: 14px; color: var(--ink); }
+.dr-clear { font: 11px/16px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); background: none; border: 0; padding: 4px 0; min-height: 24px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.dr-clear:hover { color: var(--redline); }
+.dr-clear:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+@media print { .dr { display: none; } }
+/* Sent screen: "Next, send me" — remove with ocNext() in app.js */
+.oc-next { margin: var(--space-6) 0; padding: var(--space-4); border: 1px solid var(--line-strong); border-left: 3px solid var(--redline); background: var(--paper-raised); }
+.oc-next p { margin: 0; }
+.oc-next ul { margin: var(--space-2) 0; padding-left: 1.2em; }
+.oc-next li { margin: 2px 0; }

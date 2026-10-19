@@ -666,6 +666,64 @@
     location.hash = 'order';
   }
 
+  // ---------- Saved draft (order form): the unfinished brief stays in this browser and is filled in on the next visit ----------
+  // localStorage "nk-order-draft" (picked services, answers, contact details, checklist ticks, step) — nothing is sent
+  // anywhere. Cleared once the brief is sent, with "Clear the form", or after DR_DAYS days.
+  // Self-contained: remove DR_KEY … drClearAll(), the drLoad() call before the first render(true), the drSave() lines in
+  // render() and the input/change handlers, the drBar() call in orderView(), the three data-dr-* lines in the click
+  // handler, dr: in both languages in content.js and the "Saved draft" rules at the end of page.css.
+  var DR_KEY = 'nk-order-draft', DR_DAYS = 30, dr = { at: 0, restored: false, ask: false, msg: '' };
+  var DR_FIELDS = ['what', 'qty', 'deadline', 'name', 'email', 'note'];
+  function drHas() { var o = state.order; return o.services.length > 0 || DR_FIELDS.some(function (k) { return k !== 'qty' && String(o[k] || '').trim(); }); }
+  function drSave() {
+    try {
+      if (state.send === 'sent' || !drHas()) { if (dr.at) localStorage.removeItem(DR_KEY); dr.at = 0; return; }
+      var o = state.order, d = { v: 1, at: Date.now(), step: Math.min(state.step, 2), services: o.services.slice(), files: +o.files || 0, mat: +o.mat || 0, have: state.prep.have };
+      DR_FIELDS.forEach(function (k) { d[k] = String(o[k] || ''); });
+      localStorage.setItem(DR_KEY, JSON.stringify(d)); dr.at = d.at;
+    } catch (e) {}
+    drShow();
+  }
+  function drLoad() {
+    var d; try { d = JSON.parse(localStorage.getItem(DR_KEY) || 'null'); } catch (e) { return; }
+    if (!d || d.v !== 1 || typeof d.at !== 'number') return;
+    if (Date.now() - d.at > DR_DAYS * 864e5) { try { localStorage.removeItem(DR_KEY); } catch (e) {} return; }
+    var o = state.order, keys = SERVICES.map(function (s) { return s.key; }), x = t();
+    o.services = (Array.isArray(d.services) ? d.services : []).filter(function (k, i, a) { return keys.indexOf(k) >= 0 && a.indexOf(k) === i; });
+    DR_FIELDS.forEach(function (k) { if (typeof d[k] === 'string') o[k] = d[k].slice(0, 5000); });
+    if (!/^\d{1,6}$/.test(o.qty)) o.qty = '1';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(o.deadline)) o.deadline = '';
+    o.files = d.files >= 0 && d.files < x.fFilesO.length ? d.files | 0 : 0;
+    o.mat = d.mat >= 0 && d.mat < x.fMatO.length ? d.mat | 0 : 0;
+    if (d.have && typeof d.have === 'object') Object.keys(d.have).forEach(function (k) { if (d.have[k] === true) state.prep.have[k] = true; });
+    if (!drHas()) return;
+    state.step = d.step === 1 || d.step === 2 ? d.step : 0;
+    dr.at = d.at; dr.restored = true;
+  }
+  function drWhen() { try { return new Date(dr.at).toLocaleString(lang === 'sl' ? 'sl-SI' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+  function drInner() {
+    var f = t().dr;
+    if (dr.msg) return '<p class="dr-txt" role="status">' + esc(dr.msg) + '</p>';
+    var act = dr.ask
+      ? '<span class="dr-ask">' + esc(f.ask) + '</span> <button type="button" class="nk-btn nk-btn--sm" data-dr-yes>' + esc(f.yes) + '</button> <button type="button" class="nk-btn nk-btn--sm" data-dr-keep>' + esc(f.keep) + '</button>'
+      : '<button type="button" class="dr-clear" data-dr-clear>' + esc(f.clear) + '</button>';
+    return '<p class="nk-label dr-l">' + esc(f.label) + '</p><p class="dr-txt">' + esc(dr.restored ? f.restored.replace('{d}', drWhen()) : f.saving) + '</p><div class="dr-act">' + act + '</div>';
+  }
+  function drMode() { return dr.msg ? 'msg' : dr.at ? 'on' : 'off'; }
+  function drBar() { var m = drMode(); return '<div class="dr" id="dr" data-mode="' + m + '"' + (m === 'off' ? ' hidden' : '') + '>' + drInner() + '</div>'; }
+  function drShow() { // only when the bar has to appear, disappear or leave the "Form cleared." message
+    var el = document.getElementById('dr'), m = drMode(); if (!el || el.dataset.mode === m || (el.dataset.mode === 'msg' && m === 'off')) return;
+    el.dataset.mode = m; el.innerHTML = drInner(); el.hidden = m === 'off';
+  }
+  function drClearAll() {
+    try { localStorage.removeItem(DR_KEY); } catch (e) {}
+    state.order = { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '' };
+    state.prep.have = {}; state.prep.svc = null; state.step = 0; state.errors = {}; state.send = 'idle';
+    dr.at = 0; dr.restored = false; dr.ask = false; dr.msg = t().dr.cleared;
+    render(true); dr.msg = '';
+    var c = document.querySelector('[data-svc]'); if (c) c.focus();
+  }
+
   function orderView() {
     var x = t(), o = state.order, e = state.errors, st = state.step, body = '';
     var keyMap = { cad: 0, print: 1, iot: 2, build: 3 };
@@ -691,7 +749,7 @@
       var brief = briefText();
       if (state.send === 'sent') {
         body = '<div class="sent" role="status"><span class="nk-tag nk-tag--ok">' + esc(x.sentTag) + '</span><h2 class="sub">' + esc(x.sentTitle) + '</h2><p class="hint">' + esc(x.sentBody) + '</p></div>' +
-          '<pre class="brief" tabindex="0">' + esc(briefText()) + '</pre>' + bpBtn();
+          ocNext() + '<pre class="brief" tabindex="0">' + esc(briefText()) + '</pre>' + bpBtn();
       } else {
       body = (state.send === 'sending' ? '<p class="nk-label" role="status">' + esc(x.sending) + '</p>' : '') + (state.send === 'error' || state.send === 'limited' ? '<p class="err" role="alert">' + esc(state.send === 'limited' ? x.sendLimited : x.sendFail) + '</p>' : '') +
         '<h2 class="sub">' + esc(x.briefTitle) + '</h2><p class="hint">' + esc(x.briefLead) + '</p>' +
@@ -704,7 +762,7 @@
     var steps = '<ol class="nk-process wiz" style="--steps:4">' + x.steps.map(function (s, i) { return '<li' + (i === st ? ' class="is-active"' : '') + '><span class="nk-process__n">' + String(i + 1).padStart(2, '0') + ' / 04</span><span class="nk-process__t">' + esc(s) + '</span></li>'; }).join('') + '</ol>';
     var nav = '<div class="wiz-nav">' + (st > 0 ? '<button type="button" class="nk-btn" id="back">' + esc(st === 3 ? x.edit : x.back) + '</button>' : '<span></span>') +
       (st < 3 ? '<button type="button" class="nk-btn nk-btn--primary nk-btn--lg" id="next">' + esc(st === 2 ? x.finish : x.next) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' : '') + '</div>';
-    return '<section class="block first' + (st === 3 ? ' bp-page' : '') + '">' + head(x.orderLabel, x.orderTitle, x.orderLead, true) + steps + '<form class="wiz-body" id="wiz" novalidate>' + body + nav + '</form>' + (st === 3 ? bpSheet() : '') + '</section>';
+    return '<section class="block first' + (st === 3 ? ' bp-page' : '') + '">' + head(x.orderLabel, x.orderTitle, x.orderLead, true) + steps + '<form class="wiz-body" id="wiz" novalidate>' + (st < 3 ? drBar() : '') + body + nav + '</form>' + (st === 3 ? bpSheet() : '') + '</section>';
   }
   // ---------- Deadline check (order form, step 2) ----------
   // Compares the client's deadline with the published turnaround of each picked service (SERVICES[].time in content.js).
@@ -787,6 +845,12 @@
     if (no.length) r.push([f.todo, no.join(', ')]);
     return r;
   }
+  // Sent screen: the checklist items not ticked yet as "Next, send me" — only once at least one item was ticked.
+  function ocNext() {
+    var f = t().oc, items = ocItems(), no = items.filter(function (it) { return !state.prep.have[it.id]; });
+    if (!no.length || no.length === items.length) return '';
+    return '<div class="oc-next"><p class="nk-label">' + esc(f.next) + '</p><ul>' + no.map(function (it) { return '<li>' + esc(L(it.text)) + '</li>'; }).join('') + '</ul><p class="hint">' + esc(f.nextHint) + '</p></div>';
+  }
   // Order step 4: copy the contact e-mail address (falls back to selecting it).
   function mailCopy() {
     var x = t(), msg = document.getElementById('mail-msg'), el = document.getElementById('mail');
@@ -852,6 +916,7 @@
     app.innerHTML = frame(views[p]());
     if (!keepScroll) window.scrollTo(0, 0);
     if (p === 'project') mountViewer();
+    if (p === 'order') drSave();
     if (p === 'work') { findApply(); if (state.findFocus) { state.findFocus = false; var fq = document.getElementById('find-q'); if (fq) fq.focus(); } }
   }
 
@@ -878,6 +943,9 @@
     if (el.dataset.slDel) { slDel(el.dataset.slDel); return; }
     if (el.hasAttribute('data-sl-go')) { slToOrder(); return; }
     if (el.hasAttribute('data-sl-copy')) { slCopy(); return; }
+    if (el.hasAttribute('data-dr-clear')) { dr.ask = true; var db = document.getElementById('dr'); if (db) { db.innerHTML = drInner(); var y = db.querySelector('[data-dr-keep]'); if (y) y.focus(); } return; }
+    if (el.hasAttribute('data-dr-keep')) { dr.ask = false; var dk = document.getElementById('dr'); if (dk) { dk.innerHTML = drInner(); var cb = dk.querySelector('[data-dr-clear]'); if (cb) cb.focus(); } return; }
+    if (el.hasAttribute('data-dr-yes')) { drClearAll(); return; }
     if (el.hasAttribute('data-sl-clear')) { slClear(); return; }
     if (el.hasAttribute('data-tb-copy')) { tbCopy(); return; }
     if (el.hasAttribute('data-find-clear')) { state.q = ''; var fq = document.getElementById('find-q'); fq.value = ''; findApply(); fq.focus(); return; }
@@ -901,14 +969,15 @@
       try { navigator.clipboard.writeText(txt).then(function () { msg.textContent = t().copied; }, fail); } catch (e) { fail(); }
     }
   });
-  app.addEventListener('input', function (ev) { if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
+  app.addEventListener('input', function (ev) { var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
     if (ev.target.dataset.prepHave != null) { var it = prepItems()[+ev.target.dataset.prepHave]; if (it) { state.prep.have[it.id] = ev.target.checked; var po = document.getElementById('prep-out'); if (po) po.textContent = prepStatus(prepItems()); } return; }
-    if (ev.target.dataset.ocHave != null) { var oi = ocItems()[+ev.target.dataset.ocHave]; if (oi) { state.prep.have[oi.id] = ev.target.checked; var oo = document.getElementById('oc-out'); if (oo) oo.textContent = ocStatus(ocItems()); } return; }
+    if (ev.target.dataset.ocHave != null) { var oi = ocItems()[+ev.target.dataset.ocHave]; if (oi) { state.prep.have[oi.id] = ev.target.checked; var oo = document.getElementById('oc-out'); if (oo) oo.textContent = ocStatus(ocItems()); drSave(); } return; }
     var k = ev.target.dataset.svc; if (!k) return;
     var a = state.order.services, i = a.indexOf(k);
     if (ev.target.checked && i < 0) a.push(k); if (!ev.target.checked && i >= 0) a.splice(i, 1);
     if (a.length) state.errors = {};
+    drSave();
   });
   function submitOrder() {
     if (!ORDER_ENDPOINT || state.send === 'sending') return;
@@ -981,5 +1050,6 @@
     else { state.findFocus = true; location.hash = 'work'; }
   });
   window.addEventListener('hashchange', function () { render(false); });
+  drLoad();
   render(true);
 })();

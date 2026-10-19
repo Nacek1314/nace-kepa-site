@@ -3,6 +3,60 @@
 Daily automated check of https://nacekepa.work (newest first). Each entry: what was checked,
 bugs fixed, the one improvement, ideas for next time.
 
+## Standing instructions from Nace (read first, every run)
+
+- **2026-10-19:** Daily updates must be BIGGER — not tiny things like one "Copy" button, a badge, a link or one line of
+  copy. Every run:
+  - **Improvement = a package:** pick one area (SEO, accessibility, performance, copy in EN + SL, or one whole flow such as
+    the order wizard / #work browsing / news reading) and do a thorough pass across the whole site with several related
+    changes. A single small tweak never counts as the whole improvement.
+  - **Innovation = a substantial feature:** its own section, tool, view or mode with UI, logic, EN + SL text and styling
+    (typically a few hundred lines), e.g. an interactive part configurator that hands a full brief to the order form, a
+    project comparison view, a 3D viewer upgrade (exploded view, cut plane, measuring, orthographic drawing views), a news
+    archive with years/tags, a printable A4 portfolio set; in the admin: drag-and-drop reordering, a full sheet preview,
+    bulk editing, a content-health dashboard, an EN/SL translation workspace. If it is too big for one day, ship a
+    complete, usable first version and continue it in the next run (max 2 days per feature).
+  - All the other rules still apply: only facts already in the repo, EN + SL, light + dark, desktop + phone, keyboard,
+    CSP, no new dependencies, no redesign of the look, easy to remove.
+  - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
+
+## 2026-10-19
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-snap-on-desk-cable-clip, #news, #n-bambu-lab-x2d, #skills,
+#about, #order (all 4 steps on the local build; "sent" screen only with a mocked endpoint, nothing sent), /admin/ sign-in
+— 1280 px + 390 px, light + dark, EN + SL. Last Actions run (0d6a577) succeeded; live site returns 200 (checked via the
+laptop — the cloud session can't reach nacekepa.work or the GitHub API). No JS errors, no CSP violations, no 404s, no
+horizontal scroll, no broken images; EN and SL text keys match.
+
+**Bugs fixed:** none found.
+
+**Improvement:** "Next, send me" / "Naslednje mi pošljite" on the order "sent" screen: the "What do you already have?"
+items the client did not tick, with a one-line hint to reply with them — so the next e-mail already has what is missing.
+Only shown when at least one item was ticked and something is still missing. `ocNext()` in `app.js`, `oc.next` /
+`oc.nextHint` in `content.js`, "Next, send me" rules in `page.css`.
+
+**Innovation — Saved draft / "Shranjen osnutek" (#order, steps 1–3):** the unfinished brief is saved in the visitor's
+browser as they type (services, answers, deadline, material, name, e-mail, note, checklist ticks and the step they were
+on). On the next visit the form opens where they left off with "Welcome back — your unfinished brief from <date> is
+filled in. It is saved only in this browser." "Clear the form" asks "Delete everything you typed?" (Yes, clear / Keep)
+before wiping it. The draft is deleted as soon as the brief is sent, and drafts older than 30 days are dropped. Kept in
+`localStorage` "nk-order-draft" only — nothing is sent anywhere; stored values are validated on load (unknown services,
+bad dates/numbers ignored). Tested: EN + SL, light + dark, 1280 + 390 px, keyboard (Enter on "Clear the form" moves
+focus to "Keep"; after clearing, focus goes to the first service), reload restores step + fields + ticks, step 4 brief
+contains the restored data, expiry, malformed storage, cleared after a (mocked) successful send; hidden in print.
+*To remove:* delete the "Saved draft" block in `app.js` (`DR_KEY` … `drClearAll()`), the `drLoad()` call before the
+first `render(true)`, the `drSave()` lines in `render()` and the input/change handlers, the `drBar()` call in
+`orderView()`, the three `data-dr-*` lines in the click handler, `dr:` in both languages in `content.js` and the
+"Saved draft" rules at the end of `page.css`.
+*Next step:* also restore the "Reference projects" line that the shortlist adds (it is already part of "What should it
+do?", so it is kept today); maybe a "Saved draft" hint in the header "Start a project" button when a draft exists.
+
+**Ideas for next time** (added to the list below)
+- Public: small "Draft saved" dot on the "Start a project" button in the header when an unfinished brief exists.
+- Public: "Email this brief to myself" (mailto: to the client's own address) on order step 4.
+- Admin: count of projects with an empty `materials` field on the dashboard (all 29 are empty today — a material picker
+  or materials index needs this data first).
+
 ## 2026-10-17 (second run)
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-snap-on-desk-cable-clip, #news, #n-bambu-lab-x2d, #skills,
@@ -526,7 +580,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form.
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit).
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
@@ -556,8 +610,10 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: ★ marker on shortlisted sheet cards in the #work grid and on "Similar projects".
 - Public: shareable shortlist link (`#work?list=…`) that opens the same shortlist on another device.
 - Admin: "Copy enquiry link" for a group of projects (the shortlist link) to paste in LinkedIn replies.
-- Public: list the not-yet-ready checklist items on the "sent" screen as "Next, send me: …".
 - Public: prefill "Do you have files?" in step 2 when "STL / STEP / 3MF file" is ticked in the checklist.
+- Public: "Draft saved" dot on the header "Start a project" button when an unfinished brief exists.
+- Public: "Email this brief to myself" (mailto: the client's own address) on order step 4.
+- Admin: dashboard count of projects with empty `materials` (needed before a material picker / materials index).
 
 ## 2026-10-03 (second run)
 
