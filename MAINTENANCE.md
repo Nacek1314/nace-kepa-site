@@ -20,6 +20,58 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-19 (second run)
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-snap-on-desk-cable-clip, #news, #n-bambu-lab-x2d, #skills,
+#about, #order (all 4 steps on the local build, no endpoint → nothing sent), /admin/ sign-in — 1280 px + 390 px, light +
+dark, EN + SL, plus an axe-core accessibility scan (test tool only, not added to the site) and a Tab-through of every page.
+Last Actions run (307191b) succeeded (checked via the laptop — the cloud session can't reach nacekepa.work). No JS errors,
+no CSP violations, no 404s, no horizontal scroll, no broken images.
+
+**Bugs fixed:** none found (the accessibility findings below are handled as the improvement).
+
+**Improvement — accessibility package (whole site):**
+- Heading order: sheet cards on #work and the home hero sheet are now `h2` (they sit right under the page `h1`), and the
+  service cards on #services are `h2` — axe "heading-order" warnings on home, #services and #work are gone.
+- Page changes: after following a link, focus moves to the new page's content (`#main`) and its title is announced through
+  a polite live region, so keyboard and screen-reader users don't stay on a link that no longer exists (`navFocus()`).
+  Features that set focus themselves ("/" → search) are left alone.
+- Order form: hints and errors are linked to their fields (`aria-describedby`), wrong fields get `aria-invalid`, required
+  ones `aria-required`; the service choices are a labelled group with the error attached; the step list has
+  `aria-current="step"`; after Next/Back focus goes to the new step's heading, and when something is missing focus goes to
+  the first field to fix (`wizFocus()`).
+- Touch targets ≥ 24 px: footer "Copy", "← All work/news" and the keyboard-shortcuts button.
+- Reduced motion now also stops CSS animations; Windows high-contrast mode keeps pressed chips/EN-SL, the current menu item
+  and the active order step visible (`forced-colors` rules).
+- Code: `REQUIRED` + `field()` / `wizFocus()` / `navFocus()` / `sheetH2()` in `app.js`, `a11y.steps` in `content.js`,
+  "Accessibility pass" rules in `page.css`.
+
+**Innovation — Portfolio set / "Mapa listov" (`#work`, box under the sheet grid):** prints the project sheets as an A4
+set or saves it as a PDF: choose **All sheets**, **Shown now** (follows the category filter and search above, count updates
+live) or **Your shortlist** (when one exists); tick **Cover page** (studio name, the hero text, number of sheets,
+categories, date, the four services with their published turnarounds, contact) and **Index of sheets** (sheet no., title,
+category, year, page — 18 rows per page). A row of page thumbnails and "Sheets: N · A4 pages: M" show what will print.
+Each project page: sheet number, category, year, title, description, the line drawing, a spec row (category, year,
+materials / 3D model when present), details when present, and a title-block footer (studio, sheet, page X / Y, date, link
+to the sheet online). The PDF gets the name "Nace Kepa · Project portfolio". Line drawings only — photos and 3D models are
+never printed (same protection as "Print this sheet"). Uses only data already on the site. Tested: EN + SL, light + dark,
+1280 + 390 px, keyboard (radios, checkboxes, Enter on the button), live counts while searching, "no sheets match" disables
+the button, shortlist scope, real PDFs rendered with Chromium (32 pages for all 29 sheets, 3 pages for a 2-sheet
+shortlist, page numbers in the index match), page cleaned up after printing, normal Ctrl+P unaffected.
+*To remove:* delete the "Portfolio set" block in `app.js` (`PS_ROWS` … `psDone()`), the `psBox()` call in `views.work`,
+the `psSync()` call at the end of `findApply()`, the `psDone()` call in `render()`, the `data-ps-print` line in the click
+handler and the two `data-ps-*` lines at the top of the change handler, `ps:` in both languages in `content.js` and the
+"Portfolio set" rules at the end of `page.css`.
+*Next step (day 2):* a "Portfolio set" link in the admin that opens it with a chosen set of projects (e.g. for a client
+meeting), and photos on the printed pages as an opt-in once Nace decides whether printed photos are OK (today they are
+left out on purpose).
+
+**Ideas for next time** (added to the list below)
+- Public: `#work?set=slug,slug` link that opens the portfolio set with those sheets pre-selected (send a client "these 5").
+- Admin: content-health dashboard — projects without photos / materials / details / SL text, with one-click jump (extends
+  the "To do" tab into a scored overview).
+- Public: news archive by year/month with a year strip, once there are more posts.
+
 ## 2026-10-19
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-snap-on-desk-cable-clip, #news, #n-bambu-lab-x2d, #skills,
@@ -580,7 +632,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit).
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet).
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
@@ -614,6 +666,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: "Draft saved" dot on the header "Start a project" button when an unfinished brief exists.
 - Public: "Email this brief to myself" (mailto: the client's own address) on order step 4.
 - Admin: dashboard count of projects with empty `materials` (needed before a material picker / materials index).
+- Public: `#work?set=slug,slug` link that opens the portfolio set with those sheets pre-selected.
+- Admin: content-health dashboard (missing photos / materials / details / SL text) with one-click jump.
+- Public: news archive by year/month with a year strip (once there are more posts).
 
 ## 2026-10-03 (second run)
 

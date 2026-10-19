@@ -55,15 +55,18 @@
     var d = p.drawing || (CATS[p.category] && CATS[p.category].d) || 'cad';
     return NK_DRAWINGS[d] || NK_DRAWINGS.cad;
   }
-  function sheet(p) {
+  // hl = heading tag for the title ('h2' where the card sits right under the page h1, else h3). Not positional from .map().
+  function sheet(p, hl) {
+    var h = hl === 'h2' ? 'h2' : 'h3';
     return '<a class="nk-sheet" href="#p-' + esc(p.slug) + '" data-cat="' + esc(p.category) + '"><div class="nk-sheet__head"><span class="nk-label">' + sheetNo(p) + '</span><span class="nk-label">' + (p.model ? '<b class="has3d">3D · </b>' : '') + esc(cat(p)) + ' · ' + esc(p.year) + '</span></div>' +
-      '<div class="nk-sheet__art">' + art(p) + '</div><div class="nk-sheet__foot"><h3 class="nk-sheet__title">' + esc(P(p, 'title')) + '</h3><p class="nk-sheet__desc">' + esc(P(p, 'description')) + '</p></div></a>';
+      '<div class="nk-sheet__art">' + art(p) + '</div><div class="nk-sheet__foot"><' + h + ' class="nk-sheet__title">' + esc(P(p, 'title')) + '</' + h + '><p class="nk-sheet__desc">' + esc(P(p, 'description')) + '</p></div></a>';
   }
+  function sheetH2(p) { return sheet(p, 'h2'); }
   function featured() { var f = PROJECTS.filter(function (p) { return p.featured; }); return (f.length ? f : PROJECTS).slice(0, 4); }
   function service(s, full) {
     var x = t();
     return '<article class="nk-service" id="' + s.id + '"><div class="nk-service__top"><span class="nk-service__code">' + s.code + '</span><span class="nk-label">' + esc(s.time ? L(s.time) : x.onRequest) + '</span></div>' +
-      '<h3 class="nk-service__title">' + esc(L(s.title)) + '</h3><p>' + esc(L(s.body)) + '</p>' +
+      (full ? '<h2' : '<h3') + ' class="nk-service__title">' + esc(L(s.title)) + (full ? '</h2>' : '</h3>') + '<p>' + esc(L(s.body)) + '</p>' +
       (full ? '<div class="svc-cols"><div><p class="nk-label">' + esc(x.deliverables) + '</p><ul>' + L(s.get).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div><div><p class="nk-label">' + esc(x.needs) + '</p><ul>' + L(s.need).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div></div>'
         : '<ul>' + L(s.get).slice(0, 3).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>') +
       '<div class="svc-act">' + btn(full ? x.quote : x.allServices, full ? '#order' : '#services', null, 'sm', true) + '</div></article>';
@@ -87,7 +90,7 @@
       return '<section class="hero"><div class="hero-text"><p class="nk-label"><b>' + esc(x.status) + ' · </b>' + esc(x.heroLabel) + '</p>' +
         '<h1 class="display">' + esc(x.heroA) + '<br>' + esc(x.heroB) + '<em>' + esc(x.heroEm) + '</em></h1><p class="lead">' + esc(x.heroLead) + '</p>' +
         '<div class="cta-row">' + btn(x.cta, '#order', 'primary', 'lg', true) + btn(x.seeWork, '#work', null, 'lg') + '</div></div>' +
-        '<div class="hero-sheet">' + (PROJECTS.length ? sheet(featured()[0]) : '') + specs([x.heroSpecs[0], [x.heroSpecs[1][0], String(PROJECTS.length)]].concat(x.heroSpecs.slice(2))) + '</div></section>' +
+        '<div class="hero-sheet">' + (PROJECTS.length ? sheetH2(featured()[0]) : '') + specs([x.heroSpecs[0], [x.heroSpecs[1][0], String(PROJECTS.length)]].concat(x.heroSpecs.slice(2))) + '</div></section>' +
         '<section class="block">' + head(x.servicesLabel, x.servicesTitle, x.servicesLead) + '<div class="grid-4">' + SERVICES.map(function (s) { return service(s, false); }).join('') + '</div></section>' +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' +
         '<section class="block">' + head(x.workLabel, x.workTitle) + '<div class="grid-4 sheets">' + featured().map(sheet).join('') + '</div><div class="more">' + btn(x.seeWork, '#work', null, null, true) + '</div></section>' +
@@ -114,7 +117,7 @@
           var n = c === 'all' ? PROJECTS.length : PROJECTS.filter(function (p) { return c === '3d' ? !!p.model : p.category === c; }).length;
           return '<button type="button" class="chip" data-filter="' + c + '" aria-pressed="' + (state.filter === c) + '">' + esc(c === 'all' ? x.all : c === '3d' ? x.with3d : CATS[c][lang]) + ' <span>' + n + '</span></button>';
         }).join('') + '</div>' +
-        '<div class="grid-4 sheets" id="find-grid">' + list.map(sheet).join('') + '</div>' + findResults() + '</section>' + ctaBand();
+        '<div class="grid-4 sheets" id="find-grid">' + list.map(sheetH2).join('') + '</div>' + findResults() + psBox() + '</section>' + ctaBand();
     },
     skills: function () {
       var x = t();
@@ -277,6 +280,105 @@
       '<p class="nk-label bp-est">' + esc(x.estimate) + '</p>' + estimate() +
       '<p class="bp-next">' + esc(sent ? x.sentBody.split('. ')[0] + '.' : x.briefLead) + '</p>' +
       '<p class="bp-contact">' + (CONTACT_EMAIL ? esc(CONTACT_EMAIL) + ' · ' : '') + 'nacekepa.work · ' + esc(LINKEDIN.replace('https://www.', '')) + '</p></div>';
+  }
+  // ---------- Portfolio set (#work): the project sheets as a printable A4 set with a cover page and an index ----------
+  // Line drawings only — photos and 3D models stay on the site. Built only from the published projects, services and
+  // contact details. Self-contained: remove PS_ROWS…psDone(), the psBox() call in views.work, the psSync() call at the end
+  // of findApply(), the psDone() call in render(), the data-ps-* lines in the click and change handlers, ps: in both
+  // languages in content.js and the "Portfolio set" rules at the end of page.css.
+  var PS_ROWS = 18; // index rows per A4 page (fits with the title block)
+  state.ps = { scope: 'all', cover: true, index: true };
+  function psShown() {
+    var q = state.q.trim();
+    return PROJECTS.filter(function (p) { return (state.filter === 'all' || (state.filter === '3d' ? !!p.model : p.category === state.filter)) && (!q || findHit(findProjectText(p), q)); });
+  }
+  function psList() {
+    if (state.ps.scope === 'shown') return psShown();
+    if (state.ps.scope === 'list') { var a = slRead().map(bySlug); if (a.length) return a; state.ps.scope = 'all'; }
+    return PROJECTS;
+  }
+  function psIndexPages(n) { return state.ps.index && n ? Math.ceil(n / PS_ROWS) : 0; }
+  function psPages(n) { return n ? (state.ps.cover ? 1 : 0) + psIndexPages(n) + n : 0; }
+  function psArt(p) { var d = p.drawing || (CATS[p.category] && CATS[p.category].d) || 'cad'; return NK_DRAWINGS[d] || NK_DRAWINGS.cad; }
+  function psIco() { return '<svg class="print-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>'; }
+  function psBox() {
+    if (!PROJECTS.length) return '';
+    var x = t().ps, sl = slRead().length;
+    if (state.ps.scope === 'list' && !sl) state.ps.scope = 'all';
+    var opt = function (k, label, n, hint) {
+      return '<label class="ps-opt"><input type="radio" name="ps-scope" value="' + k + '" data-ps-scope' + (state.ps.scope === k ? ' checked' : '') + '>' +
+        '<span class="ps-opt__t">' + esc(label) + ' · <b id="ps-n-' + k + '">' + n + '</b>' + (hint ? '<span class="ps-opt__h">' + esc(hint) + '</span>' : '') + '</span></label>';
+    };
+    var inc = function (k, label) { return '<label class="ps-opt"><input type="checkbox" data-ps-inc="' + k + '"' + (state.ps[k] ? ' checked' : '') + '><span class="ps-opt__t">' + esc(label) + '</span></label>'; };
+    return '<section class="ps" aria-labelledby="ps-h"><div class="ps-head"><p class="nk-label">' + esc(x.label) + '</p><h2 class="sub" id="ps-h">' + esc(x.title) + '</h2><p class="ps-lead">' + esc(x.lead) + '</p></div>' +
+      '<div class="ps-cols"><fieldset class="ps-f"><legend class="nk-label">' + esc(x.which) + '</legend>' + opt('all', x.all, PROJECTS.length) + opt('shown', x.shown, psShown().length, x.shownHint) + (sl ? opt('list', x.list, sl) : '') + '</fieldset>' +
+      '<fieldset class="ps-f"><legend class="nk-label">' + esc(x.inc) + '</legend>' + inc('cover', x.cover) + inc('index', x.index) + '</fieldset>' +
+      '<div class="ps-prev"><ol class="ps-thumbs" id="ps-thumbs" aria-hidden="true"></ol><p class="ps-sum" id="ps-sum" role="status" aria-live="polite"></p></div></div>' +
+      '<div class="print-act ps-act"><button type="button" class="nk-btn nk-btn--primary nk-btn--sm" id="ps-go" data-ps-print>' + psIco() + esc(x.btn) + '</button><span class="print-note">' + esc(x.note) + '</span></div></section>';
+  }
+  function psSync() {
+    var sum = document.getElementById('ps-sum'); if (!sum) return;
+    var x = t().ps, list = psList(), n = list.length, max = 6, th = [];
+    var sn = document.getElementById('ps-n-shown'); if (sn) sn.textContent = psShown().length;
+    sum.textContent = n ? x.sum.replace('{n}', n).replace('{p}', psPages(n)) : x.none;
+    document.getElementById('ps-go').disabled = !n;
+    if (n && state.ps.cover) th.push('<li class="ps-th ps-th--cover">' + logo() + '<span>' + esc(x.coverT) + '</span></li>');
+    if (psIndexPages(n)) th.push('<li class="ps-th ps-th--index"><i></i><i></i><i></i><i></i><i></i><span>' + esc(x.indexT) + '</span></li>');
+    list.forEach(function (p) { th.push('<li class="ps-th"><span class="ps-th__art">' + psArt(p) + '</span><span>' + sheetNo(p) + '</span></li>'); });
+    var more = th.length - max;
+    document.getElementById('ps-thumbs').innerHTML = th.slice(0, more > 0 ? max - 1 : max).join('') + (more > 0 ? '<li class="ps-th ps-th--more"><span>+' + (more + 1) + '</span></li>' : '');
+  }
+  function psDl(rows) { return '<dl class="ps-dl">' + rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('') + '</dl>'; }
+  function psDoc(list) {
+    var x = t(), ps = x.ps, n = list.length, total = psPages(n), pg = 0, out = [];
+    var d = new Date(), date = fmtDate(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+    var first = (state.ps.cover ? 1 : 0) + psIndexPages(n) + 1;
+    var foot = function (no, url) {
+      pg++;
+      return '<footer class="ps-tb"><span class="ps-tb__brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span><span><i>' + esc(ps.sheet) + '</i>' + esc(no) + '</span>' +
+        '<span><i>' + esc(ps.page) + '</i>' + pg + ' / ' + total + '</span><span><i>' + esc(x.tb.date) + '</i>' + esc(date) + '</span><span class="ps-tb__url"><i>' + esc(ps.online) + '</i>' + esc(url) + '</span></footer>';
+    };
+    var home = 'nacekepa.work/#' + lang + '-work';
+    if (state.ps.cover) {
+      var cats = []; list.forEach(function (p) { if (cats.indexOf(cat(p)) < 0) cats.push(cat(p)); });
+      out.push('<section class="ps-page ps-cover"><div class="ps-body"><div class="ps-cover__mark">' + logo() + '</div><p class="nk-label">' + esc(ps.label) + '</p>' +
+        '<h1 class="ps-cover__t">' + esc(ps.docTitle) + '</h1><p class="ps-cover__s">Nace Kepa · Engineering Studio · Škofja Loka, SI</p><p class="ps-cover__lead">' + esc(x.heroLead) + '</p>' +
+        psDl([[ps.sheets, String(n)], [ps.cats, cats.join(' · ')], [x.tb.date, date], [ps.online, home]]) +
+        '<p class="nk-label">' + esc(ps.services) + '</p><table class="ps-tab"><tbody>' + SERVICES.map(function (s) { return '<tr><td class="ps-mono">' + esc(s.code) + '</td><td>' + esc(L(s.title)) + '</td><td class="ps-mono">' + esc(s.time ? L(s.time) : x.onRequest) + '</td></tr>'; }).join('') + '</tbody></table>' +
+        '<p class="nk-label">' + esc(ps.contact) + '</p><p class="ps-contact">' + (CONTACT_EMAIL ? esc(CONTACT_EMAIL) + ' · ' : '') + 'nacekepa.work · ' + esc(LINKEDIN.replace('https://www.', '')) + '</p></div>' + foot('—', home) + '</section>');
+    }
+    for (var k = 0; k < psIndexPages(n); k++) {
+      var part = list.slice(k * PS_ROWS, (k + 1) * PS_ROWS);
+      out.push('<section class="ps-page"><div class="ps-body"><p class="nk-label">' + esc(ps.label) + '</p><h2 class="ps-t">' + esc(ps.indexT) + '</h2>' +
+        '<table class="ps-tab ps-idx"><thead><tr><th>' + esc(ps.sheet) + '</th><th>' + esc(ps.colTitle) + '</th><th>' + esc(x.pCategory) + '</th><th>' + esc(x.pYear) + '</th><th>' + esc(ps.page) + '</th></tr></thead><tbody>' +
+        part.map(function (p, j) { return '<tr><td class="ps-mono">' + sheetNo(p) + '</td><td>' + esc(P(p, 'title')) + '</td><td>' + esc(cat(p)) + '</td><td class="ps-mono">' + esc(p.year) + '</td><td class="ps-mono">' + (first + k * PS_ROWS + j) + '</td></tr>'; }).join('') +
+        '</tbody></table></div>' + foot('—', home) + '</section>');
+    }
+    list.forEach(function (p) {
+      var rows = [[x.pCategory, cat(p)], [x.pYear, String(p.year)]], det = P(p, 'details');
+      if (p.materials) rows.push([x.pMaterials, p.materials]);
+      if (p.model) rows.push([x.pModel, ps.model3d]);
+      out.push('<section class="ps-page"><div class="ps-body"><p class="nk-label">' + esc(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year) + '</p><h2 class="ps-t">' + esc(P(p, 'title')) + '</h2>' +
+        '<p class="ps-desc">' + esc(P(p, 'description')) + '</p><div class="ps-art">' + psArt(p) + '</div>' + psDl(rows) +
+        (det ? '<div class="ps-det">' + det.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') + '</div>' +
+        foot(sheetNo(p), 'nacekepa.work/#' + lang + '-p-' + p.slug) + '</section>');
+    });
+    return out.join('');
+  }
+  function psPrint() {
+    var list = psList(); if (!list.length) return;
+    psDone();
+    var doc = document.createElement('div'); doc.id = 'ps-doc'; doc.className = 'ps-doc'; doc.setAttribute('aria-hidden', 'true'); doc.innerHTML = psDoc(list);
+    document.body.appendChild(doc);
+    document.documentElement.classList.add('ps-on');
+    psDone.title = document.title; document.title = 'Nace Kepa · ' + t().ps.docTitle; // default PDF file name
+    window.addEventListener('afterprint', psDone, { once: true });
+    try { window.print(); } catch (e) { psDone(); }
+  }
+  function psDone() {
+    var doc = document.getElementById('ps-doc'); if (!doc) return;
+    doc.remove(); document.documentElement.classList.remove('ps-on');
+    if (psDone.title) { document.title = psDone.title; psDone.title = ''; }
   }
   // ---------- Similar projects (project pages) ----------
   // Self-contained: remove relScore()…relToOrder(), the relRow() call in projectView(), the data-rel-cat / data-rel-go
@@ -491,6 +593,7 @@
     none.innerHTML = none.hidden ? '' : '<p class="sub">' + esc(f.none.replace('{q}', q)) + '</p><p class="lead">' + esc(f.noneBody) + '</p><div class="cta-row">' + btn(t().cta, '#order', 'primary', null, true) + '</div>';
     if (clr) clr.hidden = !state.q;
     findSync();
+    psSync();
   }
 
   // ---------- Search links (#work): the search and category filter live in the address, e.g. #en-work?q=esp32&cat=iot ----------
@@ -728,19 +831,19 @@
     var x = t(), o = state.order, e = state.errors, st = state.step, body = '';
     var keyMap = { cad: 0, print: 1, iot: 2, build: 3 };
     if (st === 0) {
-      body = '<h2 class="sub">' + esc(x.q1) + '</h2><p class="hint">' + esc(x.q1h) + '</p><div class="grid-2 choices">' + SERVICES.map(function (s) {
+      body = '<h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.q1) + '</h2><p class="hint" id="q1-hint">' + esc(x.q1h) + '</p><div class="grid-2 choices" role="group" aria-labelledby="wiz-h" aria-describedby="q1-hint' + (e.services ? ' err-svc' : '') + '">' + SERVICES.map(function (s) {
         var on = o.services.indexOf(s.key) >= 0;
         return '<label class="nk-choice"><input type="checkbox" id="svc-' + s.key + '" data-svc="' + s.key + '"' + (on ? ' checked' : '') + '><span class="nk-choice__t">' + esc(L(s.title)) + '</span><span class="nk-choice__d">' + esc(L(s.body)) + '</span></label>';
-      }).join('') + '</div>' + (e.services ? '<p class="err" role="alert">' + esc(x.errService) + '</p>' : '');
+      }).join('') + '</div>' + (e.services ? '<p class="err" id="err-svc" role="alert">' + esc(x.errService) + '</p>' : '');
     } else if (st === 1) {
-      body = '<h2 class="sub">' + esc(x.q2) + '</h2><div class="form">' +
+      body = '<h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.q2) + '</h2><div class="form">' +
         field('what', x.fWhat, '<textarea class="nk-input" id="f-what" data-f="what" placeholder="' + esc(x.fWhatPh) + '">' + esc(o.what) + '</textarea>', e.what ? x.errWhat : x.fWhatH, e.what, true) +
         field('qty', x.fQty, '<input class="nk-input" id="f-qty" data-f="qty" type="number" min="1" value="' + esc(o.qty) + '">') +
         field('deadline', x.fDeadline, '<input class="nk-input" id="f-deadline" data-f="deadline" type="date" min="' + dlMin() + '" value="' + esc(o.deadline) + '">') +
         field('files', x.fFiles, select('files', x.fFilesO, o.files)) +
         field('mat', x.fMat, select('mat', x.fMatO, o.mat)) + dlBox() + ocBox() + '</div>';
     } else if (st === 2) {
-      body = '<h2 class="sub">' + esc(x.q3) + '</h2><div class="form">' +
+      body = '<h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.q3) + '</h2><div class="form">' +
         field('name', x.fName, '<input class="nk-input" id="f-name" data-f="name" autocomplete="name" value="' + esc(o.name) + '">', e.name ? x.errName : null, e.name) +
         field('email', x.fEmail, '<input class="nk-input" id="f-email" data-f="email" type="email" autocomplete="email" value="' + esc(o.email) + '">', e.email ? x.errEmail : null, e.email) +
         '<div class="hp" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" data-f="website" tabindex="-1" autocomplete="off"></div>' +
@@ -748,18 +851,18 @@
     } else {
       var brief = briefText();
       if (state.send === 'sent') {
-        body = '<div class="sent" role="status"><span class="nk-tag nk-tag--ok">' + esc(x.sentTag) + '</span><h2 class="sub">' + esc(x.sentTitle) + '</h2><p class="hint">' + esc(x.sentBody) + '</p></div>' +
+        body = '<div class="sent" role="status"><span class="nk-tag nk-tag--ok">' + esc(x.sentTag) + '</span><h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.sentTitle) + '</h2><p class="hint">' + esc(x.sentBody) + '</p></div>' +
           ocNext() + '<pre class="brief" tabindex="0">' + esc(briefText()) + '</pre>' + bpBtn();
       } else {
       body = (state.send === 'sending' ? '<p class="nk-label" role="status">' + esc(x.sending) + '</p>' : '') + (state.send === 'error' || state.send === 'limited' ? '<p class="err" role="alert">' + esc(state.send === 'limited' ? x.sendLimited : x.sendFail) + '</p>' : '') +
-        '<h2 class="sub">' + esc(x.briefTitle) + '</h2><p class="hint">' + esc(x.briefLead) + '</p>' +
+        '<h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.briefTitle) + '</h2><p class="hint">' + esc(x.briefLead) + '</p>' +
         '<div class="brief-grid"><pre class="brief" id="brief" tabindex="0">' + esc(brief) + '</pre><div class="brief-side"><p class="nk-label">' + esc(x.estimate) + '</p>' + estimate() +
         '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" id="copy">' + esc(x.copy) + '</button><span class="copy-msg" id="copy-msg" role="status"></span></div>' + bpBtn() +
         '<p class="nk-label">' + esc(x.sendVia) + '</p>' + (CONTACT_EMAIL ? '<p class="mail" id="mail">' + esc(CONTACT_EMAIL) + '</p><div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mail-copy>' + esc(x.mailCopy) + '</button><span class="copy-msg" id="mail-msg" role="status"></span></div>' : '') +
         '<a class="nk-btn nk-btn--sm" href="' + LINKEDIN + '" target="_blank" rel="noopener">' + esc(x.linkedin) + '<span class="nk-btn__arrow" aria-hidden="true">↗</span></a></div></div>';
       }
     }
-    var steps = '<ol class="nk-process wiz" style="--steps:4">' + x.steps.map(function (s, i) { return '<li' + (i === st ? ' class="is-active"' : '') + '><span class="nk-process__n">' + String(i + 1).padStart(2, '0') + ' / 04</span><span class="nk-process__t">' + esc(s) + '</span></li>'; }).join('') + '</ol>';
+    var steps = '<ol class="nk-process wiz" style="--steps:4" aria-label="' + esc(x.a11y.steps) + '">' + x.steps.map(function (s, i) { return '<li' + (i === st ? ' class="is-active" aria-current="step"' : '') + '><span class="nk-process__n">' + String(i + 1).padStart(2, '0') + ' / 04</span><span class="nk-process__t">' + esc(s) + '</span></li>'; }).join('') + '</ol>';
     var nav = '<div class="wiz-nav">' + (st > 0 ? '<button type="button" class="nk-btn" id="back">' + esc(st === 3 ? x.edit : x.back) + '</button>' : '<span></span>') +
       (st < 3 ? '<button type="button" class="nk-btn nk-btn--primary nk-btn--lg" id="next">' + esc(st === 2 ? x.finish : x.next) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' : '') + '</div>';
     return '<section class="block first' + (st === 3 ? ' bp-page' : '') + '">' + head(x.orderLabel, x.orderTitle, x.orderLead, true) + steps + '<form class="wiz-body" id="wiz" novalidate>' + (st < 3 ? drBar() : '') + body + nav + '</form>' + (st === 3 ? bpSheet() : '') + '</section>';
@@ -863,8 +966,12 @@
     var fail = function () { msg.textContent = x.mailFail; var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); };
     try { navigator.clipboard.writeText(CONTACT_EMAIL).then(function () { msg.textContent = x.tbCopied; }, fail); } catch (e) { fail(); }
   }
+  // Hints and errors are tied to their control (aria-describedby / aria-invalid) so screen readers read them with the field.
+  var REQUIRED = { what: 1, name: 1, email: 1 };
   function field(k, label, ctl, hint, err, full) {
-    return '<div class="nk-field' + (err ? ' nk-field--error' : '') + (full ? ' full' : '') + '"><label class="nk-field__label" for="f-' + k + '">' + esc(label) + '</label>' + ctl + (hint ? '<span class="nk-field__hint">' + esc(hint) + '</span>' : '') + '</div>';
+    var attrs = (hint ? ' aria-describedby="f-' + k + '-h"' : '') + (err ? ' aria-invalid="true"' : '') + (REQUIRED[k] ? ' aria-required="true"' : '');
+    ctl = ctl.replace('id="f-' + k + '"', 'id="f-' + k + '"' + attrs);
+    return '<div class="nk-field' + (err ? ' nk-field--error' : '') + (full ? ' full' : '') + '"><label class="nk-field__label" for="f-' + k + '">' + esc(label) + '</label>' + ctl + (hint ? '<span class="nk-field__hint" id="f-' + k + '-h">' + esc(hint) + '</span>' : '') + '</div>';
   }
   function select(k, opts, v) { return '<select class="nk-input" id="f-' + k + '" data-f="' + k + '">' + opts.map(function (o, i) { return '<option value="' + i + '"' + (+v === i ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>'; }
   function estimate() {
@@ -913,6 +1020,7 @@
     document.title = pageTitle(p);
     if (viewer) { viewer.dispose(); viewer = null; }
     closeLightbox();
+    psDone();
     app.innerHTML = frame(views[p]());
     if (!keepScroll) window.scrollTo(0, 0);
     if (p === 'project') mountViewer();
@@ -958,11 +1066,12 @@
     if (el.hasAttribute('data-feed-copy')) { feedCopy(); return; }
     if (el.hasAttribute('data-print')) { printSheet(); return; }
     if (el.hasAttribute('data-bp-print')) { printSheet(); return; }
+    if (el.hasAttribute('data-ps-print')) { psPrint(); return; }
     if (el.hasAttribute('data-kbd')) { kbdOpen(); return; }
     if (el.hasAttribute('data-share-more')) { var sb = el.closest('.share'); try { navigator.share({ title: sb.dataset.shareTitle, url: document.getElementById('share-url').value }).catch(function () {}); } catch (e) {} return; }
     if (el.dataset.lb != null) { var pr = page() === 'post' ? newsBySlug(currentSlug()) : bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
-    if (el.id === 'next') { ev.preventDefault(); readForm(); var ok = validate(); if (ok) state.step++; if (ok && state.step === 3) submitOrder(); render(true); var w = document.getElementById('wiz'); if (w) w.scrollIntoView({ block: 'start' }); return; }
-    if (el.id === 'back') { ev.preventDefault(); readForm(); state.errors = {}; state.send = 'idle'; state.step = state.step === 3 ? 0 : state.step - 1; render(true); return; }
+    if (el.id === 'next') { ev.preventDefault(); readForm(); var ok = validate(); if (ok) state.step++; if (ok && state.step === 3) submitOrder(); render(true); var w = document.getElementById('wiz'); if (w) w.scrollIntoView({ block: 'start' }); wizFocus(ok); return; }
+    if (el.id === 'back') { ev.preventDefault(); readForm(); state.errors = {}; state.send = 'idle'; state.step = state.step === 3 ? 0 : state.step - 1; render(true); wizFocus(true); return; }
     if (el.id === 'copy') {
       var txt = briefText(), msg = document.getElementById('copy-msg');
       var fail = function () { msg.textContent = t().copyFail; var r = document.createRange(); r.selectNodeContents(document.getElementById('brief')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); };
@@ -971,6 +1080,8 @@
   });
   app.addEventListener('input', function (ev) { var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
+    if (ev.target.hasAttribute('data-ps-scope')) { state.ps.scope = ev.target.value; psSync(); return; }
+    if (ev.target.dataset.psInc) { state.ps[ev.target.dataset.psInc] = ev.target.checked; psSync(); return; }
     if (ev.target.dataset.prepHave != null) { var it = prepItems()[+ev.target.dataset.prepHave]; if (it) { state.prep.have[it.id] = ev.target.checked; var po = document.getElementById('prep-out'); if (po) po.textContent = prepStatus(prepItems()); } return; }
     if (ev.target.dataset.ocHave != null) { var oi = ocItems()[+ev.target.dataset.ocHave]; if (oi) { state.prep.have[oi.id] = ev.target.checked; var oo = document.getElementById('oc-out'); if (oo) oo.textContent = ocStatus(ocItems()); drSave(); } return; }
     var k = ev.target.dataset.svc; if (!k) return;
@@ -994,6 +1105,21 @@
       .then(function (r) { state.send = r.ok ? 'sent' : (r.status === 429 ? 'limited' : 'error'); render(true); }, function () { state.send = 'error'; render(true); });
   }
   app.addEventListener('submit', function (ev) { ev.preventDefault(); });
+  // Order steps: after "Next" / "Back" focus the new step's heading; when something is missing, focus the first field to fix.
+  function wizFocus(ok) {
+    var el = ok ? document.getElementById('wiz-h') : (app.querySelector('#wiz [aria-invalid="true"]') || (state.errors.services ? app.querySelector('[data-svc]') : null));
+    if (el) el.focus({ preventScroll: true });
+  }
+  // Page changes: move focus to the new page's content and announce its title, so keyboard and screen-reader users don't
+  // stay on a link that no longer exists. Features that set focus themselves (e.g. "/" → search) are left alone.
+  function navFocus() {
+    var a = document.activeElement;
+    if (!a || a === document.body || !app.contains(a)) { var mn = document.getElementById('main'); if (mn) mn.focus({ preventScroll: true }); }
+    var live = document.getElementById('nav-live');
+    if (!live) { live = document.createElement('p'); live.id = 'nav-live'; live.className = 'vh'; live.setAttribute('aria-live', 'polite'); document.body.appendChild(live); }
+    live.textContent = '';
+    setTimeout(function () { live.textContent = document.title; }, 80);
+  }
   // ---------- Keyboard shortcuts: "?" opens a list; ← / → previous/next sheet; H S W N O jump; L switches EN/SL ----------
   // Self-contained: remove this block (KBD_GO … kbdKey()), kbdBtn() in frame(), the data-kbd line in the click handler,
   // the kbdKey(ev) line in the keydown handler, keys: in both languages in content.js and the "Keyboard shortcuts" rules in page.css.
@@ -1049,7 +1175,7 @@
     if (page() === 'work') { var fq = document.getElementById('find-q'); if (fq) fq.focus(); }
     else { state.findFocus = true; location.hash = 'work'; }
   });
-  window.addEventListener('hashchange', function () { render(false); });
+  window.addEventListener('hashchange', function () { render(false); navFocus(); });
   drLoad();
   render(true);
 })();
