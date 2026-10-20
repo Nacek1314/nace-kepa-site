@@ -20,6 +20,65 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-20
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-automated-cocktail-dispenser, #news, #n-bambu-lab-x2d, #skills,
+#about, #order (all 4 steps on the local build, no endpoint → nothing sent), /admin/ sign-in — 360 / 390 / 768 / 1280 px,
+light + dark, EN + SL, plus a layout scan for anything wider than the page column. Last Actions run (b454a5e) succeeded and
+the live site, /admin/ and /news.xml return 200 (checked via the laptop). No JS errors, no CSP violations, no 404s, no
+horizontal scroll; EN and SL text keys match.
+
+**Bugs fixed:**
+- "How a job moves through the studio" (home, #services, #about) stayed at 8 columns on tablets and phones — the phone
+  rules in `page.css` lost to `components.css` (same specificity, loaded later), so the step names overlapped
+  ("Firmware / Assembly / Test" on top of each other). Now 4 columns ≤ 1000 px and 2 columns ≤ 720 px, each row with its
+  own line (`.nk-process:not(.wiz)` rules).
+- On phones, long one-line buttons ("Start a project with these services →") made the whole #services column 20–50 px
+  wider than the screen, so the right edge of the fit check and "What to prepare" was cut off. Buttons may now wrap to two
+  lines at ≤ 480 px, at the same heights as before.
+- About/home timeline dimensions: "1–4 days + post-processing" ran past its dimension line on narrow phones and the 100 %
+  line stuck out 4 px; the line now grows to fit its text.
+
+**Improvement — SEO package (search engines, link previews, no-JavaScript visitors):**
+- The page now ships a static snapshot of its content inside `#app`: hero text, the four services with their turnarounds,
+  all project sheets (title, category, year, description, link), the news headlines, about text and contact. Crawlers that
+  don't run JavaScript (Bing, LinkedIn, AI search) and visitors without JavaScript now see real text and links instead of
+  one sentence; `app.js` replaces it on its first render, so normal visitors never see it. Built at build time from
+  `content.js`, `projects.json` and `news.json` — nothing new written.
+- Project and news photos now get alt text (title + photo number) instead of empty alt, so image search knows what they
+  show (the "Open photo" button labels are unchanged).
+- Project JSON-LD: `image` (photos) and `keywords` (materials) are added automatically as soon as Nace fills them in the
+  admin — empty today, so nothing changes until then.
+- `sitemap-0.xml` now has `lastmod` (the build date).
+- Code: `snapshot` block in `index.astro`, ".ssr" rules at the end of `page.css`, `lastmod` in `astro.config.mjs`.
+
+**Innovation — Project planner / "Načrtovalnik projekta" (`#services`, section right under the four service cards; also
+"Not sure which? Try the project planner →" under the services in order step 1):** three questions — *What do you have
+now?* (idea / sketch, photos or broken part / 3D file / native CAD), *What is it?* (part / part with electronics /
+firmware or electronics only / complete device) and *What should you get back?* (files / printed parts / not sure). The
+plan sheet on the right updates live: the services that fit (S-01…S-04) with a one-line reason and their published
+turnaround, which "Do you have files?" answer the order form will start with, and optional details — outer size (checked
+against the X2D build volume like the fit check), quantity, deadline (compared with the published turnarounds) and
+material (the order form's list). It also shows how many items the client will need to prepare ("Show the checklist ↓"
+fills "What to prepare" below with the same services and jumps there) and up to three similar project sheets.
+"Continue in the order form →" ticks the services, fills files, quantity, deadline, material and a "Planner: …" line in
+"What should it do?", and opens step 2; "Copy plan" copies it as text; "Start over" clears it. Rules are simple and
+visible (complete device → S-04; idea or sketch → S-01; printed parts → S-02; electronics → S-03); it says "An orientation,
+not a quote." Uses only facts already on the site; nothing is stored or sent. Tested: EN + SL, light + dark, 1280 + 390 px,
+keyboard (radio groups with arrow keys, details/summary, buttons), copy, checklist hand-off, order hand-off (services,
+files, qty, deadline, material, text, step 2), back-link from the order form, no overflow, no CSP errors, hidden in print.
+*To remove:* delete the "Project planner" block in `app.js` (`PL_HAVE` … `plOpen()`), the `plBox()` call in
+`views.services`, the `plOpen()` call in `orderView()`, the five `data-pl-*` lines in the click handler, the two `plQ` /
+`plF` lines in the change handler, the `pf` part of the input handler, the `plFocus` line in `render()`, `pl:` in both
+languages in `content.js` and the "Project planner" rules at the end of `page.css`. (`fitCalc(src)` keeps working.)
+*Next step (day 2):* a "Planner" link on project sheets that opens it pre-answered for that kind of project; maybe show the
+plan in the order step 4 brief as its own block.
+
+**Ideas for next time** (added to the list below)
+- Public: planner pre-answered from a project sheet ("Plan a project like this").
+- Public: static snapshot also in Slovenian for `/#sl` visitors without JavaScript (today: English with a link).
+- Admin: "Planner preview" — show which services the planner suggests for each project's category, to check the rules.
+
 ## 2026-10-19 (second run)
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-snap-on-desk-cable-clip, #news, #n-bambu-lab-x2d, #skills,
@@ -632,7 +691,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet).
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form).
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
@@ -669,6 +728,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: `#work?set=slug,slug` link that opens the portfolio set with those sheets pre-selected.
 - Admin: content-health dashboard (missing photos / materials / details / SL text) with one-click jump.
 - Public: news archive by year/month with a year strip (once there are more posts).
+- Public: planner pre-answered from a project sheet ("Plan a project like this").
+- Public: Slovenian static snapshot for no-JavaScript visitors.
+- Admin: planner preview per project category (check the planner's rules).
 
 ## 2026-10-03 (second run)
 

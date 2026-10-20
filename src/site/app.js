@@ -101,6 +101,7 @@
     services: function () {
       var x = t();
       return '<section class="block first">' + head('S-01 … S-04', x.servicesPageTitle, x.servicesPageLead, true) + '<div class="grid-2">' + SERVICES.map(function (s) { return service(s, true); }).join('') + '</div></section>' +
+        plBox() +
         fitChecker() +
         prepBox() +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
@@ -184,9 +185,9 @@
       '<a class="back" href="#news">← ' + esc(x.allNews) + '</a>' +
       head('', P(n, 'title'), P(n, 'summary'), true, timeTag(n.date) + (n.pinned ? ' · ' + esc(x.pinned) : '')) +
       '<div class="post-grid">' +
-      (photos.length ? '<button type="button" class="nk-sheet__art project-art post-cover" data-lb="0" aria-label="' + esc(x.openPhoto) + '"><' + 'img class="sheet-photo" src="' + esc(asset(photos[0])) + '" alt="" draggable="false"></button>' : '') +
+      (photos.length ? '<button type="button" class="nk-sheet__art project-art post-cover" data-lb="0" aria-label="' + esc(x.openPhoto) + '"><' + 'img class="sheet-photo" src="' + esc(asset(photos[0])) + '" alt="' + esc(P(n, 'title')) + '" draggable="false"></button>' : '') +
       '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + askLink(n, 'n') + '</div>' + shareBox('n', n) + printBox('n', n) + '</div></div>' +
-      (photos.length > 1 ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, k) { return '<button type="button" data-lb="' + k + '" aria-label="' + esc(x.openPhoto + ' ' + (k + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
+      (photos.length > 1 ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, k) { return '<button type="button" data-lb="' + k + '" aria-label="' + esc(x.openPhoto + ' ' + (k + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="' + esc(P(n, 'title') + ' · ' + (k + 1)) + '" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       (next ? '<a class="next-project" href="#n-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.newsLabel) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
       '</section>' + ctaBand();
   }
@@ -210,7 +211,7 @@
       '<div class="project-grid"><div class="project-stage">' + stage + '</div><aside class="project-side">' + specs(rows) +
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
       '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + askLink(p) + '</div>' + slToggle(p) + shareBox('p', p) + printBox('p', p) + '</aside></div>' +
-      (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
+      (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="' + esc(P(p, 'title') + ' · ' + (i + 1)) + '" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       relRow(p, next) +
       (next && next !== p ? '<nav class="sheet-nav" aria-label="' + esc(x.sheetNav) + '">' +
         (prev !== next ? '<a class="next-project prev-project" href="#p-' + esc(prev.slug) + '" rel="prev"><span class="nk-label">' + esc(x.prevProject) + '</span><span class="sub">← ' + esc(P(prev, 'title')) + '</span></a>' : '<span></span>') +
@@ -648,8 +649,9 @@
   function fitNum(v) { var n = parseFloat(String(v).replace(',', '.')); return n > 0 && n < 100000 ? Math.round(n * 10) / 10 : 0; }
   function fitFmt(n) { var s = String(n); return lang === 'sl' ? s.replace('.', ',') : s; }
   function fitDims(a) { return a.map(fitFmt).join(' × '); }
-  function fitCalc() {
-    var d = [fitNum(state.fit.l), fitNum(state.fit.w), fitNum(state.fit.h)];
+  function fitCalc(src) { // src: { l, w, h } — the fit check's own fields unless another tool (the planner) passes its own
+    src = src || state.fit;
+    var d = [fitNum(src.l), fitNum(src.w), fitNum(src.h)];
     if (!d[0] || !d[1] || !d[2]) return null;
     var perms = [[0, 1, 2], [1, 0, 2], [0, 2, 1], [2, 0, 1], [1, 2, 0], [2, 1, 0]];
     for (var i = 0; i < perms.length; i++) {
@@ -706,6 +708,133 @@
     state.step = 0; state.errors = {}; state.send = 'idle';
     location.hash = 'order';
   }
+
+  // ---------- Project planner (#services): three questions → services, usual turnaround, fit, deadline, brief → #order ----------
+  // Uses only what is already on the site: SERVICES (titles, turnarounds, needs), the X2D build volume (BED), the order
+  // form's file/material options and the project sheets. Nothing is stored or sent.
+  // Self-contained: remove PL_HAVE … plToOrder(), the plBox() call in views.services, the plOpen() call in orderView(),
+  // the data-pl-* lines in the click/change/input handlers, the plFocus line in render(), pl: in both languages in
+  // content.js and the "Project planner" rules at the end of page.css. (fitCalc(src) keeps working without it.)
+  var PL_HAVE = ['idea', 'sketch', 'mesh', 'cad'], PL_KIND = ['part', 'smart', 'fw', 'product'], PL_BACK = ['files', 'parts', 'unsure'];
+  var PL_FILES = { idea: 0, sketch: 1, mesh: 2, cad: 3 }; // index into fFilesO in the order form
+  var PL_CATS = { part: ['Mechanical', 'CAD'], smart: ['IoT', 'Embedded'], fw: ['Embedded', 'IoT'], product: ['IoT', 'Mechanical', 'Embedded'] };
+  state.pl = { have: '', kind: '', back: '', l: '', w: '', h: '', qty: '1', mat: 0, deadline: '' };
+  function plDone() { var s = state.pl; return (s.have ? 1 : 0) + (s.kind ? 1 : 0) + (s.back ? 1 : 0); }
+  function plPlan() { // [{ s: SERVICE, why: text key }] in SERVICES order
+    var s = state.pl, out = {};
+    if (plDone() < 3) return [];
+    if (s.kind === 'product') out.build = 'build';
+    else {
+      if (s.kind !== 'fw' && (s.have === 'idea' || s.have === 'sketch')) out.cad = 'cad';
+      if ((s.kind === 'part' || s.kind === 'smart') && s.back !== 'files') out.print = 'print';
+      if (s.kind === 'smart' || s.kind === 'fw') out.iot = 'iot';
+      if (!out.cad && !out.print && !out.iot) out.cad = 'cadEdit';
+    }
+    return SERVICES.filter(function (v) { return out[v.key]; }).map(function (v) { return { s: v, why: out[v.key] }; });
+  }
+  function plPrints() { return plPlan().some(function (r) { return r.s.key === 'print' || r.s.key === 'build'; }); }
+  function plRadios(q, keys, labels) {
+    return '<fieldset class="pl-q"><legend class="nk-label">' + esc(t().pl[q]) + '</legend><div class="pl-opts">' + keys.map(function (k) {
+      return '<label class="pl-opt"><input type="radio" name="pl-' + q + '" value="' + k + '" data-pl-q="' + q + '"' + (state.pl[{ q1: 'have', q2: 'kind', q3: 'back' }[q]] === k ? ' checked' : '') + '><span>' + esc(labels[k]) + '</span></label>';
+    }).join('') + '</div></fieldset>';
+  }
+  function plN(f, n) { // "{n} items" — SL needs 1 / 2 / 3–4 / 5+ forms
+    if (!Array.isArray(f)) return f.replace('{n}', n);
+    var m = n % 100; return f[m === 1 ? 0 : m === 2 ? 1 : m === 3 || m === 4 ? 2 : 3].replace('{n}', n);
+  }
+  function plNeeds(plan) {
+    var seen = {}; plan.forEach(function (r) { r.s.need.en.forEach(function (n) { seen[n] = 1; }); }); return Object.keys(seen).length;
+  }
+  function plRefs() {
+    var cats = PL_CATS[state.pl.kind] || [], list = [];
+    cats.forEach(function (c) { PROJECTS.forEach(function (p) { if (p.category === c && list.indexOf(p) < 0) list.push(p); }); });
+    list.sort(function (a, b) { return (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || cats.indexOf(a.category) - cats.indexOf(b.category); });
+    return list.slice(0, 3);
+  }
+  function plDue(plan) { // verdict for the whole plan: the longest published range against the deadline
+    var x = t().dl, d = dlDays(state.pl.deadline); if (d == null) return '';
+    if (d <= 0) return '<span class="nk-tag nk-tag--rev">' + esc(x.pastTag) + '</span>';
+    var r = plan.map(function (p) { return dlRange(p.s); }).filter(Boolean); if (!r.length) return '<span class="nk-tag">' + esc(x.none) + '</span>';
+    var lo = Math.max.apply(null, r.map(function (v) { return v[0]; })), hi = Math.max.apply(null, r.map(function (v) { return v[1]; }));
+    var v = d < lo ? ['rev', x.short] : d < hi ? ['', x.tight] : ['ok', x.ok];
+    return '<span class="nk-tag' + (v[0] ? ' nk-tag--' + v[0] : '') + '">' + esc(v[1]) + '</span> ' + esc(d === 1 ? x.day : x.days.replace('{n}', d));
+  }
+  function plOut() {
+    var f = t().pl, x = t(), plan = plPlan(), n = plDone();
+    if (!plan.length) return '<p class="nk-label pl-step">' + esc(f.step.replace('{n}', n)) + '</p><p class="hint">' + esc(f.empty) + '</p>';
+    var rows = plan.map(function (r) {
+      return '<li><span class="nk-service__code">' + esc(r.s.code) + '</span><span class="pl-svc"><b>' + esc(L(r.s.title)) + '</b><span class="pl-why">' + esc(f.why[r.why]) + '</span></span><span class="nk-label pl-time">' + esc(r.s.time ? L(r.s.time) : x.onRequest) + '</span></li>';
+    }).join('');
+    var spec = [[f.files, x.fFilesO[PL_FILES[state.pl.have]]]];
+    if (plPrints()) {
+      var fr = fitCalc(state.pl);
+      spec.push([f.fit, fr ? (fr.fits ? t().fit.ok : t().fit.no) + ' · ' + fitDims(fr.d) + ' mm' : f.fitNone]);
+      spec.push([x.fMat, x.fMatO[+state.pl.mat || 0]]);
+    }
+    if (+state.pl.qty > 1) spec.push([f.qty, String(+state.pl.qty)]);
+    var due = plDue(plan), refs = plRefs(), needs = plNeeds(plan);
+    return '<ol class="pl-rows">' + rows + '</ol>' + specs(spec) +
+      (due ? '<p class="pl-due"><span class="nk-label">' + esc(f.due) + '</span> ' + due + '</p>' : '') +
+      '<p class="pl-prep"><span class="nk-label">' + esc(f.prep) + '</span> ' + esc(plN(f.prepN, needs)) + ' · <button type="button" class="pl-link" data-pl-prep>' + esc(f.prepGo) + ' ↓</button></p>' +
+      (refs.length ? '<div class="pl-refs"><p class="nk-label">' + esc(f.refs) + '</p><ul>' + refs.map(function (p) { return '<li><a href="#p-' + esc(p.slug) + '"><span class="nk-label">' + sheetNo(p) + '</span> ' + esc(P(p, 'title')) + '</a></li>'; }).join('') + '</ul></div>' : '') +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-pl-go>' + esc(f.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
+      '<button type="button" class="nk-btn" data-pl-copy>' + esc(f.copy) + '</button></div><p class="share-msg" id="pl-msg" role="status" aria-live="polite"></p>';
+  }
+  function plBox() {
+    var f = t().pl, x = t(), s = state.pl;
+    var num = function (k, label, attrs) { return '<div class="nk-field"><label class="nk-field__label" for="pl-' + k + '">' + esc(label) + '</label><input class="nk-input" id="pl-' + k + '" data-pl-f="' + k + '" ' + attrs + ' value="' + esc(s[k]) + '"></div>'; };
+    return '<section class="block pl" id="plan">' + head(f.label, f.title, f.lead) + '<div class="pl-grid"><form class="pl-form" novalidate>' +
+      plRadios('q1', PL_HAVE, f.have) + plRadios('q2', PL_KIND, f.kind) + plRadios('q3', PL_BACK, f.back) +
+      '<details class="pl-more"' + (s.l || s.w || s.h || s.deadline || +s.qty > 1 || +s.mat ? ' open' : '') + '><summary class="nk-label">' + esc(f.opt) + '</summary><div class="pl-more-in">' +
+      '<div class="pl-size"><p class="nk-field__label" id="pl-size-l">' + esc(f.size) + ' · mm</p><div class="fit-inputs" role="group" aria-labelledby="pl-size-l">' +
+      num('l', t().fit.l, 'type="number" inputmode="decimal" min="0" step="any"') + num('w', t().fit.w, 'type="number" inputmode="decimal" min="0" step="any"') + num('h', t().fit.h, 'type="number" inputmode="decimal" min="0" step="any"') + '</div></div>' +
+      '<div class="pl-pair">' + num('qty', f.qty, 'type="number" min="1" step="1"') + num('deadline', f.deadline, 'type="date" min="' + dlMin() + '"') + '</div>' +
+      '<div class="nk-field"><label class="nk-field__label" for="pl-mat">' + esc(x.fMat) + '</label><select class="nk-input" id="pl-mat" data-pl-f="mat">' + x.fMatO.map(function (o, i) { return '<option value="' + i + '"' + (+s.mat === i ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select></div>' +
+      '</div></details>' + (plDone() ? '<button type="button" class="pl-link pl-reset" data-pl-reset>' + esc(f.reset) + '</button>' : '') + '</form>' +
+      '<div class="pl-sheet"><div class="pl-head"><span class="nk-label">' + esc(f.plan) + '</span><span class="nk-label">NK-P</span></div><div class="pl-out" id="pl-out" aria-live="polite">' + plOut() + '</div>' +
+      '<p class="fit-note">' + esc(f.note) + '</p></div></div></section>';
+  }
+  function plUpdate() { var o = document.getElementById('pl-out'); if (o) o.innerHTML = plOut(); }
+  function plRefresh(focusSel) {
+    var box = document.getElementById('plan'); if (!box) return;
+    var open = box.querySelector('.pl-more') && box.querySelector('.pl-more').open;
+    box.outerHTML = plBox();
+    var nb = document.getElementById('plan'); if (open) nb.querySelector('.pl-more').open = true;
+    var el = focusSel && nb.querySelector(focusSel); if (el) el.focus();
+  }
+  function plText() {
+    var f = t().pl, x = t(), s = state.pl, plan = plPlan();
+    var out = [f.plan.toUpperCase() + ' — nacekepa.work', f.q1 + ' ' + f.have[s.have], f.q2 + ' ' + f.kind[s.kind], f.q3 + ' ' + f.back[s.back], ''];
+    plan.forEach(function (r) { out.push(r.s.code + ' ' + L(r.s.title) + ' — ' + (r.s.time ? L(r.s.time) : x.onRequest)); });
+    var fr = fitCalc(s); if (fr) out.push(f.size + ': ' + fitDims(fr.d) + ' mm (' + (fr.fits ? t().fit.ok : t().fit.no) + ')');
+    if (plPrints()) out.push(x.fMat + ': ' + x.fMatO[+s.mat || 0]);
+    if (+s.qty > 1) out.push(f.qty + ': ' + (+s.qty));
+    if (s.deadline) out.push(f.deadline + ': ' + s.deadline);
+    return out.join('\n');
+  }
+  function plCopy() {
+    var msg = document.getElementById('pl-msg'), f = t().pl;
+    var fail = function () { msg.textContent = f.copyFail; var o = document.getElementById('pl-out'); if (o) { var r = document.createRange(); r.selectNodeContents(o); var g = getSelection(); g.removeAllRanges(); g.addRange(r); } };
+    try { navigator.clipboard.writeText(plText()).then(function () { msg.textContent = f.copied; }, fail); } catch (e) { fail(); }
+  }
+  function plPrep() { // fill "What to prepare" below with the planned services and jump there
+    state.prep.svc = plPlan().map(function (r) { return r.s.key; });
+    prepRefresh(); var b = document.getElementById('prep'); if (b) { b.scrollIntoView({ block: 'start' }); var c = b.querySelector('[data-prep-svc]'); if (c) c.focus({ preventScroll: true }); }
+  }
+  function plToOrder() {
+    var s = state.pl, o = state.order, f = t().pl, plan = plPlan(); if (!plan.length) return;
+    plan.forEach(function (r) { if (o.services.indexOf(r.s.key) < 0) o.services.push(r.s.key); });
+    o.files = PL_FILES[s.have];
+    if (plPrints()) o.mat = +s.mat || 0;
+    if (+s.qty >= 1) o.qty = String(Math.round(+s.qty));
+    if (dlDays(s.deadline) > 0) o.deadline = s.deadline;
+    var fr = fitCalc(s), line = f.brief + ': ' + f.kind[s.kind] + '; ' + f.have[s.have].charAt(0).toLowerCase() + f.have[s.have].slice(1) + '; ' + f.back[s.back].charAt(0).toLowerCase() + f.back[s.back].slice(1) + '.' + (fr ? ' ' + t().fit.brief + ': ' + fitDims(fr.d) + ' mm.' : '');
+    if (o.what.indexOf(f.brief + ':') < 0) o.what = o.what ? line + '\n' + o.what : line;
+    else o.what = o.what.split('\n').map(function (l) { return l.indexOf(f.brief + ':') === 0 ? line : l; }).join('\n');
+    state.step = 1; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+  function plOpen() { return '<p class="pl-open"><a href="#services" data-pl-open>' + esc(t().pl.open) + ' →</a></p>'; }
 
   // ---------- What to prepare (#services): one checklist from the published SERVICES[].need lists ----------
   // Self-contained: remove prepItems()…prepToOrder(), the prepBox() call in views.services, the data-prep-* lines in the
@@ -834,7 +963,7 @@
       body = '<h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.q1) + '</h2><p class="hint" id="q1-hint">' + esc(x.q1h) + '</p><div class="grid-2 choices" role="group" aria-labelledby="wiz-h" aria-describedby="q1-hint' + (e.services ? ' err-svc' : '') + '">' + SERVICES.map(function (s) {
         var on = o.services.indexOf(s.key) >= 0;
         return '<label class="nk-choice"><input type="checkbox" id="svc-' + s.key + '" data-svc="' + s.key + '"' + (on ? ' checked' : '') + '><span class="nk-choice__t">' + esc(L(s.title)) + '</span><span class="nk-choice__d">' + esc(L(s.body)) + '</span></label>';
-      }).join('') + '</div>' + (e.services ? '<p class="err" id="err-svc" role="alert">' + esc(x.errService) + '</p>' : '');
+      }).join('') + '</div>' + (e.services ? '<p class="err" id="err-svc" role="alert">' + esc(x.errService) + '</p>' : '') + plOpen();
     } else if (st === 1) {
       body = '<h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.q2) + '</h2><div class="form">' +
         field('what', x.fWhat, '<textarea class="nk-input" id="f-what" data-f="what" placeholder="' + esc(x.fWhatPh) + '">' + esc(o.what) + '</textarea>', e.what ? x.errWhat : x.fWhatH, e.what, true) +
@@ -1025,6 +1154,7 @@
     if (!keepScroll) window.scrollTo(0, 0);
     if (p === 'project') mountViewer();
     if (p === 'order') drSave();
+    if (p === 'services' && state.plFocus) { state.plFocus = false; var pb = document.getElementById('plan'); if (pb) { pb.scrollIntoView({ block: 'start' }); var pr = pb.querySelector('input'); if (pr) pr.focus({ preventScroll: true }); } }
     if (p === 'work') { findApply(); if (state.findFocus) { state.findFocus = false; var fq = document.getElementById('find-q'); if (fq) fq.focus(); } }
   }
 
@@ -1043,6 +1173,11 @@
     var el = ev.target.closest('button, a'); if (!el) return;
     if (el.hasAttribute('data-skip')) { ev.preventDefault(); var mn = document.getElementById('main'); mn.focus({ preventScroll: true }); mn.scrollIntoView({ block: 'start' }); return; }
     if (el.hasAttribute('data-fit-go')) { fitToOrder(); return; }
+    if (el.hasAttribute('data-pl-go')) { plToOrder(); return; }
+    if (el.hasAttribute('data-pl-copy')) { plCopy(); return; }
+    if (el.hasAttribute('data-pl-prep')) { plPrep(); return; }
+    if (el.hasAttribute('data-pl-reset')) { state.pl = { have: '', kind: '', back: '', l: '', w: '', h: '', qty: '1', mat: 0, deadline: '' }; plRefresh('input[name="pl-q1"]'); return; }
+    if (el.hasAttribute('data-pl-open')) { ev.preventDefault(); state.plFocus = true; if (page() === 'services') render(true); else location.hash = 'services'; return; }
     if (el.dataset.prepSvc) { var ps = prepSvc(), pk = el.dataset.prepSvc, pi = ps.indexOf(pk); if (pi < 0) ps.push(pk); else ps.splice(pi, 1); ps.sort(function (p, q) { return SERVICES.map(function (s) { return s.key; }).indexOf(p) - SERVICES.map(function (s) { return s.key; }).indexOf(q); }); prepRefresh(pk); return; }
     if (el.hasAttribute('data-prep-go')) { prepToOrder(); return; }
     if (el.hasAttribute('data-prep-copy')) { prepCopy(); return; }
@@ -1078,9 +1213,11 @@
       try { navigator.clipboard.writeText(txt).then(function () { msg.textContent = t().copied; }, fail); } catch (e) { fail(); }
     }
   });
-  app.addEventListener('input', function (ev) { var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
+  app.addEventListener('input', function (ev) { var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var pf = ev.target.dataset && ev.target.dataset.plF; if (pf && pf !== 'mat') { state.pl[pf] = ev.target.value; plUpdate(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
     if (ev.target.hasAttribute('data-ps-scope')) { state.ps.scope = ev.target.value; psSync(); return; }
+    if (ev.target.dataset.plQ) { var hadReset = plDone() > 0; state.pl[{ q1: 'have', q2: 'kind', q3: 'back' }[ev.target.dataset.plQ]] = ev.target.value; if (!hadReset) plRefresh('input[name="' + ev.target.name + '"]:checked'); else plUpdate(); return; }
+    if (ev.target.dataset.plF === 'mat') { state.pl.mat = +ev.target.value || 0; plUpdate(); return; }
     if (ev.target.dataset.psInc) { state.ps[ev.target.dataset.psInc] = ev.target.checked; psSync(); return; }
     if (ev.target.dataset.prepHave != null) { var it = prepItems()[+ev.target.dataset.prepHave]; if (it) { state.prep.have[it.id] = ev.target.checked; var po = document.getElementById('prep-out'); if (po) po.textContent = prepStatus(prepItems()); } return; }
     if (ev.target.dataset.ocHave != null) { var oi = ocItems()[+ev.target.dataset.ocHave]; if (oi) { state.prep.have[oi.id] = ev.target.checked; var oo = document.getElementById('oc-out'); if (oo) oo.textContent = ocStatus(ocItems()); drSave(); } return; }

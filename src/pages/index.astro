@@ -100,11 +100,32 @@ const projectsLd = shown.length ? JSON.stringify({
       url: 'https://nacekepa.work/#p-' + p.slug,
       dateCreated: p.year ? String(p.year) : undefined,
       genre: p.category || undefined,
+      keywords: p.materials || undefined,
+      image: (p.photos || []).length ? p.photos.map((ph: string) => 'https://nacekepa.work/' + String(ph).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/')) : undefined,
       inLanguage: 'en',
       creator: { '@type': 'Person', name: 'Nace Kepa', url: 'https://nacekepa.work/' }
     }
   }))
 }).replace(/</g, '\\u003c') : '';
+// Static snapshot of the page for crawlers, link previews and visitors without JavaScript (SEO package, 2026-10-20).
+// app.js replaces it on its first render, so normal visitors never see it. Only text already on the site (content.js,
+// projects.json, news.json). Remove: this block, {snapshot} in #app and the ".ssr" rules at the end of page.css.
+const T: any = new Function(content + '\nreturn T;')();
+const ex = (v: any) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const en = (v: any) => (v && typeof v === 'object' ? v.en || '' : v || '');
+const snapshot = (() => {
+  const x = T.en;
+  const svc = services.map((s: any) => `<li><h3>${ex(s.code)} · ${ex(s.title.en)}</h3><p>${ex(s.body.en)}</p><p>${ex(x.turnaround)}: ${ex(s.time ? s.time.en : x.onRequest)}</p></li>`).join('');
+  const work = (projects as any[]).filter((p) => !p.hidden).map((p) => `<li><a href="/#p-${ex(p.slug)}">${ex(en(p.title))}</a> — ${ex(p.category)}, ${ex(p.year)}. ${ex(en(p.description))}</li>`).join('');
+  const posts2 = (news as any[]).filter((n) => !n.hidden && !n.draft).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const newsHtml = posts2.length ? `<h2>${ex(x.newsPageTitle)}</h2><ul>${posts2.map((n) => `<li><a href="/#n-${ex(n.slug)}">${ex(en(n.title))}</a> (<time datetime="${ex(n.date)}">${ex(n.date)}</time>) — ${ex(en(n.summary))}</li>`).join('')}</ul>` : '';
+  return `<div class="ssr" lang="en"><header><p><a href="/">nacekepa.work</a> · ${ex(x.heroLabel)}</p><nav aria-label="Sections"><a href="/#services">${ex(x.nav.services)}</a> · <a href="/#work">${ex(x.nav.work)}</a> · <a href="/#news">${ex(x.nav.news)}</a> · <a href="/#about">${ex(x.nav.about)}</a> · <a href="/#order">${ex(x.cta)}</a> · <a href="/#sl">Slovenščina</a></nav></header>` +
+    `<main><h1>${ex(x.heroA)} ${ex(x.heroB)}${ex(x.heroEm)}</h1><p>${ex(x.heroLead)}</p>` +
+    `<h2>${ex(x.servicesPageTitle)}</h2><p>${ex(x.servicesPageLead)}</p><ul>${svc}</ul>` +
+    `<h2>${ex(x.nav.work)} · ${shown.length}</h2><ul>${work}</ul>${newsHtml}` +
+    `<h2>${ex(x.nav.about)}</h2><p>${ex(x.aboutBody)}</p>` +
+    `<p><a href="/#order">${ex(x.cta)}</a> · <a href="mailto:${contactEmail}">${contactEmail}</a> · <a href="https://www.linkedin.com/in/nace-kepa-82735038a">LinkedIn</a></p></main></div>`;
+})();
 ---
 <!doctype html>
 <html lang="en">
@@ -150,6 +171,7 @@ const projectsLd = shown.length ? JSON.stringify({
   </head>
   <body>
     <div id="app">
+      <Fragment set:html={snapshot} />
       <noscript><p style="padding:24px;font-family:sans-serif">Nace Kepa · Engineering Studio — CAD, 3D printing, embedded systems and full custom builds in Škofja Loka. Enable JavaScript to browse the site, or email kepanace@gmail.com.</p></noscript>
     </div>
     <script is:inline set:html={script}></script>
