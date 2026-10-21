@@ -13,7 +13,8 @@ npm run dev
 
 Open http://localhost:4321/.
 
-The site is a single page: `src/pages/index.astro` inlines the plain HTML/CSS/JS in `src/site/`:
+The site is a single page: `src/site/Site.astro` inlines the plain HTML/CSS/JS in `src/site/`. It is rendered twice —
+`src/pages/index.astro` (English, `/`) and `src/pages/sl/index.astro` (Slovenian, `/sl/`, starts in Slovenian):
 
 | File | What |
 | --- | --- |
@@ -91,7 +92,8 @@ private repo needs a paid GitHub plan).
 ## Project structure
 
 ```
-src/pages/index.astro   the site (inlines src/site/*, projects from src/data/projects.json)
+src/site/Site.astro     the site (inlines src/site/*, projects from src/data/projects.json)
+src/pages/index.astro   English page (/) · src/pages/sl/index.astro Slovenian page (/sl/)
 src/pages/admin.astro   the admin dashboard (src/site/admin.js)
 src/data/projects.json  all projects, edited by the dashboard
 src/data/news.json      news posts, edited by the dashboard

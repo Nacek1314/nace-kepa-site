@@ -8,7 +8,7 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
   site: 'https://nacekepa.work',
   trailingSlash: 'ignore',
-  integrations: [sitemap({ filter: (page) => !/\/(services|portfolio|skills|about|order|sl|admin|news)(\/|$)/.test(new URL(page).pathname), lastmod: new Date() })], // lastmod = build date (SEO package 2026-10-20)
+  integrations: [sitemap({ filter: (page) => !/\/(services|portfolio|skills|about|order|admin|news)(\/|$)|\/sl\/.+/.test(new URL(page).pathname), lastmod: new Date() })], // lastmod = build date (SEO package 2026-10-20); /sl/ is the Slovenian page (2026-10-21)
   // Never inline built scripts into the HTML: the Content-Security-Policy only trusts files from this site.
   vite: { build: { assetsInlineLimit: 0 } },
   redirects: {
@@ -17,7 +17,6 @@ export default defineConfig({
     "/skills": "/#skills",
     "/about": "/#about",
     "/order": "/#order",
-    "/sl": "/#sl",
     "/sl/services": "/#sl-services",
     "/sl/portfolio": "/#sl-work",
     "/sl/skills": "/#sl-skills",

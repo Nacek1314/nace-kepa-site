@@ -1,0 +1,205 @@
+---
+// The whole site is plain HTML/CSS/JS from src/site/, inlined into one page. This component renders it twice:
+// src/pages/index.astro (English, https://nacekepa.work/) and src/pages/sl/index.astro (Slovenian, /sl/) — same app,
+// same script (same CSP hash); only the start language, <head> text, structured data and static snapshot differ.
+// PUBLIC_ORDER_ENDPOINT (repo variable, set in deploy.yml) is the Cloudflare Worker that emails/Telegrams orders.
+import pageCss from './page.css?raw';
+import componentsCss from './components.css?raw';
+import drawings from './drawings.js?raw';
+import content from './content.js?raw';
+import app from './app.js?raw';
+import projects from '../data/projects.json';
+import news from '../data/news.json';
+import { createHash } from 'node:crypto';
+
+const { lang = 'en' } = Astro.props as { lang?: 'en' | 'sl' };
+const SL = lang === 'sl';
+const home = SL ? 'https://nacekepa.work/sl/' : 'https://nacekepa.work/';
+const endpoint = (import.meta.env.PUBLIC_ORDER_ENDPOINT || '').trim();
+const contactEmail = 'kepanace@gmail.com';
+const projectsJs = 'window.NK_PROJECTS = ' + JSON.stringify(projects).replace(/</g, '\\u003c') + ';\nwindow.NK_NEWS = ' + JSON.stringify(news).replace(/</g, '\\u003c') + ';';
+// Refuse to run inside another site's frame (clickjacking); GitHub Pages can't send X-Frame-Options.
+const frameGuard = 'if (window.top !== window.self) { document.documentElement.style.display = "none"; try { window.top.location.replace(window.self.location.href); } catch (e) {} }';
+const script = [frameGuard, drawings, content, projectsJs, app.split('__ORDER_ENDPOINT__').join(endpoint || '__ORDER_ENDPOINT__').split('__CONTACT_EMAIL__').join(contactEmail)].join('\n');
+const css = pageCss + '\n' + componentsCss;
+// Content-Security-Policy as a meta tag (GitHub Pages can't set headers): only this site's own scripts
+// (the inline one is pinned by hash), only the order Worker and this origin for network requests.
+const hash = (t: string) => "'sha256-" + createHash('sha256').update(t, 'utf8').digest('base64') + "'";
+let workerOrigin = '';
+try { workerOrigin = endpoint ? new URL(endpoint).origin : ''; } catch {}
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' ${hash(script)}`,
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data: blob:",
+  `connect-src 'self'${workerOrigin ? ' ' + workerOrigin : ''}`,
+  "object-src 'none'",
+  "frame-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "manifest-src 'self'",
+  'upgrade-insecure-requests'
+].join('; ');
+const title = SL ? 'Nace Kepa · Inženirski studio' : 'Nace Kepa · Engineering Studio';
+const description = SL
+  ? 'Samostojni inženirski studio v Škofji Loki: CAD v SolidWorksu, 3D tisk, firmware za ESP32 in celotni izdelki po meri — od prve skice do firmwara.'
+  : 'One-person engineering studio in Škofja Loka, Slovenia: SolidWorks CAD, 3D printing, ESP32 firmware and full custom builds — from the first sketch to the firmware.';
+// Text in the page language for structured data and the snapshot (EN fallback when a field has no SL text).
+const tl = (v: any) => (v && typeof v === 'object' ? v[lang] || v.en || '' : v || '');
+// Links inside the snapshot and structured data point at this page (/ or /sl/) so each language stays on its own URL.
+const at = (h: string) => (SL ? '/sl/' : '/') + h;
+// Service names and descriptions come from SERVICES in content.js (same text as on #services), read at build time.
+const services: any[] = new Function(content + '\nreturn SERVICES;')();
+// Structured data for search engines (a data block, not executed, so the CSP script hash doesn't apply).
+// Only facts already on the page: name, place, contact, services, LinkedIn.
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'ProfessionalService',
+  name: title,
+  url: home,
+  inLanguage: lang,
+  image: 'https://nacekepa.work/og.png',
+  logo: 'https://nacekepa.work/apple-touch-icon.png',
+  description,
+  email: 'mailto:' + contactEmail,
+  address: { '@type': 'PostalAddress', addressLocality: 'Škofja Loka', addressCountry: 'SI' },
+  areaServed: 'EU',
+  availableLanguage: ['sl', 'en'],
+  founder: { '@type': 'Person', name: 'Nace Kepa', sameAs: ['https://www.linkedin.com/in/nace-kepa-82735038a'],
+    hasCredential: ['Certified SolidWorks Associate', 'Certified SolidWorks Associate — Additive Manufacturing']
+      .map((name) => ({ '@type': 'EducationalOccupationalCredential', name, credentialCategory: 'certification' })) },
+  sameAs: ['https://www.linkedin.com/in/nace-kepa-82735038a'],
+  knowsAbout: ['SolidWorks', 'CAD', '3D printing', 'ESP32', 'Embedded systems', 'IoT', 'Rapid prototyping'],
+  hasOfferCatalog: {
+    '@type': 'OfferCatalog',
+    name: SL ? 'Storitve' : 'Services',
+    itemListElement: services.map((s: any) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: tl(s.title), description: tl(s.body), url: home + '#services', provider: { '@type': 'Person', name: 'Nace Kepa' } } }))
+  }
+}).replace(/</g, '\\u003c');
+// News posts as BlogPosting (data block, not executed). Only published posts; text, date and photos from news.json.
+const posts = (news as any[]).filter((n) => !n.hidden);
+const newsLd = posts.length ? JSON.stringify({
+  '@context': 'https://schema.org',
+  '@graph': posts.map((n) => ({
+    '@type': 'BlogPosting',
+    headline: tl(n.title),
+    description: tl(n.summary),
+    datePublished: n.date,
+    url: home + '#n-' + n.slug,
+    mainEntityOfPage: home + '#n-' + n.slug,
+    inLanguage: lang,
+    image: (n.photos || []).length ? n.photos.map((ph: string) => 'https://nacekepa.work/' + String(ph).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/')) : 'https://nacekepa.work/og.png',
+    author: { '@type': 'Person', name: 'Nace Kepa', url: 'https://nacekepa.work/' },
+    publisher: { '@type': 'Organization', name: 'Nace Kepa · Engineering Studio', logo: { '@type': 'ImageObject', url: 'https://nacekepa.work/apple-touch-icon.png' } }
+  }))
+}).replace(/</g, '\\u003c') : '';
+// Published projects as an ItemList of CreativeWork (data block, not executed). Text, year and category from projects.json.
+const shown = (projects as any[]).filter((p) => !p.hidden);
+const projectsLd = shown.length ? JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: (SL ? 'Projekti' : 'Projects') + ' · Nace Kepa',
+  url: home + '#work',
+  numberOfItems: shown.length,
+  itemListElement: shown.map((p, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    item: {
+      '@type': 'CreativeWork',
+      name: tl(p.title),
+      description: tl(p.description) || undefined,
+      url: home + '#p-' + p.slug,
+      dateCreated: p.year ? String(p.year) : undefined,
+      genre: p.category || undefined,
+      keywords: p.materials || undefined,
+      image: (p.photos || []).length ? p.photos.map((ph: string) => 'https://nacekepa.work/' + String(ph).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/')) : undefined,
+      inLanguage: lang,
+      creator: { '@type': 'Person', name: 'Nace Kepa', url: 'https://nacekepa.work/' }
+    }
+  }))
+}).replace(/</g, '\\u003c') : '';
+// Static snapshot of the page for crawlers, link previews and visitors without JavaScript (SEO package, 2026-10-20).
+// app.js replaces it on its first render, so normal visitors never see it. Only text already on the site (content.js,
+// projects.json, news.json). Remove: this block, {snapshot} in #app and the ".ssr" rules at the end of page.css.
+const T: any = new Function(content + '\nreturn T;')();
+const ex = (v: any) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const CATS: any = new Function(content + '\nreturn CATS;')();
+const snapshot = (() => {
+  const x = T[lang];
+  const other = SL ? `<a href="/" hreflang="en" lang="en">English</a>` : `<a href="/sl/" hreflang="sl" lang="sl">Slovenščina</a>`;
+  const svc = services.map((s: any) => `<li><h3>${ex(s.code)} · ${ex(tl(s.title))}</h3><p>${ex(tl(s.body))}</p><p>${ex(x.turnaround)}: ${ex(s.time ? tl(s.time) : x.onRequest)}</p></li>`).join('');
+  const work = (projects as any[]).filter((p) => !p.hidden).map((p) => `<li><a href="${at('#p-' + ex(p.slug))}">${ex(tl(p.title))}</a> — ${ex(CATS[p.category] ? CATS[p.category][lang] : p.category)}, ${ex(p.year)}. ${ex(tl(p.description))}</li>`).join('');
+  const posts2 = (news as any[]).filter((n) => !n.hidden && !n.draft).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const newsHtml = posts2.length ? `<h2>${ex(x.newsPageTitle)}</h2><ul>${posts2.map((n) => `<li><a href="${at('#n-' + ex(n.slug))}">${ex(tl(n.title))}</a> (<time datetime="${ex(n.date)}">${ex(n.date)}</time>) — ${ex(tl(n.summary))}</li>`).join('')}</ul>` : '';
+  return `<div class="ssr" lang="${lang}"><header><p><a href="${at('')}">nacekepa.work</a> · ${ex(x.heroLabel)}</p><nav aria-label="${SL ? 'Razdelki' : 'Sections'}"><a href="${at('#services')}">${ex(x.nav.services)}</a> · <a href="${at('#work')}">${ex(x.nav.work)}</a> · <a href="${at('#news')}">${ex(x.nav.news)}</a> · <a href="${at('#about')}">${ex(x.nav.about)}</a> · <a href="${at('#order')}">${ex(x.cta)}</a> · ${other}</nav></header>` +
+    `<main><h1>${ex(x.heroA)} ${ex(x.heroB)}${ex(x.heroEm)}</h1><p>${ex(x.heroLead)}</p>` +
+    `<h2>${ex(x.servicesPageTitle)}</h2><p>${ex(x.servicesPageLead)}</p><ul>${svc}</ul>` +
+    `<h2>${ex(x.nav.work)} · ${shown.length}</h2><ul>${work}</ul>${newsHtml}` +
+    `<h2>${ex(x.nav.about)}</h2><p>${ex(x.aboutBody)}</p>` +
+    `<p><a href="${at('#order')}">${ex(x.cta)}</a> · <a href="mailto:${contactEmail}">${contactEmail}</a> · <a href="https://www.linkedin.com/in/nace-kepa-82735038a">LinkedIn</a></p></main></div>`;
+})();
+// Alt text of the link-preview image, in the page language (the hero line).
+const ogAlt = 'nacekepa.work — ' + T[lang].heroA + ' ' + T[lang].heroB + T[lang].heroEm;
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta http-equiv="Content-Security-Policy" content={csp} />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={home} />
+    <link rel="alternate" hreflang="en" href="https://nacekepa.work/" />
+    <link rel="alternate" hreflang="sl" href="https://nacekepa.work/sl/" />
+    <link rel="alternate" hreflang="x-default" href="https://nacekepa.work/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="alternate" type="application/atom+xml" title="Nace Kepa · News (EN)" href="/news.xml" hreflang="en" />
+    <link rel="alternate" type="application/atom+xml" title="Nace Kepa · Novice (SL)" href="/news-sl.xml" hreflang="sl" />
+    <meta name="theme-color" content="#eef0ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#131517" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={title} />
+    <meta property="og:locale" content={SL ? 'sl_SI' : 'en_GB'} />
+    <meta property="og:locale:alternate" content={SL ? 'en_GB' : 'sl_SI'} />
+    <meta property="og:url" content={home} />
+    <meta property="og:image" content="https://nacekepa.work/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content="https://nacekepa.work/og.png" />
+    <meta name="twitter:image:alt" content={ogAlt} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <style is:inline set:html={css}></style>
+    <script is:inline type="application/ld+json" set:html={jsonLd}></script>
+    {newsLd && <script is:inline type="application/ld+json" set:html={newsLd}></script>}
+    {projectsLd && <script is:inline type="application/ld+json" set:html={projectsLd}></script>}
+  </head>
+  <body>
+    <div id="app">
+      <Fragment set:html={snapshot} />
+      {SL
+        ? <noscript><p style="padding:24px;font-family:sans-serif">Nace Kepa · Inženirski studio — CAD, 3D tisk, vgrajeni sistemi in celotni izdelki po meri v Škofji Loki. Za brskanje po strani vklopite JavaScript ali pišite na kepanace@gmail.com.</p></noscript>
+        : <noscript><p style="padding:24px;font-family:sans-serif">Nace Kepa · Engineering Studio — CAD, 3D printing, embedded systems and full custom builds in Škofja Loka. Enable JavaScript to browse the site, or email kepanace@gmail.com.</p></noscript>}
+    </div>
+    <script is:inline set:html={script}></script>
+    <script>
+      // three.js (~600 KB) loads only when a project page with a 3D model is opened.
+      let loading: Promise<unknown> | null = null;
+      (window as any).NKViewerLoad = () => (loading ??= import('./viewer.js'));
+      if (document.getElementById('viewer')) (window as any).NKViewerLoad();
+    </script>
+  </body>
+</html>

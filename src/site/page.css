@@ -594,7 +594,7 @@ main:focus { outline: none; }
   .ps-tb__brand .nk-mark { width: 7mm; height: 7mm; flex: none; }
 }
 /* Static snapshot (SEO package, 2026-10-20): shown only until app.js renders, or without JavaScript.
-   Remove with the snapshot block in index.astro. */
+   Remove with the snapshot block in src/site/Site.astro. */
 .ssr { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; font: 16px/1.55 var(--font-sans, "Helvetica Neue", Arial, sans-serif); color: var(--ink); }
 .ssr h1 { font-size: 36px; line-height: 1.05; margin: 24px 0 12px; }
 .ssr h2 { font-size: 22px; margin: 32px 0 8px; border-top: 1px solid var(--line); padding-top: 16px; }
@@ -649,3 +649,36 @@ main:focus { outline: none; }
 @media (max-width: 720px) { .pl-opts { grid-template-columns: 1fr; } .pl-form { padding: var(--space-4); } .pl-out { padding: var(--space-4); } .pl-head { padding-inline: var(--space-4); } .pl-time { grid-column: 2; text-align: left; } }
 @media (forced-colors: active) { .pl-opt:has(input:checked) { outline: 2px solid Highlight; } }
 @media print { .pl, .pl-open { display: none; } }
+
+/* ---------- File check (#services): client's STL / 3MF / OBJ read in the browser (2026-10-21). Remove with fcBox() in app.js. ---------- */
+.fc-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: var(--space-8); align-items: start; }
+.fc-form { display: grid; gap: var(--space-5); padding: var(--space-6); background: var(--paper-raised); border: 1px solid var(--line-strong); min-width: 0; }
+.fc-drop { position: relative; display: grid; gap: var(--space-1); justify-items: center; text-align: center; padding: var(--space-6) var(--space-4); border: 1.5px dashed var(--line-strong); background: var(--paper); cursor: pointer; }
+.fc-drop:hover, .fc-drop.is-over { border-color: var(--redline); background: var(--paper-sunk); }
+.fc-drop:focus-within { outline: 2px solid var(--redline); outline-offset: 3px; }
+.fc-drop__t { font-weight: 600; font-size: 16px; }
+.fc-drop__t::before { content: "+ "; color: var(--redline); }
+.fc-drop__h { font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; color: var(--ink-muted); }
+.fc-file { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.fc-form .fc-private { margin: 0; }
+.fc-out { display: grid; gap: var(--space-4); min-width: 0; }
+.fc-out .hint, .fc-out p { margin: 0; }
+.fc-dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 0; background: var(--line); border: 1px solid var(--line-strong); }
+.fc-dl div { padding: var(--space-2) var(--space-3); background: var(--paper); min-width: 0; }
+.fc-dl div:first-child, .fc-dl div:last-child:nth-child(even) { grid-column: 1 / -1; }
+.fc-dl dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); }
+.fc-dl dd { margin: 2px 0 0; font-weight: 600; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.fc-unit { max-width: 260px; }
+.fc-warn, .fc-err { color: var(--redline); }
+.fc-fit { display: grid; gap: var(--space-2); justify-items: start; }
+.fc-msg { min-height: 20px; font-size: 14px; color: var(--ink-muted); }
+.fc-grid .fc-fig { aspect-ratio: auto; overflow: visible; place-items: stretch; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); padding: var(--space-4); border: 1px solid var(--line-strong); }
+.fc-view { margin: 0; display: grid; gap: var(--space-2); min-width: 0; }
+.fc-view:first-child { grid-column: 1 / -1; }
+.fc-view:first-child canvas { max-width: 420px; margin: 0 auto; }
+.fc-view canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; border: 1px solid var(--line); background: var(--paper); }
+.fc-blank { grid-column: 1 / -1; display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-8) var(--space-4); text-align: center; }
+.fc-fig .fc-blank svg { width: 120px; height: auto; }
+@media (max-width: 1000px) { .fc-grid { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .fc-form { padding: var(--space-4); } .fc-grid .fc-fig { grid-template-columns: 1fr; } .fc-dl { grid-template-columns: 1fr; } }
+@media print { .fc { display: none !important; } }

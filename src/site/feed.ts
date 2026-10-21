@@ -1,6 +1,6 @@
 // Atom feed of the news posts, built at build time from src/data/news.json (published posts only).
 // Served as /news.xml (English) and /news-sl.xml (Slovenian) by src/pages/news.xml.ts and src/pages/news-sl.xml.ts.
-// To remove the feed: delete this file, those two pages, the two <link rel="alternate"> tags in index.astro,
+// To remove the feed: delete this file, those two pages, the two <link rel="alternate"> tags in src/site/Site.astro,
 // feedBox() + its call in views.news + the data-feed-copy line in app.js, feed: in content.js and the .feed-* CSS.
 import news from '../data/news.json';
 
@@ -18,11 +18,12 @@ export function atom(lang: 'en' | 'sl'): Response {
   const L = (v: any) => (v && typeof v === 'object' ? v[lang] || v.en || '' : v || '');
   const posts = (news as any[]).filter((n) => !n.hidden).sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const self = SITE + (lang === 'sl' ? '/news-sl.xml' : '/news.xml');
-  const home = SITE + '/#' + lang + '-news';
+  const base = lang === 'sl' ? SITE + '/sl/#' : SITE + '/#en-'; // the Slovenian feed links to the Slovenian page /sl/
+  const home = base + 'news';
   const stamp = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? d + 'T12:00:00Z' : new Date().toISOString());
   const updated = posts.length ? stamp(posts[0].date) : '2026-10-01T12:00:00Z';
   const entries = posts.map((n) => {
-    const url = SITE + '/#' + lang + '-n-' + n.slug;
+    const url = base + 'n-' + n.slug;
     const img = (n.photos || []).length ? '<p><img src="' + x(asset(n.photos[0])) + '" alt=""></p>' : '';
     return '  <entry>\n' +
       '    <id>tag:nacekepa.work,2026:news/' + x(n.slug) + '</id>\n' +

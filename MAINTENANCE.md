@@ -20,6 +20,57 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-21
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-scheduled-pet-feeder, #news, #n-bambu-lab-x2d, #skills, #about,
+#order (steps 1–2 on the local build, nothing sent), /admin/ sign-in — 1280 + 390 px, light + dark, EN + SL, plus a scan for
+anything wider than the page. Last Actions run (93e2c4a) succeeded; nacekepa.work, /admin/, /news.xml and /sitemap-0.xml
+return 200 (checked via the laptop). No JS errors, no CSP violations, no 404s, no horizontal scroll, EN and SL text keys
+match. No project has a 3D model yet, so the viewer could not be tested.
+
+**Bugs fixed:** none found.
+
+**Improvement — SEO package: a real Slovenian page, `https://nacekepa.work/sl/`:**
+- Until now Slovenian existed only behind `/#sl`, which search engines treat as the English page — Google never saw the
+  Slovenian text, so "3D tisk Škofja Loka"-type searches could not find it. `/sl/` (was a redirect) is now the same site
+  starting in Slovenian, with `<html lang="sl">`, a Slovenian title, description, link-preview text (`og:locale sl_SI`) and
+  JSON-LD (services, projects, news in Slovenian, `inLanguage: sl`), and the Slovenian static snapshot for crawlers and
+  visitors without JavaScript.
+- Both pages declare each other with `hreflang` (`en`, `sl`, `x-default` = English) and have their own canonical URL;
+  `/sl/` is in the sitemap (the old `/sl/services`… redirects stay out).
+- The Slovenian Atom feed (`/news-sl.xml`) now links to `/sl/#n-…`; the 404 page's Slovenian link goes to `/sl/`; the
+  English snapshot links "Slovenščina" to `/sl/` and the Slovenian one "English" to `/`.
+- Code: `src/pages/index.astro` moved to `src/site/Site.astro` (with a `lang` prop); `src/pages/index.astro` and
+  `src/pages/sl/index.astro` just render it. Same script on both → same CSP hash. `START_LANG` line at the top of `app.js`
+  (on `/sl/` the app starts in Slovenian; a `#en-…` link still switches). *To undo:* delete `src/pages/sl/index.astro`,
+  put `"/sl": "/#sl"` back in the redirects and remove the `START_LANG` line.
+
+**Innovation — File check / "Preverjanje datoteke" (`#services`, section right under "Will it fit the printer?"):** a client
+chooses or drops an **STL, 3MF or OBJ** file and sees, without uploading anything: file name and format, size X × Y × Z in
+mm, triangle count, surface (cm²), whether the mesh is closed (watertight edge check; open edges counted) and the volume
+(cm³, only for closed meshes), plus the X2D one-piece check (same `fitCalc` and wording as the fit check). Three views
+(top, front, side) are drawn as silhouettes on the drawing grid with the size box in red. Units: 3MF uses the units in the
+file; for STL/OBJ the client can switch mm / cm / m / inch (a warning appears when the size looks odd). "Add to the order
+form →" writes a "File check: …" line into "What should it do?", sets "Do you have files?" to "STL / STEP / 3MF", ticks 3D
+printing when it fits and opens the order form; "Use in the fit check" fills the three sizes above; "Copy summary"; "Clear".
+STEP/IGES get a clear message (export STL/3MF or send the STEP with the brief); files over 200 MB are refused. The file is
+read only in the browser (plain JS parsers incl. a small zip reader for 3MF with components and build transforms; no
+network, no new dependency, CSP unchanged). Tested: binary + ASCII STL, OBJ, 3MF (deflated, components, rotated build item;
+stored, centimetre units), an open mesh, a part bigger than the X2D, a 405,000-triangle STL (~2 s total, views 0.16 s),
+STEP, unit switch, fit-check hand-off, copy, order hand-off (service, files, text), EN + SL, light + dark (+ theme switch
+redraw), 1280 + 390 px, keyboard (file input focus ring on the drop box, buttons), no overflow, hidden in print.
+*To remove:* delete the "File check" block in `app.js` (`FC_MAX` … `fcClear()`), the `fcBox()` call in `views.services`,
+the `fcDraw()` line in `render()`, the four `data-fc-*` lines in the click handler, the two `data-fc-*` lines at the top of
+the change handler, the "File check: drop" listeners before `submitOrder()`, `fc:` in both languages in `content.js` and
+the "File check" rules at the end of `page.css`.
+*Next step (day 2):* print-orientation hint (which face down, from the fit check's turned orientation) and showing the
+file check line as its own block in the order step 4 brief.
+
+**Ideas for next time** (added to the list below)
+- Public: EN/SL buttons on `/sl/` and `/` move between the two URLs (today they switch the language in place).
+- Public: file check → "Plan a project like this" style hand-off into the project planner (have = 3D file, size filled).
+- Admin: "Search preview" — how the EN and SL Google result for each project would look (title + description length).
+
 ## 2026-10-20
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-automated-cocktail-dispenser, #news, #n-bambu-lab-x2d, #skills,
@@ -691,7 +742,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form).
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form). 2026-10-21 file check on #services (client STL / 3MF / OBJ read in the browser → size, volume, closed mesh, X2D fit, three views → order form).
 
 - Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
@@ -731,6 +782,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: planner pre-answered from a project sheet ("Plan a project like this").
 - Public: Slovenian static snapshot for no-JavaScript visitors.
 - Admin: planner preview per project category (check the planner's rules).
+- Public: EN/SL buttons move between `/` and `/sl/` (real language URLs).
+- Public: file check → project planner hand-off (3D file + size pre-filled).
+- Admin: search-result preview per project (EN + SL title/description length).
 
 ## 2026-10-03 (second run)
 

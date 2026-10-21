@@ -7,6 +7,8 @@
   var LINKEDIN = 'https://www.linkedin.com/in/nace-kepa-82735038a';
   var lang = 'en';
   try { var s = localStorage.getItem('nk-lang'); if (s === 'sl' || s === 'en') lang = s; } catch (e) {}
+  // The Slovenian page (/sl/, <html lang="sl">) always starts in Slovenian; a #en-… link still switches (page()).
+  var START_LANG = document.documentElement.lang === 'sl' ? 'sl' : ''; if (START_LANG) lang = START_LANG;
   var state = { send: 'idle', filter: 'all', step: 0, order: { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '' }, errors: {} };
   var app = document.getElementById('app');
   // Projects come from src/data/projects.json, inlined at build time (the admin dashboard edits that file).
@@ -103,6 +105,7 @@
       return '<section class="block first">' + head('S-01 … S-04', x.servicesPageTitle, x.servicesPageLead, true) + '<div class="grid-2">' + SERVICES.map(function (s) { return service(s, true); }).join('') + '</div></section>' +
         plBox() +
         fitChecker() +
+        fcBox() +
         prepBox() +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
@@ -709,6 +712,276 @@
     location.hash = 'order';
   }
 
+  // ---------- File check (#services): read a client's STL / 3MF / OBJ here in the browser → size, volume, closed mesh, X2D fit ----------
+  // The file never leaves the browser (no upload, no network request); only the numbers can go into the brief. Uses only the
+  // X2D build volume already on the site (BED / fitCalc). Added 2026-10-21. To remove: delete FC_MAX … fcToOrder(), the
+  // fcBox() call in views.services, the fcDraw line in render(), the data-fc-* lines in the click and change handlers, the
+  // "File check: drop" listeners after the change handler, fc: in both languages in content.js and the "File check" rules at
+  // the end of page.css.
+  var FC_MAX = 200 * 1024 * 1024; // bigger files are refused — they would stall a phone
+  var FC_UNITS = { mm: 1, cm: 10, m: 1000, in: 25.4 };
+  var FC_3MF_UNITS = { micron: 0.001, millimeter: 1, centimeter: 10, inch: 25.4, foot: 304.8, meter: 1000 };
+  state.fc = { busy: false, err: '', res: null, unit: 'mm' }; // res: { name, fmt, pos (Float32Array, 9 numbers per triangle), objects, unitSet, st }
+  function fcSTL(buf) {
+    var dv = new DataView(buf), n = buf.byteLength >= 84 ? dv.getUint32(80, true) : -1, i, j;
+    if (n >= 0 && 84 + n * 50 === buf.byteLength) { // binary (some binary files also start with "solid", so the size decides)
+      var pos = new Float32Array(n * 9);
+      for (i = 0; i < n; i++) for (j = 0; j < 9; j++) pos[i * 9 + j] = dv.getFloat32(84 + i * 50 + 12 + j * 4, true);
+      return pos;
+    }
+    var txt = new TextDecoder().decode(buf), re = /vertex\s+(\S+)\s+(\S+)\s+(\S+)/g, a = [], m;
+    while ((m = re.exec(txt))) a.push(+m[1], +m[2], +m[3]);
+    a.length -= a.length % 9;
+    return new Float32Array(a);
+  }
+  function fcOBJ(buf) {
+    var lines = new TextDecoder().decode(buf).split(/\r?\n/), v = [], out = [];
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i].trim(), p;
+      if (/^v\s/.test(l)) { p = l.split(/\s+/); v.push(+p[1], +p[2], +p[3]); }
+      else if (/^f\s/.test(l)) {
+        var f = l.split(/\s+/).slice(1).map(function (s) { var k = parseInt(s, 10); return k < 0 ? v.length / 3 + k : k - 1; });
+        for (var j = 1; j + 1 < f.length; j++) [f[0], f[j], f[j + 1]].forEach(function (k) { out.push(v[k * 3], v[k * 3 + 1], v[k * 3 + 2]); });
+      }
+    }
+    return new Float32Array(out);
+  }
+  function fcZip(buf) { // central directory of a .zip (a 3MF is a zip) → [{ name, method, csize, lho }]
+    var dv = new DataView(buf), u8 = new Uint8Array(buf), e = -1, i, list = [];
+    for (i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+    if (e < 0) throw new Error('zip');
+    var cnt = dv.getUint16(e + 10, true), off = dv.getUint32(e + 16, true);
+    for (i = 0; i < cnt; i++) {
+      if (off + 46 > buf.byteLength || dv.getUint32(off, true) !== 0x02014b50) throw new Error('zip');
+      var nlen = dv.getUint16(off + 28, true);
+      list.push({ name: new TextDecoder().decode(u8.subarray(off + 46, off + 46 + nlen)), method: dv.getUint16(off + 10, true), csize: dv.getUint32(off + 20, true), lho: dv.getUint32(off + 42, true) });
+      off += 46 + nlen + dv.getUint16(off + 30, true) + dv.getUint16(off + 32, true);
+    }
+    return list;
+  }
+  function fcUnzip(buf, ent) {
+    if (ent.csize === 0xffffffff) return Promise.reject(new Error('zip64'));
+    var dv = new DataView(buf), s = ent.lho + 30 + dv.getUint16(ent.lho + 26, true) + dv.getUint16(ent.lho + 28, true);
+    var data = new Uint8Array(buf, s, ent.csize);
+    if (ent.method === 0) return Promise.resolve(new TextDecoder().decode(data));
+    if (ent.method !== 8 || typeof DecompressionStream === 'undefined') return Promise.reject(new Error('zip'));
+    return new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  }
+  function fcAttr(s, n) { var m = new RegExp('(?:^|\\s)' + n + '="([^"]*)"').exec(s); return m ? m[1] : ''; }
+  function fcMat(s) { var a = String(s || '').trim().split(/\s+/).map(Number); return a.length === 12 && a.every(isFinite) ? a : [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]; }
+  function fcMul(a, b) { // affine 3×4 matrices in 3MF row-vector order: first a, then b
+    var r = [], i, j;
+    for (i = 0; i < 4; i++) for (j = 0; j < 3; j++) r.push(a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j] + (i === 3 ? b[9 + j] : 0));
+    return r;
+  }
+  function fcModel(xml) { // one .model file → { unit, objects: { id: { v, t, comps } }, items }
+    var out = { unit: (/<model\b[^>]*\sunit="([^"]+)"/.exec(xml) || [])[1] || 'millimeter', objects: {}, items: [] }, m, re = /<object\b([^>]*)>([\s\S]*?)<\/object>/g;
+    while ((m = re.exec(xml))) {
+      var body = m[2], o = { v: [], t: [], comps: [] }, x, rv = /<vertex\b([^>]*)\/?>/g, rt = /<triangle\b([^>]*)\/?>/g, rc = /<component\b([^>]*)\/?>/g;
+      while ((x = rv.exec(body))) o.v.push(+fcAttr(x[1], 'x'), +fcAttr(x[1], 'y'), +fcAttr(x[1], 'z'));
+      while ((x = rt.exec(body))) o.t.push(+fcAttr(x[1], 'v1'), +fcAttr(x[1], 'v2'), +fcAttr(x[1], 'v3'));
+      while ((x = rc.exec(body))) o.comps.push({ id: fcAttr(x[1], 'objectid'), path: fcAttr(x[1], 'p:path'), m: fcMat(fcAttr(x[1], 'transform')) });
+      out.objects[fcAttr(m[1], 'id')] = o;
+    }
+    var ri = /<item\b([^>]*)\/?>/g;
+    while ((m = ri.exec(xml))) out.items.push({ id: fcAttr(m[1], 'objectid'), path: fcAttr(m[1], 'p:path'), m: fcMat(fcAttr(m[1], 'transform')) });
+    return out;
+  }
+  function fc3MF(buf) {
+    var ents = fcZip(buf).filter(function (e) { return /\.model$/i.test(e.name); });
+    if (!ents.length) return Promise.reject(new Error('3mf'));
+    return Promise.all(ents.map(function (e) { return fcUnzip(buf, e); })).then(function (txts) {
+      var files = {}, main = '', out = [];
+      ents.forEach(function (e, i) { var p = '/' + e.name.replace(/^\/+/, ''); files[p.toLowerCase()] = fcModel(txts[i]); if (/^\/3d\/3dmodel\.model$/i.test(p)) main = p.toLowerCase(); });
+      main = main || ('/' + ents[0].name.replace(/^\/+/, '')).toLowerCase();
+      var add = function (path, id, M, depth) {
+        var f = files[(path || main).toLowerCase()], o = f && f.objects[id];
+        if (!o || depth > 8) return;
+        for (var i = 0; i + 2 < o.t.length; i += 3) for (var k = 0; k < 3; k++) {
+          var vi = o.t[i + k] * 3, x = o.v[vi], y = o.v[vi + 1], z = o.v[vi + 2];
+          out.push(x * M[0] + y * M[3] + z * M[6] + M[9], x * M[1] + y * M[4] + z * M[7] + M[10], x * M[2] + y * M[5] + z * M[8] + M[11]);
+        }
+        o.comps.forEach(function (c) { add(c.path || path, c.id, fcMul(c.m, M), depth + 1); });
+      };
+      var mf = files[main], items = mf.items.length ? mf.items : Object.keys(mf.objects).map(function (id) { return { id: id, path: '', m: fcMat('') }; });
+      items.forEach(function (it) { add(it.path || main, it.id, it.m, 0); });
+      return { pos: new Float32Array(out), objects: items.length, unit: mf.unit };
+    });
+  }
+  function fcStats(pos) { // in file units: box, area, volume (only meaningful when closed), open edges (null = not checked)
+    var n = Math.floor(pos.length / 9), mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity], i, k;
+    for (i = 0; i < n * 9; i++) { k = i % 3; if (pos[i] < mn[k]) mn[k] = pos[i]; if (pos[i] > mx[k]) mx[k] = pos[i]; }
+    var c = [(mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, (mn[2] + mx[2]) / 2], area = 0, vol = 0;
+    for (i = 0; i < n; i++) {
+      var o = i * 9, ax = pos[o] - c[0], ay = pos[o + 1] - c[1], az = pos[o + 2] - c[2], bx = pos[o + 3] - c[0], by = pos[o + 4] - c[1], bz = pos[o + 5] - c[2], cx = pos[o + 6] - c[0], cy = pos[o + 7] - c[1], cz = pos[o + 8] - c[2];
+      var ux = bx - ax, uy = by - ay, uz = bz - az, wx = cx - ax, wy = cy - ay, wz = cz - az;
+      var nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx, a2 = Math.sqrt(nx * nx + ny * ny + nz * nz);
+      if (isFinite(a2)) area += a2 / 2;
+      var v6 = ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx);
+      if (isFinite(v6)) vol += v6 / 6;
+    }
+    var open = null;
+    if (n && n <= 600000) { // edge check: every edge of a closed (watertight) mesh is shared by exactly two triangles
+      var ids = new Map(), edges = new Map(), id = function (j) { var key = pos[j] + ',' + pos[j + 1] + ',' + pos[j + 2], v = ids.get(key); if (v === undefined) { v = ids.size; ids.set(key, v); } return v; };
+      for (i = 0; i < n; i++) {
+        var t = [id(i * 9), id(i * 9 + 3), id(i * 9 + 6)];
+        for (k = 0; k < 3; k++) { var p = t[k], q = t[(k + 1) % 3], e = p < q ? p * 4194304 + q : q * 4194304 + p; edges.set(e, (edges.get(e) || 0) + 1); }
+      }
+      open = 0; edges.forEach(function (cnt) { if (cnt !== 2) open++; });
+    }
+    var ok = n > 0 && mn.every(isFinite) && mx.every(isFinite);
+    return { n: n, ok: ok, size: ok ? [mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]] : [0, 0, 0], mn: mn, area: area, vol: Math.abs(vol), open: open };
+  }
+  function fcRead(file) {
+    var f = t().fc, ext = (/\.([a-z0-9]+)$/i.exec(file.name) || [])[1];
+    ext = ext ? ext.toLowerCase() : '';
+    state.fc.res = null; state.fc.err = '';
+    if (ext === 'step' || ext === 'stp' || ext === 'iges' || ext === 'igs') { state.fc.err = f.errStep; fcRefresh(); return; }
+    if (ext !== 'stl' && ext !== 'obj' && ext !== '3mf') { state.fc.err = f.errType; fcRefresh(); return; }
+    if (file.size > FC_MAX) { state.fc.err = f.errBig; fcRefresh(); return; }
+    state.fc.busy = true; fcRefresh();
+    var name = file.name;
+    (file.arrayBuffer ? file.arrayBuffer() : new Response(file).arrayBuffer()).then(function (buf) {
+      if (ext === '3mf') return fc3MF(buf);
+      return { pos: ext === 'stl' ? fcSTL(buf) : fcOBJ(buf), objects: 1, unit: '' };
+    }).then(function (r) {
+      var st = fcStats(r.pos);
+      state.fc.busy = false;
+      if (!st.ok) { state.fc.err = f.errEmpty; fcRefresh(); return; }
+      var unitSet = r.unit && FC_3MF_UNITS[r.unit] ? r.unit : '';
+      state.fc.unit = unitSet ? 'mm' : state.fc.unit;
+      state.fc.res = { name: name, fmt: ext.toUpperCase(), pos: r.pos, objects: r.objects, unitSet: unitSet, k3mf: unitSet ? FC_3MF_UNITS[unitSet] : 1, st: st };
+      fcRefresh(true);
+    }).catch(function () { state.fc.busy = false; state.fc.err = f.errRead; fcRefresh(); });
+  }
+  function fcK() { var r = state.fc.res; return r && r.unitSet ? r.k3mf : FC_UNITS[state.fc.unit] || 1; } // file units → mm
+  function fcR1(n) { return Math.round(n * 10) / 10; }
+  function fcNum(n, d) { // d: decimals; default 1, more for small values (0.008 cm³ instead of 0)
+    if (d == null) d = n >= 1 || n === 0 ? 1 : Math.min(4, 2 - Math.floor(Math.log10(n)));
+    try { return n.toLocaleString(lang === 'sl' ? 'sl-SI' : 'en-GB', { maximumFractionDigits: d }); } catch (e) { return String(n); } }
+  function fcSize() { var r = state.fc.res, k = fcK(); return r ? r.st.size.map(function (v) { return fcR1(v * k); }) : null; }
+  function fcSummary() { // one line for the brief / clipboard
+    var r = state.fc.res, f = t().fc, s = fcSize(); if (!r) return '';
+    var st = r.st, k = fcK(), parts = [r.name + ' (' + r.fmt + ')', fitDims(s) + ' mm', f.tris.replace('{n}', fcNum(st.n, 0))];
+    if (st.open === 0) parts.push(f.sumClosed + ', ' + fcNum(st.vol * k * k * k / 1000) + ' cm³');
+    else if (st.open > 0) parts.push(f.sumOpen);
+    var fr = fitCalc({ l: s[0], w: s[1], h: s[2] });
+    if (fr) parts.push('X2D: ' + (fr.fits ? f.fitY : f.fitN));
+    return f.brief + ': ' + parts.join(' · ');
+  }
+  function fcResult() {
+    var fs = state.fc, f = t().fc;
+    if (fs.busy) return '<p class="hint">' + esc(f.busy) + '</p>';
+    if (fs.err) return '<p class="fc-err"><span class="nk-tag nk-tag--rev">' + esc(f.errTag) + '</span> ' + esc(fs.err) + '</p>';
+    if (!fs.res) return '<p class="hint">' + esc(f.empty) + '</p>';
+    var r = fs.res, st = r.st, k = fcK(), s = fcSize(), fr = fitCalc({ l: s[0], w: s[1], h: s[2] }), big = Math.max(s[0], s[1], s[2]);
+    var rows = [[f.file, r.name + ' · ' + r.fmt + (r.objects > 1 ? ' · ' + f.objects.replace('{n}', r.objects) : '')], [f.size, fitDims(s) + ' mm'], [f.trisL, fcNum(st.n, 0)],
+      [f.area, fcNum(st.area * k * k / 100) + ' cm²'],
+      [f.closed, st.open === null ? f.closedSkip : st.open === 0 ? f.closedY : f.closedN + ' · ' + f.openEdges.replace('{n}', fcNum(st.open, 0))],
+      [f.vol, st.open === 0 ? fcNum(st.vol * k * k * k / 1000) + ' cm³' : f.volNone]];
+    var unit = r.unitSet ? '<p class="fc-unit nk-label">' + esc(f.unitFile.replace('{u}', f.units3[r.unitSet] || r.unitSet)) + '</p>' :
+      '<div class="nk-field fc-unit"><label class="nk-field__label" for="fc-unit">' + esc(f.unit) + '</label><select class="nk-input" id="fc-unit" data-fc-unit>' +
+      Object.keys(FC_UNITS).map(function (u) { return '<option value="' + u + '"' + (fs.unit === u ? ' selected' : '') + '>' + esc(f.units[u]) + '</option>'; }).join('') + '</select></div>';
+    return '<dl class="fc-dl">' + rows.map(function (x) { return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' + unit +
+      (big < 3 || big > 3000 ? '<p class="fc-warn">' + esc(f.odd) + '</p>' : '') +
+      (fr ? '<div class="fc-fit">' + fitResult(fr) + '</div>' : '') +
+      (st.open > 0 ? '<p class="fit-note">' + esc(f.openNote) + '</p>' : '') +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-fc-go>' + esc(f.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
+      '<button type="button" class="nk-btn" data-fc-fit>' + esc(f.toFit) + '</button>' +
+      '<button type="button" class="nk-btn nk-btn--ghost" data-fc-copy>' + esc(f.copy) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-fc-clear>' + esc(f.clear) + '</button></div>' +
+      '<p class="fc-msg" id="fc-msg" role="status" aria-live="polite"></p>';
+  }
+  function fcViews() {
+    var r = state.fc.res, f = t().fc, s = fcSize();
+    var v = function (id, label, a, b) { return '<figure class="fc-view"><canvas id="fc-' + id + '" width="300" height="225" aria-hidden="true"></canvas><figcaption class="nk-label">' + esc(label) + (s ? ' · ' + fitFmt(s[a]) + ' × ' + fitFmt(s[b]) + ' mm' : '') + '</figcaption></figure>'; };
+    if (!r) return '<div class="fc-blank"><svg viewBox="0 0 120 90" aria-hidden="true" focusable="false"><path class="hid" d="M30 70 L30 30 L60 15 L90 30 L90 70 L60 85 Z M30 30 L60 45 L90 30 M60 45 V85"/></svg><p class="nk-label">' + esc(f.views) + '</p></div>';
+    return v('top', f.top + ' · X × Y', 0, 1) + v('front', f.front + ' · X × Z', 0, 2) + v('side', f.side + ' · Y × Z', 1, 2);
+  }
+  function fcBox() {
+    var f = t().fc, fs = state.fc;
+    return '<section class="block fc" id="file-check">' + head(f.label, f.title, f.lead) + '<div class="fc-grid"><div class="fc-form">' +
+      '<label class="fc-drop" id="fc-drop" for="fc-file"><span class="fc-drop__t">' + esc(f.pick) + '</span><span class="fc-drop__h">' + esc(f.pickHint) + '</span>' +
+      '<input class="fc-file" id="fc-file" type="file" accept=".stl,.3mf,.obj,model/stl,model/3mf" data-fc-file' + (fs.busy ? ' disabled' : '') + '></label>' +
+      '<p class="fit-note fc-private">' + esc(f.private) + '</p>' +
+      '<div class="fc-out" id="fc-out" role="status" aria-live="polite">' + fcResult() + '</div></div>' +
+      '<div class="fc-fig nk-sheet__art" id="fc-views">' + fcViews() + '</div></div></section>';
+  }
+  function fcRefresh(focus) {
+    var o = document.getElementById('fc-out'), v = document.getElementById('fc-views'), i = document.getElementById('fc-file');
+    if (o) o.innerHTML = fcResult();
+    if (v) v.innerHTML = fcViews();
+    if (i) i.disabled = !!state.fc.busy;
+    fcDraw();
+    if (focus) { var b = o && o.querySelector('[data-fc-go]'); if (b) b.focus({ preventScroll: true }); }
+  }
+  // The three views: every triangle projected and rasterised into a pixel mask (own scanline fill — a canvas path with
+  // hundreds of thousands of triangles is far too slow on phones), then drawn as a silhouette with an ink outline.
+  function fcRgb(g, c) { g.fillStyle = '#000'; g.fillStyle = c; var h = /^#([0-9a-f]{6})$/i.exec(g.fillStyle); var v = h ? parseInt(h[1], 16) : 0; return [v >> 16 & 255, v >> 8 & 255, v & 255]; }
+  function fcMask(pos, n, a, b, mn, s, ox, oy, PW, PH) {
+    var m = new Uint8Array(PW * PH), step = Math.max(1, Math.ceil(n / 3000000));
+    var dot = function (x, y) { x = x | 0; y = y | 0; if (x >= 0 && y >= 0 && x < PW && y < PH) m[y * PW + x] = 1; };
+    for (var i = 0; i < n; i += step) {
+      var o = i * 9, x0 = ox + (pos[o + a] - mn[a]) * s, y0 = oy - (pos[o + b] - mn[b]) * s, x1 = ox + (pos[o + 3 + a] - mn[a]) * s, y1 = oy - (pos[o + 3 + b] - mn[b]) * s, x2 = ox + (pos[o + 6 + a] - mn[a]) * s, y2 = oy - (pos[o + 6 + b] - mn[b]) * s;
+      if (!(x0 === x0 && x1 === x1 && x2 === x2 && y0 === y0 && y1 === y1 && y2 === y2)) continue;
+      var lx = Math.max(0, Math.floor(Math.min(x0, x1, x2))), hx = Math.min(PW - 1, Math.floor(Math.max(x0, x1, x2))), ly = Math.max(0, Math.floor(Math.min(y0, y1, y2))), hy = Math.min(PH - 1, Math.floor(Math.max(y0, y1, y2)));
+      dot(x0, y0); dot(x1, y1); dot(x2, y2);
+      if (hx - lx < 1 && hy - ly < 1) continue;
+      var ar = (x1 - x0) * (y2 - y0) - (y1 - y0) * (x2 - x0); if (!ar) continue;
+      var sg = ar > 0 ? 1 : -1;
+      for (var y = ly; y <= hy; y++) for (var x = lx; x <= hx; x++) {
+        var px = x + 0.5, py = y + 0.5;
+        if (sg * ((x1 - x0) * (py - y0) - (y1 - y0) * (px - x0)) >= 0 && sg * ((x2 - x1) * (py - y1) - (y2 - y1) * (px - x1)) >= 0 && sg * ((x0 - x2) * (py - y2) - (y0 - y2) * (px - x2)) >= 0) m[y * PW + x] = 1;
+      }
+    }
+    return m;
+  }
+  function fcDraw() {
+    var r = state.fc.res; if (!r || !document.getElementById('fc-top')) return;
+    var cs = getComputedStyle(document.documentElement), pos = r.pos, n = r.st.n, mn = r.st.mn, sz = r.st.size;
+    [['top', 0, 1], ['front', 0, 2], ['side', 1, 2]].forEach(function (vw) {
+      var cv = document.getElementById('fc-' + vw[0]); if (!cv || !cv.getContext) return;
+      var dpr = Math.min(window.devicePixelRatio || 1, 2), W = Math.max(200, cv.clientWidth || 300), H = Math.round(W * 0.75), PW = Math.round(W * dpr), PH = Math.round(H * dpr);
+      cv.width = PW; cv.height = PH;
+      var g = cv.getContext('2d'); g.clearRect(0, 0, PW, PH);
+      var a = vw[1], b = vw[2], pad = 18 * dpr, sa = sz[a] || 1e-9, sb = sz[b] || 1e-9, s = Math.min((PW - 2 * pad) / sa, (PH - 2 * pad) / sb);
+      var ox = (PW - sa * s) / 2, oy = (PH + sb * s) / 2, m = fcMask(pos, n, a, b, mn, s, ox, oy, PW, PH);
+      var ink = fcRgb(g, cs.getPropertyValue('--ink').trim() || '#1a1c1e'), mid = fcRgb(g, cs.getPropertyValue('--ink-muted').trim() || '#53585e');
+      var img = g.createImageData(PW, PH), d = img.data;
+      for (var y = 0; y < PH; y++) for (var x = 0; x < PW; x++) {
+        var k = y * PW + x; if (!m[k]) continue;
+        var edge = x === 0 || y === 0 || x === PW - 1 || y === PH - 1 || !m[k - 1] || !m[k + 1] || !m[k - PW] || !m[k + PW], c = edge ? ink : mid;
+        d[k * 4] = c[0]; d[k * 4 + 1] = c[1]; d[k * 4 + 2] = c[2]; d[k * 4 + 3] = edge ? 255 : 120;
+      }
+      g.putImageData(img, 0, 0);
+      g.strokeStyle = cs.getPropertyValue('--redline').trim() || '#b52b16'; g.lineWidth = dpr; g.setLineDash([4 * dpr, 3 * dpr]);
+      g.strokeRect(Math.round(ox) - 0.5 * dpr, Math.round(oy - sb * s) - 0.5 * dpr, Math.round(sa * s) + dpr, Math.round(sb * s) + dpr);
+    });
+  }
+  function fcToOrder() {
+    var o = state.order, line = fcSummary(), s = fcSize();
+    if (!line) return;
+    if (o.what.indexOf(line) < 0) o.what = o.what ? o.what + '\n' + line : line;
+    if (+o.files < 2) o.files = 2; // "STL / STEP / 3MF"
+    var fr = s && fitCalc({ l: s[0], w: s[1], h: s[2] });
+    if (fr && o.services.indexOf('print') < 0) o.services.push('print');
+    state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+  function fcToFit() {
+    var s = fcSize(); if (!s) return;
+    state.fit = { l: String(s[0]), w: String(s[1]), h: String(s[2]) };
+    ['l', 'w', 'h'].forEach(function (k, i) { var el = document.getElementById('fit-' + k); if (el) el.value = s[i]; });
+    fitUpdate();
+    var fb = document.querySelector('.block.fit'); if (fb) fb.scrollIntoView({ block: 'start' });
+    var fl = document.getElementById('fit-l'); if (fl) fl.focus({ preventScroll: true });
+  }
+  function fcCopy() {
+    var msg = document.getElementById('fc-msg'), txt = fcSummary();
+    var done = function (ok) { if (msg) msg.textContent = ok ? t().copied : t().copyFail; };
+    try { navigator.clipboard.writeText(txt).then(function () { done(true); }, function () { done(false); }); } catch (e) { done(false); }
+  }
+  function fcClear() { state.fc = { busy: false, err: '', res: null, unit: state.fc.unit }; var i = document.getElementById('fc-file'); if (i) { i.value = ''; } fcRefresh(); if (i) i.focus(); }
+
   // ---------- Project planner (#services): three questions → services, usual turnaround, fit, deadline, brief → #order ----------
   // Uses only what is already on the site: SERVICES (titles, turnarounds, needs), the X2D build volume (BED), the order
   // form's file/material options and the project sheets. Nothing is stored or sent.
@@ -1154,6 +1427,7 @@
     if (!keepScroll) window.scrollTo(0, 0);
     if (p === 'project') mountViewer();
     if (p === 'order') drSave();
+    if (p === 'services' && state.fc.res) fcDraw(); // File check views
     if (p === 'services' && state.plFocus) { state.plFocus = false; var pb = document.getElementById('plan'); if (pb) { pb.scrollIntoView({ block: 'start' }); var pr = pb.querySelector('input'); if (pr) pr.focus({ preventScroll: true }); } }
     if (p === 'work') { findApply(); if (state.findFocus) { state.findFocus = false; var fq = document.getElementById('find-q'); if (fq) fq.focus(); } }
   }
@@ -1173,6 +1447,10 @@
     var el = ev.target.closest('button, a'); if (!el) return;
     if (el.hasAttribute('data-skip')) { ev.preventDefault(); var mn = document.getElementById('main'); mn.focus({ preventScroll: true }); mn.scrollIntoView({ block: 'start' }); return; }
     if (el.hasAttribute('data-fit-go')) { fitToOrder(); return; }
+    if (el.hasAttribute('data-fc-go')) { fcToOrder(); return; }
+    if (el.hasAttribute('data-fc-fit')) { fcToFit(); return; }
+    if (el.hasAttribute('data-fc-copy')) { fcCopy(); return; }
+    if (el.hasAttribute('data-fc-clear')) { fcClear(); return; }
     if (el.hasAttribute('data-pl-go')) { plToOrder(); return; }
     if (el.hasAttribute('data-pl-copy')) { plCopy(); return; }
     if (el.hasAttribute('data-pl-prep')) { plPrep(); return; }
@@ -1215,6 +1493,8 @@
   });
   app.addEventListener('input', function (ev) { var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var pf = ev.target.dataset && ev.target.dataset.plF; if (pf && pf !== 'mat') { state.pl[pf] = ev.target.value; plUpdate(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
+    if (ev.target.hasAttribute('data-fc-file')) { if (ev.target.files && ev.target.files[0]) fcRead(ev.target.files[0]); return; }
+    if (ev.target.hasAttribute('data-fc-unit')) { state.fc.unit = ev.target.value; fcRefresh(); var fu = document.getElementById('fc-unit'); if (fu) fu.focus(); return; }
     if (ev.target.hasAttribute('data-ps-scope')) { state.ps.scope = ev.target.value; psSync(); return; }
     if (ev.target.dataset.plQ) { var hadReset = plDone() > 0; state.pl[{ q1: 'have', q2: 'kind', q3: 'back' }[ev.target.dataset.plQ]] = ev.target.value; if (!hadReset) plRefresh('input[name="' + ev.target.name + '"]:checked'); else plUpdate(); return; }
     if (ev.target.dataset.plF === 'mat') { state.pl.mat = +ev.target.value || 0; plUpdate(); return; }
@@ -1227,6 +1507,11 @@
     if (a.length) state.errors = {};
     drSave();
   });
+  // File check: drop a file on the box; the views follow the light/dark theme.
+  app.addEventListener('dragover', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop'); if (!d) return; ev.preventDefault(); d.classList.add('is-over'); });
+  app.addEventListener('dragleave', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop'); if (d) d.classList.remove('is-over'); });
+  app.addEventListener('drop', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop'); if (!d) return; ev.preventDefault(); d.classList.remove('is-over'); var fl = ev.dataTransfer && ev.dataTransfer.files; if (fl && fl[0] && !state.fc.busy) fcRead(fl[0]); });
+  try { new MutationObserver(function () { fcDraw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', fcDraw); } catch (e) {}
   function submitOrder() {
     if (!ORDER_ENDPOINT || state.send === 'sending') return;
     var o = state.order;
