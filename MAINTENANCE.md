@@ -20,6 +20,57 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-23
+
+**Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps on
+the local build, nothing sent), /admin/ sign-in — 1280 + 390 px, light + dark, EN (`/`) + SL (`/sl/`), plus a scan for
+anything wider than the page and for broken images. Last Actions run (1929365) succeeded; nacekepa.work, /sl/, /admin/,
+/news.xml and /sitemap-0.xml return 200 (checked via the laptop — the cloud session can't reach the live site). No JS
+errors, no CSP violations, no 404s (only Google Fonts, blocked in the cloud), no horizontal scroll. Keyboard shortcuts,
+file check (STL), planner and order wizard re-tested after today's changes.
+
+**Bugs fixed:** none found. (Hardening: the sheet photo `src` in `art()` is now HTML-escaped like every other photo.)
+
+**Improvement — performance package:**
+- The inline script and styles of `/` and `/sl/` are now minified at build with esbuild (already shipped with Astro, no
+  new dependency): page 290 KB → 241 KB, 80.5 KB → 67.8 KB gzipped — and that is *with* today's new feature included.
+  The CSP hash is computed from the minified script, so the CSP is unchanged in strength. If esbuild is ever missing,
+  the build falls back to the unminified page (`try … catch` in `src/site/Site.astro`).
+- Verified with a pixel comparison (old vs new build, full-page screenshots of home, #work, a project, #news, a post,
+  #skills, #about, #order, /sl/, /admin/ at 1280 + 390 px, light + dark): identical, except #services (new section).
+- Largest-contentful-paint: the photo that is the first thing on screen (home hero sheet, project page, news post cover)
+  now loads eagerly with `fetchpriority="high"` + `decoding="async"` instead of lazily; all other photos stay lazy.
+  (No project has a photo yet, so today only the news cover benefits.)
+- *To undo the minifying:* delete the `try { … transform … }` block in `Site.astro` and turn `let script`/`let css` back
+  into `const`.
+
+**Innovation — Material picker / "Izbira materiala" (`#services`, section under the file check; also a "Not sure which
+material? Try the material picker →" link under the Material field in order step 2):** the client ticks what the part
+has to cope with (bend/grip, outdoors, heat, load/stiffness, wear/sliding, knocks, looks/detail) and sees the eight
+materials listed on #skills (PLA, PETG, TPU 95A, ABS, ASA, PA, PA-CF, PC) ranked on a drawing-sheet table: best match
+marked, ● good / ○ workable / ✕ not suited per ticked need, a one-line note per material and "printed in the X2D's heated
+chamber" for ABS/ASA/PA/PA-CF/PC. If nothing covers all needs (e.g. flexible + stiff), it says so and points to the order
+form (X2D has two nozzles → two materials in one part). The client can choose another suitable row (radio); "Use … in
+the order form →" sets the order form's Material, ticks 3D printing, adds a "Material picker: needs — …; chosen …" line to
+"What should it do?" (replaced, not duplicated, on a second hand-off) and opens step 2; "Copy" copies the table; "Clear".
+Ratings are qualitative general material properties (no numbers, no datasheet values) with the note "An orientation …
+confirmed with your quote". Tested: rankings (heat+outdoors → ASA; +flexible → TPU 95A; +load → none), picking another
+row, hand-off (material index, service, text, no duplicates), link from order step 2 back to the picker with focus,
+clear, EN + SL, light + dark, 1280 + 390 px, keyboard (focus stays on the ticked box), no overflow, hidden in print.
+*Nace, please check:* the ratings table `MP_MATS` at the top of the "Material picker" block in `app.js` — it is general
+knowledge, adjust any value you print differently (2 good, 1 workable, 0 not suited).
+*To remove:* delete the "Material picker" block in `app.js` (`MP_NEEDS` … `mpOpen()`), the `mpBox()` call in
+`views.services`, `.replace(/<\/div>$/, mpOpen() + '</div>')` after the Material field in `orderView()`, the four
+`data-mp-*` lines in the click handler, the two `data-mp-*` lines at the top of the change handler, the `mpFocus` line in
+`render()`, `mp:` in both languages in `content.js` and the "Material picker" rules at the end of `page.css`.
+*Next step (day 2):* when Nace fills the `materials` field of projects, show "Printed in this material: …" project links
+under each row; let the planner's Material select open the picker.
+
+**Ideas for next time** (added to the list below)
+- Public: material picker → "projects printed in this material" (needs `materials` filled in the admin).
+- Admin: "Speed" panel — page size before/after gzip and the largest photos, from the built files.
+- Public: compare two or three project sheets side by side (`#work?compare=a,b`).
+
 ## 2026-10-21
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-scheduled-pet-feeder, #news, #n-bambu-lab-x2d, #skills, #about,
@@ -742,9 +793,8 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form). 2026-10-21 file check on #services (client STL / 3MF / OBJ read in the browser → size, volume, closed mesh, X2D fit, three views → order form).
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form). 2026-10-21 file check on #services (client STL / 3MF / OBJ read in the browser → size, volume, closed mesh, X2D fit, three views → order form). 2026-10-23 material picker on #services (ticked needs → ranked materials from #skills → order form Material).
 
-- Material picker ("what should my part be printed in?") using only the materials and X2D facts already on the site.
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
 - Admin: "SL text missing" badge on each project/news row in the list (quick view of what still needs translating).
 - Materials index on #work: chips built from the `materials` field of the projects (click → filter by material).
@@ -785,6 +835,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: EN/SL buttons move between `/` and `/sl/` (real language URLs).
 - Public: file check → project planner hand-off (3D file + size pre-filled).
 - Admin: search-result preview per project (EN + SL title/description length).
+- Public: material picker → "projects printed in this material" (needs `materials` filled in the admin).
+- Admin: "Speed" panel — page size before/after gzip and the largest photos, from the built files.
+- Public: compare two or three project sheets side by side (`#work?compare=a,b`).
 
 ## 2026-10-03 (second run)
 

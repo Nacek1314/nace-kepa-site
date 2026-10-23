@@ -52,8 +52,10 @@
     return '<a class="nk-btn' + (variant ? ' nk-btn--' + variant : '') + (size ? ' nk-btn--' + size : '') + '" href="' + href + '">' + esc(label) + (arrow ? '<span class="nk-btn__arrow" aria-hidden="true">→</span>' : '') + '</a>';
   }
   function specs(items) { return '<dl class="nk-specs">' + items.map(function (i) { return '<div><dt>' + esc(L(i[0])) + '</dt><dd>' + esc(L(i[1])) + '</dd></div>'; }).join('') + '</dl>'; }
-  function art(p) {
-    if (p.photos && p.photos.length) return '<' + 'img class="sheet-photo" src="' + asset(p.photos[0]) + '" alt="" loading="lazy" decoding="async">';
+  // eager = the photo is the first thing on screen (home hero sheet, project page): load it at once with high priority
+  // (largest contentful paint) instead of lazily; every other sheet photo stays lazy.
+  function art(p, eager) {
+    if (p.photos && p.photos.length) return '<' + 'img class="sheet-photo" src="' + esc(asset(p.photos[0])) + '" alt=""' + (eager ? ' fetchpriority="high"' : ' loading="lazy"') + ' decoding="async">';
     var d = p.drawing || (CATS[p.category] && CATS[p.category].d) || 'cad';
     return NK_DRAWINGS[d] || NK_DRAWINGS.cad;
   }
@@ -61,7 +63,7 @@
   function sheet(p, hl) {
     var h = hl === 'h2' ? 'h2' : 'h3';
     return '<a class="nk-sheet" href="#p-' + esc(p.slug) + '" data-cat="' + esc(p.category) + '"><div class="nk-sheet__head"><span class="nk-label">' + sheetNo(p) + '</span><span class="nk-label">' + (p.model ? '<b class="has3d">3D · </b>' : '') + esc(cat(p)) + ' · ' + esc(p.year) + '</span></div>' +
-      '<div class="nk-sheet__art">' + art(p) + '</div><div class="nk-sheet__foot"><' + h + ' class="nk-sheet__title">' + esc(P(p, 'title')) + '</' + h + '><p class="nk-sheet__desc">' + esc(P(p, 'description')) + '</p></div></a>';
+      '<div class="nk-sheet__art">' + art(p, hl === 'h2') + '</div><div class="nk-sheet__foot"><' + h + ' class="nk-sheet__title">' + esc(P(p, 'title')) + '</' + h + '><p class="nk-sheet__desc">' + esc(P(p, 'description')) + '</p></div></a>';
   }
   function sheetH2(p) { return sheet(p, 'h2'); }
   function featured() { var f = PROJECTS.filter(function (p) { return p.featured; }); return (f.length ? f : PROJECTS).slice(0, 4); }
@@ -106,6 +108,7 @@
         plBox() +
         fitChecker() +
         fcBox() +
+        mpBox() +
         prepBox() +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
@@ -188,7 +191,7 @@
       '<a class="back" href="#news">← ' + esc(x.allNews) + '</a>' +
       head('', P(n, 'title'), P(n, 'summary'), true, timeTag(n.date) + (n.pinned ? ' · ' + esc(x.pinned) : '')) +
       '<div class="post-grid">' +
-      (photos.length ? '<button type="button" class="nk-sheet__art project-art post-cover" data-lb="0" aria-label="' + esc(x.openPhoto) + '"><' + 'img class="sheet-photo" src="' + esc(asset(photos[0])) + '" alt="' + esc(P(n, 'title')) + '" draggable="false"></button>' : '') +
+      (photos.length ? '<button type="button" class="nk-sheet__art project-art post-cover" data-lb="0" aria-label="' + esc(x.openPhoto) + '"><' + 'img class="sheet-photo" src="' + esc(asset(photos[0])) + '" alt="' + esc(P(n, 'title')) + '" fetchpriority="high" decoding="async" draggable="false"></button>' : '') +
       '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + askLink(n, 'n') + '</div>' + shareBox('n', n) + printBox('n', n) + '</div></div>' +
       (photos.length > 1 ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, k) { return '<button type="button" data-lb="' + k + '" aria-label="' + esc(x.openPhoto + ' ' + (k + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="' + esc(P(n, 'title') + ' · ' + (k + 1)) + '" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       (next ? '<a class="next-project" href="#n-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.newsLabel) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
@@ -203,7 +206,7 @@
     var stage = m
       ? '<div class="nk-viewer" id="viewer" data-src="' + esc(asset(m.file)) + '" data-format="' + esc(m.format || '') + '" role="img" aria-label="' + esc(x.viewerLabel + ': ' + P(p, 'title')) + '"><div class="nk-viewer__msg" id="viewer-msg">' + esc(x.loading3d) + '</div></div>' +
         '<p class="viewer-hint">' + esc(x.viewerHint) + '</p>'
-      : (photos.length ? '<button type="button" class="nk-sheet__art project-art" data-lb="0" aria-label="' + esc(x.openPhoto) + '">' + art(p) + '</button>' : '<div class="nk-sheet__art project-art">' + art(p) + '</div>');
+      : (photos.length ? '<button type="button" class="nk-sheet__art project-art" data-lb="0" aria-label="' + esc(x.openPhoto) + '">' + art(p, true) + '</button>' : '<div class="nk-sheet__art project-art">' + art(p) + '</div>');
     var rows = [[x.pCategory, cat(p)], [x.pYear, String(p.year)]];
     if (p.materials) rows.push([x.pMaterials, p.materials]);
     if (m) rows.push([x.pModel, x.interactive]);
@@ -1109,6 +1112,94 @@
   }
   function plOpen() { return '<p class="pl-open"><a href="#services" data-pl-open>' + esc(t().pl.open) + ' →</a></p>'; }
 
+  // ---------- Material picker (#services, section under the file check; 2026-10-23) ----------
+  // The visitor ticks what the part has to cope with; the materials listed on #skills (PLA · PETG · TPU 95A · ABS · ASA ·
+  // PA · PA-CF · PC) are ranked from general, qualitative properties (2 good ●, 1 workable ○, 0 not suited — no numbers) and
+  // the chosen one goes to the order form's "Material" field. Self-contained: remove MP_NEEDS … mpOpen(), the mpBox() call
+  // in views.services, the mpOpen() call in orderView(), the data-mp-* lines in the click and change handlers, the
+  // mpFocus line in render(), mp: in both languages in content.js and the "Material picker" rules at the end of page.css.
+  var MP_NEEDS = ['flex', 'out', 'heat', 'load', 'wear', 'impact', 'look'];
+  var MP_MATS = [ // o = option index in fMatO (order form "Material"); ch = needs the X2D's heated chamber
+    { id: 'pla', name: 'PLA', o: 1, ch: 0, v: { flex: 0, out: 0, heat: 0, load: 1, wear: 0, impact: 0, look: 2 } },
+    { id: 'petg', name: 'PETG', o: 2, ch: 0, v: { flex: 0, out: 1, heat: 1, load: 1, wear: 1, impact: 2, look: 1 } },
+    { id: 'tpu', name: 'TPU 95A', o: 3, ch: 0, v: { flex: 2, out: 1, heat: 1, load: 0, wear: 1, impact: 2, look: 0 } },
+    { id: 'abs', name: 'ABS', o: 4, ch: 1, v: { flex: 0, out: 0, heat: 2, load: 1, wear: 1, impact: 2, look: 1 } },
+    { id: 'asa', name: 'ASA', o: 4, ch: 1, v: { flex: 0, out: 2, heat: 2, load: 1, wear: 1, impact: 2, look: 1 } },
+    { id: 'pa', name: 'PA', o: 5, ch: 1, v: { flex: 0, out: 1, heat: 2, load: 1, wear: 2, impact: 2, look: 0 } },
+    { id: 'pacf', name: 'PA-CF', o: 5, ch: 1, v: { flex: 0, out: 1, heat: 2, load: 2, wear: 2, impact: 1, look: 1 } },
+    { id: 'pc', name: 'PC', o: 6, ch: 1, v: { flex: 0, out: 1, heat: 2, load: 2, wear: 1, impact: 2, look: 1 } }
+  ];
+  state.mp = { needs: {}, pick: '' };
+  function mpTicked() { return MP_NEEDS.filter(function (k) { return state.mp.needs[k]; }); }
+  function mpRank() { // [{ m, ok, score }] — suitable materials first (highest score, then list order), the rest after
+    var need = mpTicked();
+    return MP_MATS.map(function (m, i) {
+      var ok = need.every(function (k) { return m.v[k] > 0; }), score = need.reduce(function (a, k) { return a + m.v[k]; }, 0);
+      return { m: m, ok: ok, score: score, i: i };
+    }).sort(function (a, b) { return need.length ? (b.ok - a.ok) || (b.score - a.score) || (a.i - b.i) : a.i - b.i; });
+  }
+  function mpChosen() { // the picked material if it still suits, else the best match
+    var r = mpRank(); if (!mpTicked().length || !r[0].ok) return null;
+    var p = r.filter(function (x) { return x.ok && x.m.id === state.mp.pick; })[0];
+    return (p || r[0]).m;
+  }
+  function mpMark(v) { var f = t().mp; return v === 2 ? ['●', f.good, 'g'] : v === 1 ? ['○', f.ok, 'o'] : ['✕', f.no, 'x']; }
+  function mpOut() {
+    var f = t().mp, need = mpTicked(), r = mpRank(), ch = mpChosen();
+    var rows = r.map(function (x, n) {
+      var m = x.m, best = need.length && x.ok && n === 0, on = ch && ch.id === m.id;
+      var marks = need.map(function (k) { var mk = mpMark(m.v[k]); return '<li class="mp-mk mp-mk--' + mk[2] + '"><span aria-hidden="true">' + mk[0] + '</span> ' + esc(f.short[k]) + '<span class="vh">: ' + esc(mk[1]) + '</span></li>'; }).join('');
+      var pick = need.length && x.ok ? '<input type="radio" name="mp-pick" value="' + m.id + '" data-mp-pick aria-label="' + esc(f.choose.replace('{m}', m.name)) + '"' + (on ? ' checked' : '') + '>' : '';
+      return '<li class="mp-row' + (best ? ' is-best' : '') + (need.length && !x.ok ? ' is-out' : '') + (on ? ' is-on' : '') + '">' +
+        '<label class="mp-name">' + pick + '<b>' + esc(m.name) + '</b>' + (best ? '<span class="nk-label mp-best">' + esc(f.best) + '</span>' : '') + '</label>' +
+        '<p class="mp-note">' + esc(f.notes[m.id]) + (m.ch ? ' <span class="mp-ch">· ' + esc(f.chamber) + '</span>' : '') + '</p>' +
+        (marks ? '<ul class="mp-marks">' + marks + '</ul>' : '') + '</li>';
+    }).join('');
+    var top = !need.length ? '<p class="mp-msg">' + esc(f.empty) + '</p>' : !ch ? '<p class="mp-msg mp-msg--none" role="note">' + esc(f.none) + '</p>' : '<p class="nk-label mp-legend">' + esc(f.legend) + '</p>';
+    var act = ch ? '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-mp-go>' + esc(f.go.replace('{m}', ch.name)) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
+      '<button type="button" class="nk-btn" data-mp-copy>' + esc(f.copy) + '</button></div>' : '';
+    return top + '<ol class="mp-list" id="mp-list">' + rows + '</ol>' + act + '<p class="share-msg" id="mp-msg" role="status" aria-live="polite"></p>';
+  }
+  function mpBox() {
+    var f = t().mp;
+    return '<section class="block mp" id="material">' + head(f.label, f.title, f.lead) + '<div class="mp-grid"><form class="mp-form" novalidate><fieldset class="pl-q"><legend class="nk-label">' + esc(f.q) + '</legend><div class="mp-opts">' +
+      MP_NEEDS.map(function (k) { return '<label class="pl-opt"><input type="checkbox" value="' + k + '" data-mp-need' + (state.mp.needs[k] ? ' checked' : '') + '><span>' + esc(f.needs[k]) + '</span></label>'; }).join('') +
+      '</div></fieldset>' + (mpTicked().length ? '<button type="button" class="pl-link pl-reset" data-mp-clear>' + esc(f.clear) + '</button>' : '') + '</form>' +
+      '<div class="pl-sheet"><div class="pl-head"><span class="nk-label">' + esc(f.table) + '</span><span class="nk-label">NK-M</span></div><div class="pl-out mp-out" id="mp-out" aria-live="polite">' + mpOut() + '</div>' +
+      '<p class="fit-note">' + esc(f.note) + '</p></div></div></section>';
+  }
+  function mpRefresh(focusSel) {
+    var box = document.getElementById('material'); if (!box) return;
+    box.outerHTML = mpBox();
+    var el = focusSel && document.querySelector('#material ' + focusSel); if (el) el.focus({ preventScroll: true });
+  }
+  function mpLine() {
+    var f = t().mp, ch = mpChosen(); if (!ch) return '';
+    return f.brief + ': ' + f.needsL.toLowerCase() + ' — ' + mpTicked().map(function (k) { return f.short[k]; }).join(', ') + '; ' + f.chose + ' ' + ch.name + '.';
+  }
+  function mpText() {
+    var f = t().mp, need = mpTicked(), ch = mpChosen();
+    var out = [f.table.toUpperCase() + ' — nacekepa.work', f.needsL + ': ' + need.map(function (k) { return f.needs[k]; }).join('; '), ''];
+    mpRank().forEach(function (x) { out.push((ch && ch.id === x.m.id ? '→ ' : '  ') + x.m.name + ' — ' + need.map(function (k) { return f.short[k] + ' ' + mpMark(x.m.v[k])[1]; }).join(', ')); });
+    out.push('', f.note);
+    return out.join('\n');
+  }
+  function mpCopy() {
+    var msg = document.getElementById('mp-msg'), f = t().mp;
+    var fail = function () { msg.textContent = f.copyFail; var o = document.getElementById('mp-list'); if (o) { var r = document.createRange(); r.selectNodeContents(o); var g = getSelection(); g.removeAllRanges(); g.addRange(r); } };
+    try { navigator.clipboard.writeText(mpText()).then(function () { msg.textContent = f.copied; }, fail); } catch (e) { fail(); }
+  }
+  function mpToOrder() {
+    var o = state.order, f = t().mp, ch = mpChosen(), line = mpLine(); if (!ch) return;
+    o.mat = ch.o;
+    if (o.services.indexOf('print') < 0) o.services.push('print');
+    if (o.what.indexOf(f.brief + ':') < 0) o.what = o.what ? o.what + '\n' + line : line;
+    else o.what = o.what.split('\n').map(function (l) { return l.indexOf(f.brief + ':') === 0 ? line : l; }).join('\n');
+    state.step = 1; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+  function mpOpen() { return '<p class="pl-open mp-open"><a href="#services" data-mp-open>' + esc(t().mp.open) + ' →</a></p>'; }
+
   // ---------- What to prepare (#services): one checklist from the published SERVICES[].need lists ----------
   // Self-contained: remove prepItems()…prepToOrder(), the prepBox() call in views.services, the data-prep-* lines in the
   // click handler, the data-prep-have line in the change handler, T.*.prep in content.js and the "What to prepare"
@@ -1243,7 +1334,7 @@
         field('qty', x.fQty, '<input class="nk-input" id="f-qty" data-f="qty" type="number" min="1" value="' + esc(o.qty) + '">') +
         field('deadline', x.fDeadline, '<input class="nk-input" id="f-deadline" data-f="deadline" type="date" min="' + dlMin() + '" value="' + esc(o.deadline) + '">') +
         field('files', x.fFiles, select('files', x.fFilesO, o.files)) +
-        field('mat', x.fMat, select('mat', x.fMatO, o.mat)) + dlBox() + ocBox() + '</div>';
+        field('mat', x.fMat, select('mat', x.fMatO, o.mat)).replace(/<\/div>$/, mpOpen() + '</div>') + dlBox() + ocBox() + '</div>';
     } else if (st === 2) {
       body = '<h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.q3) + '</h2><div class="form">' +
         field('name', x.fName, '<input class="nk-input" id="f-name" data-f="name" autocomplete="name" value="' + esc(o.name) + '">', e.name ? x.errName : null, e.name) +
@@ -1428,6 +1519,7 @@
     if (p === 'project') mountViewer();
     if (p === 'order') drSave();
     if (p === 'services' && state.fc.res) fcDraw(); // File check views
+    if (p === 'services' && state.mpFocus) { state.mpFocus = false; var mb = document.getElementById('material'); if (mb) { mb.scrollIntoView({ block: 'start' }); var mi = mb.querySelector('input'); if (mi) mi.focus({ preventScroll: true }); } }
     if (p === 'services' && state.plFocus) { state.plFocus = false; var pb = document.getElementById('plan'); if (pb) { pb.scrollIntoView({ block: 'start' }); var pr = pb.querySelector('input'); if (pr) pr.focus({ preventScroll: true }); } }
     if (p === 'work') { findApply(); if (state.findFocus) { state.findFocus = false; var fq = document.getElementById('find-q'); if (fq) fq.focus(); } }
   }
@@ -1452,6 +1544,10 @@
     if (el.hasAttribute('data-fc-copy')) { fcCopy(); return; }
     if (el.hasAttribute('data-fc-clear')) { fcClear(); return; }
     if (el.hasAttribute('data-pl-go')) { plToOrder(); return; }
+    if (el.hasAttribute('data-mp-go')) { mpToOrder(); return; }
+    if (el.hasAttribute('data-mp-copy')) { mpCopy(); return; }
+    if (el.hasAttribute('data-mp-clear')) { state.mp = { needs: {}, pick: '' }; mpRefresh('[data-mp-need]'); return; }
+    if (el.hasAttribute('data-mp-open')) { ev.preventDefault(); state.mpFocus = true; if (page() === 'services') render(true); else location.hash = 'services'; return; }
     if (el.hasAttribute('data-pl-copy')) { plCopy(); return; }
     if (el.hasAttribute('data-pl-prep')) { plPrep(); return; }
     if (el.hasAttribute('data-pl-reset')) { state.pl = { have: '', kind: '', back: '', l: '', w: '', h: '', qty: '1', mat: 0, deadline: '' }; plRefresh('input[name="pl-q1"]'); return; }
@@ -1497,6 +1593,8 @@
     if (ev.target.hasAttribute('data-fc-unit')) { state.fc.unit = ev.target.value; fcRefresh(); var fu = document.getElementById('fc-unit'); if (fu) fu.focus(); return; }
     if (ev.target.hasAttribute('data-ps-scope')) { state.ps.scope = ev.target.value; psSync(); return; }
     if (ev.target.dataset.plQ) { var hadReset = plDone() > 0; state.pl[{ q1: 'have', q2: 'kind', q3: 'back' }[ev.target.dataset.plQ]] = ev.target.value; if (!hadReset) plRefresh('input[name="' + ev.target.name + '"]:checked'); else plUpdate(); return; }
+    if (ev.target.hasAttribute('data-mp-need')) { var mh = mpTicked().length > 0; state.mp.needs[ev.target.value] = ev.target.checked; if (mh !== mpTicked().length > 0) mpRefresh('[data-mp-need][value="' + ev.target.value + '"]'); else { var mo = document.getElementById('mp-out'); if (mo) mo.innerHTML = mpOut(); } return; }
+    if (ev.target.hasAttribute('data-mp-pick')) { state.mp.pick = ev.target.value; var mo2 = document.getElementById('mp-out'); if (mo2) mo2.innerHTML = mpOut(); var mr = document.querySelector('#mp-out [data-mp-pick][value="' + state.mp.pick + '"]'); if (mr) mr.focus(); return; }
     if (ev.target.dataset.plF === 'mat') { state.pl.mat = +ev.target.value || 0; plUpdate(); return; }
     if (ev.target.dataset.psInc) { state.ps[ev.target.dataset.psInc] = ev.target.checked; psSync(); return; }
     if (ev.target.dataset.prepHave != null) { var it = prepItems()[+ev.target.dataset.prepHave]; if (it) { state.prep.have[it.id] = ev.target.checked; var po = document.getElementById('prep-out'); if (po) po.textContent = prepStatus(prepItems()); } return; }

@@ -682,3 +682,33 @@ main:focus { outline: none; }
 @media (max-width: 1000px) { .fc-grid { grid-template-columns: 1fr; } }
 @media (max-width: 480px) { .fc-form { padding: var(--space-4); } .fc-grid .fc-fig { grid-template-columns: 1fr; } .fc-dl { grid-template-columns: 1fr; } }
 @media print { .fc { display: none !important; } }
+
+/* ---------- Material picker (#services, under the file check; 2026-10-23). Remove with mpBox() in app.js. ---------- */
+.mp-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--space-8); align-items: start; }
+.mp-form { display: grid; gap: var(--space-4); padding: var(--space-6); background: var(--paper-raised); border: 1px solid var(--line-strong); }
+.mp-opts { display: grid; grid-template-columns: 1fr; gap: var(--space-2); }
+.mp-out { gap: var(--space-3); }
+.mp-msg { margin: 0; color: var(--ink-muted); font-size: 15px; line-height: 22px; }
+.mp-msg--none { color: var(--ink); padding: var(--space-3) var(--space-4); border: 1px dashed var(--line-strong); border-left: 3px solid var(--redline); }
+.mp-legend { margin: 0; color: var(--ink-muted); }
+.mp-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.mp-row { display: grid; gap: 4px; padding: var(--space-3) 0 var(--space-3) var(--space-3); border-bottom: 1px solid var(--line); border-left: 3px solid transparent; }
+.mp-row.is-on { border-left-color: var(--redline); background: var(--paper-raised); }
+.mp-row.is-out { opacity: .62; }
+.mp-name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); font: 600 16px/22px var(--font-sans); cursor: pointer; min-height: 24px; }
+.mp-row.is-out .mp-name { cursor: default; }
+.mp-name input { width: 18px; height: 18px; margin: 0; accent-color: var(--redline); }
+.mp-name input:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+.mp-best { color: var(--redline); border: 1px solid var(--redline); padding: 1px 6px; }
+.mp-note { margin: 0; font-size: 14px; line-height: 20px; color: var(--ink-muted); }
+.mp-ch { font: 12px/18px var(--font-mono); }
+.mp-marks { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px var(--space-2); }
+.mp-mk { font: 12px/18px var(--font-mono); padding: 0 6px; border: 1px solid var(--line); }
+.mp-mk--g { color: var(--ok); border-color: currentColor; }
+.mp-mk--o { color: var(--ink); }
+.mp-mk--x { color: var(--redline); }
+.mp-out .cta-row { margin-top: var(--space-2); }
+.mp-open { margin: var(--space-2) 0 0; }
+@media (max-width: 860px) { .mp-grid { grid-template-columns: 1fr; gap: var(--space-5); } }
+@media (max-width: 480px) { .mp-form { padding: var(--space-4); } }
+@media print { .mp, .mp-open { display: none !important; } }

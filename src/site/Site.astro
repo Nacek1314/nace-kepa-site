@@ -20,8 +20,17 @@ const contactEmail = 'kepanace@gmail.com';
 const projectsJs = 'window.NK_PROJECTS = ' + JSON.stringify(projects).replace(/</g, '\\u003c') + ';\nwindow.NK_NEWS = ' + JSON.stringify(news).replace(/</g, '\\u003c') + ';';
 // Refuse to run inside another site's frame (clickjacking); GitHub Pages can't send X-Frame-Options.
 const frameGuard = 'if (window.top !== window.self) { document.documentElement.style.display = "none"; try { window.top.location.replace(window.self.location.href); } catch (e) {} }';
-const script = [frameGuard, drawings, content, projectsJs, app.split('__ORDER_ENDPOINT__').join(endpoint || '__ORDER_ENDPOINT__').split('__CONTACT_EMAIL__').join(contactEmail)].join('\n');
-const css = pageCss + '\n' + componentsCss;
+let script = [frameGuard, drawings, content, projectsJs, app.split('__ORDER_ENDPOINT__').join(endpoint || '__ORDER_ENDPOINT__').split('__CONTACT_EMAIL__').join(contactEmail)].join('\n');
+let css = pageCss + '\n' + componentsCss;
+// Performance (2026-10-23): the inline script and styles are minified at build with esbuild, which Astro already ships
+// (no new dependency). Only whitespace, comments and local names change — top-level names stay, so the app works the
+// same. The CSP hash below is computed from the minified script, so it still matches. If esbuild is ever missing or
+// fails, the page is built unminified exactly as before.
+try {
+  const { transform } = await import('esbuild');
+  script = (await transform(script, { loader: 'js', minify: true, legalComments: 'none', charset: 'utf8' })).code.trim();
+  css = (await transform(css, { loader: 'css', minify: true, legalComments: 'none', charset: 'utf8' })).code.trim();
+} catch (e) { console.warn('[Site.astro] minify skipped:', (e as Error).message); }
 // Content-Security-Policy as a meta tag (GitHub Pages can't set headers): only this site's own scripts
 // (the inline one is pinned by hash), only the order Worker and this origin for network requests.
 const hash = (t: string) => "'sha256-" + createHash('sha256').update(t, 'utf8').digest('base64') + "'";
