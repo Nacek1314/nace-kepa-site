@@ -20,6 +20,58 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-24
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-engineered-backpack-buckle, #news, #n-bambu-lab-x2d, #skills,
+#about, #order (all 4 steps on the local build, nothing sent), /admin/ sign-in — 1280 + 390 px, light + dark, EN (`/`) +
+SL (`/sl/`), plus a scan for anything wider than the page, broken images and EN text on the SL page (and vice versa).
+Last Actions run (cdfe60b) succeeded; nacekepa.work, /sl/, /admin/, /news.xml, /sitemap-0.xml and /og.png return 200
+(checked via the laptop). No JS errors, no CSP violations, no 404s (only Google Fonts, blocked in the cloud), no
+horizontal scroll, no missing translations.
+
+**Bugs fixed:**
+- Sheet cards of unequal text length (#work grid, home, "Similar projects") left an empty band *between* the drawing
+  and the title on the shorter cards, because the drawing row was the stretching row. Now the text area stretches
+  (`.nk-sheet` rows `auto auto 1fr`, foot `align-content: start` in `components.css`): drawings line up, titles start at
+  the same height, any spare space is at the bottom.
+
+**Improvement — returning-visitor / contact paths package:**
+- When a visitor has an unfinished brief saved in the browser (the saved draft from 2026-10-19), every "Start a project"
+  button on the site — header, home hero, CTA band, project sheets, news posts, title-block footer — now says
+  **"Continue your brief" / "Nadaljuj povzetek"** and leads to the filled-in form. On #order itself, after sending, or
+  after "Clear the form" it is "Start a project" again. (`ctaText()` next to the saved-draft block in `app.js`,
+  `dr.cont` in both languages in `content.js`.)
+- 404 page: separate English and Slovenian shortcut rows (Projects / News / Start a project → `/`, Projekti / Novice /
+  Začni projekt → `/sl/`) instead of one mixed row that always opened the English page; the automatic redirect waits
+  10 s instead of 6 s so there is time to pick a link.
+- Sheet card alignment (above) — the #work grid and "Similar projects" now read as an even drawing register.
+
+**Innovation — Admin "Arrange" tab (`/admin/` → fourth tab "Arrange"):** the whole project order as one board, for
+putting the best work first without 20 clicks on ↑ ↓. Each row: ⠿ drag handle, position, thumbnail (cover photo or the
+drawing the site uses), the sheet number it will get (**NK-YY-NN**, with the current number crossed out if it changes),
+EN + SL title, category · year, and tags "Home · hero / Home · 2–4", "★ not on home" (featured but beyond the first
+four), "Hidden · no sheet", "New". Move a project by dragging the handle (mouse or touch, auto-scrolls at the edges), by
+keyboard on the focused handle (↑ ↓, PgUp / PgDn = 5 places, Home / End; a screen-reader announcement says the new
+position and sheet number), with ⤒ top / ⤓ bottom buttons, or by typing a position; ☆/★ toggles "featured" in place.
+The left column shows the home page as it will be after publishing (hero + the three other cards, same rule as
+`featured()` in `app.js`), "Sort all" (Newest first, Featured first, By category, Published order), Undo (up to 50
+steps) and a summary ("Order changed. 6 sheet numbers will change. Press Publish …"). It only reorders `S.projects` /
+toggles `featured`; nothing is committed until Publish, whose commit message now says "reorder projects" for a pure
+reorder. Tested with a mocked GitHub API: drag up/down (1280 px mouse, 390 px), all keys, position field (Enter and
+Tab), sorts, undo, published-order reset (= identical to the original), ★ toggle → home preview and tags, publish
+(projects.json in the commit, message "admin: reorder projects"), "open in editor" link, light + dark, 1280 + 390 px,
+no horizontal scroll, no errors.
+*To remove:* delete the "Arrange" block in `admin.js` (`isArr` … the `pointerup`/`pointercancel` listeners), the
+"Arrange" tab line in `tabsView()`, the two `isArr()` lines in `listView()` / `editorView()`, the `data-ar` line in the
+click handler, the `data-ar-pos` line in the change handler, the `arOrderChanged()` line in `summarize()` and the
+"Arrange" rules at the end of `admin.css`.
+*Next step (day 2):* drag-and-drop reordering of photos inside a project (cover first), using the same handle code.
+
+**Ideas for next time** (added to the list below)
+- Admin: drag-and-drop photo order inside the project and news editors (reuse the Arrange handle code).
+- Public: "Selected work" on the home page with a "Show 4 more" button instead of a fixed four.
+- Admin: Arrange view for news (pinned first, then date) with a preview of the home "From the workshop" row.
+
 ## 2026-10-23
 
 **Checked:** build, home, #services, #work, #p-famfive, #news, #n-bambu-lab-x2d, #skills, #about, #order (all 4 steps on
@@ -793,7 +845,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form). 2026-10-21 file check on #services (client STL / 3MF / OBJ read in the browser → size, volume, closed mesh, X2D fit, three views → order form). 2026-10-23 material picker on #services (ticked needs → ranked materials from #skills → order form Material).
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form). 2026-10-21 file check on #services (client STL / 3MF / OBJ read in the browser → size, volume, closed mesh, X2D fit, three views → order form). 2026-10-23 material picker on #services (ticked needs → ranked materials from #skills → order form Material). 2026-10-24 admin "Arrange" tab (drag-and-drop / keyboard project order with sheet numbers and home-page preview).
 
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
 - Admin: "SL text missing" badge on each project/news row in the list (quick view of what still needs translating).
@@ -838,6 +890,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: material picker → "projects printed in this material" (needs `materials` filled in the admin).
 - Admin: "Speed" panel — page size before/after gzip and the largest photos, from the built files.
 - Public: compare two or three project sheets side by side (`#work?compare=a,b`).
+- Admin: drag-and-drop photo order inside the project and news editors (reuse the Arrange handle code).
+- Public: "Selected work" on the home page with a "Show 4 more" button instead of a fixed four.
+- Admin: Arrange view for news (pinned first, then date) with a preview of the home "From the workshop" row.
 
 ## 2026-10-03 (second run)
 

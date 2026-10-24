@@ -53,7 +53,7 @@ body { margin: 0; font-family: var(--font-sans); font-size: 16px; line-height: 2
 .nk-tb { margin-right: -1px; margin-bottom: -1px; }
 
 /* Project sheet */
-.nk-sheet { display: grid; grid-template-rows: auto 1fr auto; background: var(--paper-raised); border: 1px solid var(--line-strong); color: var(--ink); text-decoration: none; min-width: 0; transition: box-shadow .15s ease-out, transform .15s ease-out; }
+.nk-sheet { display: grid; grid-template-rows: auto auto 1fr; background: var(--paper-raised); border: 1px solid var(--line-strong); color: var(--ink); text-decoration: none; min-width: 0; transition: box-shadow .15s ease-out, transform .15s ease-out; }
 a.nk-sheet:hover { box-shadow: var(--shadow-sheet); transform: translateY(-2px); }
 .nk-sheet__head { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--line); }
 .nk-sheet__art { position: relative; aspect-ratio: 4 / 3; max-width: 100%; background-color: var(--paper-raised); background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 16px 16px; background-position: -1px -1px; display: grid; place-items: center; overflow: hidden; }
@@ -65,7 +65,7 @@ a.nk-sheet:hover { box-shadow: var(--shadow-sheet); transform: translateY(-2px);
 .nk-sheet__art .dimt { fill: var(--dimension); font-family: var(--font-mono); font-size: 11px; }
 .nk-sheet__art .mark { fill: none; stroke: var(--redline); stroke-width: 1.6; }
 .nk-sheet__art .fill { fill: var(--paper-sunk); stroke: var(--ink); stroke-width: 1.6; }
-.nk-sheet__foot { display: grid; gap: var(--space-1); padding: var(--space-4); border-top: 1px solid var(--line); }
+.nk-sheet__foot { display: grid; align-content: start; gap: var(--space-1); padding: var(--space-4); border-top: 1px solid var(--line); }
 .nk-sheet__title { font-weight: 650; font-size: 18px; line-height: 24px; margin: 0; }
 .nk-sheet__desc { font-size: 14px; line-height: 22px; color: var(--ink-muted); margin: 0; }
 

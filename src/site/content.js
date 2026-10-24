@@ -103,7 +103,7 @@ var T = {
     prevProject: 'Previous project', sheetNav: 'Project sheets',
     oc: { label: 'Checklist', title: 'What do you already have?', lead: 'Tick what is ready — it goes into the brief, so I only ask for what is missing.', count: '{n} of {t} ready', ready: 'Ready:', todo: 'Still to prepare:', next: 'Next, send me', nextHint: 'Reply to my e-mail with these, or ask if you need help preparing them.' },
     // Saved draft in the order form (drBar in app.js): kept only in the visitor's browser.
-    dr: { label: 'Saved draft', saving: 'Your answers are saved in this browser as you type — you can close the page and finish later.', restored: 'Welcome back — your unfinished brief from {d} is filled in. It is saved only in this browser.', clear: 'Clear the form', ask: 'Delete everything you typed?', yes: 'Yes, clear', keep: 'Keep', cleared: 'Form cleared.' },
+    dr: { label: 'Saved draft', saving: 'Your answers are saved in this browser as you type — you can close the page and finish later.', restored: 'Welcome back — your unfinished brief from {d} is filled in. It is saved only in this browser.', clear: 'Clear the form', ask: 'Delete everything you typed?', yes: 'Yes, clear', keep: 'Keep', cleared: 'Form cleared.', cont: 'Continue your brief' },
     tbCopy: 'Copy', tbCopied: 'Copied.',
     // Shortlist (slToggle / slBox in app.js): kept only in the visitor's browser.
     sl: { label: 'Shortlist', add: 'Add to shortlist', remove: 'Remove from shortlist', see: 'Your shortlist · {n}', note: 'Kept only in this browser.', added: 'Added — {n} on your shortlist.', removed: 'Removed from your shortlist.',
@@ -220,7 +220,7 @@ var T = {
       note: 'Koledarski dnevi od danes. Vsaka storitev je primerjana posebej; pravi datum potrdim s ponudbo.' },
     prevProject: 'Prejšnji projekt', sheetNav: 'Projektni listi',
     oc: { label: 'Seznam', title: 'Kaj že imate?', lead: 'Označite, kar je pripravljeno — gre v povzetek, da vprašam samo za tisto, kar manjka.', count: 'Pripravljeno: {n} od {t}', ready: 'Pripravljeno:', todo: 'Še pripraviti:', next: 'Naslednje mi pošljite', nextHint: 'Pošljite jih v odgovor na moje e-sporočilo ali vprašajte, če potrebujete pomoč pri pripravi.' },
-    dr: { label: 'Shranjen osnutek', saving: 'Odgovori se sproti shranjujejo v tem brskalniku — stran lahko zaprete in nadaljujete pozneje.', restored: 'Dobrodošli nazaj — vaš nedokončan povzetek z dne {d} je izpolnjen. Shranjen je samo v tem brskalniku.', clear: 'Počisti obrazec', ask: 'Izbrišem vse, kar ste vpisali?', yes: 'Da, počisti', keep: 'Obdrži', cleared: 'Obrazec je počiščen.' },
+    dr: { label: 'Shranjen osnutek', saving: 'Odgovori se sproti shranjujejo v tem brskalniku — stran lahko zaprete in nadaljujete pozneje.', restored: 'Dobrodošli nazaj — vaš nedokončan povzetek z dne {d} je izpolnjen. Shranjen je samo v tem brskalniku.', clear: 'Počisti obrazec', ask: 'Izbrišem vse, kar ste vpisali?', yes: 'Da, počisti', keep: 'Obdrži', cleared: 'Obrazec je počiščen.', cont: 'Nadaljuj povzetek' },
     tbCopy: 'Kopiraj', tbCopied: 'Kopirano.',
     sl: { label: 'Izbor', add: 'Dodaj v izbor', remove: 'Odstrani iz izbora', see: 'Vaš izbor · {n}', note: 'Shranjeno samo v tem brskalniku.', added: 'Dodano — v izboru: {n}.', removed: 'Odstranjeno iz izbora.',
       title: 'Vaš izbor', lead: 'Listi, ki ste jih shranili med brskanjem. Začnite projekt z njimi kot zgledom ali kopirajte seznam za sodelavca.', del: 'Odstrani {t} iz izbora',

@@ -366,6 +366,7 @@ function summarize() {
   const parts = [];
   if (added.length) parts.push('add ' + added.join(', '));
   if (removed.length) parts.push('remove ' + removed.join(', '));
+  if (!added.length && !removed.length && arOrderChanged()) parts.push('reorder projects');
   const before2 = JSON.parse(S.savedNews || '[]');
   const nb = new Set(before2.map((n) => n.slug));
   const addedNews = S.news.filter((n) => !nb.has(n.slug)).map((n) => n.title.en || n.slug);
@@ -462,6 +463,7 @@ function tabsView() {
     <button type="button" role="tab" data-tab="projects" aria-selected="${S.tab === 'projects'}">Projects <span>${S.projects.length}</span></button>
     <button type="button" role="tab" data-tab="news" aria-selected="${isNews()}">News <span>${S.news.length}</span></button>
     <button type="button" role="tab" data-tab="todo" aria-selected="${isTodo()}">To do <span>${todoItems().length}</span></button>
+    <button type="button" role="tab" data-tab="arrange" aria-selected="${isArr()}">Arrange</button>
   </div>`;
 }
 
@@ -487,6 +489,7 @@ function newsListView() {
 
 function listView() {
   if (isTodo()) return todoListView();
+  if (isArr()) return arListView();
   if (isNews()) return newsListView();
   const q = S.query.toLowerCase();
   const items = S.projects.map((p, i) => ({ p, i })).filter(({ p }) => !q || (p.title.en + ' ' + p.title.sl + ' ' + p.category).toLowerCase().includes(q));
@@ -616,6 +619,213 @@ function todoGo(spec) {
     else { const fs = target.closest('fieldset') || target; fs.classList.add('td-flash'); setTimeout(() => fs.classList.remove('td-flash'), 1600); target.setAttribute('tabindex', '-1'); target.focus({ preventScroll: true }); }
   }
 }
+
+// ---------- Arrange (tab "Arrange": the order of the projects as one board, with the home page and sheet numbers) ----------
+// Drag a project by its ⠿ handle (mouse or touch), or focus the handle and use ↑ ↓ / PgUp PgDn / Home End, or type a
+// position. Shows what the site derives from the order: the sheet numbers (NK-YY-NN, counted over visible projects, as
+// sheetNo() in app.js) and the home page (hero + the first four ★ featured, as featured() in app.js). Only reorders
+// S.projects and toggles ★; nothing is saved until Publish. Remove: this block, the "Arrange" tab in tabsView(), the
+// isArr() lines in listView()/editorView(), the data-ar line in the click handler, the data-ar-pos line in the change
+// handler and the "Arrange" rules at the end of admin.css.
+const isArr = () => S.tab === 'arrange';
+const AR = { undo: [], drag: null };
+const AR_SORTS = [['year', 'Newest first'], ['feat', 'Featured first'], ['cat', 'By category'], ['pub', 'Published order']];
+const arVisible = (list) => list.filter((p) => !p.hidden);
+function arSheet(list, p) { // same rule as sheetNo() in app.js
+  const v = arVisible(list), i = v.indexOf(p);
+  return i < 0 ? '' : 'NK-' + String(p.year).slice(2) + '-' + String(i + 1).padStart(2, '0');
+}
+function arHome(list) { // same rule as featured() in app.js
+  const v = arVisible(list), f = v.filter((p) => p.featured);
+  return (f.length ? f : v).slice(0, 4);
+}
+function arSaved() { try { return JSON.parse(S.savedJson || '[]'); } catch { return []; } }
+function arWas() { // slug -> published sheet number
+  const saved = arSaved(), m = new Map();
+  saved.forEach((p) => m.set(p.slug, arSheet(saved, p)));
+  return m;
+}
+function arOrderChanged() {
+  const a = arSaved().map((p) => p.slug).join('|');
+  return a !== S.projects.filter((p) => !p._new).map((p) => p.slug).join('|');
+}
+let arLive = null;
+function arSay(msg) {
+  if (!arLive) { arLive = document.createElement('p'); arLive.className = 'ar-live'; arLive.setAttribute('aria-live', 'polite'); document.body.appendChild(arLive); }
+  arLive.textContent = ''; setTimeout(() => { arLive.textContent = msg; }, 30);
+}
+function arPush() { AR.undo.push(S.projects.map((p) => p.slug)); if (AR.undo.length > 50) AR.undo.shift(); }
+function arApply(slugs) {
+  const by = new Map(S.projects.map((p) => [p.slug, p]));
+  const out = slugs.map((s) => by.get(s)).filter(Boolean);
+  S.projects.forEach((p) => { if (!out.includes(p)) out.unshift(p); }); // anything added since keeps its place on top
+  S.projects = out;
+}
+function arMove(from, to) {
+  const n = S.projects.length;
+  to = Math.max(0, Math.min(n - 1, to));
+  if (from === to || from < 0) return false;
+  arPush();
+  const [p] = S.projects.splice(from, 1);
+  S.projects.splice(to, 0, p);
+  const no = arSheet(S.projects, p);
+  arSay(`${p.title.en || p.slug}: position ${to + 1} of ${n}${no ? ', sheet ' + no : ''}.`);
+  return true;
+}
+function arFocus(id) {
+  const el = document.getElementById(id);
+  if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'nearest' }); }
+}
+function arSort(kind) {
+  arPush();
+  const idx = new Map(S.projects.map((p, i) => [p, i]));
+  const stable = (cmp) => S.projects.slice().sort((a, b) => cmp(a, b) || idx.get(a) - idx.get(b));
+  if (kind === 'year') S.projects = stable((a, b) => (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0));
+  if (kind === 'feat') S.projects = stable((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+  if (kind === 'cat') S.projects = stable((a, b) => { const x = CATEGORIES.indexOf(a.category), y = CATEGORIES.indexOf(b.category); return (x < 0 ? 99 : x) - (y < 0 ? 99 : y); });
+  if (kind === 'pub') arApply(arSaved().map((p) => p.slug));
+  arSay(`Sorted: ${AR_SORTS.find(([k]) => k === kind)[1].toLowerCase()}.`);
+}
+function arThumb(p) {
+  if (p.photos && p.photos.length) return `<img src="${esc(previewUrl(p.photos[0]))}" alt="">`;
+  const d = p.drawing || { CAD: 'cad', Mechanical: 'mech', IoT: 'iot', Embedded: 'embedded' }[p.category] || 'cad';
+  return (window.NK_DRAWINGS || {})[d] || (window.NK_DRAWINGS || {}).cad || '';
+}
+function arListView() {
+  const home = arHome(S.projects), feat = arVisible(S.projects).filter((p) => p.featured);
+  const was = arWas(), moved = S.projects.filter((p) => !p.hidden && was.get(p.slug) && was.get(p.slug) !== arSheet(S.projects, p)).length;
+  return `<div class="ad-list">
+    ${tabsView()}
+    <div class="ar-side">
+      <section class="ar-box" aria-labelledby="ar-home-h">
+        <p class="nk-label" id="ar-home-h">Home page · after publishing</p>
+        ${home.length ? `<ol class="ar-home">${home.map((p, i) => `<li><span class="nk-label">${i === 0 ? '1 · hero' : i + 1}</span><span class="ar-home__t">${esc(p.title.en || 'Untitled')}</span><span class="nk-label">${esc(arSheet(S.projects, p))}</span></li>`).join('')}</ol>`
+          : '<p class="ad-small">No visible projects.</p>'}
+        <p class="ad-small">${feat.length ? `${feat.length} ★ featured — the first four in this order are on the home page.` : 'Nothing is ★ featured, so the home page shows the first four projects.'}</p>
+      </section>
+      <section class="ar-box" aria-labelledby="ar-sort-h">
+        <p class="nk-label" id="ar-sort-h">Sort all</p>
+        <div class="ar-tools">${AR_SORTS.map(([k, l]) => `<button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-ar="sort:${k}">${l}</button>`).join('')}</div>
+        <button type="button" class="nk-btn nk-btn--sm" data-ar="undo" ${AR.undo.length ? '' : 'disabled'}>↶ Undo${AR.undo.length ? ` (${AR.undo.length})` : ''}</button>
+      </section>
+      <p class="ad-small ar-sum">${arOrderChanged() ? `<b>Order changed.</b> ${moved ? `${moved} sheet number${moved > 1 ? 's' : ''} will change.` : 'Sheet numbers stay the same.'} Press Publish to put it on the site.` : 'Same order as on the site.'}</p>
+    </div>
+  </div>`;
+}
+function arView() {
+  const n = S.projects.length, home = arHome(S.projects), was = arWas();
+  const card = (p, i) => {
+    const no = arSheet(S.projects, p), old = was.get(p.slug), h = home.indexOf(p);
+    const t = esc(p.title.en || 'Untitled');
+    const flags = [
+      h === 0 ? '<span class="nk-tag nk-tag--ok">Home · hero</span>' : h > 0 ? `<span class="nk-tag nk-tag--ok">Home · ${h + 1}</span>` : '',
+      p.featured && !p.hidden && h < 0 ? '<span class="nk-tag" title="Only the first four featured projects are on the home page">★ not on home</span>' : '',
+      p.hidden ? '<span class="nk-tag">Hidden · no sheet</span>' : '',
+      p._new ? '<span class="nk-tag nk-tag--rev">New</span>' : '',
+    ].join('');
+    return `<li class="ar-card${p.hidden ? ' is-hidden' : ''}" data-slug="${esc(p.slug)}">
+      <button type="button" class="ar-handle" id="ar-h-${esc(p.slug)}" data-ar-h="${i}" aria-describedby="ar-help"
+        aria-label="Move ${t}, position ${i + 1} of ${n}">⠿</button>
+      <span class="ar-pos nk-label">${String(i + 1).padStart(2, '0')}</span>
+      <span class="nk-sheet__art ar-thumb" aria-hidden="true">${arThumb(p)}</span>
+      <span class="ar-main">
+        <span class="ar-no nk-label">${no ? esc(no) : '—'}${old && no && old !== no ? ` <s>${esc(old)}</s>` : ''}</span>
+        <button type="button" class="ar-t" data-ar="open:${esc(p.slug)}" title="Open in the editor">${t}</button>
+        <span class="ar-sl">${esc(p.title.sl || '— no Slovenian title')}</span>
+        <span class="ar-m nk-label">${esc(p.category)} · ${esc(p.year)}${p.photos.length ? ' · photo' : ''}${p.model ? ' · 3D' : ''}</span>
+        ${flags ? `<span class="ar-flags">${flags}</span>` : ''}
+      </span>
+      <span class="ar-ctl">
+        <button type="button" class="ar-star" id="ar-f-${esc(p.slug)}" data-ar="feat:${esc(p.slug)}" aria-pressed="${!!p.featured}" title="Featured on the home page">${p.featured ? '★' : '☆'}<span class="ar-vh"> Featured: ${t}</span></button>
+        <button type="button" class="ar-btn" id="ar-t-${esc(p.slug)}" data-ar="top:${i}" ${i === 0 ? 'disabled' : ''} aria-label="Move ${t} to the top">⤒</button>
+        <button type="button" class="ar-btn" id="ar-b-${esc(p.slug)}" data-ar="bottom:${i}" ${i === n - 1 ? 'disabled' : ''} aria-label="Move ${t} to the bottom">⤓</button>
+        <input class="nk-input ar-in" id="ar-p-${esc(p.slug)}" data-ar-pos="${i}" type="number" inputmode="numeric" min="1" max="${n}" value="${i + 1}" aria-label="Position of ${t} (1 to ${n})">
+      </span>
+    </li>`;
+  };
+  return `<div class="ad-editor">
+    <div class="ad-editor__head"><div><p class="nk-label">Arrange · ${n} projects</p><h2 class="sub">Order on the site</h2></div></div>
+    <p class="ad-small" id="ar-help">Drag a project by its ⠿ handle, or focus the handle and use ↑ ↓ (PgUp / PgDn = 5 places, Home / End = top / bottom),
+      or type a position. This order is the order on #work, it sets the sheet numbers (NK-YY-NN, crossed out = the number on the site now)
+      and which ★ featured projects reach the home page. Project links use the URL name, so they keep working. Nothing changes on the site until you press Publish.</p>
+    <ol class="ar-board" aria-label="Projects in site order">${S.projects.map(card).join('')}</ol>
+  </div>`;
+}
+function arAct(b) {
+  const [cmd, arg] = b.dataset.ar.split(/:(.*)/s);
+  if (cmd === 'sort') { arSort(arg); render(); return; }
+  if (cmd === 'undo') { const prev = AR.undo.pop(); if (prev) { arApply(prev); arSay('Undone.'); } render(); if (!AR.undo.length) arFocus('ar-h-' + (S.projects[0]?.slug || '')); return; }
+  if (cmd === 'open') { S.tab = 'projects'; S.sel = arg; S.query = ''; render(); document.getElementById('t-en')?.focus(); return; }
+  if (cmd === 'feat') {
+    const p = S.projects.find((x) => x.slug === arg);
+    if (p) { p.featured = !p.featured; arSay(`${p.title.en || p.slug}: ${p.featured ? 'featured' : 'not featured'}.`); render(); }
+    return;
+  }
+  const i = +arg, p = S.projects[i];
+  if ((cmd === 'top' || cmd === 'bottom') && p && arMove(i, cmd === 'top' ? 0 : S.projects.length - 1)) { render(); arFocus('ar-h-' + p.slug); }
+}
+function arPos(input) {
+  if (input.dataset.done) return; // Enter already handled it (the change event follows when the field is replaced)
+  input.dataset.done = '1';
+  const i = +input.dataset.arPos, p = S.projects[i], to = parseInt(input.value, 10) - 1;
+  if (!p) return;
+  if (Number.isFinite(to) && arMove(i, to)) { render(); arFocus('ar-p-' + p.slug); document.getElementById('ar-p-' + p.slug)?.select(); }
+  else { input.value = i + 1; delete input.dataset.done; }
+}
+root.addEventListener('keydown', (e) => {
+  if (!isArr()) return;
+  if (e.target.dataset.arPos != null && e.key === 'Enter') { e.preventDefault(); arPos(e.target); return; }
+  const h = e.target.closest('[data-ar-h]');
+  if (!h || e.altKey || e.ctrlKey || e.metaKey) return;
+  const i = +h.dataset.arH, n = S.projects.length;
+  const to = { ArrowUp: i - 1, ArrowDown: i + 1, PageUp: i - 5, PageDown: i + 5, Home: 0, End: n - 1 }[e.key];
+  if (to == null) return;
+  e.preventDefault();
+  const p = S.projects[i];
+  if (arMove(i, to)) { render(); arFocus('ar-h-' + p.slug); }
+});
+root.addEventListener('pointerdown', (e) => {
+  const h = isArr() && e.target.closest('[data-ar-h]');
+  if (!h || e.button > 0) return;
+  e.preventDefault();
+  const li = h.closest('.ar-card');
+  try { h.setPointerCapture(e.pointerId); } catch {}
+  AR.drag = { li, h, ol: li.parentElement, id: e.pointerId, y: e.clientY, moved: false, from: +h.dataset.arH, timer: 0 };
+  li.classList.add('is-drag');
+});
+function arDragTo(y) {
+  const d = AR.drag, li = d.li;
+  let before = null;
+  for (const s of d.ol.children) {
+    if (s === li) continue;
+    const r = s.getBoundingClientRect();
+    if (y < r.top + r.height / 2) { before = s; break; }
+  }
+  if (li.nextElementSibling !== before) { d.ol.insertBefore(li, before); try { d.h.setPointerCapture(d.id); } catch {} } // moving the node drops the capture
+}
+window.addEventListener('pointermove', (e) => {
+  const d = AR.drag;
+  if (!d || e.pointerId !== d.id) return;
+  if (!d.moved && Math.abs(e.clientY - d.y) < 4) return;
+  d.moved = true; d.y = e.clientY;
+  arDragTo(e.clientY);
+  clearInterval(d.timer);
+  const edge = 64, v = e.clientY < edge ? -14 : e.clientY > window.innerHeight - edge ? 14 : 0;
+  if (v) d.timer = setInterval(() => { window.scrollBy(0, v); if (AR.drag) arDragTo(AR.drag.y); }, 16);
+});
+function arDrop(e) {
+  const d = AR.drag;
+  if (!d || e.pointerId !== d.id) return;
+  clearInterval(d.timer);
+  AR.drag = null;
+  d.li.classList.remove('is-drag');
+  const to = [...d.ol.children].indexOf(d.li), p = S.projects[d.from];
+  if (e.type === 'pointercancel' || !d.moved || !p) { render(); return; }
+  arMove(d.from, to);
+  render(); arFocus('ar-h-' + p.slug);
+}
+window.addEventListener('pointerup', arDrop);
+window.addEventListener('pointercancel', arDrop);
 
 // ---------- LinkedIn post (news editor: ready-to-paste text for a news post, EN or SL) ----------
 // Read-only: builds text from the post's own headline, summary and article; changes nothing in news.json.
@@ -774,6 +984,7 @@ function newsEditorView() {
 
 function editorView() {
   if (isTodo()) return todoView();
+  if (isArr()) return arView();
   if (isNews()) return newsEditorView();
   const p = cur();
   if (!p) return `<div class="ad-empty"><p class="lead">No project selected.</p><button class="nk-btn" data-act="new" type="button">+ New project</button></div>`;
@@ -946,6 +1157,7 @@ root.addEventListener('input', (e) => {
 
 root.addEventListener('change', async (e) => {
   const k = e.target.dataset.k, p = cur();
+  if (e.target.dataset.arPos != null) { arPos(e.target); return; }
   if (e.target.dataset.liFull != null) { LI.full = e.target.checked; LI.msg = ''; render(); document.querySelector('[data-li-full]')?.focus(); return; }
   if (e.target.id === 'model-in' && p) {
     const f = e.target.files[0];
@@ -1001,6 +1213,7 @@ root.addEventListener('click', (e) => {
   if (b.dataset.tab) { S.tab = b.dataset.tab; S.query = ''; S.confirmDelete = false; render(); return; }
   if (b.dataset.todoF != null) { S.todoF = b.dataset.todoF; render(); return; }
   if (b.dataset.todoGo != null) { todoGo(b.dataset.todoGo); return; }
+  if (b.dataset.ar != null) { arAct(b); return; }
   if (b.dataset.liLang != null) { LI.lang = b.dataset.liLang; LI.msg = ''; render(); document.querySelector(`[data-li-lang="${LI.lang}"]`)?.focus(); return; }
   if (b.dataset.liCopy != null) { liCopy(); return; }
   if (b.dataset.pvLang != null) { PV.lang = b.dataset.pvLang; render(); document.querySelector(`[data-pv-lang="${PV.lang}"]`)?.focus(); return; }

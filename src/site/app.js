@@ -85,7 +85,7 @@
   }
   function ctaBand() {
     var x = t();
-    return '<section class="cta-band"><div><h2 class="sec-title">' + esc(x.ctaBandTitle) + '</h2><p class="lead">' + esc(x.ctaBandBody) + '</p></div><div class="cta-row">' + btn(x.cta, '#order', 'primary', 'lg', true) + '</div></section>';
+    return '<section class="cta-band"><div><h2 class="sec-title">' + esc(x.ctaBandTitle) + '</h2><p class="lead">' + esc(x.ctaBandBody) + '</p></div><div class="cta-row">' + btn(ctaText(), '#order', 'primary', 'lg', true) + '</div></section>';
   }
 
   var views = {
@@ -93,7 +93,7 @@
       var x = t();
       return '<section class="hero"><div class="hero-text"><p class="nk-label"><b>' + esc(x.status) + ' · </b>' + esc(x.heroLabel) + '</p>' +
         '<h1 class="display">' + esc(x.heroA) + '<br>' + esc(x.heroB) + '<em>' + esc(x.heroEm) + '</em></h1><p class="lead">' + esc(x.heroLead) + '</p>' +
-        '<div class="cta-row">' + btn(x.cta, '#order', 'primary', 'lg', true) + btn(x.seeWork, '#work', null, 'lg') + '</div></div>' +
+        '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', 'lg', true) + btn(x.seeWork, '#work', null, 'lg') + '</div></div>' +
         '<div class="hero-sheet">' + (PROJECTS.length ? sheetH2(featured()[0]) : '') + specs([x.heroSpecs[0], [x.heroSpecs[1][0], String(PROJECTS.length)]].concat(x.heroSpecs.slice(2))) + '</div></section>' +
         '<section class="block">' + head(x.servicesLabel, x.servicesTitle, x.servicesLead) + '<div class="grid-4">' + SERVICES.map(function (s) { return service(s, false); }).join('') + '</div></section>' +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' +
@@ -192,7 +192,7 @@
       head('', P(n, 'title'), P(n, 'summary'), true, timeTag(n.date) + (n.pinned ? ' · ' + esc(x.pinned) : '')) +
       '<div class="post-grid">' +
       (photos.length ? '<button type="button" class="nk-sheet__art project-art post-cover" data-lb="0" aria-label="' + esc(x.openPhoto) + '"><' + 'img class="sheet-photo" src="' + esc(asset(photos[0])) + '" alt="' + esc(P(n, 'title')) + '" fetchpriority="high" decoding="async" draggable="false"></button>' : '') +
-      '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + askLink(n, 'n') + '</div>' + shareBox('n', n) + printBox('n', n) + '</div></div>' +
+      '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', null, true) + askLink(n, 'n') + '</div>' + shareBox('n', n) + printBox('n', n) + '</div></div>' +
       (photos.length > 1 ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, k) { return '<button type="button" data-lb="' + k + '" aria-label="' + esc(x.openPhoto + ' ' + (k + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="' + esc(P(n, 'title') + ' · ' + (k + 1)) + '" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       (next ? '<a class="next-project" href="#n-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.newsLabel) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
       '</section>' + ctaBand();
@@ -216,7 +216,7 @@
       head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
       '<div class="project-grid"><div class="project-stage">' + stage + '</div><aside class="project-side">' + specs(rows) +
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
-      '<div class="cta-row">' + btn(x.cta, '#order', 'primary', null, true) + askLink(p) + '</div>' + slToggle(p) + shareBox('p', p) + printBox('p', p) + '</aside></div>' +
+      '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', null, true) + askLink(p) + '</div>' + slToggle(p) + shareBox('p', p) + printBox('p', p) + '</aside></div>' +
       (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="' + esc(P(p, 'title') + ' · ' + (i + 1)) + '" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       relRow(p, next) +
       (next && next !== p ? '<nav class="sheet-nav" aria-label="' + esc(x.sheetNav) + '">' +
@@ -1305,6 +1305,9 @@
       : '<button type="button" class="dr-clear" data-dr-clear>' + esc(f.clear) + '</button>';
     return '<p class="nk-label dr-l">' + esc(f.label) + '</p><p class="dr-txt">' + esc(dr.restored ? f.restored.replace('{d}', drWhen()) : f.saving) + '</p><div class="dr-act">' + act + '</div>';
   }
+  // Returning visitor with an unfinished brief: every "Start a project" button says "Continue your brief" instead
+  // (not on the order page itself, not after sending). Remove: this function and use x.cta again where ctaText() is called.
+  function ctaText() { return dr.at && state.send !== 'sent' && page() !== 'order' ? t().dr.cont : t().cta; }
   function drMode() { return dr.msg ? 'msg' : dr.at ? 'on' : 'off'; }
   function drBar() { var m = drMode(); return '<div class="dr" id="dr" data-mode="' + m + '"' + (m === 'off' ? ' hidden' : '') + '>' + drInner() + '</div>'; }
   function drShow() { // only when the bar has to appear, disappear or leave the "Form cleared." message
@@ -1485,12 +1488,12 @@
       '<div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div><div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>';
     var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="' + esc(x.aria.home) + '">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="' + esc(x.aria.main) + '">' +
       ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a href="#' + k + '"' + (p === k || (p === 'project' && k === 'work') || (p === 'post' && k === 'news') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
-      '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '"><button type="button" data-lang="en" aria-pressed="' + (lang === 'en') + '">EN</button><button type="button" data-lang="sl" aria-pressed="' + (lang === 'sl') + '">SL</button></div>' + btn(x.cta, '#order', 'primary', 'sm') + '</div></header>';
+      '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '"><button type="button" data-lang="en" aria-pressed="' + (lang === 'en') + '">EN</button><button type="button" data-lang="sl" aria-pressed="' + (lang === 'sl') + '">SL</button></div>' + btn(ctaText(), '#order', 'primary', 'sm') + '</div></header>';
     var idx = PAGES.indexOf(p === 'project' ? 'work' : p === 'post' ? 'news' : p) + 1;
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
-      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '" id="tb-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-tb-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="tb-msg" role="status" aria-live="polite"></span> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(x.cta) + ' →</a>', 'wide', false, true) +
+      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '" id="tb-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-tb-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="tb-msg" role="status" aria-live="polite"></span> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(ctaText()) + ' →</a>', 'wide', false, true) +
       cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa' + kbdBtn() + '</p></footer>';
     return '<div class="frame"><a class="skip" href="#main" data-skip>' + esc(x.skip) + '</a>' + zones + nav + '<main id="main" tabindex="-1">' + inner + '</main>' + tb + '</div>';
   }

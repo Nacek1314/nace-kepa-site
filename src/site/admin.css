@@ -107,3 +107,48 @@ body { padding-inline: 16px; padding-block: 16px; }
 div.pv-fb { display: grid; gap: var(--space-4); }
 .pv-empty { color: var(--ink-muted); }
 @media (max-width: 600px) { .pv-box { padding: var(--space-2); } .pv-page { padding: var(--space-4); } }
+
+/* Arrange (see arView() in admin.js) */
+.ad-tabs { grid-template-columns: repeat(4, 1fr); }
+.ar-side { display: grid; gap: var(--space-3); align-content: start; overflow: auto; min-height: 0; }
+.ar-box { display: grid; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--line-strong); background: var(--paper-raised); justify-items: start; }
+.ar-home { list-style: none; margin: 0; padding: 0; width: 100%; border-top: 1px solid var(--line); }
+.ar-home li { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: var(--space-2); align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.ar-home__t { font-size: 14px; line-height: 20px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ar-tools { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ar-sum { padding: var(--space-2) var(--space-3); border: 1px dashed var(--line-strong); }
+.ar-sum b { color: var(--redline); }
+.ar-board { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line-strong); background: var(--paper-raised); }
+.ar-card { display: grid; grid-template-columns: 44px 28px 72px minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; padding: var(--space-2) var(--space-3) var(--space-2) 0; border-bottom: 1px solid var(--line); background: var(--paper-raised); }
+.ar-card:last-child { border-bottom: 0; }
+.ar-card.is-hidden .ar-t { color: var(--ink-muted); text-decoration: line-through; }
+.ar-card.is-drag { position: relative; z-index: 2; box-shadow: var(--shadow-sheet); outline: 2px solid var(--redline); outline-offset: -2px; }
+.ar-handle { align-self: stretch; min-height: 44px; background: none; border: 0; border-right: 1px solid var(--line); color: var(--ink-muted); font-size: 20px; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.ar-card.is-drag .ar-handle { cursor: grabbing; color: var(--redline); }
+.ar-handle:hover { color: var(--redline); }
+.ar-pos { text-align: right; }
+.ar-thumb { width: 72px; aspect-ratio: 4 / 3; border: 1px solid var(--line); background-size: 8px 8px; }
+.ar-thumb svg { width: 86%; height: 86%; }
+.ar-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ar-main { display: grid; gap: 2px; min-width: 0; justify-items: start; }
+.ar-no s { color: var(--ink-muted); }
+.ar-t { font: 600 15px/20px var(--font-sans); color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; text-align: left; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ar-t:hover { color: var(--redline); text-decoration: underline; }
+.ar-sl { font-size: 13px; line-height: 18px; color: var(--ink-muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ar-flags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.ar-ctl { display: flex; align-items: center; gap: 4px; }
+.ar-star, .ar-btn { min-width: 36px; height: 36px; background: var(--paper-raised); border: 1px solid var(--line-strong); color: var(--ink-muted); font-size: 16px; cursor: pointer; }
+.ar-star[aria-pressed="true"] { color: var(--redline); border-color: var(--redline); }
+.ar-star:hover, .ar-btn:hover:not(:disabled) { color: var(--redline); }
+.ar-btn:disabled { opacity: .3; cursor: default; }
+.ar-in { width: 64px; height: 36px; padding: 0 6px; font-family: var(--font-mono); text-align: center; }
+.ar-vh, .ar-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ar-handle:focus-visible, .ar-t:focus-visible, .ar-star:focus-visible, .ar-btn:focus-visible { outline: 2px solid var(--redline); outline-offset: -2px; }
+@media (max-width: 900px) { .ad-list:has(.ar-side) { max-height: none; } }
+@media (max-width: 640px) {
+  .ad-tabs button { font-size: 13px; padding-inline: 4px; }
+  .ar-card { grid-template-columns: 44px 56px minmax(0, 1fr); grid-template-areas: "h th m" "h c c"; gap: var(--space-2); }
+  .ar-handle { grid-area: h; } .ar-thumb { grid-area: th; width: 56px; } .ar-main { grid-area: m; } .ar-ctl { grid-area: c; }
+  .ar-pos { display: none; }
+}
+@media print { .ar-handle, .ar-ctl { display: none; } }
