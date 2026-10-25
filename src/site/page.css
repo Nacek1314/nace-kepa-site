@@ -712,3 +712,55 @@ main:focus { outline: none; }
 @media (max-width: 860px) { .mp-grid { grid-template-columns: 1fr; gap: var(--space-5); } }
 @media (max-width: 480px) { .mp-form { padding: var(--space-4); } }
 @media print { .mp, .mp-open { display: none !important; } }
+/* ---------- Compare sheets (#compare?s=a,b,c; 2026-10-25). Remove with cmpView() in app.js. ---------- */
+.cmp-from { margin: var(--space-4) 0 0; }
+.cmp-open { margin: 0 0 var(--space-5); }
+.cmp-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4); align-items: end; margin-bottom: var(--space-5); padding: var(--space-5); background: var(--paper-raised); border: 1px solid var(--line-strong); }
+.cmp-slot { margin: 0; min-width: 0; }
+.cmp-slot__row { display: flex; gap: var(--space-2); align-items: stretch; min-width: 0; }
+.cmp-slot__row select { flex: 1 1 auto; min-width: 0; }
+.cmp-x { min-width: 44px; padding: 4px 10px; }
+.cmp-add { display: flex; align-items: flex-end; }
+.cmp-common { margin: 0 0 var(--space-4); font-size: 15px; line-height: 22px; color: var(--ink); }
+.cmp-common .nk-label { margin-right: var(--space-2); }
+.cmp-msg { color: var(--ink-muted); }
+.cmp-wrap { background: var(--paper-raised); border: 1px solid var(--line-strong); }
+.cmp-tab { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.cmp-tab th, .cmp-tab td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--line); vertical-align: top; text-align: left; font-size: 15px; line-height: 22px; overflow-wrap: anywhere; }
+.cmp-tab tr > :first-child { width: 168px; }
+.cmp-tab tbody tr:last-child > * { border-bottom: 0; }
+.cmp-tab td + td, .cmp-tab th + td, .cmp-tab td + th, .cmp-tab th + th { border-left: 1px dashed var(--line); }
+.cmp-hr > * { border-bottom: 1px solid var(--line-strong) !important; vertical-align: bottom !important; }
+.cmp-corner .nk-label { color: var(--ink-muted); }
+.cmp-sheet { display: grid; gap: var(--space-2); color: var(--ink); text-decoration: none; }
+.cmp-sheet:hover .cmp-t { color: var(--redline); }
+.cmp-sheet:focus-visible { outline: 2px solid var(--redline); outline-offset: 3px; }
+.cmp-art { display: grid; place-items: center; width: 100%; max-width: 300px; border: 1px solid var(--line); overflow: hidden; }
+.cmp-t { font: 700 18px/24px var(--font-sans); }
+.cmp-tab th[scope="row"] { font-weight: 400; }
+.cmp-tab th[scope="row"] .nk-label { display: inline; }
+.cmp-d { margin-left: var(--space-2); font: 700 13px/1 var(--font-mono); color: var(--redline); }
+.cmp-r.is-diff th[scope="row"] { box-shadow: inset 3px 0 0 var(--redline); }
+.cmp-r--text td { font-size: 14px; line-height: 21px; color: var(--ink-muted); }
+.cmp-tab td.cmp-empty { color: var(--ink-muted); font-family: var(--font-mono); font-size: 12px; }
+.cmp-act { margin-top: var(--space-6); }
+.cmp-act .cta-row { margin: 0; align-items: center; }
+.cmp-act .share { max-width: 640px; }
+@media (max-width: 720px) {
+  .cmp-pick { padding: var(--space-4); grid-template-columns: 1fr; }
+  .cmp-tab, .cmp-tab thead, .cmp-tab tbody { display: block; }
+  .cmp-tab tr { display: grid; grid-template-columns: repeat(var(--cmp-n, 2), minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
+  .cmp-tab tbody tr:last-child { border-bottom: 0; }
+  .cmp-tab tr > :first-child { width: auto; grid-column: 1 / -1; }
+  .cmp-tab th, .cmp-tab td { border-bottom: 0; padding: var(--space-2) var(--space-3); font-size: 14px; line-height: 20px; overflow-wrap: break-word; hyphens: auto; }
+  .cmp-tab th[scope="row"] { padding-bottom: 0; }
+  .cmp-tab tr > th[scope="row"] + td { border-left: 0; }
+  .cmp-hr { border-bottom: 1px solid var(--line-strong) !important; }
+  .cmp-hr > * { border-bottom: 0 !important; }
+  .cmp-hr > th:nth-child(2) { border-left: 0; }
+  .cmp-t { font-size: 15px; line-height: 20px; }
+  .cmp-tab td::before { content: attr(data-l); display: block; font: 10px/14px var(--font-mono); color: var(--ink-muted); }
+}
+@media print { .cmp-pick, .cmp-act, .cmp-open, .cmp-from { display: none !important; } }
+/* Shortlisted sheet cards (#work grid, home, similar projects; 2026-10-25) */
+.sl-mark { color: var(--redline); font-weight: 400; }

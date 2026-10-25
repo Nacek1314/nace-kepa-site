@@ -20,6 +20,57 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-25
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-engineered-backpack-buckle, #news, #n-bambu-lab-x2d, #skills,
+#about, #order (all 4 steps on the local build, nothing sent), /admin/ sign-in — 1280 + 390 px, light + dark, EN (`/`) +
+SL (`/sl/`), plus a scan for anything wider than the page, broken images and EN text on the SL page (and vice versa).
+Last Actions run (39c3e74) succeeded; nacekepa.work, /sl/, /admin/ and /news.xml return 200 (checked via the laptop).
+No JS errors, no CSP violations, no 404s (only Google Fonts, blocked in the cloud), no horizontal scroll, no missing
+translations.
+
+**Bugs fixed:**
+- #work: pressing a category chip (IoT, CAD, …) with the keyboard re-drew the page and dropped focus to the top of the
+  document, so keyboard and screen-reader users lost their place. Focus now stays on the chip (see the package below).
+
+**Improvement — #work browsing flow package:**
+- Back from a project sheet (browser back, "← All work") or a news post lands on the card you opened — scrolled into view
+  and focused — instead of the top of a 29-sheet list (`state.from` lines at the end of `render()` in `app.js`).
+- Category chips keep keyboard focus and announce "5 sheets shown" / "Prikazanih listov: 5" in the existing live region
+  (`data-filter` line in the click handler; `sl.shownN` in `content.js`).
+- Shortlisted sheets carry a red ★ in their card header everywhere (#work grid, home, "Similar projects"), with
+  "On your shortlist" / "V vašem izboru" for screen readers (`sheet()` in `app.js`, `.sl-mark` in `page.css`).
+- New "⇄ Compare sheets side by side" entry under the #work filters and on each sheet (see the innovation).
+
+**Innovation — Compare sheets / "Primerjava listov" (`#compare`, e.g. `/#compare?s=famfive,rfid-drawer-lock`):** up to
+three project sheets side by side as one drawing-sheet table: drawing (or cover photo), sheet number, title, then
+Category, Year, Description, Materials, 3D model, Photos and Details. Rows where the sheets differ are marked with a red Δ
+and a red edge; an "In common:" line says what they share (same category / same year / all have a 3D model). Pick the
+sheets with three selects (A/B/C, grouped by category, sheets already picked are disabled), "+ Add a third sheet", ✕ to
+remove. The choice lives in the address, so "Link to this comparison" + "Copy link" give a shareable link
+(`https://nacekepa.work/#en-compare?s=…`). "Start a project like these →" puts one "Compared sheets: … (NK-YY-NN); …"
+line in the order form's "What should it do?" (replaced, not duplicated, on a second hand-off); "☆ Add all to shortlist".
+Ways in: "⇄ Compare with a similar sheet" on every project sheet (this sheet + the most similar one), "⇄ Compare sheets
+side by side" under the #work filters, a "⇄ Compare N sheets" button in the shortlist box, keyboard shortcut **C** (listed
+in the `?` dialog). An empty `#compare` starts from the shortlist (if 2+ sheets), else the first two featured sheets.
+Phone: the table turns into stacked rows with A/B/C columns. Uses only data already on the sheets — today most sheets have
+no materials/photos/details yet, so those rows say "Not listed yet" and fill in by themselves when Nace adds them in the
+admin. Tested: defaults, add/remove/select (focus stays on the control), disabled duplicates, bad/duplicate slugs in a
+shared link (cleaned), EN/SL link prefix, copy link, shortlist add (and "already on"), order hand-off EN + SL (no
+duplicates, all 4 steps, not sent), entry links, `C` key, light + dark, 1280 + 390 px, no horizontal scroll, no errors.
+*To remove:* delete the "Compare sheets" block in `app.js` (`CMP_MAX` … `cmpSlBtn()`), `compare:` in `views`, the
+`h === 'compare'` line in `page()`, `p === 'compare'` in `frame()` (two places), `cmpFrom(p)` in `projectView()`,
+`cmpOpen()` in `views.work`, `cmpSlBtn(a)` in `slBox()`, `c: 'compare'` and the two `'compare'` checks in the keyboard
+block, the `data-cmp-*` lines in the click/change handlers, `cmp:` and `nav.compare` in both languages in `content.js` and
+the "Compare sheets" rules at the end of `page.css`.
+*Next step (day 2):* once sheets have materials/photos, a "printed in" row and photo strip; an A4 print layout of the
+comparison.
+
+**Ideas for next time** (added to the list below)
+- Public: "Compare" checkboxes directly on #work cards (pick 2–3 in the grid → open the comparison).
+- Admin: "Compare preview" — check how a project reads next to its most similar sheet before publishing.
+- Public: per-category landing text on #work (one sentence per discipline, EN + SL, from Nace).
+
 ## 2026-10-24
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-engineered-backpack-buckle, #news, #n-bambu-lab-x2d, #skills,
@@ -121,7 +172,6 @@ under each row; let the planner's Material select open the picker.
 **Ideas for next time** (added to the list below)
 - Public: material picker → "projects printed in this material" (needs `materials` filled in the admin).
 - Admin: "Speed" panel — page size before/after gzip and the largest photos, from the built files.
-- Public: compare two or three project sheets side by side (`#work?compare=a,b`).
 
 ## 2026-10-21
 
@@ -352,7 +402,6 @@ languages in `content.js` and the "Shortlist" rules at the end of `page.css`.
 client can send the selection to a colleague who sees the same list.
 
 **Ideas for next time** (added to the list below)
-- Public: ★ marker on shortlisted sheet cards in the #work grid and on "Similar projects".
 - Public: shareable shortlist link (`#work?list=…`) that opens the same shortlist on another device.
 - Admin: "Copy enquiry link" for a group of projects (the shortlist link above) to paste in LinkedIn replies.
 
@@ -845,7 +894,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form). 2026-10-21 file check on #services (client STL / 3MF / OBJ read in the browser → size, volume, closed mesh, X2D fit, three views → order form). 2026-10-23 material picker on #services (ticked needs → ranked materials from #skills → order form Material). 2026-10-24 admin "Arrange" tab (drag-and-drop / keyboard project order with sheet numbers and home-page preview).
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form). 2026-10-21 file check on #services (client STL / 3MF / OBJ read in the browser → size, volume, closed mesh, X2D fit, three views → order form). 2026-10-23 material picker on #services (ticked needs → ranked materials from #skills → order form Material). 2026-10-24 admin "Arrange" tab (drag-and-drop / keyboard project order with sheet numbers and home-page preview). 2026-10-25 compare sheets (`#compare?s=…`, up to three sheets side by side, Δ on differing rows → order form).
 
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
 - Admin: "SL text missing" badge on each project/news row in the list (quick view of what still needs translating).
@@ -871,7 +920,6 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: "Email this brief" (mailto: with the brief) on order step 4 when `CONTACT_EMAIL` is set.
 - Admin: edit each service's "What I need" / "What you get" lists from the dashboard (EN + SL).
 - Public: "Copy e-mail" on the 404 page (order step 4 and the footer have it since 2026-10-17).
-- Public: ★ marker on shortlisted sheet cards in the #work grid and on "Similar projects".
 - Public: shareable shortlist link (`#work?list=…`) that opens the same shortlist on another device.
 - Admin: "Copy enquiry link" for a group of projects (the shortlist link) to paste in LinkedIn replies.
 - Public: prefill "Do you have files?" in step 2 when "STL / STEP / 3MF file" is ticked in the checklist.
@@ -889,10 +937,12 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: search-result preview per project (EN + SL title/description length).
 - Public: material picker → "projects printed in this material" (needs `materials` filled in the admin).
 - Admin: "Speed" panel — page size before/after gzip and the largest photos, from the built files.
-- Public: compare two or three project sheets side by side (`#work?compare=a,b`).
 - Admin: drag-and-drop photo order inside the project and news editors (reuse the Arrange handle code).
 - Public: "Selected work" on the home page with a "Show 4 more" button instead of a fixed four.
 - Admin: Arrange view for news (pinned first, then date) with a preview of the home "From the workshop" row.
+- Public: "Compare" checkboxes directly on #work cards (pick 2–3 in the grid → open the comparison).
+- Admin: "Compare preview" — check how a project reads next to its most similar sheet before publishing.
+- Public: per-category landing text on #work (one sentence per discipline, EN + SL, from Nace).
 
 ## 2026-10-03 (second run)
 

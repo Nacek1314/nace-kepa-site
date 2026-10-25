@@ -1,6 +1,6 @@
 var T = {
   en: {
-    nav: { home: 'Home', services: 'Services', work: 'Work', news: 'News', skills: 'Skills', about: 'About' },
+    nav: { home: 'Home', services: 'Services', work: 'Work', news: 'News', skills: 'Skills', about: 'About', compare: 'Compare sheets' },
     newsLabel: 'News', newsTitle: 'From the workshop.', newsLead: 'New machines, materials and finished jobs.', allNews: 'All news', readMore: 'Read', pinned: 'Pinned', newsPageTitle: 'News', newsEmpty: 'No news yet.',
     cta: 'Start a project', seeWork: 'See all work', allServices: 'All services', quote: 'Request a quote',
     status: 'Taking projects',
@@ -106,7 +106,7 @@ var T = {
     dr: { label: 'Saved draft', saving: 'Your answers are saved in this browser as you type — you can close the page and finish later.', restored: 'Welcome back — your unfinished brief from {d} is filled in. It is saved only in this browser.', clear: 'Clear the form', ask: 'Delete everything you typed?', yes: 'Yes, clear', keep: 'Keep', cleared: 'Form cleared.', cont: 'Continue your brief' },
     tbCopy: 'Copy', tbCopied: 'Copied.',
     // Shortlist (slToggle / slBox in app.js): kept only in the visitor's browser.
-    sl: { label: 'Shortlist', add: 'Add to shortlist', remove: 'Remove from shortlist', see: 'Your shortlist · {n}', note: 'Kept only in this browser.', added: 'Added — {n} on your shortlist.', removed: 'Removed from your shortlist.',
+    sl: { label: 'Shortlist', on: 'On your shortlist', shownN: '{n} sheets shown', add: 'Add to shortlist', remove: 'Remove from shortlist', see: 'Your shortlist · {n}', note: 'Kept only in this browser.', added: 'Added — {n} on your shortlist.', removed: 'Removed from your shortlist.',
       title: 'Your shortlist', lead: 'Sheets you saved while browsing. Start a project with them as references, or copy the list for a colleague.', del: 'Remove {t} from the shortlist',
       start: 'Start a project with these', copy: 'Copy list', copied: 'List copied.', copyFail: 'Could not copy — the list is selected, press Ctrl+C.', clear: 'Clear shortlist', brief: 'Reference projects' },
     mailCopy: 'Copy e-mail', mailCopied: 'E-mail address copied.', mailFail: 'Could not copy — the address is selected, press Ctrl+C.',
@@ -118,6 +118,12 @@ var T = {
       which: 'Sheets', all: 'All sheets', shown: 'Shown now', shownHint: 'the category and search above', list: 'Your shortlist', inc: 'Include', cover: 'Cover page — services and contact', index: 'Index of sheets',
       sum: 'Sheets: {n} · A4 pages: {p}', none: 'No sheets match — change the category or the search above.', btn: 'Print or save as PDF', note: 'Line drawings only — photos and 3D models are left out.',
       coverT: 'Cover', indexT: 'Index', docTitle: 'Project portfolio', sheets: 'Sheets', cats: 'Categories', online: 'Online', services: 'Services', contact: 'Contact', sheet: 'Sheet', page: 'Page', colTitle: 'Title', model3d: 'Interactive 3D model online' },
+    cmp: { label: 'Compare · NK-C', title: 'Compare sheets', lead: 'Up to three project sheets side by side — see what they share and where they differ, then start a project like them.',
+      pick: 'Sheets to compare', slot: 'Sheet {n}', add: 'Add a third sheet', del: 'Remove {t} from the comparison', legend: 'Δ = differs',
+      differs: 'the sheets differ here', rows: { cat: 'Category', year: 'Year', desc: 'Description', mat: 'Materials', model: '3D model', photos: 'Photos', details: 'Details' },
+      none: 'Not listed yet', common: 'In common:', sameCat: 'same category ({c})', sameYear: 'same year ({y})', all3d: 'all have a 3D model', noCommon: 'different category and year.',
+      start: 'Start a project like these', brief: 'Compared sheets', toSl: 'Add all to shortlist', slDone: 'Added — {n} on your shortlist.', slAll: 'All of them are already on your shortlist.',
+      linkL: 'Link to this comparison', from: 'Compare with a similar sheet', open: 'Compare sheets side by side', slBtn: 'Compare {n} sheets', few: 'There are not enough project sheets to compare yet.' },
     rel: { title: 'Similar projects', all: 'All {n} {c} projects', start: 'Start a project like this', brief: 'Similar to' },
     // Search on #work (findBox in app.js).
     keys: { btn: 'Keyboard shortcuts', label: 'Shortcuts · keyboard', title: 'Get around without the mouse.', help: 'Show or hide this list', find: 'Search projects and news', prevNext: 'Previous / next sheet (on a project or news post)', lang: 'Switch EN / SL', close: 'Close', note: 'Shortcuts are off while you type in a field.' },
@@ -125,7 +131,7 @@ var T = {
     tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale', contact: 'Contact', order: 'Order' }
   },
   sl: {
-    nav: { home: 'Domov', services: 'Storitve', work: 'Projekti', news: 'Novice', skills: 'Znanja', about: 'O meni' },
+    nav: { home: 'Domov', services: 'Storitve', work: 'Projekti', news: 'Novice', skills: 'Znanja', about: 'O meni', compare: 'Primerjava listov' },
     newsLabel: 'Novice', newsTitle: 'Iz delavnice.', newsLead: 'Novi stroji, materiali in zaključeni projekti.', allNews: 'Vse novice', readMore: 'Preberi', pinned: 'Pripeto', newsPageTitle: 'Novice', newsEmpty: 'Novic še ni.',
     cta: 'Začni projekt', seeWork: 'Vsi projekti', allServices: 'Vse storitve', quote: 'Zahtevaj ponudbo',
     status: 'Sprejemam projekte',
@@ -222,7 +228,7 @@ var T = {
     oc: { label: 'Seznam', title: 'Kaj že imate?', lead: 'Označite, kar je pripravljeno — gre v povzetek, da vprašam samo za tisto, kar manjka.', count: 'Pripravljeno: {n} od {t}', ready: 'Pripravljeno:', todo: 'Še pripraviti:', next: 'Naslednje mi pošljite', nextHint: 'Pošljite jih v odgovor na moje e-sporočilo ali vprašajte, če potrebujete pomoč pri pripravi.' },
     dr: { label: 'Shranjen osnutek', saving: 'Odgovori se sproti shranjujejo v tem brskalniku — stran lahko zaprete in nadaljujete pozneje.', restored: 'Dobrodošli nazaj — vaš nedokončan povzetek z dne {d} je izpolnjen. Shranjen je samo v tem brskalniku.', clear: 'Počisti obrazec', ask: 'Izbrišem vse, kar ste vpisali?', yes: 'Da, počisti', keep: 'Obdrži', cleared: 'Obrazec je počiščen.', cont: 'Nadaljuj povzetek' },
     tbCopy: 'Kopiraj', tbCopied: 'Kopirano.',
-    sl: { label: 'Izbor', add: 'Dodaj v izbor', remove: 'Odstrani iz izbora', see: 'Vaš izbor · {n}', note: 'Shranjeno samo v tem brskalniku.', added: 'Dodano — v izboru: {n}.', removed: 'Odstranjeno iz izbora.',
+    sl: { label: 'Izbor', on: 'V vašem izboru', shownN: 'Prikazanih listov: {n}', add: 'Dodaj v izbor', remove: 'Odstrani iz izbora', see: 'Vaš izbor · {n}', note: 'Shranjeno samo v tem brskalniku.', added: 'Dodano — v izboru: {n}.', removed: 'Odstranjeno iz izbora.',
       title: 'Vaš izbor', lead: 'Listi, ki ste jih shranili med brskanjem. Začnite projekt z njimi kot zgledom ali kopirajte seznam za sodelavca.', del: 'Odstrani {t} iz izbora',
       start: 'Začni projekt s temi', copy: 'Kopiraj seznam', copied: 'Seznam je kopiran.', copyFail: 'Kopiranje ni uspelo — seznam je označen, pritisnite Ctrl+C.', clear: 'Počisti izbor', brief: 'Referenčni projekti' },
     mailCopy: 'Kopiraj e-naslov', mailCopied: 'E-naslov je kopiran.', mailFail: 'Kopiranje ni uspelo — naslov je označen, pritisnite Ctrl+C.',
@@ -234,6 +240,12 @@ var T = {
       which: 'Listi', all: 'Vsi listi', shown: 'Trenutno prikazani', shownHint: 'kategorija in iskanje zgoraj', list: 'Vaš izbor', inc: 'Vključi', cover: 'Naslovnico — storitve in kontakt', index: 'Kazalo listov',
       sum: 'Listov: {n} · strani A4: {p}', none: 'Noben list ne ustreza — spremenite kategorijo ali iskanje zgoraj.', btn: 'Natisni ali shrani kot PDF', note: 'Samo risbe — brez fotografij in 3D modelov.',
       coverT: 'Naslovnica', indexT: 'Kazalo', docTitle: 'Mapa projektov', sheets: 'Listi', cats: 'Kategorije', online: 'Na spletu', services: 'Storitve', contact: 'Kontakt', sheet: 'List', page: 'Stran', colTitle: 'Naslov', model3d: 'Interaktivni 3D model na spletu' },
+    cmp: { label: 'Primerjava · NK-C', title: 'Primerjava listov', lead: 'Do trije projektni listi drug ob drugem — poglejte, kaj imajo skupnega in v čem se razlikujejo, nato začnite podoben projekt.',
+      pick: 'Listi za primerjavo', slot: 'List {n}', add: 'Dodaj tretji list', del: 'Odstrani {t} iz primerjave', legend: 'Δ = razlika',
+      differs: 'listi se tu razlikujejo', rows: { cat: 'Kategorija', year: 'Leto', desc: 'Opis', mat: 'Materiali', model: '3D model', photos: 'Fotografije', details: 'Podrobnosti' },
+      none: 'Še ni navedeno', common: 'Skupno:', sameCat: 'ista kategorija ({c})', sameYear: 'isto leto ({y})', all3d: 'vsi imajo 3D model', noCommon: 'različna kategorija in leto.',
+      start: 'Začni podoben projekt', brief: 'Primerjani listi', toSl: 'Dodaj vse v izbor', slDone: 'Dodano — v izboru: {n}.', slAll: 'Vsi so že v vašem izboru.',
+      linkL: 'Povezava do te primerjave', from: 'Primerjaj s podobnim listom', open: 'Primerjaj liste drug ob drugem', slBtn: 'Primerjaj liste ({n})', few: 'Za primerjavo še ni dovolj projektnih listov.' },
     rel: { title: 'Podobni projekti', all: 'Vsi projekti: {c} ({n})', start: 'Začni podoben projekt', brief: 'Podobno kot' },
     keys: { btn: 'Bližnjice na tipkovnici', label: 'Bližnjice · tipkovnica', title: 'Po strani brez miške.', help: 'Pokaži ali skrij ta seznam', find: 'Iskanje po projektih in novicah', prevNext: 'Prejšnji / naslednji list (na projektu ali novici)', lang: 'Preklop EN / SL', close: 'Zapri', note: 'Med tipkanjem v polje so bližnjice izklopljene.' },
     find: { label: 'Iskanje po projektih in novicah', ph: 'npr. ESP32, PETG, nosilec', key: 'Za iskanje pritisnite /', count: 'projekti: {p} · novice: {n}', none: 'Za »{q}« še ni zadetkov.', noneBody: 'Opišite, kaj potrebujete — večina projektov se začne s skico.', news: 'Novice z zadetki', clear: 'Počisti iskanje', link: 'Povezava do teh zadetkov', linkNote: 'Odpre to iskanje in filter v slovenščini — prilepite jo v e-pošto ali sporočilo.' },

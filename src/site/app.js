@@ -39,7 +39,8 @@
     var h = (location.hash || '').replace('#', '');
     var m = /^(en|sl)-?(.*)$/.exec(h);
     if (m) { lang = m[1]; try { localStorage.setItem('nk-lang', lang); } catch (e) {} h = m[2]; }
-    var qi = h.indexOf('?'); if (qi >= 0) { if (h.slice(0, qi) === 'work' && location.hash !== state.findHash) findRead(h.slice(qi + 1)); h = h.slice(0, qi); }
+    var qi = h.indexOf('?'), qs = qi >= 0 ? h.slice(qi + 1) : ''; if (qi >= 0) { if (h.slice(0, qi) === 'work' && location.hash !== state.findHash) findRead(qs); h = h.slice(0, qi); }
+    if (h === 'compare' && PROJECTS.length) { cmpRead(qs); return 'compare'; }
     if (/^p-/.test(h) && bySlug(h.slice(2))) return 'project';
     if (/^n-/.test(h) && newsBySlug(h.slice(2))) return 'post';
     return PAGES.indexOf(h) >= 0 ? h : 'home'; }
@@ -62,7 +63,7 @@
   // hl = heading tag for the title ('h2' where the card sits right under the page h1, else h3). Not positional from .map().
   function sheet(p, hl) {
     var h = hl === 'h2' ? 'h2' : 'h3';
-    return '<a class="nk-sheet" href="#p-' + esc(p.slug) + '" data-cat="' + esc(p.category) + '"><div class="nk-sheet__head"><span class="nk-label">' + sheetNo(p) + '</span><span class="nk-label">' + (p.model ? '<b class="has3d">3D · </b>' : '') + esc(cat(p)) + ' · ' + esc(p.year) + '</span></div>' +
+    return '<a class="nk-sheet" href="#p-' + esc(p.slug) + '" data-cat="' + esc(p.category) + '"><div class="nk-sheet__head"><span class="nk-label">' + sheetNo(p) + '</span><span class="nk-label">' + (slRead().indexOf(p.slug) >= 0 ? '<b class="sl-mark" title="' + esc(t().sl.on) + '"><span aria-hidden="true">★ </span><span class="vh">' + esc(t().sl.on) + ' · </span></b>' : '') + (p.model ? '<b class="has3d">3D · </b>' : '') + esc(cat(p)) + ' · ' + esc(p.year) + '</span></div>' +
       '<div class="nk-sheet__art">' + art(p, hl === 'h2') + '</div><div class="nk-sheet__foot"><' + h + ' class="nk-sheet__title">' + esc(P(p, 'title')) + '</' + h + '><p class="nk-sheet__desc">' + esc(P(p, 'description')) + '</p></div></a>';
   }
   function sheetH2(p) { return sheet(p, 'h2'); }
@@ -123,7 +124,7 @@
         '<div class="filters" role="group" aria-label="' + esc(x.aria.filter) + '">' + cats.map(function (c) {
           var n = c === 'all' ? PROJECTS.length : PROJECTS.filter(function (p) { return c === '3d' ? !!p.model : p.category === c; }).length;
           return '<button type="button" class="chip" data-filter="' + c + '" aria-pressed="' + (state.filter === c) + '">' + esc(c === 'all' ? x.all : c === '3d' ? x.with3d : CATS[c][lang]) + ' <span>' + n + '</span></button>';
-        }).join('') + '</div>' +
+        }).join('') + '</div>' + cmpOpen() +
         '<div class="grid-4 sheets" id="find-grid">' + list.map(sheetH2).join('') + '</div>' + findResults() + psBox() + '</section>' + ctaBand();
     },
     skills: function () {
@@ -145,7 +146,8 @@
       return '<section class="block first">' + head(x.newsLabel + ' · ' + NEWS.length, x.newsPageTitle, x.newsLead, true) +
         (NEWS.length ? '<div class="news-list">' + NEWS.map(newsCard).join('') + '</div>' + feedBox() : '<p class="lead">' + esc(x.newsEmpty) + '</p>') + '</section>' + ctaBand();
     },
-    post: postView
+    post: postView,
+    compare: function () { return cmpView(); }
   };
 
   // Machine-readable date for search engines and screen readers (<time datetime="YYYY-MM-DD">).
@@ -216,7 +218,7 @@
       head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
       '<div class="project-grid"><div class="project-stage">' + stage + '</div><aside class="project-side">' + specs(rows) +
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
-      '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', null, true) + askLink(p) + '</div>' + slToggle(p) + shareBox('p', p) + printBox('p', p) + '</aside></div>' +
+      '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', null, true) + askLink(p) + '</div>' + slToggle(p) + cmpFrom(p) + shareBox('p', p) + printBox('p', p) + '</aside></div>' +
       (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="' + esc(P(p, 'title') + ' · ' + (i + 1)) + '" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       relRow(p, next) +
       (next && next !== p ? '<nav class="sheet-nav" aria-label="' + esc(x.sheetNav) + '">' +
@@ -462,7 +464,7 @@
           '<button type="button" class="chip sl-x" data-sl-del="' + esc(p.slug) + '" aria-label="' + esc(x.del.replace('{t}', P(p, 'title'))) + '">✕</button></li>';
       }).join('') + '</ul>' +
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--sm" data-sl-go>' + esc(x.start) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
-      '<button type="button" class="nk-btn nk-btn--sm" data-sl-copy>' + esc(x.copy) + '</button><button type="button" class="share-link" data-sl-clear>' + esc(x.clear) + '</button></div>' +
+      cmpSlBtn(a) + '<button type="button" class="nk-btn nk-btn--sm" data-sl-copy>' + esc(x.copy) + '</button><button type="button" class="share-link" data-sl-clear>' + esc(x.clear) + '</button></div>' +
       '<p class="share-msg" id="sl-msg" role="status" aria-live="polite"></p></section>';
   }
   function slDel(slug) {
@@ -488,6 +490,133 @@
     state.step = 0; state.errors = {}; state.send = 'idle';
     location.hash = 'order';
   }
+  // ---------- Compare sheets (#compare?s=a,b,c): up to three project sheets side by side (2026-10-25) ----------
+  // Uses only what is already on the sheets (category, year, description, materials, 3D model, photos, details); rows
+  // where the sheets differ are marked Δ. Nothing is stored or sent. The selection lives in the address, so the link can be
+  // shared. Self-contained: remove CMP_MAX … cmpSlAll(), views.compare, the three 'compare' lines in page(), frame() and
+  // pageTitle() (p === 'compare'), cmpFrom() in projectView(), cmpSlBtn() in slBox(), cmpOpen() in views.work, c: in
+  // KBD_GO, the data-cmp-* lines in the click/change handlers, cmp: + nav.compare in both languages in content.js and the
+  // "Compare sheets" rules at the end of page.css.
+  var CMP_MAX = 3;
+  state.cmp = [];
+  function cmpRead(qs) { // "s=a,b,c" → valid, unique slugs (max three)
+    var m = /(?:^|&)s=([^&]*)/.exec(qs || ''), a = [], v = '';
+    try { v = m ? decodeURIComponent(m[1]) : ''; } catch (e) {}
+    v.split(',').forEach(function (s) { if (s && bySlug(s) && a.indexOf(s) < 0 && a.length < CMP_MAX) a.push(s); });
+    state.cmp = a; state.cmpRaw = v;
+  }
+  function cmpNext(a) { // a sensible sheet to add: similar to the first one, else the next unused in the published order
+    var first = bySlug(a[0]), pool = (first ? relList(first) : []).concat(featured(), PROJECTS);
+    for (var i = 0; i < pool.length; i++) if (a.indexOf(pool[i].slug) < 0) return pool[i].slug;
+    return '';
+  }
+  function cmpFill() { // an empty or one-sheet comparison is completed from the shortlist, then the featured sheets
+    var a = state.cmp.slice(), sl = slRead();
+    if (!a.length) a = sl.length > 1 ? sl.slice(0, CMP_MAX) : featured().map(function (p) { return p.slug; }).slice(0, 2);
+    while (a.length < 2) { var n = cmpNext(a); if (!n) break; a.push(n); }
+    if (a.join() !== state.cmp.join() || state.cmpRaw !== a.join()) { state.cmp = a; state.cmpRaw = a.join(); cmpSync(); }
+  }
+  function cmpHash(a) { return '#compare?s=' + (a || state.cmp).map(encodeURIComponent).join(','); }
+  function cmpSync() { try { history.replaceState(history.state, '', cmpHash()); } catch (e) {} }
+  function cmpLink() { return 'https://nacekepa.work/#' + lang + '-' + cmpHash().slice(1); }
+  function cmpSet(a, focusSel) {
+    state.cmp = a; cmpSync(); render(true);
+    var f = focusSel && app.querySelector(focusSel); if (f) f.focus();
+  }
+  function cmpVal(p, k) { // [text shown, value compared] for one row
+    var x = t(), c = x.cmp, ph = (p.photos || []).length, det = P(p, 'details').split(/\n{2,}/)[0] || '';
+    if (k === 'cat') return [cat(p), p.category];
+    if (k === 'year') return [String(p.year), String(p.year)];
+    if (k === 'desc') return [P(p, 'description') || '—', null];
+    if (k === 'mat') return [p.materials || c.none, findFold(p.materials || '')];
+    if (k === 'model') return [p.model ? x.interactive : '—', p.model ? 1 : 0];
+    if (k === 'photos') return [ph ? String(ph) : '—', ph];
+    return [det ? (det.length > 240 ? det.slice(0, 236).replace(/\s+\S*$/, '') + ' …' : det) : c.none, null];
+  }
+  var CMP_ROWS = ['cat', 'year', 'desc', 'mat', 'model', 'photos', 'details'];
+  function cmpCommon(list) {
+    var c = t().cmp, out = [], all = function (f) { return list.every(function (p) { return f(p) === f(list[0]); }); };
+    if (all(function (p) { return p.category; })) out.push(c.sameCat.replace('{c}', cat(list[0])));
+    if (all(function (p) { return p.year; })) out.push(c.sameYear.replace('{y}', list[0].year));
+    if (list.every(function (p) { return p.model; })) out.push(c.all3d);
+    return out;
+  }
+  function cmpPicker(list) {
+    var c = t().cmp, used = state.cmp, L3 = 'ABC';
+    var cats = Object.keys(CATS).filter(function (k) { return PROJECTS.some(function (p) { return p.category === k; }); });
+    PROJECTS.forEach(function (p) { if (cats.indexOf(p.category) < 0) cats.push(p.category); });
+    return '<div class="cmp-pick" role="group" aria-label="' + esc(c.pick) + '">' + list.map(function (p, i) {
+      var opts = cats.map(function (k) {
+        return '<optgroup label="' + esc(CATS[k] ? CATS[k][lang] : k) + '">' + PROJECTS.filter(function (q) { return q.category === k; }).map(function (q) {
+          return '<option value="' + esc(q.slug) + '"' + (q === p ? ' selected' : used.indexOf(q.slug) >= 0 ? ' disabled' : '') + '>' + sheetNo(q) + ' · ' + esc(P(q, 'title')) + '</option>';
+        }).join('') + '</optgroup>';
+      }).join('');
+      return '<div class="nk-field cmp-slot"><label class="nk-field__label" for="cmp-' + i + '">' + esc(c.slot.replace('{n}', L3[i])) + '</label><div class="cmp-slot__row">' +
+        '<select class="nk-input" id="cmp-' + i + '" data-cmp-slot="' + i + '">' + opts + '</select>' +
+        (list.length > 2 ? '<button type="button" class="chip cmp-x" data-cmp-del="' + i + '" aria-label="' + esc(c.del.replace('{t}', P(p, 'title'))) + '">✕</button>' : '') + '</div></div>';
+    }).join('') +
+      (list.length < Math.min(CMP_MAX, PROJECTS.length) ? '<div class="cmp-add"><button type="button" class="nk-btn nk-btn--sm" data-cmp-add>+ ' + esc(c.add) + '</button></div>' : '') + '</div>';
+  }
+  function cmpTable(list) {
+    var x = t(), c = x.cmp;
+    var headCells = list.map(function (p, i) {
+      return '<th scope="col" role="columnheader" class="cmp-col"><a class="cmp-sheet" href="#p-' + esc(p.slug) + '"><span class="nk-sheet__art cmp-art" aria-hidden="true">' + art(p) + '</span>' +
+        '<span class="nk-label">' + 'ABC'[i] + ' · ' + sheetNo(p) + '</span><span class="cmp-t">' + esc(P(p, 'title')) + '</span></a></th>';
+    }).join('');
+    var rows = CMP_ROWS.map(function (k) {
+      var vals = list.map(function (p) { return cmpVal(p, k); });
+      var diff = vals[0][1] !== null && vals.some(function (v) { return v[1] !== vals[0][1]; });
+      return '<tr role="row" class="cmp-r' + (diff ? ' is-diff' : '') + (k === 'desc' || k === 'details' ? ' cmp-r--text' : '') + '"><th scope="row" role="rowheader"><span class="nk-label">' + esc(c.rows[k]) + '</span>' +
+        (diff ? '<span class="cmp-d" title="' + esc(c.differs) + '"><span aria-hidden="true">Δ</span><span class="vh">(' + esc(c.differs) + ')</span></span>' : '') + '</th>' +
+        vals.map(function (v, i) { return '<td role="cell" data-l="' + 'ABC'[i] + '"' + (v[0] === c.none || v[0] === '—' ? ' class="cmp-empty"' : '') + '>' + esc(v[0]) + '</td>'; }).join('') + '</tr>';
+    }).join('');
+    return '<div class="cmp-wrap"><table class="cmp-tab" role="table" style="--cmp-n:' + list.length + '"><caption class="vh">' + esc(c.title) + '</caption>' +
+      '<thead role="rowgroup"><tr role="row" class="cmp-hr"><td class="cmp-corner" role="cell"><span class="nk-label">' + esc(c.legend) + '</span></td>' + headCells + '</tr></thead><tbody role="rowgroup">' + rows + '</tbody></table></div>';
+  }
+  function cmpView() {
+    var x = t(), c = x.cmp;
+    cmpFill();
+    var list = state.cmp.map(bySlug), common = cmpCommon(list);
+    var empty = list.length < 2;
+    return '<section class="block first cmp-page">' + '<a class="back" href="#work">← ' + esc(x.allWork) + '</a>' +
+      head(c.label, c.title, c.lead, true) +
+      (empty ? '<p class="cmp-msg">' + esc(c.few) + '</p>' :
+      cmpPicker(list) +
+      '<p class="cmp-common"><span class="nk-label">' + esc(c.common) + '</span> ' + (common.length ? common.map(esc).join(' · ') : esc(c.noCommon)) + '</p>' +
+      cmpTable(list) +
+      '<div class="cmp-act"><div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--sm" data-cmp-go>' + esc(c.start) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
+      '<button type="button" class="nk-btn nk-btn--sm" data-cmp-sl><span class="sl-star" aria-hidden="true">☆</span>' + esc(c.toSl) + '</button></div>' +
+      '<div class="share"><p class="nk-label" id="cmp-l">' + esc(c.linkL) + '</p><div class="share-row"><input class="share-url" id="cmp-url" type="text" readonly value="' + esc(cmpLink()) + '" aria-labelledby="cmp-l" spellcheck="false">' +
+      '<button type="button" class="nk-btn nk-btn--sm" data-cmp-copy>' + esc(x.share.copy) + '</button></div></div>' +
+      '<p class="share-msg" id="cmp-msg" role="status" aria-live="polite"></p></div>') +
+      '</section>' + ctaBand();
+  }
+  function cmpCopy() {
+    var f = document.getElementById('cmp-url'), msg = document.getElementById('cmp-msg'), x = t().share; if (!f) return;
+    var fail = function () { f.focus(); f.select(); msg.textContent = x.copyFail; };
+    try { navigator.clipboard.writeText(f.value).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+  }
+  function cmpToOrder() { // one "Compared sheets: …" line in "What should it do?" — replaced, not duplicated, on a second hand-off
+    var c = t().cmp, o = state.order, list = state.cmp.map(bySlug).filter(Boolean); if (!list.length) return;
+    var line = c.brief + ': ' + list.map(function (p) { return P(p, 'title') + ' (' + sheetNo(p) + ')'; }).join('; ') + '.';
+    var pre = [T.en.cmp.brief + ':', T.sl.cmp.brief + ':'], had = false;
+    var lines = o.what ? o.what.split('\n').map(function (l) { if (pre.some(function (s) { return l.indexOf(s) === 0; })) { had = true; return line; } return l; }) : [];
+    o.what = had ? lines.join('\n') : (o.what ? o.what + '\n' + line : line);
+    state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+  function cmpSlAll() {
+    var a = slRead(), add = state.cmp.filter(function (s) { return a.indexOf(s) < 0; }), c = t().cmp;
+    slSave(a.concat(add));
+    var msg = document.getElementById('cmp-msg'); if (msg) msg.textContent = add.length ? c.slDone.replace('{n}', a.length + add.length) : c.slAll;
+  }
+  function cmpFrom(p) { // link on a project sheet: this sheet + the most similar one
+    var other = relList(p)[0] || PROJECTS[(PROJECTS.indexOf(p) + 1) % PROJECTS.length];
+    if (!other || other === p) return '';
+    return '<p class="cmp-from"><a class="share-link" href="' + esc(cmpHash([p.slug, other.slug])) + '"><span aria-hidden="true">⇄ </span>' + esc(t().cmp.from) + ' →</a></p>';
+  }
+  function cmpOpen() { return PROJECTS.length > 1 ? '<p class="cmp-from cmp-open"><a class="share-link" href="#compare"><span aria-hidden="true">⇄ </span>' + esc(t().cmp.open) + ' →</a></p>' : ''; }
+  function cmpSlBtn(a) { return a.length > 1 ? '<a class="nk-btn nk-btn--sm" href="' + esc(cmpHash(a.slice(0, CMP_MAX).map(function (p) { return p.slug; }))) + '"><span aria-hidden="true">⇄ </span>' + esc(t().cmp.slBtn.replace('{n}', Math.min(a.length, CMP_MAX))) + '</a>' : ''; }
   // ---------- full-screen photo viewer ----------
   var lb = null;
   function openLightbox(list, start, title) {
@@ -1487,9 +1616,9 @@
     var zones = '<div class="zones zones-top" aria-hidden="true">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (n) { return '<span>' + n + '</span>'; }).join('') + '</div>' +
       '<div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div><div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>';
     var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="' + esc(x.aria.home) + '">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="' + esc(x.aria.main) + '">' +
-      ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a href="#' + k + '"' + (p === k || (p === 'project' && k === 'work') || (p === 'post' && k === 'news') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
+      ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a href="#' + k + '"' + (p === k || ((p === 'project' || p === 'compare') && k === 'work') || (p === 'post' && k === 'news') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
       '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '"><button type="button" data-lang="en" aria-pressed="' + (lang === 'en') + '">EN</button><button type="button" data-lang="sl" aria-pressed="' + (lang === 'sl') + '">SL</button></div>' + btn(ctaText(), '#order', 'primary', 'sm') + '</div></header>';
-    var idx = PAGES.indexOf(p === 'project' ? 'work' : p === 'post' ? 'news' : p) + 1;
+    var idx = PAGES.indexOf(p === 'project' || p === 'compare' ? 'work' : p === 'post' ? 'news' : p) + 1;
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
@@ -1525,6 +1654,12 @@
     if (p === 'services' && state.mpFocus) { state.mpFocus = false; var mb = document.getElementById('material'); if (mb) { mb.scrollIntoView({ block: 'start' }); var mi = mb.querySelector('input'); if (mi) mi.focus({ preventScroll: true }); } }
     if (p === 'services' && state.plFocus) { state.plFocus = false; var pb = document.getElementById('plan'); if (pb) { pb.scrollIntoView({ block: 'start' }); var pr = pb.querySelector('input'); if (pr) pr.focus({ preventScroll: true }); } }
     if (p === 'work') { findApply(); if (state.findFocus) { state.findFocus = false; var fq = document.getElementById('find-q'); if (fq) fq.focus(); } }
+    // Back from a project sheet / news post to its list: scroll to and focus the card the visitor opened, not the top.
+    var came = state.from; state.from = p === 'project' ? '#p-' + currentSlug() : p === 'post' ? '#n-' + currentSlug() : '';
+    if (came && !keepScroll && (p === 'work' || p === 'news')) {
+      var card = app.querySelector((p === 'work' ? '#find-grid' : '.news-list') + ' a[href="' + came + '"]');
+      if (card && !card.hidden) { card.scrollIntoView({ block: 'center' }); card.focus({ preventScroll: true }); }
+    }
   }
 
   function readForm() {
@@ -1563,6 +1698,11 @@
     if (el.dataset.slDel) { slDel(el.dataset.slDel); return; }
     if (el.hasAttribute('data-sl-go')) { slToOrder(); return; }
     if (el.hasAttribute('data-sl-copy')) { slCopy(); return; }
+    if (el.hasAttribute('data-cmp-go')) { cmpToOrder(); return; }
+    if (el.hasAttribute('data-cmp-copy')) { cmpCopy(); return; }
+    if (el.hasAttribute('data-cmp-sl')) { cmpSlAll(); return; }
+    if (el.hasAttribute('data-cmp-add')) { var ca = state.cmp.slice(), cn = cmpNext(ca); if (cn) { ca.push(cn); cmpSet(ca, '#cmp-' + (ca.length - 1)); } return; }
+    if (el.dataset.cmpDel) { var cd = state.cmp.slice(), ci = +el.dataset.cmpDel; cd.splice(ci, 1); cmpSet(cd, '#cmp-' + Math.min(ci, cd.length - 1)); return; }
     if (el.hasAttribute('data-dr-clear')) { dr.ask = true; var db = document.getElementById('dr'); if (db) { db.innerHTML = drInner(); var y = db.querySelector('[data-dr-keep]'); if (y) y.focus(); } return; }
     if (el.hasAttribute('data-dr-keep')) { dr.ask = false; var dk = document.getElementById('dr'); if (dk) { dk.innerHTML = drInner(); var cb = dk.querySelector('[data-dr-clear]'); if (cb) cb.focus(); } return; }
     if (el.hasAttribute('data-dr-yes')) { drClearAll(); return; }
@@ -1570,7 +1710,12 @@
     if (el.hasAttribute('data-tb-copy')) { tbCopy(); return; }
     if (el.hasAttribute('data-find-clear')) { state.q = ''; var fq = document.getElementById('find-q'); fq.value = ''; findApply(); fq.focus(); return; }
     if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); render(true); return; }
-    if (el.dataset.filter) { state.filter = el.dataset.filter; render(true); return; }
+    if (el.dataset.filter) { // keep keyboard focus on the chip and announce how many sheets are shown
+      state.filter = el.dataset.filter; render(true);
+      var fc = app.querySelector('[data-filter="' + state.filter + '"]'); if (fc) fc.focus({ preventScroll: true });
+      var fo = document.getElementById('find-out'), fg = document.getElementById('find-grid');
+      if (fo && !state.q.trim() && fg) fo.textContent = t().sl.shownN.replace('{n}', fg.querySelectorAll('.nk-sheet:not([hidden])').length);
+      return; }
     if (el.dataset.relCat) { state.filter = el.dataset.relCat; state.q = ''; return; }
     if (el.hasAttribute('data-rel-go')) { relToOrder(); return; }
     if (el.hasAttribute('data-share-copy')) { shareCopy(); return; }
@@ -1594,6 +1739,7 @@
   app.addEventListener('change', function (ev) {
     if (ev.target.hasAttribute('data-fc-file')) { if (ev.target.files && ev.target.files[0]) fcRead(ev.target.files[0]); return; }
     if (ev.target.hasAttribute('data-fc-unit')) { state.fc.unit = ev.target.value; fcRefresh(); var fu = document.getElementById('fc-unit'); if (fu) fu.focus(); return; }
+    if (ev.target.dataset.cmpSlot) { var cs = state.cmp.slice(), ck = +ev.target.dataset.cmpSlot; cs[ck] = ev.target.value; cmpSet(cs, '#cmp-' + ck); return; }
     if (ev.target.hasAttribute('data-ps-scope')) { state.ps.scope = ev.target.value; psSync(); return; }
     if (ev.target.dataset.plQ) { var hadReset = plDone() > 0; state.pl[{ q1: 'have', q2: 'kind', q3: 'back' }[ev.target.dataset.plQ]] = ev.target.value; if (!hadReset) plRefresh('input[name="' + ev.target.name + '"]:checked'); else plUpdate(); return; }
     if (ev.target.hasAttribute('data-mp-need')) { var mh = mpTicked().length > 0; state.mp.needs[ev.target.value] = ev.target.checked; if (mh !== mpTicked().length > 0) mpRefresh('[data-mp-need][value="' + ev.target.value + '"]'); else { var mo = document.getElementById('mp-out'); if (mo) mo.innerHTML = mpOut(); } return; }
@@ -1646,11 +1792,11 @@
   // ---------- Keyboard shortcuts: "?" opens a list; ← / → previous/next sheet; H S W N O jump; L switches EN/SL ----------
   // Self-contained: remove this block (KBD_GO … kbdKey()), kbdBtn() in frame(), the data-kbd line in the click handler,
   // the kbdKey(ev) line in the keydown handler, keys: in both languages in content.js and the "Keyboard shortcuts" rules in page.css.
-  var KBD_GO = { h: 'home', s: 'services', w: 'work', n: 'news', o: 'order' };
+  var KBD_GO = { h: 'home', s: 'services', w: 'work', n: 'news', o: 'order', c: 'compare' };
   function kbdBtn() { return '<button type="button" class="kbd-open" data-kbd aria-haspopup="dialog">' + esc(t().keys.btn) + ' <kbd>?</kbd></button>'; }
   function kbdRows() {
     var x = t(), k = x.keys, r = [['?', k.help], ['/', k.find], ['← →', k.prevNext]];
-    Object.keys(KBD_GO).forEach(function (c) { var v = KBD_GO[c]; if (v === 'news' && !NEWS.length) return; r.push([c.toUpperCase(), v === 'order' ? x.cta : v === 'home' ? x.nav.home : x.nav[v]]); });
+    Object.keys(KBD_GO).forEach(function (c) { var v = KBD_GO[c]; if ((v === 'news' && !NEWS.length) || (v === 'compare' && PROJECTS.length < 2)) return; r.push([c.toUpperCase(), v === 'order' ? x.cta : v === 'home' ? x.nav.home : x.nav[v]]); });
     return r.concat([['L', k.lang], ['Esc', k.close]]);
   }
   function kbdClose() { var d = document.getElementById('kbd'); if (d && d.open) d.close(); }
@@ -1684,7 +1830,7 @@
     if (ev.shiftKey || !ev.key || ev.key.length !== 1) return false;
     var c = ev.key.toLowerCase();
     if (c === 'l') { lang = lang === 'en' ? 'sl' : 'en'; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); render(true); ev.preventDefault(); return true; }
-    var to = KBD_GO[c]; if (!to || (to === 'news' && !NEWS.length)) return false;
+    var to = KBD_GO[c]; if (!to || (to === 'news' && !NEWS.length) || (to === 'compare' && PROJECTS.length < 2)) return false;
     ev.preventDefault(); if (page() === to) window.scrollTo(0, 0); else location.hash = to; return true;
   }
   window.addEventListener('hashchange', kbdClose);
