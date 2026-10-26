@@ -947,6 +947,105 @@ function pvRefresh() {
   if (n && box) box.innerHTML = pvInner(n);
 }
 
+// ---------- Sheet preview (project editor, box under Photos): the project as visitors will see it ----------
+// Read-only: renders the project's own fields with the site's styles — the #work card between its neighbours, the
+// project page and where it shows up (home, sheet number) — in EN or SL, at desktop or phone width. Changes nothing.
+// Remove: this block, the spSection(p) call in editorView(), the data-sp-* line in the click handler, the spRefresh()
+// call in the input handler and the "Sheet preview" rules at the end of admin.css.
+const SP = { lang: 'en', w: 'desk' };
+const SP_T = { // same words as content.js
+  en: { cat: 'Category', year: 'Year', mat: 'Materials', model: '3D model', inter: 'Interactive preview', all: 'All work', cta: 'Start a project', ask: 'Ask about this project', photos: 'Photos' },
+  sl: { cat: 'Področje', year: 'Leto', mat: 'Materiali', model: '3D model', inter: 'Interaktivni predogled', all: 'Vsi projekti', cta: 'Začni projekt', ask: 'Vprašajte o projektu', photos: 'Fotografije' },
+};
+const SP_CATS = { CAD: { en: 'CAD', sl: 'CAD', d: 'cad' }, Mechanical: { en: 'Mechanical', sl: 'Strojno', d: 'mech' }, IoT: { en: 'IoT', sl: 'IoT', d: 'iot' }, Embedded: { en: 'Embedded', sl: 'Vgrajeno', d: 'embedded' } }; // = CATS in content.js
+function spPick(o, miss, label) {
+  const en = String(o?.en ?? ''), sl = String(o?.sl ?? '');
+  if (SP.lang !== 'sl' || sl.trim()) return { v: SP.lang === 'sl' ? sl : en, fb: false };
+  if (en.trim() && miss) miss.push(label);
+  return { v: en, fb: !!en.trim() };
+}
+function spWrap(h, fb, tag = 'span') { return fb ? `<${tag} class="pv-fb" title="English text — no Slovenian yet">${h}</${tag}>` : h; }
+function spCat(p) { const c = SP_CATS[p.category]; return c ? c[SP.lang] : p.category || ''; }
+function spArt(p) {
+  if (p.photos?.length) return `<img class="sheet-photo" src="${esc(previewUrl(p.photos[0]))}" alt="">`;
+  const d = p.drawing || SP_CATS[p.category]?.d || 'cad', D = window.NK_DRAWINGS || {};
+  return D[d] || D.cad || '';
+}
+function spCard(p, miss, isCur) { // = sheet() in app.js
+  const ti = spPick(p.title, isCur ? miss : null, 'title'), de = spPick(p.description, isCur ? miss : null, 'description');
+  const no = arSheet(S.projects, p) || '—';
+  return `<div class="nk-sheet sp-card${isCur ? ' is-cur' : ''}"${isCur ? ' aria-current="true"' : ''}><div class="nk-sheet__head"><span class="nk-label">${esc(no)}</span><span class="nk-label">${p.model ? '<b class="has3d">3D · </b>' : ''}${esc(spCat(p))} · ${esc(p.year)}</span></div>
+    <div class="nk-sheet__art">${spArt(p)}</div><div class="nk-sheet__foot"><h4 class="nk-sheet__title">${spWrap(esc(ti.v.trim() || 'Untitled'), ti.fb)}</h4><p class="nk-sheet__desc">${spWrap(esc(de.v), de.fb)}</p></div></div>`;
+}
+function spPage(p, miss) { // = projectView() in app.js (3D viewer and buttons shown as placeholders)
+  const tx = SP_T[SP.lang], no = arSheet(S.projects, p) || '—';
+  const ti = spPick(p.title), de = spPick(p.description), dx = spPick(p.details || {}, miss, 'details');
+  const rows = [[tx.cat, spCat(p)], [tx.year, String(p.year ?? '')]];
+  if (p.materials) rows.push([tx.mat, p.materials]);
+  if (p.model) rows.push([tx.model, tx.inter]);
+  const stage = p.model ? `<div class="nk-sheet__art project-art sp-3d"><span class="nk-label">${esc(tx.model)} · ${esc(tx.inter)}</span>${spArt({ ...p, photos: [] })}</div>` : `<div class="nk-sheet__art project-art">${spArt(p)}</div>`;
+  const det = dx.v.trim() ? spWrap(dx.v.split(/\n{2,}/).filter((x) => x.trim()).map((x) => `<p>${esc(x)}</p>`).join(''), dx.fb, 'div') : '';
+  const ph = p.photos || [];
+  return `<article class="pv-page sp-page">
+    <p class="nk-label">← ${esc(tx.all)}</p>
+    <div><p class="nk-label">${esc(no)} · ${esc(spCat(p))} · ${esc(p.year)}</p><h3 class="pv-title">${spWrap(esc(ti.v.trim() || 'Untitled'), ti.fb)}</h3></div>
+    ${de.v.trim() ? `<p class="lead">${spWrap(esc(de.v), de.fb)}</p>` : ''}
+    <div class="project-grid sp-grid2"><div class="project-stage">${stage}</div>
+      <div class="project-side"><dl class="nk-specs">${rows.map((r) => `<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
+        ${det ? `<div class="project-details">${det}</div>` : ''}
+        <div class="cta-row"><span class="nk-btn nk-btn--primary">${esc(tx.cta)}<span class="nk-btn__arrow" aria-hidden="true">→</span></span><span class="nk-btn">${esc(tx.ask)}</span></div></div></div>
+    ${ph.length > 1 ? `<div class="gallery"><p class="nk-label">${esc(tx.photos)} · ${ph.length}</p><div class="sp-photos">${ph.map((f) => `<img src="${esc(previewUrl(f))}" alt="">`).join('')}</div></div>` : ''}
+  </article>`;
+}
+function spInner(p) {
+  const miss = [], v = arVisible(S.projects), i = v.indexOf(p);
+  const row = i < 0 ? [p] : [v[i - 1], p, v[i + 1]].filter(Boolean);
+  const cards = row.map((q) => spCard(q, miss, q === p)).join('');
+  const page = spPage(p, miss);
+  const notes = [], where = [];
+  const no = arSheet(S.projects, p), was = arWas().get(p.slug);
+  if (p.hidden) notes.push('Hidden — this sheet is not on the site and gets no sheet number until you untick “Hidden”.');
+  else {
+    where.push(`<li><b>${esc(no)}</b> · position ${i + 1} of ${v.length} on #work${was && was !== no ? ` (now ${esc(was)} — changes when you publish)` : ''}</li>`);
+    const home = arHome(S.projects), h = home.indexOf(p);
+    where.push(`<li>${h === 0 ? 'Home page · large sheet at the top' : h > 0 ? `Home page · card ${h + 1} of ${home.length} in “Selected work”` : p.featured ? 'Featured, but not on the home page (only the first four featured sheets are shown)' : 'Not on the home page (tick “Featured” to put it there)'}</li>`);
+  }
+  if (miss.length) notes.push(`No Slovenian ${[...new Set(miss)].join(', ')} yet — the SL page shows the English text (dashed).`);
+  const d = String(spPick(p.description).v || '').trim();
+  if (!d) notes.push('No one-line description — the card and the page show only the title.');
+  else {
+    const others = v.filter((q) => q !== p).map((q) => String(spPick(q.description).v || '').trim().length).filter(Boolean);
+    const max = others.length ? Math.max(...others) : 0;
+    if (max && d.length > max) notes.push(`The ${SP.lang === 'sl' ? 'Slovenian' : 'English'} one-line description is ${d.length} characters — longer than on any other sheet (up to ${max}), so this card will be taller than its neighbours.`);
+  }
+  if (!p.photos?.length) notes.push('No photo yet — the card and the page show the line drawing.');
+  if (!p.hidden && (p._new || dirty())) notes.push('Not live yet — press Publish to put these changes on the site.');
+  return `${notes.length ? `<ul class="nk-field__hint sp-notes">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
+    ${where.length ? `<ul class="sp-where">${where.join('')}</ul>` : ''}
+    <p class="nk-label">#work · ${row.length > 1 ? 'between its neighbours' : 'card'}</p>
+    <div class="sp-cards sp-n${row.length}">${cards}</div>
+    <p class="nk-label">Project page · #p-${esc(p.slug)}</p>
+    ${page}`;
+}
+function spSection(p) {
+  return `<fieldset class="ad-sec pv sp"><legend class="nk-label">Preview on the site</legend>
+    <div class="li-bar">
+      <div class="li-lang" role="group" aria-label="Preview language">
+        <button type="button" data-sp-lang="en" aria-pressed="${SP.lang === 'en'}">EN</button><button type="button" data-sp-lang="sl" aria-pressed="${SP.lang === 'sl'}">SL</button>
+      </div>
+      <div class="li-lang" role="group" aria-label="Preview width">
+        <button type="button" data-sp-w="desk" aria-pressed="${SP.w === 'desk'}">Desktop</button><button type="button" data-sp-w="phone" aria-pressed="${SP.w === 'phone'}">Phone</button>
+      </div>
+      <span class="nk-field__hint">Updates while you type. Photos are shown as uploaded.</span>
+    </div>
+    <div class="pv-box sp-box${SP.w === 'phone' ? ' sp-phone' : ''}" id="sp-box">${spInner(p)}</div>
+  </fieldset>`;
+}
+function spRefresh() {
+  const p = !isNews() && !isTodo() && !isArr() && cur(), box = document.getElementById('sp-box');
+  if (p && box) box.innerHTML = spInner(p);
+}
+
 function newsEditorView() {
   const n = cur();
   if (!n) return `<div class="ad-empty"><p class="lead">No news post selected.</p><button class="nk-btn" data-act="new" type="button">+ New post</button></div>`;
@@ -1031,6 +1130,7 @@ function editorView() {
     </fieldset>
 
     ${photosSection(p)}
+    ${spSection(p)}
 
     <div class="ad-danger">
       ${S.confirmDelete ? `<span>Delete “${esc(p.title.en || p.slug)}” and its files?</span><button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-act="del-yes">Delete</button><button type="button" class="nk-btn nk-btn--sm" data-act="del-no">Keep</button>`
@@ -1153,6 +1253,7 @@ root.addEventListener('input', (e) => {
   const list = root.querySelector('.ad-list');
   if (list && (k === 't-en' || k === 'year')) list.outerHTML = listView();
   updatePublish();
+  spRefresh();
 });
 
 root.addEventListener('change', async (e) => {
@@ -1216,6 +1317,7 @@ root.addEventListener('click', (e) => {
   if (b.dataset.ar != null) { arAct(b); return; }
   if (b.dataset.liLang != null) { LI.lang = b.dataset.liLang; LI.msg = ''; render(); document.querySelector(`[data-li-lang="${LI.lang}"]`)?.focus(); return; }
   if (b.dataset.liCopy != null) { liCopy(); return; }
+  if (b.dataset.spLang != null || b.dataset.spW != null) { if (b.dataset.spLang) SP.lang = b.dataset.spLang; else SP.w = b.dataset.spW; render(); document.querySelector(b.dataset.spLang ? `[data-sp-lang="${SP.lang}"]` : `[data-sp-w="${SP.w}"]`)?.focus(); return; }
   if (b.dataset.pvLang != null) { PV.lang = b.dataset.pvLang; render(); document.querySelector(`[data-pv-lang="${PV.lang}"]`)?.focus(); return; }
   if (b.dataset.sel != null) { if (isNews()) S.selNews = b.dataset.sel; else S.sel = b.dataset.sel; S.confirmDelete = false; render(); return; }
   if (b.dataset.up != null || b.dataset.down != null) {

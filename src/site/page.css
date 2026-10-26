@@ -764,3 +764,13 @@ main:focus { outline: none; }
 @media print { .cmp-pick, .cmp-act, .cmp-open, .cmp-from { display: none !important; } }
 /* Shortlisted sheet cards (#work grid, home, similar projects; 2026-10-25) */
 .sl-mark { color: var(--redline); font-weight: 400; }
+
+/* Order flow (2026-10-26): finished steps are buttons back, e-mail typo hint */
+.nk-process li.of-done::before { background: var(--ink); }
+.of-step { display: grid; gap: var(--space-1); padding: 0; margin: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; min-width: 0; }
+.of-step .nk-process__t { text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.of-step:hover .nk-process__t { text-decoration-color: var(--redline); }
+.of-step:focus-visible { outline: 2px solid var(--redline); outline-offset: 3px; }
+.of-typo { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); font-size: 15px; }
+.of-typo:empty { display: none; }
+.of-typo b { font-family: var(--font-mono); font-weight: 600; overflow-wrap: anywhere; }

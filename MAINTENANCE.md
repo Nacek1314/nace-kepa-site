@@ -20,6 +20,60 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-26
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about,
+#compare, #order (all 4 steps on the local build, nothing sent), /admin/ sign-in and (with a mocked GitHub API) the project
+editor — 1280 + 390 px, light + dark, EN (`/`) + SL (`/sl/`), plus a scan for anything wider than the page, broken images
+and EN text on the SL page (and vice versa). Last Actions run (4eb8ee7) succeeded; nacekepa.work, /sl/, /admin/ and
+/news.xml return 200 (checked via the laptop). No JS errors, no CSP violations, no 404s (only Google Fonts, blocked in the
+cloud), no horizontal scroll, no missing translations.
+
+**Bugs fixed:** none found.
+
+**Improvement — order form flow package (`#order`):**
+- **Enter = Next:** pressing Enter in a one-line field (or on a service checkbox) goes to the next step, like a normal
+  form; Enter in the text areas still makes a new line (`ofKey()` in the keydown handler).
+- **Finished steps are buttons:** in the 01–04 step bar, the steps you already did ("01 / 04 Services", …) are underlined
+  buttons that jump straight back to that step with everything kept ("Back to step 1: Services" / "Nazaj na korak 1:
+  Storitve" for screen readers); a finished step has a filled dot. Not offered after the brief has been sent.
+- **Errors clear while typing:** a field marked as missing ("Describe the project…", name, e-mail) goes back to normal as
+  soon as it is filled in correctly, instead of staying red until "Next".
+- **E-mail typo hint:** "Did you mean ana@gmail.com? [Use it]" / "Ste mislili …? [Uporabi]" under the e-mail field for
+  common misspelt domains (gmial.com, hotmial.com, outlok.com, siol.nt, …, and .con/.cmo endings), so replies don't get
+  lost. Nothing is changed unless the visitor presses "Use it".
+- **Step in the tab title:** "Start a project · 2/4 Project · Nace Kepa" / "Začni projekt · 2/4 Projekt".
+*To remove:* the "Order flow" block in `app.js` (`OF_TYPO` … `ofKey()`), the `ofSteps(x, st)` call in `orderView()` (put
+back the old `x.steps.map(…)`), `ofTypoBox()` in step 3, `ofInput(…)` in the input handler, the `data-of-*` lines in the
+click handler, `ofKey(ev)` in the keydown handler, the step part of the `order` line in `pageTitle()`, `of:` in both
+languages in `content.js` and the "Order flow" rules at the end of `page.css`.
+
+**Innovation — Admin "Preview on the site" for projects (`/admin/` → Projects → open a project → box under Photos):**
+the project as visitors will see it, updated while you type, in EN or SL and at Desktop or Phone width:
+- where it appears: its sheet number and position on #work (and the old number if Publish will change it), and whether
+  it is the large home-page sheet, one of the "Selected work" cards, featured-but-not-shown, or not on the home page;
+- the #work card **between its neighbours** (previous and next sheet, faded), so you see how it reads in the grid;
+- the project page: sheet label, title, one-line description, cover photo or line drawing (with a "3D model ·
+  Interactive preview" tag when a model is attached), the Category/Year/Materials/3D model table, Details, the two buttons
+  and the photo strip;
+- notes: missing Slovenian text (shown dashed, as on the SL page), no description, no photo (line drawing shown), hidden
+  (no sheet number), "Not live yet — press Publish", and when the one-line description is longer than on any other
+  sheet (so the card would be taller than its neighbours) — the limit is taken from the other sheets, not invented.
+Read-only: it changes nothing in `projects.json`. Tested with a mocked GitHub API: EN/SL, Desktop/Phone, typing in
+title/description (EN + SL), clearing the SL title (fallback note + dashed), a very long description, hidden, a project
+with a 3D model, materials and details, keyboard (buttons keep focus), light + dark, 1280 + 390 px, no horizontal scroll,
+no errors.
+*To remove:* the "Sheet preview" block in `admin.js` (`SP` … `spRefresh()`), the `spSection(p)` call in `editorView()`, the
+`data-sp-*` line in the click handler, the `spRefresh()` call in the input handler and the "Sheet preview" rules at the
+end of `admin.css`.
+*Next step (day 2):* a "Similar projects" row and the home-page hero in the preview; the same neighbours view for news.
+
+**Ideas for next time** (added to the list below)
+- Public: "Back to step" links inside the step-4 brief (click "Material: …" → jump to that field).
+- Admin: preview of the static no-JavaScript snapshot / search-engine text for a project (title + description as Google
+  would show them).
+- Public: order step 3 — "How should I reply?" (e-mail / phone / LinkedIn) choice carried into the brief.
+
 ## 2026-10-25
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-engineered-backpack-buckle, #news, #n-bambu-lab-x2d, #skills,
@@ -894,7 +948,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form). 2026-10-21 file check on #services (client STL / 3MF / OBJ read in the browser → size, volume, closed mesh, X2D fit, three views → order form). 2026-10-23 material picker on #services (ticked needs → ranked materials from #skills → order form Material). 2026-10-24 admin "Arrange" tab (drag-and-drop / keyboard project order with sheet numbers and home-page preview). 2026-10-25 compare sheets (`#compare?s=…`, up to three sheets side by side, Δ on differing rows → order form).
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form). 2026-10-21 file check on #services (client STL / 3MF / OBJ read in the browser → size, volume, closed mesh, X2D fit, three views → order form). 2026-10-23 material picker on #services (ticked needs → ranked materials from #skills → order form Material). 2026-10-24 admin "Arrange" tab (drag-and-drop / keyboard project order with sheet numbers and home-page preview). 2026-10-25 compare sheets (`#compare?s=…`, up to three sheets side by side, Δ on differing rows → order form). 2026-10-26 admin project "Preview on the site" (card between its neighbours, project page, home/sheet-number placement, EN/SL, desktop/phone).
 
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
 - Admin: "SL text missing" badge on each project/news row in the list (quick view of what still needs translating).
@@ -943,6 +997,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: "Compare" checkboxes directly on #work cards (pick 2–3 in the grid → open the comparison).
 - Admin: "Compare preview" — check how a project reads next to its most similar sheet before publishing.
 - Public: per-category landing text on #work (one sentence per discipline, EN + SL, from Nace).
+- Public: "Back to step" links inside the step-4 brief (click "Material: …" → jump to that field).
+- Admin: search-engine text preview for a project (title + description as Google would show them).
+- Public: order step 3 — "How should I reply?" (e-mail / phone / LinkedIn) choice carried into the brief.
 
 ## 2026-10-03 (second run)
 

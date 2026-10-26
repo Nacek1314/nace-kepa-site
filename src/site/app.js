@@ -1472,7 +1472,7 @@
         field('name', x.fName, '<input class="nk-input" id="f-name" data-f="name" autocomplete="name" value="' + esc(o.name) + '">', e.name ? x.errName : null, e.name) +
         field('email', x.fEmail, '<input class="nk-input" id="f-email" data-f="email" type="email" autocomplete="email" value="' + esc(o.email) + '">', e.email ? x.errEmail : null, e.email) +
         '<div class="hp" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" data-f="website" tabindex="-1" autocomplete="off"></div>' +
-        field('note', x.fNote, '<textarea class="nk-input" id="f-note" data-f="note">' + esc(o.note) + '</textarea>', x.fNoteH, false, true) + '</div>';
+        ofTypoBox() + field('note', x.fNote, '<textarea class="nk-input" id="f-note" data-f="note">' + esc(o.note) + '</textarea>', x.fNoteH, false, true) + '</div>';
     } else {
       var brief = briefText();
       if (state.send === 'sent') {
@@ -1487,7 +1487,7 @@
         '<a class="nk-btn nk-btn--sm" href="' + LINKEDIN + '" target="_blank" rel="noopener">' + esc(x.linkedin) + '<span class="nk-btn__arrow" aria-hidden="true">↗</span></a></div></div>';
       }
     }
-    var steps = '<ol class="nk-process wiz" style="--steps:4" aria-label="' + esc(x.a11y.steps) + '">' + x.steps.map(function (s, i) { return '<li' + (i === st ? ' class="is-active" aria-current="step"' : '') + '><span class="nk-process__n">' + String(i + 1).padStart(2, '0') + ' / 04</span><span class="nk-process__t">' + esc(s) + '</span></li>'; }).join('') + '</ol>';
+    var steps = '<ol class="nk-process wiz" style="--steps:4" aria-label="' + esc(x.a11y.steps) + '">' + ofSteps(x, st) + '</ol>';
     var nav = '<div class="wiz-nav">' + (st > 0 ? '<button type="button" class="nk-btn" id="back">' + esc(st === 3 ? x.edit : x.back) + '</button>' : '<span></span>') +
       (st < 3 ? '<button type="button" class="nk-btn nk-btn--primary nk-btn--lg" id="next">' + esc(st === 2 ? x.finish : x.next) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' : '') + '</div>';
     return '<section class="block first' + (st === 3 ? ' bp-page' : '') + '">' + head(x.orderLabel, x.orderTitle, x.orderLead, true) + steps + '<form class="wiz-body" id="wiz" novalidate>' + (st < 3 ? drBar() : '') + body + nav + '</form>' + (st === 3 ? bpSheet() : '') + '</section>';
@@ -1591,6 +1591,54 @@
     var fail = function () { msg.textContent = x.mailFail; var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); };
     try { navigator.clipboard.writeText(CONTACT_EMAIL).then(function () { msg.textContent = x.tbCopied; }, fail); } catch (e) { fail(); }
   }
+  // ---------- Order flow (2026-10-26): Enter = Next, finished steps are buttons, errors clear while typing, e-mail typo hint ----------
+  // Remove: this block, the ofSteps() call in orderView(), the ofTypoBox() call in step 3, the ofInput()/data-of-* lines in
+  // the input/click handlers, the ofKey() line in the keydown handler, the step part in pageTitle(), of: in content.js and
+  // the "Order flow" rules in page.css.
+  var OF_TYPO = { 'gmial.com': 'gmail.com', 'gmal.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gamil.com': 'gmail.com', 'gnail.com': 'gmail.com', 'gmaill.com': 'gmail.com', 'gmail.co': 'gmail.com', 'gmail.con': 'gmail.com', 'gmail.cmo': 'gmail.com',
+    'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com', 'hotmal.com': 'hotmail.com', 'hotmail.con': 'hotmail.com', 'outlok.com': 'outlook.com', 'outloo.com': 'outlook.com', 'outlook.con': 'outlook.com',
+    'yahooo.com': 'yahoo.com', 'yaho.com': 'yahoo.com', 'yahoo.con': 'yahoo.com', 'iclod.com': 'icloud.com', 'icloud.con': 'icloud.com', 'siol.nt': 'siol.net', 'siol.ne': 'siol.net', 'siol.met': 'siol.net' };
+  function ofTypo(v) {
+    var m = /^([^@\s]+)@([^@\s]+)$/.exec(String(v || '').trim()); if (!m) return '';
+    var d = m[2].toLowerCase(), fix = OF_TYPO[d] || (/\.(con|cmo|ocm)$/.test(d) ? d.replace(/\.(con|cmo|ocm)$/, '.com') : '');
+    return fix && fix !== d ? m[1] + '@' + fix : '';
+  }
+  function ofTypoInner() {
+    var sug = ofTypo(state.order.email); if (!sug) return '';
+    return '<span>' + esc(t().of.typo).replace('{e}', '<b>' + esc(sug) + '</b>') + '</span> <button type="button" class="nk-btn nk-btn--sm" data-of-fix>' + esc(t().of.fix) + '</button>';
+  }
+  function ofTypoBox() { return '<p class="of-typo full" id="of-typo" aria-live="polite">' + ofTypoInner() + '</p>'; }
+  function ofValid(k, v) { v = String(v || ''); return k === 'what' ? v.trim().length >= 8 : k === 'name' ? !!v.trim() : k === 'email' ? /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) : true; }
+  function ofInput(el, k) { // a field marked as missing turns back to normal as soon as it is filled in correctly
+    if (k === 'email') { var tb = document.getElementById('of-typo'); if (tb) tb.innerHTML = ofTypoInner(); }
+    if (!state.errors[k] || !ofValid(k, el.value)) return;
+    delete state.errors[k];
+    var f = el.closest('.nk-field'); if (f) f.classList.remove('nk-field--error');
+    el.removeAttribute('aria-invalid');
+    var h = document.getElementById('f-' + k + '-h');
+    if (k === 'what' && h) h.textContent = t().fWhatH; else if (h) { h.remove(); el.removeAttribute('aria-describedby'); }
+  }
+  function ofFix() {
+    var sug = ofTypo(state.order.email), el = document.getElementById('f-email'); if (!sug || !el) return;
+    el.value = state.order.email = sug; drSave(); ofInput(el, 'email'); el.focus();
+  }
+  function ofSteps(x, st) { // finished steps become buttons back to that step (not after the brief is sent)
+    var open = state.send !== 'sent' && state.send !== 'sending';
+    return x.steps.map(function (s, i) {
+      var inner = '<span class="nk-process__n">' + String(i + 1).padStart(2, '0') + ' / 04</span><span class="nk-process__t">' + esc(s) + '</span>';
+      if (i < st && open) return '<li class="of-done"><button type="button" class="of-step" data-of-step="' + i + '" aria-label="' + esc(x.of.back.replace('{n}', i + 1).replace('{s}', s)) + '">' + inner + '</button></li>';
+      return '<li' + (i === st ? ' class="is-active" aria-current="step"' : i < st ? ' class="of-done"' : '') + '>' + inner + '</li>';
+    }).join('');
+  }
+  function ofGo(i) { readForm(); state.errors = {}; state.send = 'idle'; state.step = i; render(true); var w = document.getElementById('wiz'); if (w) w.scrollIntoView({ block: 'start' }); wizFocus(true); }
+  function ofKey(ev) { // Enter in a one-line field of the order form = Next
+    var tg = ev.target;
+    if (ev.key !== 'Enter' || ev.isComposing || ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.altKey || page() !== 'order') return false;
+    if (!tg || tg.tagName !== 'INPUT' || tg.id === 'f-website' || !tg.closest('#wiz')) return false;
+    var nx = document.getElementById('next'); if (!nx) return false;
+    ev.preventDefault(); nx.click(); return true;
+  }
+
   // Hints and errors are tied to their control (aria-describedby / aria-invalid) so screen readers read them with the field.
   var REQUIRED = { what: 1, name: 1, email: 1 };
   function field(k, label, ctl, hint, err, full) {
@@ -1635,7 +1683,7 @@
     var x = t(), s = '';
     if (p === 'project') { var pr = bySlug(currentSlug()); s = pr ? P(pr, 'title') : ''; }
     else if (p === 'post') { var n = newsBySlug(currentSlug()); s = n ? P(n, 'title') : ''; }
-    else if (p === 'order') s = x.cta;
+    else if (p === 'order') s = x.cta + ' · ' + (state.step + 1) + '/4 ' + x.steps[state.step];
     else if (p !== 'home') s = x.nav[p] || '';
     return s ? s + ' · Nace Kepa' : 'Nace Kepa · ' + (lang === 'sl' ? 'Inženirski studio' : 'Engineering Studio');
   }
@@ -1727,6 +1775,8 @@
     if (el.hasAttribute('data-kbd')) { kbdOpen(); return; }
     if (el.hasAttribute('data-share-more')) { var sb = el.closest('.share'); try { navigator.share({ title: sb.dataset.shareTitle, url: document.getElementById('share-url').value }).catch(function () {}); } catch (e) {} return; }
     if (el.dataset.lb != null) { var pr = page() === 'post' ? newsBySlug(currentSlug()) : bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
+    if (el.dataset.ofStep) { ev.preventDefault(); ofGo(+el.dataset.ofStep); return; }
+    if (el.hasAttribute('data-of-fix')) { ofFix(); return; }
     if (el.id === 'next') { ev.preventDefault(); readForm(); var ok = validate(); if (ok) state.step++; if (ok && state.step === 3) submitOrder(); render(true); var w = document.getElementById('wiz'); if (w) w.scrollIntoView({ block: 'start' }); wizFocus(ok); return; }
     if (el.id === 'back') { ev.preventDefault(); readForm(); state.errors = {}; state.send = 'idle'; state.step = state.step === 3 ? 0 : state.step - 1; render(true); wizFocus(true); return; }
     if (el.id === 'copy') {
@@ -1735,7 +1785,7 @@
       try { navigator.clipboard.writeText(txt).then(function () { msg.textContent = t().copied; }, fail); } catch (e) { fail(); }
     }
   });
-  app.addEventListener('input', function (ev) { var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var pf = ev.target.dataset && ev.target.dataset.plF; if (pf && pf !== 'mat') { state.pl[pf] = ev.target.value; plUpdate(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
+  app.addEventListener('input', function (ev) { var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); ofInput(ev.target, fk); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var pf = ev.target.dataset && ev.target.dataset.plF; if (pf && pf !== 'mat') { state.pl[pf] = ev.target.value; plUpdate(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
     if (ev.target.hasAttribute('data-fc-file')) { if (ev.target.files && ev.target.files[0]) fcRead(ev.target.files[0]); return; }
     if (ev.target.hasAttribute('data-fc-unit')) { state.fc.unit = ev.target.value; fcRefresh(); var fu = document.getElementById('fc-unit'); if (fu) fu.focus(); return; }
@@ -1838,6 +1888,7 @@
   document.addEventListener('keydown', function (ev) {
     var tg = ev.target, typing = tg && (/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName) || tg.isContentEditable);
     if (ev.key === 'Escape' && tg && tg.id === 'find-q' && state.q) { state.q = ''; tg.value = ''; findApply(); ev.preventDefault(); return; }
+    if (ofKey(ev)) return;
     if (kbdKey(ev, typing)) return;
     if (ev.key !== '/' || typing || lb || ev.ctrlKey || ev.metaKey || ev.altKey) return;
     ev.preventDefault();

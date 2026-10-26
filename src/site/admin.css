@@ -152,3 +152,31 @@ div.pv-fb { display: grid; gap: var(--space-4); }
   .ar-pos { display: none; }
 }
 @media print { .ar-handle, .ar-ctl { display: none; } }
+
+/* Sheet preview (see spSection() in admin.js) */
+.sp .li-bar { gap: var(--space-2) var(--space-3); }
+.sp-box { min-width: 0; }
+.sp-box.sp-phone { max-width: 390px; width: 100%; justify-self: center; }
+.sp-notes { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.sp-where { margin: 0; padding: var(--space-2) var(--space-3); list-style: none; display: grid; gap: 2px; font-size: 14px; line-height: 20px; border: 1px solid var(--line-strong); background: var(--paper-raised); }
+.sp-where b { font-family: var(--font-mono); font-weight: 500; }
+.sp-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); align-items: stretch; }
+.sp-cards.sp-n1 { grid-template-columns: minmax(0, 320px); }
+.sp-cards.sp-n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sp-card { opacity: .7; pointer-events: none; }
+.sp-card.is-cur { opacity: 1; outline: 2px solid var(--redline); outline-offset: 3px; }
+.sp-card .nk-sheet__title { font-size: 17px; }
+.sp-page .project-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--space-4); }
+.sp-page .project-side { padding: var(--space-4); gap: var(--space-4); }
+.sp-page .lead { margin: 0; }
+.sp-page .project-details { display: grid; gap: var(--space-3); }
+.sp-page .project-details p { margin: 0; }
+.sp-page .cta-row { pointer-events: none; }
+.sp-3d { position: relative; }
+.sp-3d .nk-label { position: absolute; left: var(--space-2); top: var(--space-2); background: var(--paper-raised); padding: 2px 6px; border: 1px solid var(--line-strong); }
+.sp-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: var(--space-2); }
+.sp-photos img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; border: 1px solid var(--line-strong); }
+.sp-phone .sp-cards, .sp-phone .sp-cards.sp-n2 { grid-template-columns: minmax(0, 1fr); }
+.sp-phone .sp-page .project-grid { grid-template-columns: minmax(0, 1fr); }
+.sp-phone .pv-title { font-size: 32px; }
+@media (max-width: 860px) { .sp-cards, .sp-cards.sp-n2 { grid-template-columns: minmax(0, 1fr); } .sp-card:not(.is-cur) { display: none; } .sp-page .project-grid { grid-template-columns: minmax(0, 1fr); } }
