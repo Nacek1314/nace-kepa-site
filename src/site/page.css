@@ -774,3 +774,60 @@ main:focus { outline: none; }
 .of-typo { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); font-size: 15px; }
 .of-typo:empty { display: none; }
 .of-typo b { font-family: var(--font-mono); font-weight: 600; overflow-wrap: anywhere; }
+
+/* ---------- Drawing register (#work?view=list; 2026-10-27). Remove with rgTable() in app.js. ---------- */
+.rg-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-4); }
+.rg-bar .nk-label { margin-right: var(--space-2); }
+.rg-ico { margin-right: 6px; font-family: var(--font-mono); }
+.rg { margin: 0 0 var(--space-8); }
+.rg-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2) var(--space-4); }
+.rg-head .sub, .rg-head .nk-label { margin: 0; }
+.rg-note { margin: var(--space-2) 0 var(--space-4); color: var(--ink-muted); font-size: 15px; line-height: 22px; }
+.rg-wrap { background: var(--paper-raised); border: 1px solid var(--line-strong); }
+.rg-tab { width: 100%; border-collapse: collapse; }
+.rg-tab th, .rg-tab td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 15px; line-height: 22px; font-weight: 400; }
+.rg-tab thead th { padding-top: var(--space-1); padding-bottom: var(--space-1); border-bottom: 1px solid var(--line-strong); white-space: nowrap; vertical-align: middle; }
+.rg-tab tbody tr:last-child > * { border-bottom: 0; }
+.rg-tab tr > * + * { border-left: 1px dashed var(--line); }
+.rg-tab tr[hidden] { display: none; }
+.rg-tab tbody tr:hover > * { background: var(--paper); }
+.rg-tab tr.is-sl > :first-child { box-shadow: inset 3px 0 0 var(--redline); }
+.rg-sort { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0; border: 0; background: none; color: var(--ink-muted); font: 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+.rg-sort:hover, th[aria-sort] .rg-sort { color: var(--ink); }
+th[aria-sort] .rg-arr { color: var(--redline); }
+.rg-sort:focus-visible, .rg-star:focus-visible, .rg-t:focus-visible { outline: 2px solid var(--redline); outline-offset: 3px; }
+.rg-c--no { width: 112px; white-space: nowrap; }
+.rg-c--cat { width: 150px; }
+.rg-c--year, .rg-c--m3d, .rg-c--photos { width: 84px; }
+.rg-tab .rg-c--sl { width: 60px; text-align: center; vertical-align: middle; }
+.rg-t { display: block; font: 700 16px/22px var(--font-sans); color: var(--ink); text-decoration: none; }
+.rg-t:hover { color: var(--redline); text-decoration: underline; text-underline-offset: 3px; }
+.rg-d { display: block; margin-top: 2px; font-size: 14px; line-height: 20px; color: var(--ink-muted); }
+.rg-none { color: var(--ink-muted); font-family: var(--font-mono); }
+.rg-star { width: 36px; height: 36px; padding: 0; border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink-muted); font-size: 18px; line-height: 1; cursor: pointer; }
+.rg-star:hover { color: var(--redline); }
+.rg-star[aria-pressed="true"] { color: var(--redline); border-color: var(--redline); }
+.rg-empty { margin: var(--space-4) 0 0; color: var(--ink-muted); }
+.rg-empty[hidden] { display: none; }
+.rg-sum { margin: var(--space-3) 0 0; }
+.rg-sum:empty { display: none; }
+.rg-act { margin: var(--space-4) 0 0; }
+@media (max-width: 720px) {
+  .rg-tab, .rg-tab thead, .rg-tab tbody { display: block; }
+  .rg-tab thead tr { display: flex; flex-wrap: wrap; gap: 0 var(--space-4); padding: var(--space-1) var(--space-3); border-bottom: 1px solid var(--line-strong); }
+  .rg-tab thead th { display: block; width: auto; padding: 0; border: 0; }
+  .rg-tab thead .rg-c--sl { display: none; }
+  .rg-tab tbody tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--space-3); position: relative; padding: var(--space-3) 60px var(--space-3) var(--space-3); border-bottom: 1px solid var(--line); }
+  .rg-tab tbody tr:last-child { border-bottom: 0; }
+  .rg-tab tbody tr[hidden] { display: none; }
+  .rg-tab tbody tr > * { display: block; width: auto; padding: 0; border: 0; font-size: 13px; line-height: 20px; color: var(--ink-muted); }
+  .rg-tab tbody .rg-c--name { order: 9; flex: 1 1 100%; color: var(--ink); }
+  .rg-tab tbody .rg-c--m3d::before, .rg-tab tbody .rg-c--photos::before { content: attr(data-l) " "; font: 10px/20px var(--font-mono); text-transform: uppercase; }
+  .rg-tab tbody .rg-c--sl { position: absolute; top: var(--space-3); right: var(--space-3); width: auto; }
+  .rg-tab tr.is-sl > :first-child { box-shadow: none; }
+  .rg-tab tbody tr.is-sl { box-shadow: inset 3px 0 0 var(--redline); }
+}
+@media print { .rg-bar, .rg-act, .rg-star, .rg-note { display: none !important; } }
+
+/* Phone tap targets (2026-10-27): the title-block links (e-mail, LinkedIn, Start a project) get a 24 px tall touch area. */
+@media (max-width: 720px) { .foot .nk-tb a { display: inline-block; padding: 4px 0 2px; } }

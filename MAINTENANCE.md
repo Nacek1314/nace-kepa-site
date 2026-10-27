@@ -20,6 +20,57 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-27
+
+**Checked:** build, home, #services, #work, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about,
+#compare, #order (all 4 steps on the local build, nothing sent), /admin/ sign-in — 1280 + 390 px, light + dark, EN (`/`) +
+SL (`/sl/`), plus an axe-core audit (WCAG 2.2 AA + best practice, test-only, not added to the repo), a phone tap-target
+and keyboard-focus scan, a scan for anything wider than the page, broken images and EN text on the SL page (and vice
+versa). Last Actions run (52db0c2) succeeded; nacekepa.work, /sl/, /admin/ and /news.xml return 200 (checked via the
+laptop). No JS errors, no CSP violations, no 404s (only Google Fonts, blocked in the cloud), no horizontal scroll, no
+missing translations.
+
+**Bugs fixed:**
+- Project sheets: the side panel (Category/Year, buttons, share, print) was an `<aside>` landmark nested inside `<main>`
+  (axe "landmark-complementary-is-top-level") — screen readers announced it as a separate page region. Now a plain `div`.
+
+**Improvement — phone & assistive-tech package:**
+- Phone keyboards: order form Quantity opens the number pad (`inputmode="numeric"`); Quantity, Name and E-mail show a
+  "Next" key (`enterkeyhint`, matches Enter = Next from 2026-10-26); the e-mail field no longer auto-capitalises or
+  spell-checks; the #work search shows a "Search" key.
+- Links that open a new tab (LinkedIn in the footer title block and on the order "sent" screen) now say so to screen
+  readers: "(opens in a new tab)" / "(odpre se v novem zavihku)" (`newTab` in `content.js`); the ↗ is hidden from them.
+- Footer title-block links (e-mail, LinkedIn, Start a project) get a 24 px tall touch area on phones (WCAG 2.5.8);
+  they were 16 px. No visual change on desktop.
+- The project side-panel landmark fix above.
+*To remove:* the attributes on `f-qty` / `f-name` / `f-email` / `find-q`, the two `newTab` spans in `app.js`, `newTab` in
+`content.js` and the "Phone tap targets" rule at the end of `page.css`.
+
+**Innovation — Drawing register / "Seznam risb" (`#work` → "View: Sheets | Register", link `#work?view=list`):**
+every project as one line of an engineering drawing register: sheet number, title + one-line description, discipline,
+year and a ☆ button to add/remove it from the shortlist. Click (or Enter on) a column heading to sort — number, title
+(A–Z in the visitor's language, Slovenian order on /sl/), discipline, year (newest first) — again to reverse; the sorted
+column has a red arrow and `aria-sort`. It follows the search box and the category chips ("5 of 29 sheets", "Shown: IoT 5 ·
+2025"), the view is kept in the address (so "Link to these results" and Back open the register again), and coming back
+from a sheet focuses its row. "Copy register" copies the shown lines as text ("NK-25-12 · Wi-Fi fridge thermometer · IoT
+· 2025 — link") for an e-mail. On phones each row becomes a compact two-line entry. A "3D" and a "Photos" column appear
+on their own once a published sheet has a 3D model / photos — today none does, so they are not shown. Uses only the
+published sheets; nothing is stored or sent (the ☆ uses the existing shortlist).
+Tested: EN/SL, light/dark, 1280 + 390 px, keyboard (view switch, sort buttons, ☆ keep focus and announce the change),
+filter + search + empty result, shortlist on/off, copy, open a sheet and Back, reload, switch back to Sheets, axe clean,
+no CSP violations, no horizontal scroll.
+*To remove:* the "Drawing register" block in `app.js` (`state.rg` … `rgCopy()`), `rgBar()` + `rgTable()` and the `hidden`
+on `#find-grid` in `views.work`, `rgApply()` at the end of `findApply()`, the `view` lines in `findQuery()` / `findRead()`,
+the four `data-rg-*` lines in the click handler, the `rgOn() ? '#rg'` part of the back-to-card line in `render()`, `rg:` in
+both languages in `content.js` and the "Drawing register" rules near the end of `page.css`.
+*Next step (optional day 2):* "Print register" (one A4 table page, reusing the portfolio-set print code) and a "Compare
+selected" checkbox column that opens `#compare?s=…`.
+
+**Ideas for next time** (added to the list below)
+- Public: keyboard shortcut `v` to switch #work between Sheets and Register (add to the `?` list).
+- Admin: "Register" check in the To do tab — sheets whose one-line description is much longer than the rest.
+- Public: news register (date, title, summary) on #news once there are more posts.
+
 ## 2026-10-26
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about,
@@ -948,7 +999,7 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 2026-10-05 similar projects row on project pages; 2026-10-06 admin "To do" checklist tab; 2026-10-07 admin
 "LinkedIn post" copy box on news posts; 2026-10-07 (2nd) "Share this sheet" on project sheets and news posts;
 2026-10-08 Atom news feed (`/news.xml`, `/news-sl.xml`) + "Follow the news" box on #news; 2026-10-09 "Print this sheet"
-(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form). 2026-10-21 file check on #services (client STL / 3MF / OBJ read in the browser → size, volume, closed mesh, X2D fit, three views → order form). 2026-10-23 material picker on #services (ticked needs → ranked materials from #skills → order form Material). 2026-10-24 admin "Arrange" tab (drag-and-drop / keyboard project order with sheet numbers and home-page preview). 2026-10-25 compare sheets (`#compare?s=…`, up to three sheets side by side, Δ on differing rows → order form). 2026-10-26 admin project "Preview on the site" (card between its neighbours, project page, home/sheet-number placement, EN/SL, desktop/phone).
+(A4 print layout) on project sheets and news posts; 2026-10-10 deadline check in the order form (published turnarounds); 2026-10-11 admin "Preview on the site" for news posts. 2026-10-13 search links on #work (`#work?q=…&cat=…`) with "Copy link"; 2026-10-13 (2nd) keyboard shortcuts with a `?` list. 2026-10-14 printable A4 brief on order step 4. 2026-10-14 (2nd) "What to prepare" checklist on #services. 2026-10-17 "What do you already have?" checklist in order step 2, carried into the brief. 2026-10-17 (2nd) visitor shortlist on project sheets + #work, handed to the order form. 2026-10-19 saved order draft (restored on the next visit). 2026-10-19 (2nd) printable A4 portfolio set on #work (cover, index, one page per sheet). 2026-10-20 project planner on #services (three questions → services, turnaround, fit, deadline → order form). 2026-10-21 file check on #services (client STL / 3MF / OBJ read in the browser → size, volume, closed mesh, X2D fit, three views → order form). 2026-10-23 material picker on #services (ticked needs → ranked materials from #skills → order form Material). 2026-10-24 admin "Arrange" tab (drag-and-drop / keyboard project order with sheet numbers and home-page preview). 2026-10-25 compare sheets (`#compare?s=…`, up to three sheets side by side, Δ on differing rows → order form). 2026-10-26 admin project "Preview on the site" (card between its neighbours, project page, home/sheet-number placement, EN/SL, desktop/phone). 2026-10-27 drawing register on #work (`#work?view=list`: one sortable line per sheet, follows search/filter, ☆ shortlist, copy as text).
 
 - A "search" link in the 404 page (search links on #work exist since 2026-10-13).
 - Admin: "SL text missing" badge on each project/news row in the list (quick view of what still needs translating).
@@ -1000,6 +1051,9 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: "Back to step" links inside the step-4 brief (click "Material: …" → jump to that field).
 - Admin: search-engine text preview for a project (title + description as Google would show them).
 - Public: order step 3 — "How should I reply?" (e-mail / phone / LinkedIn) choice carried into the brief.
+- Public: keyboard shortcut `v` to switch #work between Sheets and Register (add to the `?` list).
+- Admin: "Register" check in the To do tab — sheets whose one-line description is much longer than the rest.
+- Public: news register (date, title, summary) on #news once there are more posts.
 
 ## 2026-10-03 (second run)
 

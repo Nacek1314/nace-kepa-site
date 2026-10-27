@@ -124,8 +124,8 @@
         '<div class="filters" role="group" aria-label="' + esc(x.aria.filter) + '">' + cats.map(function (c) {
           var n = c === 'all' ? PROJECTS.length : PROJECTS.filter(function (p) { return c === '3d' ? !!p.model : p.category === c; }).length;
           return '<button type="button" class="chip" data-filter="' + c + '" aria-pressed="' + (state.filter === c) + '">' + esc(c === 'all' ? x.all : c === '3d' ? x.with3d : CATS[c][lang]) + ' <span>' + n + '</span></button>';
-        }).join('') + '</div>' + cmpOpen() +
-        '<div class="grid-4 sheets" id="find-grid">' + list.map(sheetH2).join('') + '</div>' + findResults() + psBox() + '</section>' + ctaBand();
+        }).join('') + '</div>' + rgBar() + cmpOpen() + rgTable() +
+        '<div class="grid-4 sheets" id="find-grid"' + (rgOn() ? ' hidden' : '') + '>' + list.map(sheetH2).join('') + '</div>' + findResults() + psBox() + '</section>' + ctaBand();
     },
     skills: function () {
       var x = t();
@@ -216,9 +216,9 @@
     return '<section class="block first project">' +
       '<a class="back" href="#work">← ' + esc(x.allWork) + '</a>' +
       head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
-      '<div class="project-grid"><div class="project-stage">' + stage + '</div><aside class="project-side">' + specs(rows) +
+      '<div class="project-grid"><div class="project-stage">' + stage + '</div><div class="project-side">' + specs(rows) +
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
-      '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', null, true) + askLink(p) + '</div>' + slToggle(p) + cmpFrom(p) + shareBox('p', p) + printBox('p', p) + '</aside></div>' +
+      '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', null, true) + askLink(p) + '</div>' + slToggle(p) + cmpFrom(p) + shareBox('p', p) + printBox('p', p) + '</div></div>' +
       (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="' + esc(P(p, 'title') + ' · ' + (i + 1)) + '" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       relRow(p, next) +
       (next && next !== p ? '<nav class="sheet-nav" aria-label="' + esc(x.sheetNav) + '">' +
@@ -708,7 +708,7 @@
   function findBox() {
     var f = t().find;
     return '<div class="find" role="search"><label class="nk-label" for="find-q">' + esc(f.label) + ' <span class="find-key">' + esc(f.key) + '</span></label>' +
-      '<div class="find-row"><input class="nk-input" id="find-q" type="search" autocomplete="off" spellcheck="false" placeholder="' + esc(f.ph) + '" value="' + esc(state.q) + '" aria-describedby="find-out">' +
+      '<div class="find-row"><input class="nk-input" id="find-q" type="search" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="' + esc(f.ph) + '" value="' + esc(state.q) + '" aria-describedby="find-out">' +
       '<button type="button" class="chip find-clear" data-find-clear aria-label="' + esc(f.clear) + '"' + (state.q ? '' : ' hidden') + '>✕</button></div>' +
       '<p class="nk-label find-out" id="find-out" role="status" aria-live="polite"></p>' + findShareBox() + '</div>';
   }
@@ -730,6 +730,7 @@
     if (clr) clr.hidden = !state.q;
     findSync();
     psSync();
+    rgApply();
   }
 
   // ---------- Search links (#work): the search and category filter live in the address, e.g. #en-work?q=esp32&cat=iot ----------
@@ -740,6 +741,7 @@
     var a = [], q = state.q.trim();
     if (q) a.push('q=' + encodeURIComponent(q));
     if (state.filter !== 'all') a.push('cat=' + encodeURIComponent(state.filter));
+    if (state.rg && state.rg.view === 'reg') a.push('view=list');
     return a.length ? '?' + a.join('&') : '';
   }
   function findRead(qs) {
@@ -749,6 +751,7 @@
       try { v = decodeURIComponent(v.replace(/\+/g, ' ')); } catch (e) { v = ''; }
       if (k === 'q') q = v.slice(0, 100);
       if (k === 'cat' && (v === '3d' || CATS[v])) c = v;
+      if (k === 'view' && state.rg) state.rg.view = v === 'list' ? 'reg' : 'grid';
     });
     state.q = q; state.filter = c;
   }
@@ -774,6 +777,104 @@
     var f = document.getElementById('find-url'), msg = document.getElementById('find-msg'), x = t().share; if (!f) return;
     var fail = function () { f.focus(); f.select(); msg.textContent = x.copyFail; };
     try { navigator.clipboard.writeText(f.value).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+  }
+
+  // ---------- Drawing register (#work, "Sheets | Register" switch, e.g. #work?view=list; 2026-10-27) ----------
+  // Every project as one line of a drawing register: sheet number, title + one-line description, discipline, year (3D and
+  // photo columns appear only once a sheet has a model / photos) and a ☆ shortlist toggle. Sortable columns, follows the
+  // search and category filter, kept in the address so the link opens the same view, "Copy register" as plain text.
+  // Uses only the published sheets; nothing is stored or sent. Self-contained: remove state.rg … rgCopy(), the rgBar() /
+  // rgTable() calls and the `hidden` on #find-grid in views.work, the rgApply() call in findApply(), the view lines in
+  // findQuery() and findRead(), the data-rg-* lines in the click handler, the '#rg' part of the back-to-card line in
+  // render(), rg: in both languages in content.js and the "Drawing register" rules at the end of page.css.
+  state.rg = { view: 'grid', sort: 'no', dir: 1 };
+  function rgOn() { return state.rg.view === 'reg'; }
+  function rgCols() {
+    var c = ['no', 'name', 'cat', 'year'];
+    if (PROJECTS.some(function (p) { return p.model; })) c.push('m3d');
+    if (PROJECTS.some(function (p) { return p.photos && p.photos.length; })) c.push('photos');
+    return c;
+  }
+  function rgKey(p, k) {
+    return k === 'no' ? PROJECTS.indexOf(p) : k === 'name' ? P(p, 'title') : k === 'cat' ? cat(p) : k === 'year' ? (+p.year || 0) :
+      k === 'm3d' ? (p.model ? 1 : 0) : (p.photos ? p.photos.length : 0);
+  }
+  function rgSorted() {
+    var k = state.rg.sort, d = state.rg.dir;
+    return PROJECTS.slice().sort(function (a, b) { var x = rgKey(a, k), y = rgKey(b, k); return (typeof x === 'string' ? x.localeCompare(y, lang, { sensitivity: 'base' }) : x - y) * d || PROJECTS.indexOf(a) - PROJECTS.indexOf(b); });
+  }
+  function rgBar() {
+    if (!PROJECTS.length) return '';
+    var x = t().rg, on = rgOn();
+    return '<div class="rg-bar" role="group" aria-labelledby="rg-bar-l"><span class="nk-label" id="rg-bar-l">' + esc(x.label) + '</span>' +
+      '<button type="button" class="chip rg-v" data-rg-view="grid" aria-pressed="' + !on + '"><span class="rg-ico" aria-hidden="true">▦</span>' + esc(x.grid) + '</button>' +
+      '<button type="button" class="chip rg-v" data-rg-view="reg" aria-pressed="' + on + '"><span class="rg-ico" aria-hidden="true">≡</span>' + esc(x.reg) + '</button></div>';
+  }
+  function rgTable() {
+    if (!rgOn() || !PROJECTS.length) return '';
+    var x = t().rg, cols = rgCols(), sl = slRead();
+    var none = '<span class="rg-none"><span aria-hidden="true">' + x.none + '</span><span class="vh">' + esc(x.noneSr) + '</span></span>';
+    var th = cols.map(function (k) {
+      var on = state.rg.sort === k, d = on ? (state.rg.dir > 0 ? 'ascending' : 'descending') : 'none';
+      return '<th scope="col" class="rg-c rg-c--' + k + '"' + (on ? ' aria-sort="' + d + '"' : '') + '><button type="button" class="rg-sort" data-rg-sort="' + k + '" title="' + esc(x.sortBy.replace('{c}', x[k])) + '">' + esc(x[k]) +
+        '<span class="rg-arr" aria-hidden="true">' + (on ? (state.rg.dir > 0 ? '↑' : '↓') : '↕') + '</span></button></th>';
+    }).join('') + '<th scope="col" class="rg-c rg-c--sl"><span class="vh">' + esc(x.list) + '</span><span aria-hidden="true">★</span></th>';
+    var rows = rgSorted().map(function (p) {
+      var on = sl.indexOf(p.slug) >= 0, ti = P(p, 'title');
+      var cells = cols.map(function (k) {
+        var v = k === 'no' ? '<span class="nk-label">' + sheetNo(p) + '</span>' :
+          k === 'name' ? '<a class="rg-t" href="#p-' + esc(p.slug) + '">' + esc(ti) + '</a><span class="rg-d">' + esc(P(p, 'description')) + '</span>' :
+          k === 'cat' ? esc(cat(p)) : k === 'year' ? esc(p.year) :
+          k === 'm3d' ? (p.model ? esc(x.yes) : none) : (p.photos && p.photos.length ? String(p.photos.length) : none);
+        var tag = k === 'name' ? 'th' : 'td';
+        return '<' + tag + (tag === 'th' ? ' scope="row"' : '') + ' class="rg-c rg-c--' + k + '" data-l="' + esc(x[k]) + '">' + v + '</' + tag + '>';
+      }).join('');
+      return '<tr data-rg="' + esc(p.slug) + '"' + (on ? ' class="is-sl"' : '') + '>' + cells + '<td class="rg-c rg-c--sl"><button type="button" class="rg-star" data-rg-sl="' + esc(p.slug) + '" aria-pressed="' + on + '" aria-label="' + esc((on ? x.remove : x.add).replace('{t}', ti)) + '">' + (on ? '★' : '☆') + '</button></td></tr>';
+    }).join('');
+    return '<section class="rg" id="rg" aria-labelledby="rg-h"><div class="rg-head"><h2 class="sub" id="rg-h">' + esc(x.title) + '</h2><p class="nk-label" id="rg-n"></p></div>' +
+      '<p class="rg-note">' + esc(x.note) + '</p>' +
+      '<div class="rg-wrap"><table class="rg-tab" id="rg-tab" aria-labelledby="rg-h"><thead><tr>' + th + '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<p class="rg-empty" id="rg-empty" hidden>' + esc(x.empty) + '</p><p class="rg-sum nk-label" id="rg-sum"></p>' +
+      '<div class="cta-row rg-act"><button type="button" class="nk-btn nk-btn--sm" data-rg-copy>' + esc(x.copy) + '</button></div>' +
+      '<p class="share-msg" id="rg-msg" role="status" aria-live="polite"></p></section>';
+  }
+  function rgShown() { var shown = psShown(); return rgSorted().filter(function (p) { return shown.indexOf(p) >= 0; }); }
+  function rgApply() { // called from findApply(): hide rows outside the search / category filter, update the counts
+    var tab = document.getElementById('rg-tab'); if (!tab) return;
+    var x = t().rg, shown = rgShown(), cats = {}, ys = [];
+    Array.prototype.forEach.call(tab.querySelectorAll('tr[data-rg]'), function (tr) { tr.hidden = shown.indexOf(bySlug(tr.getAttribute('data-rg'))) < 0; });
+    shown.forEach(function (p) { cats[cat(p)] = (cats[cat(p)] || 0) + 1; if (+p.year) ys.push(+p.year); });
+    var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys), n = shown.length;
+    document.getElementById('rg-n').textContent = x.of.replace('{n}', n).replace('{t}', PROJECTS.length);
+    var nf = document.getElementById('find-none');
+    document.getElementById('rg-empty').hidden = !!n || !(nf && nf.hidden);
+    document.getElementById('rg-sum').textContent = n ? x.total + ': ' + Object.keys(cats).map(function (c) { return c + ' ' + cats[c]; }).join(' · ') + (ys.length ? ' · ' + (y0 === y1 ? y0 : y0 + '–' + y1) : '') : '';
+    var cp = app.querySelector('[data-rg-copy]'); if (cp) cp.disabled = !n;
+  }
+  function rgView(v) {
+    state.rg.view = v === 'reg' ? 'reg' : 'grid'; render(true);
+    var b = app.querySelector('[data-rg-view="' + state.rg.view + '"]'); if (b) b.focus();
+  }
+  function rgSort(k) {
+    if (state.rg.sort === k) state.rg.dir = -state.rg.dir; else { state.rg.sort = k; state.rg.dir = k === 'year' ? -1 : 1; }
+    render(true);
+    var x = t().rg, b = app.querySelector('[data-rg-sort="' + k + '"]'); if (b) b.focus();
+    var m = document.getElementById('rg-msg'); if (m) m.textContent = x.sorted.replace('{c}', x[k]).replace('{d}', state.rg.dir > 0 ? x.asc : x.desc);
+  }
+  function rgStar(slug) {
+    var a = slRead(), i = a.indexOf(slug), p = bySlug(slug), x = t().rg; if (!p) return;
+    if (i < 0) a.push(slug); else a.splice(i, 1);
+    slSave(a); render(true);
+    var b = app.querySelector('[data-rg-sl="' + slug + '"]'); if (b) b.focus();
+    var m = document.getElementById('rg-msg'); if (m) m.textContent = (i < 0 ? x.added.replace('{n}', a.length) : x.removed).replace('{t}', P(p, 'title'));
+  }
+  function rgText() {
+    return [t().rg.title + ' — nacekepa.work', ''].concat(rgShown().map(function (p) { return sheetNo(p) + ' · ' + P(p, 'title') + ' · ' + cat(p) + ' · ' + p.year + ' — ' + shareUrl('p', p); })).join('\n');
+  }
+  function rgCopy() {
+    var x = t().rg, msg = document.getElementById('rg-msg'), tab = document.getElementById('rg-tab');
+    var fail = function () { msg.textContent = x.copyFail; var r = document.createRange(); r.selectNodeContents(tab); var s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+    try { navigator.clipboard.writeText(rgText()).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
   }
 
   // ---------- Fit check (#services): will a part fit the X2D build volume in one piece? ----------
@@ -1463,14 +1564,14 @@
     } else if (st === 1) {
       body = '<h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.q2) + '</h2><div class="form">' +
         field('what', x.fWhat, '<textarea class="nk-input" id="f-what" data-f="what" placeholder="' + esc(x.fWhatPh) + '">' + esc(o.what) + '</textarea>', e.what ? x.errWhat : x.fWhatH, e.what, true) +
-        field('qty', x.fQty, '<input class="nk-input" id="f-qty" data-f="qty" type="number" min="1" value="' + esc(o.qty) + '">') +
+        field('qty', x.fQty, '<input class="nk-input" id="f-qty" data-f="qty" type="number" inputmode="numeric" enterkeyhint="next" min="1" value="' + esc(o.qty) + '">') +
         field('deadline', x.fDeadline, '<input class="nk-input" id="f-deadline" data-f="deadline" type="date" min="' + dlMin() + '" value="' + esc(o.deadline) + '">') +
         field('files', x.fFiles, select('files', x.fFilesO, o.files)) +
         field('mat', x.fMat, select('mat', x.fMatO, o.mat)).replace(/<\/div>$/, mpOpen() + '</div>') + dlBox() + ocBox() + '</div>';
     } else if (st === 2) {
       body = '<h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.q3) + '</h2><div class="form">' +
-        field('name', x.fName, '<input class="nk-input" id="f-name" data-f="name" autocomplete="name" value="' + esc(o.name) + '">', e.name ? x.errName : null, e.name) +
-        field('email', x.fEmail, '<input class="nk-input" id="f-email" data-f="email" type="email" autocomplete="email" value="' + esc(o.email) + '">', e.email ? x.errEmail : null, e.email) +
+        field('name', x.fName, '<input class="nk-input" id="f-name" data-f="name" autocomplete="name" enterkeyhint="next" value="' + esc(o.name) + '">', e.name ? x.errName : null, e.name) +
+        field('email', x.fEmail, '<input class="nk-input" id="f-email" data-f="email" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" enterkeyhint="next" value="' + esc(o.email) + '">', e.email ? x.errEmail : null, e.email) +
         '<div class="hp" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" data-f="website" tabindex="-1" autocomplete="off"></div>' +
         ofTypoBox() + field('note', x.fNote, '<textarea class="nk-input" id="f-note" data-f="note">' + esc(o.note) + '</textarea>', x.fNoteH, false, true) + '</div>';
     } else {
@@ -1484,7 +1585,7 @@
         '<div class="brief-grid"><pre class="brief" id="brief" tabindex="0">' + esc(brief) + '</pre><div class="brief-side"><p class="nk-label">' + esc(x.estimate) + '</p>' + estimate() +
         '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" id="copy">' + esc(x.copy) + '</button><span class="copy-msg" id="copy-msg" role="status"></span></div>' + bpBtn() +
         '<p class="nk-label">' + esc(x.sendVia) + '</p>' + (CONTACT_EMAIL ? '<p class="mail" id="mail">' + esc(CONTACT_EMAIL) + '</p><div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mail-copy>' + esc(x.mailCopy) + '</button><span class="copy-msg" id="mail-msg" role="status"></span></div>' : '') +
-        '<a class="nk-btn nk-btn--sm" href="' + LINKEDIN + '" target="_blank" rel="noopener">' + esc(x.linkedin) + '<span class="nk-btn__arrow" aria-hidden="true">↗</span></a></div></div>';
+        '<a class="nk-btn nk-btn--sm" href="' + LINKEDIN + '" target="_blank" rel="noopener">' + esc(x.linkedin) + '<span class="vh"> (' + esc(t().newTab) + ')</span><span class="nk-btn__arrow" aria-hidden="true">↗</span></a></div></div>';
       }
     }
     var steps = '<ol class="nk-process wiz" style="--steps:4" aria-label="' + esc(x.a11y.steps) + '">' + ofSteps(x, st) + '</ol>';
@@ -1670,7 +1771,7 @@
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
-      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '" id="tb-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-tb-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="tb-msg" role="status" aria-live="polite"></span> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn ↗</a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(ctaText()) + ' →</a>', 'wide', false, true) +
+      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '" id="tb-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-tb-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="tb-msg" role="status" aria-live="polite"></span> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span><span class="vh"> (' + esc(t().newTab) + ')</span></a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(ctaText()) + ' →</a>', 'wide', false, true) +
       cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa' + kbdBtn() + '</p></footer>';
     return '<div class="frame"><a class="skip" href="#main" data-skip>' + esc(x.skip) + '</a>' + zones + nav + '<main id="main" tabindex="-1">' + inner + '</main>' + tb + '</div>';
   }
@@ -1705,7 +1806,7 @@
     // Back from a project sheet / news post to its list: scroll to and focus the card the visitor opened, not the top.
     var came = state.from; state.from = p === 'project' ? '#p-' + currentSlug() : p === 'post' ? '#n-' + currentSlug() : '';
     if (came && !keepScroll && (p === 'work' || p === 'news')) {
-      var card = app.querySelector((p === 'work' ? '#find-grid' : '.news-list') + ' a[href="' + came + '"]');
+      var card = app.querySelector((p === 'work' ? (rgOn() ? '#rg' : '#find-grid') : '.news-list') + ' a[href="' + came + '"]');
       if (card && !card.hidden) { card.scrollIntoView({ block: 'center' }); card.focus({ preventScroll: true }); }
     }
   }
@@ -1768,6 +1869,10 @@
     if (el.hasAttribute('data-rel-go')) { relToOrder(); return; }
     if (el.hasAttribute('data-share-copy')) { shareCopy(); return; }
     if (el.hasAttribute('data-find-copy')) { findShareCopy(); return; }
+    if (el.hasAttribute('data-rg-view')) { rgView(el.getAttribute('data-rg-view')); return; }
+    if (el.hasAttribute('data-rg-sort')) { rgSort(el.getAttribute('data-rg-sort')); return; }
+    if (el.hasAttribute('data-rg-sl')) { rgStar(el.getAttribute('data-rg-sl')); return; }
+    if (el.hasAttribute('data-rg-copy')) { rgCopy(); return; }
     if (el.hasAttribute('data-feed-copy')) { feedCopy(); return; }
     if (el.hasAttribute('data-print')) { printSheet(); return; }
     if (el.hasAttribute('data-bp-print')) { printSheet(); return; }
