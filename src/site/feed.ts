@@ -7,11 +7,15 @@ import news from '../data/news.json';
 const SITE = 'https://nacekepa.work';
 const x = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
 const asset = (p: string) => SITE + '/' + String(p).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/');
-// Same text rules as richText() in app.js: blank line = paragraph, lines starting with "- " = list.
-const rich = (s: string) => String(s || '').split(/\n{2,}/).map((block) => {
+// Same text rules as richText() in app.js: blank line = paragraph, "- " lines = list, "1. " lines = numbered list,
+// https:// links and e-mail addresses become links.
+const LINK = /(https?:\/\/[^\s<>"]+[^\s<>".,;:!?)\]'"])|([A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/g;
+const inl = (s: string) => String(s).split(LINK).map((part, i) => i % 3 === 0 ? x(part) : !part ? '' : i % 3 === 1 ? '<a href="' + x(part) + '">' + x(part.replace(/^https?:\/\//, '')) + '</a>' : '<a href="mailto:' + x(part) + '">' + x(part) + '</a>').join('');
+const rich = (s: string) => String(s || '').split(/\n{2,}/).filter((b) => b.trim()).map((block) => {
   const lines = block.split('\n');
-  if (lines.every((l) => /^\s*-\s+/.test(l))) return '<ul>' + lines.map((l) => '<li>' + x(l.replace(/^\s*-\s+/, '')) + '</li>').join('') + '</ul>';
-  return '<p>' + lines.map(x).join('<br>') + '</p>';
+  if (lines.every((l) => /^\s*-\s+/.test(l))) return '<ul>' + lines.map((l) => '<li>' + inl(l.replace(/^\s*-\s+/, '')) + '</li>').join('') + '</ul>';
+  if (lines.every((l) => /^\s*\d+[.)]\s+/.test(l))) return '<ol>' + lines.map((l) => '<li>' + inl(l.replace(/^\s*\d+[.)]\s+/, '')) + '</li>').join('') + '</ol>';
+  return '<p>' + lines.map(inl).join('<br>') + '</p>';
 }).join('');
 
 export function atom(lang: 'en' | 'sl'): Response {

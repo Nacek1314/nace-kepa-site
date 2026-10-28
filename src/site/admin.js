@@ -464,6 +464,7 @@ function tabsView() {
     <button type="button" role="tab" data-tab="news" aria-selected="${isNews()}">News <span>${S.news.length}</span></button>
     <button type="button" role="tab" data-tab="todo" aria-selected="${isTodo()}">To do <span>${todoItems().length}</span></button>
     <button type="button" role="tab" data-tab="arrange" aria-selected="${isArr()}">Arrange</button>
+    <button type="button" role="tab" data-tab="translate" aria-selected="${isTr()}">EN ⇄ SL <span>${trCount()}</span></button>
   </div>`;
 }
 
@@ -490,6 +491,7 @@ function newsListView() {
 function listView() {
   if (isTodo()) return todoListView();
   if (isArr()) return arListView();
+  if (isTr()) return trListView();
   if (isNews()) return newsListView();
   const q = S.query.toLowerCase();
   const items = S.projects.map((p, i) => ({ p, i })).filter(({ p }) => !q || (p.title.en + ' ' + p.title.sl + ' ' + p.category).toLowerCase().includes(q));
@@ -618,6 +620,190 @@ function todoGo(spec) {
     if (!el.hidden) el.focus({ preventScroll: true });
     else { const fs = target.closest('fieldset') || target; fs.classList.add('td-flash'); setTimeout(() => fs.classList.remove('td-flash'), 1600); target.setAttribute('tabindex', '-1'); target.focus({ preventScroll: true }); }
   }
+}
+
+// ---------- Translate (tab "EN ⇄ SL": every English/Slovenian text pair side by side, with checks) ----------
+// Lists the title/description/details of each project and the headline/summary/article of each news post, English
+// on the left (read-only), Slovenian on the right (editable, same as the field in the editor). Checks each pair: missing
+// SL, SL identical to EN, numbers that differ (256 vs 265), very different length, different number of list items or
+// paragraphs. "Copy for translation" copies the open texts as blocks ("### p:slug:field" + English) for a translator;
+// "Paste translations" fills them back in. Only changes S.projects / S.news in memory; nothing is saved until Publish.
+// Remove: this block, the "EN ⇄ SL" tab in tabsView(), the isTr() lines in listView()/editorView(), the data-tr lines
+// in the click and input handlers and the "Translate" rules at the end of admin.css.
+const isTr = () => S.tab === 'translate';
+const TR = { f: 'check', kind: 'all', msg: '', paste: false };
+const TR_FIELDS = [
+  { kind: 'p', f: 'title', label: 'Title', rows: 1, field: 't-sl' },
+  { kind: 'p', f: 'description', label: 'One-line description', rows: 2, field: 'd-sl' },
+  { kind: 'p', f: 'details', label: 'Details', rows: 5, field: 'x-sl' },
+  { kind: 'n', f: 'title', label: 'Headline', rows: 1, field: 'n-t-sl' },
+  { kind: 'n', f: 'summary', label: 'Summary', rows: 3, field: 'n-s-sl' },
+  { kind: 'n', f: 'body', label: 'Article', rows: 10, field: 'n-b-sl' },
+];
+const TR_VIEWS = [['check', 'Needs a look'], ['miss', 'Missing Slovenian'], ['all', 'All texts']];
+const TR_KINDS = [['all', 'Projects + news'], ['p', 'Projects'], ['n', 'News']];
+// Numbers as written (1,5 = 1.5), ignoring "3D"/"2D"; returned sorted so the order of the sentence doesn't matter.
+function trNums(s) { return (String(s).match(/\d+(?:[.,]\d+)?(?![\d]*\s?[dD]\b)/g) || []).map((n) => n.replace(',', '.')).sort(); }
+const trListN = (s) => String(s).split('\n').filter((l) => /^\s*(-|\d+[.)])\s+/.test(l)).length;
+const trParaN = (s) => String(s).split(/\n{2,}/).filter((b) => b.trim()).length;
+function trChecks(en, sl) {
+  en = String(en || ''); sl = String(sl || '');
+  const out = [], E = en.trim(), L = sl.trim();
+  if (!E && !L) return out;
+  if (!E) { out.push({ id: 'only', t: 'Only Slovenian — no English text' }); return out; }
+  if (!L) { out.push({ id: 'miss', t: 'Slovenian missing — English is shown on /sl/' }); return out; }
+  if (E === L && E.split(/\s+/).length > 2) out.push({ id: 'same', t: 'Same as English' });
+  const a = trNums(E), b = trNums(L);
+  if (a.join('|') !== b.join('|')) {
+    const left = (x, y) => { const r = y.slice(); return x.filter((n) => { const i = r.indexOf(n); if (i < 0) return true; r.splice(i, 1); return false; }); };
+    const onlyE = left(a, b), onlyL = left(b, a);
+    out.push({ id: 'num', t: 'Numbers differ' + (onlyE.length ? ' · EN only: ' + onlyE.join(', ') : '') + (onlyL.length ? ' · SL only: ' + onlyL.join(', ') : '') });
+  }
+  if (E.length >= 40) {
+    const r = L.length / E.length;
+    if (r < 0.5) out.push({ id: 'len', t: `Much shorter than English (${Math.round(r * 100)} %)` });
+    else if (r > 2) out.push({ id: 'len', t: `Much longer than English (${Math.round(r * 100)} %)` });
+  }
+  const la = trListN(E), lb = trListN(L);
+  if (la !== lb) out.push({ id: 'list', t: `List items: EN ${la} · SL ${lb}` });
+  const pa = trParaN(E), pb = trParaN(L);
+  if (pa !== pb && la === lb) out.push({ id: 'para', t: `Paragraphs: EN ${pa} · SL ${pb}` });
+  return out;
+}
+function trItems() { // every non-empty pair, in site order
+  const out = [];
+  const add = (kind, list) => list.forEach((x) => TR_FIELDS.filter((d) => d.kind === kind).forEach((d) => {
+    const v = x[d.f] || {}, en = v.en || '', sl = v.sl || '';
+    if (!String(en).trim() && !String(sl).trim()) return;
+    out.push({ kind, x, d, key: `${kind}:${x.slug}:${d.f}`, en, sl, cs: trChecks(en, sl) });
+  }));
+  add('p', S.projects);
+  add('n', sortNews(S.news));
+  return out;
+}
+function trShown(items) {
+  return items.filter((it) => (TR.kind === 'all' || it.kind === TR.kind) &&
+    (TR.f === 'all' || (TR.f === 'miss' ? it.cs.some((c) => c.id === 'miss') : it.cs.length)));
+}
+const trCount = () => trItems().filter((it) => it.cs.length).length;
+function trListView() {
+  const items = trItems(), done = items.filter((it) => it.sl.trim()).length;
+  const n = (f, k) => items.filter((it) => (k === 'all' || it.kind === k) && (f === 'all' || (f === 'miss' ? it.cs.some((c) => c.id === 'miss') : it.cs.length))).length;
+  const pct = items.length ? Math.round(done / items.length * 100) : 100;
+  return `<div class="ad-list">
+    ${tabsView()}
+    <div class="td-sum tr-sum"><p class="ad-small"><b>${done} / ${items.length}</b> texts have Slovenian · ${items.filter((it) => it.cs.length).length} to look at</p>
+      <div class="tr-meter" role="img" aria-label="${pct} % translated"><span style="width:${pct}%"></span></div></div>
+    <div class="ad-items tr-filters">
+      <p class="nk-label tr-fl">Show</p>
+      ${TR_VIEWS.map(([id, label]) => `<div class="ad-item${id === TR.f ? ' is-sel' : ''}"><button type="button" class="ad-item__main" data-tr-f="${id}" aria-pressed="${id === TR.f}"><span class="ad-item__t">${label}</span><span class="ad-item__m">${n(id, TR.kind)} text${n(id, TR.kind) === 1 ? "" : "s"}</span></button></div>`).join('')}
+      <p class="nk-label tr-fl">In</p>
+      ${TR_KINDS.map(([id, label]) => `<div class="ad-item${id === TR.kind ? ' is-sel' : ''}"><button type="button" class="ad-item__main" data-tr-k="${id}" aria-pressed="${id === TR.kind}"><span class="ad-item__t">${label}</span><span class="ad-item__m">${n(TR.f, id)} text${n(TR.f, id) === 1 ? "" : "s"}</span></button></div>`).join('')}
+    </div>
+  </div>`;
+}
+function trChips(cs) {
+  return cs.length ? cs.map((c) => `<span class="tr-chip tr-chip--${c.id}">${esc(c.t)}</span>`).join('') : '<span class="tr-chip tr-chip--ok">OK</span>';
+}
+function trRow(it) {
+  const id = 'tr-' + it.key.replace(/[^a-z0-9]+/gi, '-');
+  const name = it.x.title?.en || it.x.slug;
+  return `<li class="tr-row${it.cs.length ? ' is-flag' : ''}" data-tr-row="${esc(it.key)}">
+    <div class="tr-row__h">
+      <span class="nk-label">${it.kind === 'n' ? 'News · ' + esc(it.x.date) : esc(it.x.category) + ' · ' + esc(it.x.year)} · ${esc(it.d.label)}</span>
+      <button type="button" class="td-row__t" data-todo-go="${it.kind}|${esc(it.x.slug)}|${it.d.field}" title="Open in the editor">${esc(name)}</button>
+    </div>
+    <div class="tr-pair">
+      <div class="tr-col"><span class="tr-lang" id="${id}-en-l">EN</span><div class="tr-en" aria-labelledby="${id}-en-l">${esc(it.en) || '<em>—</em>'}</div></div>
+      <div class="tr-col"><label class="tr-lang" for="${id}">SL <span class="vh">${esc(it.d.label)} · ${esc(name)}</span></label>
+        <textarea class="nk-input tr-sl" id="${id}" data-tr="${esc(it.key)}" rows="${Math.max(it.d.rows, Math.min(14, Math.ceil(String(it.en).length / 70) + String(it.en).split('\n').length - 1))}" lang="sl" spellcheck="true">${esc(it.sl)}</textarea></div>
+    </div>
+    <div class="tr-chips" id="${id}-c" aria-live="polite">${trChips(it.cs)}</div>
+  </li>`;
+}
+function trView() {
+  const items = trShown(trItems());
+  const open = trItems().filter((it) => !it.sl.trim() && it.en.trim());
+  return `<div class="ad-editor">
+    <div class="ad-editor__head"><div><p class="nk-label">EN ⇄ SL · ${esc(TR_VIEWS.find(([i]) => i === TR.f)[1])} · ${esc(TR_KINDS.find(([i]) => i === TR.kind)[1])}</p><h2 class="sub">Translation workspace</h2></div>
+      <div class="tr-tools">
+        <button type="button" class="nk-btn nk-btn--sm" data-tr-next ${items.some((it) => it.cs.length) ? '' : 'disabled'}>Next to check ↓</button>
+        <button type="button" class="nk-btn nk-btn--sm" data-tr-copy ${open.length ? '' : 'disabled'}>Copy ${open.length} for translation</button>
+        <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-tr-paste aria-expanded="${TR.paste}">Paste translations</button>
+      </div></div>
+    <p class="ad-small">English on the left, Slovenian on the right — type in the right column, it is the same field as in the editor. The checks
+      look for missing text, Slovenian identical to English, numbers that differ, very different length and a different number of list items or
+      paragraphs. Nothing is saved until you press Publish.</p>
+    <p class="ad-small tr-msg" role="status" aria-live="polite">${esc(TR.msg)}</p>
+    ${TR.paste ? `<div class="ad-sec tr-paste">
+      <label class="nk-label" for="tr-in">Paste translations</label>
+      <p class="ad-small">Paste the text you got back. Each block starts with its “### p:slug:field” line, exactly as copied; the text under it becomes the Slovenian version.</p>
+      <textarea class="nk-input" id="tr-in" rows="8" lang="sl" spellcheck="false"></textarea>
+      <div class="tr-tools"><button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-tr-apply>Fill in</button><button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-tr-paste>Cancel</button></div>
+    </div>` : ''}
+    ${items.length ? `<ol class="tr-list">${items.map(trRow).join('')}</ol>`
+      : `<div class="ad-empty"><span class="nk-tag nk-tag--ok">Complete</span><p class="lead">${TR.f === 'all' ? 'No texts here yet.' : 'Every text here has a Slovenian version that passes the checks.'}</p></div>`}
+  </div>`;
+}
+function trFind(key) {
+  const [kind, slug, f] = key.split(':');
+  const x = (kind === 'n' ? S.news : S.projects).find((y) => y.slug === slug);
+  return x && TR_FIELDS.some((d) => d.kind === kind && d.f === f) ? { x, f } : null;
+}
+function trInput(el) {
+  const r = trFind(el.dataset.tr); if (!r) return;
+  (r.x[r.f] ||= { en: '', sl: '' }).sl = el.value;
+  const v = r.x[r.f], cs = trChecks(v.en, v.sl);
+  const box = document.getElementById(el.id + '-c'); if (box) box.innerHTML = trChips(cs);
+  el.closest('.tr-row')?.classList.toggle('is-flag', cs.length > 0);
+  const list = root.querySelector('.ad-list'); if (list) list.outerHTML = trListView();
+  const tab = root.querySelector('[data-tab="translate"] span'); if (tab) tab.textContent = trCount();
+  const open = trItems().filter((it) => !it.sl.trim() && it.en.trim()).length, cp = root.querySelector('[data-tr-copy]');
+  if (cp) { cp.textContent = `Copy ${open} for translation`; cp.disabled = !open; }
+  const nx = root.querySelector('[data-tr-next]'); if (nx) nx.disabled = !root.querySelector('.tr-row.is-flag');
+  S.notice = '';
+  updatePublish();
+}
+function trNext() {
+  const all = [...root.querySelectorAll('.tr-row.is-flag .tr-sl')];
+  if (!all.length) { TR.msg = 'Nothing left to check here.'; root.querySelector('.tr-msg').textContent = TR.msg; return; }
+  const curI = all.indexOf(document.activeElement);
+  const el = all[(curI + 1) % all.length];
+  el.scrollIntoView({ block: 'center' }); el.focus({ preventScroll: true });
+}
+async function trCopy() {
+  const open = trItems().filter((it) => !it.sl.trim() && it.en.trim());
+  const text = 'Translate each block into Slovenian. Keep every “###” line unchanged, keep numbers, units, names and the “- ” list lines.\n\n' +
+    open.map((it) => `### ${it.key}\n${String(it.en).trim()}`).join('\n\n') + '\n';
+  try { await navigator.clipboard.writeText(text); TR.msg = `Copied ${open.length} English text${open.length === 1 ? '' : 's'}. Paste the translation back with “Paste translations”.`; }
+  catch { TR.msg = 'Could not copy to the clipboard in this browser.'; }
+  root.querySelector('.tr-msg').textContent = TR.msg;
+}
+function trApply() {
+  const src = document.getElementById('tr-in')?.value || '';
+  const blocks = src.split(/^###[ \t]*/m).slice(1);
+  let filled = 0, replaced = 0; const bad = [];
+  blocks.forEach((b) => {
+    const nl = b.indexOf('\n'), key = (nl < 0 ? b : b.slice(0, nl)).trim(), text = nl < 0 ? '' : b.slice(nl + 1).replace(/\s+$/, '').replace(/^\n+/, '');
+    const r = trFind(key);
+    if (!r || !text) { bad.push(key || '(empty)'); return; }
+    const v = (r.x[r.f] ||= { en: '', sl: '' });
+    if (String(v.sl || '').trim() && v.sl !== text) replaced++;
+    v.sl = text; filled++;
+  });
+  TR.msg = !blocks.length ? 'No “### p:slug:field” lines found — paste the text exactly as it came back.'
+    : `Filled in ${filled} text${filled === 1 ? '' : 's'}${replaced ? ` (${replaced} replaced an existing Slovenian text)` : ''}${bad.length ? ` · not used: ${bad.slice(0, 4).join(', ')}${bad.length > 4 ? '…' : ''}` : ''}. Check them below, then Publish.`;
+  if (filled) { TR.paste = false; TR.f = 'all'; }
+  render();
+  document.querySelector(filled ? '.tr-msg' : '#tr-in')?.focus?.();
+}
+function trAct(b) {
+  if (b.dataset.trF != null) { TR.f = b.dataset.trF; TR.msg = ''; render(); document.querySelector(`[data-tr-f="${TR.f}"]`)?.focus(); return; }
+  if (b.dataset.trK != null) { TR.kind = b.dataset.trK; TR.msg = ''; render(); document.querySelector(`[data-tr-k="${TR.kind}"]`)?.focus(); return; }
+  if (b.dataset.trNext != null) { trNext(); return; }
+  if (b.dataset.trCopy != null) { trCopy(); return; }
+  if (b.dataset.trPaste != null) { TR.paste = !TR.paste; TR.msg = ''; render(); (TR.paste ? document.getElementById('tr-in') : document.querySelector('[data-tr-paste]'))?.focus(); return; }
+  if (b.dataset.trApply != null) { trApply(); }
 }
 
 // ---------- Arrange (tab "Arrange": the order of the projects as one board, with the home page and sheet numbers) ----------
@@ -899,11 +1085,16 @@ function pvPick(o, miss, label) {
   return { v: en, fb: !!en.trim() };
 }
 function pvWrap(h, fb, tag = 'span') { return fb ? `<${tag} class="pv-fb" title="English text — no Slovenian yet">${h}</${tag}>` : h; }
-function pvRich(s) { // same rules as richText() in app.js: blank line = paragraph, "- " lines = list
+const PV_LINK = /(https?:\/\/[^\s<>"]+[^\s<>".,;:!?)\]'"])|([A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/g;
+function pvInline(s) { // = rdInline() in app.js: links shown underlined, not clickable in the preview
+  return String(s).split(PV_LINK).map((part, i) => i % 3 === 0 ? esc(part) : part ? `<u>${esc(i % 3 === 1 ? part.replace(/^https?:\/\//, '') : part)}</u>` : '').join('');
+}
+function pvRich(s) { // same rules as richText() in app.js: blank line = paragraph, "- " lines = list, "1. " = numbered list, links
   return String(s || '').split(/\n{2,}/).filter((b) => b.trim()).map((block) => {
     const lines = block.split('\n');
-    if (lines.every((l) => /^\s*-\s+/.test(l))) return '<ul>' + lines.map((l) => `<li>${esc(l.replace(/^\s*-\s+/, ''))}</li>`).join('') + '</ul>';
-    return '<p>' + lines.map(esc).join('<br>') + '</p>';
+    if (lines.every((l) => /^\s*-\s+/.test(l))) return '<ul>' + lines.map((l) => `<li>${pvInline(l.replace(/^\s*-\s+/, ''))}</li>`).join('') + '</ul>';
+    if (lines.every((l) => /^\s*\d+[.)]\s+/.test(l))) return '<ol>' + lines.map((l) => `<li>${pvInline(l.replace(/^\s*\d+[.)]\s+/, ''))}</li>`).join('') + '</ol>';
+    return '<p>' + lines.map(pvInline).join('<br>') + '</p>';
   }).join('');
 }
 function pvDate(d) {
@@ -1042,7 +1233,7 @@ function spSection(p) {
   </fieldset>`;
 }
 function spRefresh() {
-  const p = !isNews() && !isTodo() && !isArr() && cur(), box = document.getElementById('sp-box');
+  const p = !isNews() && !isTodo() && !isArr() && !isTr() && cur(), box = document.getElementById('sp-box');
   if (p && box) box.innerHTML = spInner(p);
 }
 
@@ -1084,6 +1275,7 @@ function newsEditorView() {
 function editorView() {
   if (isTodo()) return todoView();
   if (isArr()) return arView();
+  if (isTr()) return trView();
   if (isNews()) return newsEditorView();
   const p = cur();
   if (!p) return `<div class="ad-empty"><p class="lead">No project selected.</p><button class="nk-btn" data-act="new" type="button">+ New project</button></div>`;
@@ -1214,6 +1406,7 @@ root.addEventListener('submit', (e) => {
 root.addEventListener('input', (e) => {
   const k = e.target.dataset.k, p = cur();
   if (e.target.id === 'q') { S.query = e.target.value; render(); return; }
+  if (e.target.dataset.tr != null) { trInput(e.target); return; }
   if (!k || !p) return;
   const v = e.target.value;
   if (isNews()) {
@@ -1315,6 +1508,7 @@ root.addEventListener('click', (e) => {
   if (b.dataset.todoF != null) { S.todoF = b.dataset.todoF; render(); return; }
   if (b.dataset.todoGo != null) { todoGo(b.dataset.todoGo); return; }
   if (b.dataset.ar != null) { arAct(b); return; }
+  if (isTr() && Object.keys(b.dataset).some((k) => /^tr[A-Z]/.test(k))) { trAct(b); return; }
   if (b.dataset.liLang != null) { LI.lang = b.dataset.liLang; LI.msg = ''; render(); document.querySelector(`[data-li-lang="${LI.lang}"]`)?.focus(); return; }
   if (b.dataset.liCopy != null) { liCopy(); return; }
   if (b.dataset.spLang != null || b.dataset.spW != null) { if (b.dataset.spLang) SP.lang = b.dataset.spLang; else SP.w = b.dataset.spW; render(); document.querySelector(b.dataset.spLang ? `[data-sp-lang="${SP.lang}"]` : `[data-sp-w="${SP.w}"]`)?.focus(); return; }

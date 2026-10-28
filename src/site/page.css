@@ -831,3 +831,11 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 
 /* Phone tap targets (2026-10-27): the title-block links (e-mail, LinkedIn, Start a project) get a 24 px tall touch area. */
 @media (max-width: 720px) { .foot .nk-tb a { display: inline-block; padding: 4px 0 2px; } }
+
+/* News reading (2026-10-28): numbered lists and links in articles (richText / rdInline in app.js). */
+.post-body ol { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); counter-reset: rd; }
+.post-body ol > li { counter-increment: rd; grid-template-columns: 28px 1fr; }
+.post-body ol > li::before { content: counter(rd, decimal-leading-zero); font-size: 13px; }
+.post-body p > a, .post-body li > a { color: var(--redline); text-underline-offset: 3px; overflow-wrap: anywhere; }
+.post-body p > a:focus-visible, .post-body li > a:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+.post-body u { text-underline-offset: 3px; color: var(--redline); }

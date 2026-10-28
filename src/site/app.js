@@ -175,28 +175,55 @@
     var x = t();
     return '<a class="news-card" href="#n-' + esc(n.slug) + '">' +
       (n.photos && n.photos.length ? '<span class="news-card__img"><' + 'img src="' + esc(asset(n.photos[0])) + '" alt="" loading="lazy" decoding="async" draggable="false"></span>' : '<span class="news-card__img news-card__img--none" aria-hidden="true">' + logo() + '</span>') +
-      '<span class="news-card__body"><span class="nk-label">' + (n.pinned ? '<b>' + esc(x.pinned) + ' · </b>' : '') + timeTag(n.date) + '</span>' +
+      '<span class="news-card__body"><span class="nk-label">' + (n.pinned ? '<b>' + esc(x.pinned) + ' · </b>' : '') + timeTag(n.date) + ' · ' + esc(rdMin(n)) + '</span>' +
       '<span class="news-card__title">' + esc(P(n, 'title')) + '</span><span class="news-card__sum">' + esc(P(n, 'summary')) + '</span>' +
       '<span class="news-card__more">' + esc(x.readMore) + ' →</span></span></a>';
   }
+  // ---------- News reading (richText / rdMin / rdNav) ----------
+  // Article text rules (same in admin.js pvRich() and feed.ts rich()): blank line = paragraph, "- " lines = list,
+  // "1. " lines = numbered list, https:// links and e-mail addresses become links. rdMin(): reading time at 200 words a
+  // minute. rdNav(): previous / next post. Remove: rdInline()/rdMin()/rdNav() (richText back to plain esc), the rdMin()
+  // calls in newsCard()/postView(), rd: in content.js and the "News reading" rules at the end of page.css.
+  var RD_LINK = /(https?:\/\/[^\s<>"]+[^\s<>".,;:!?)\]'"])|([A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/g;
+  function rdInline(s) {
+    var out = '', last = 0, m; s = String(s); RD_LINK.lastIndex = 0;
+    while ((m = RD_LINK.exec(s))) {
+      out += esc(s.slice(last, m.index));
+      out += m[1] ? '<a href="' + esc(m[1]) + '" target="_blank" rel="noopener">' + esc(m[1].replace(/^https?:\/\//, '')) + '<span class="vh"> (' + esc(t().newTab) + ')</span></a>'
+        : '<a href="mailto:' + esc(m[2]) + '">' + esc(m[2]) + '</a>';
+      last = m.index + m[0].length;
+    }
+    return out + esc(s.slice(last));
+  }
   function richText(s) {
-    return String(s || '').split(/\n{2,}/).map(function (block) {
+    return String(s || '').split(/\n{2,}/).filter(function (b) { return b.trim(); }).map(function (block) {
       var lines = block.split('\n');
-      if (lines.every(function (l) { return /^\s*-\s+/.test(l); })) return '<ul>' + lines.map(function (l) { return '<li>' + esc(l.replace(/^\s*-\s+/, '')) + '</li>'; }).join('') + '</ul>';
-      return '<p>' + lines.map(esc).join('<br>') + '</p>';
+      if (lines.every(function (l) { return /^\s*-\s+/.test(l); })) return '<ul>' + lines.map(function (l) { return '<li>' + rdInline(l.replace(/^\s*-\s+/, '')) + '</li>'; }).join('') + '</ul>';
+      if (lines.every(function (l) { return /^\s*\d+[.)]\s+/.test(l); })) return '<ol>' + lines.map(function (l) { return '<li>' + rdInline(l.replace(/^\s*\d+[.)]\s+/, '')) + '</li>'; }).join('') + '</ol>';
+      return '<p>' + lines.map(rdInline).join('<br>') + '</p>';
     }).join('');
+  }
+  function rdMin(n) {
+    var words = (P(n, 'title') + ' ' + P(n, 'summary') + ' ' + P(n, 'body')).split(/\s+/).filter(function (w) { return /[0-9A-Za-zÀ-ž]/.test(w); }).length;
+    return t().rd.min.replace('{n}', Math.max(1, Math.round(words / 200)));
+  }
+  function rdNav(n) {
+    var x = t(), i = NEWS.indexOf(n), prev = NEWS[i - 1], next = NEWS[i + 1];
+    if (!prev && !next) return '';
+    return '<nav class="sheet-nav" aria-label="' + esc(x.rd.nav) + '">' +
+      (prev ? '<a class="next-project prev-project" href="#n-' + esc(prev.slug) + '" rel="prev"><span class="nk-label">' + esc(x.rd.prev) + '</span><span class="sub">← ' + esc(P(prev, 'title')) + '</span></a>' : '<span></span>') +
+      (next ? '<a class="next-project" href="#n-' + esc(next.slug) + '" rel="next"><span class="nk-label">' + esc(x.rd.next) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '<span></span>') + '</nav>';
   }
   function postView() {
     var x = t(), n = newsBySlug(currentSlug()), photos = n.photos || [];
-    var i = NEWS.indexOf(n), next = NEWS[i + 1];
     return '<section class="block first post">' +
       '<a class="back" href="#news">← ' + esc(x.allNews) + '</a>' +
-      head('', P(n, 'title'), P(n, 'summary'), true, timeTag(n.date) + (n.pinned ? ' · ' + esc(x.pinned) : '')) +
+      head('', P(n, 'title'), P(n, 'summary'), true, timeTag(n.date) + ' · ' + esc(rdMin(n)) + (n.pinned ? ' · ' + esc(x.pinned) : '')) +
       '<div class="post-grid">' +
       (photos.length ? '<button type="button" class="nk-sheet__art project-art post-cover" data-lb="0" aria-label="' + esc(x.openPhoto) + '"><' + 'img class="sheet-photo" src="' + esc(asset(photos[0])) + '" alt="' + esc(P(n, 'title')) + '" fetchpriority="high" decoding="async" draggable="false"></button>' : '') +
       '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', null, true) + askLink(n, 'n') + '</div>' + shareBox('n', n) + printBox('n', n) + '</div></div>' +
       (photos.length > 1 ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, k) { return '<button type="button" data-lb="' + k + '" aria-label="' + esc(x.openPhoto + ' ' + (k + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="' + esc(P(n, 'title') + ' · ' + (k + 1)) + '" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
-      (next ? '<a class="next-project" href="#n-' + esc(next.slug) + '"><span class="nk-label">' + esc(x.newsLabel) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '') +
+      rdNav(n) +
       '</section>' + ctaBand();
   }
 

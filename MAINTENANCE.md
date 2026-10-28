@@ -20,6 +20,61 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-28
+
+**Checked:** build, home, #services, #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d,
+#skills, #about, #compare, #order (steps on the local build, nothing sent), /admin/ sign-in and (with a mocked GitHub API)
+the dashboard — 1280 + 390 px, light + dark, EN (`/`) + SL (`/sl/`), plus a scan for anything wider than the page and broken
+images. Last Actions run (e8f43d5) succeeded; nacekepa.work, /sl/, /admin/ and /news.xml return 200 (checked via the
+laptop). No JS errors, no CSP violations, no 404s (only Google Fonts, blocked in the cloud), no horizontal scroll, no
+missing translations. All 62 EN/SL text pairs in projects.json / news.json were also checked with today's new tool: no
+problems (FamFive's title is the same in both languages on purpose).
+
+**Bugs fixed:** none found.
+
+**Improvement — news reading package (#news, news posts, the admin news preview and the Atom feed):**
+- Reading time on every news card and post header: "1 Oct 2026 · 1 min read" / "1. okt. 2026 · 1 min branja"
+  (counted from the post's own words at 200 a minute; nothing invented).
+- Links in articles: an `https://…` address or an e-mail address typed in a post now becomes a link (web links open
+  in a new tab and say so to screen readers, e-mail links open the mail app). Before, they were plain text.
+- Numbered lists in articles: lines starting with "1. ", "2. " become a numbered list (01, 02 … in the drawing style),
+  like the existing "- " lists.
+- Previous / next post: posts now end with the same "← Previous post · Next post →" pair as project sheets
+  (`rel="prev"/"next"`, "Prejšnja / Naslednja objava"); before there was only a "next" link. Shows once there are two posts.
+- The same text rules are used in the admin news preview (`pvRich()`, links underlined) and in the Atom feed (`feed.ts`).
+*To remove:* the "News reading" block in `app.js` (`RD_LINK` … `rdNav()`, put back the old `richText()`), the two
+`rdMin(n)` calls in `newsCard()` / `postView()`, `rdNav(n)` in `postView()` (put back the old `next` link), `rd:` in both
+languages in `content.js`, `PV_LINK` / `pvInline()` in `admin.js`, `LINK` / `inl` in `feed.ts` and the "News reading" rules
+at the end of `page.css`.
+
+**Innovation — Admin translation workspace (`/admin/` → tab "EN ⇄ SL"):** every English/Slovenian text pair on the site
+in one place — project title, one-line description and details; news headline, summary and article — English on the
+left (read-only), Slovenian on the right (editable; it is the same field as in the editor, so typing here is a normal
+unpublished change and the Publish button counts it). Each pair is checked as you type:
+- Slovenian missing (English is shown on /sl/), Slovenian identical to English, only Slovenian;
+- numbers that differ ("EN only: 260 · SL only: 206" — sizes, temperatures, counts; "3D" is ignored);
+- much shorter / longer than English (under 50 % or over 200 %, for texts of 40+ characters);
+- a different number of list items or paragraphs.
+Left column: progress ("61 / 62 texts have Slovenian", green bar), "Needs a look" / "Missing Slovenian" / "All texts",
+and Projects + news / Projects / News. "Next to check ↓" jumps the cursor to the next flagged Slovenian field. "Copy N for
+translation" copies every text that has no Slovenian yet as blocks (`### p:slug:field` + English) to paste into a translator;
+"Paste translations" takes the translated blocks back and fills them in (reports how many, and which lines it could not
+use). The project/post name opens it in the editor at that field. The tab shows how many texts need a look.
+Tested with a mocked GitHub API: missing / same / numbers / news cases, typing a fix (checks, counts, Publish button and
+focus update), filters, keyboard, copy + paste round trip (unknown key reported), open in editor, 1280 + 390 px,
+light + dark, no horizontal scroll, no errors. Today all real texts pass, so it opens on "Complete" — it is for the next
+projects and posts.
+*To remove:* the "Translate" block in `admin.js` (`isTr` … `trAct()`), the "EN ⇄ SL" tab in `tabsView()`, the `isTr()` lines
+in `listView()` / `editorView()` / `spRefresh()`, the `data-tr` lines in the input and click handlers and the "Translate"
+rules at the end of `admin.css` (they also set the tab bar to 3 columns × 2 rows).
+*Next step (optional day 2):* include the service texts and FAQ from `content.js` read-only, and a "Copy all for review"
+export of the whole site in both languages.
+
+**Ideas for next time** (added to the list below)
+- Admin: "Insert link" and "Numbered list" buttons above the news article field (the site now understands both).
+- Public: "In this post" list of the links mentioned in a news article, under the article.
+- Admin: translation workspace check for the same project name spelled differently in EN and SL.
+
 ## 2026-10-27
 
 **Checked:** build, home, #services, #work, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about,
@@ -1054,6 +1109,10 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: keyboard shortcut `v` to switch #work between Sheets and Register (add to the `?` list).
 - Admin: "Register" check in the To do tab — sheets whose one-line description is much longer than the rest.
 - Public: news register (date, title, summary) on #news once there are more posts.
+- (Built 2026-10-28: admin translation workspace, tab "EN ⇄ SL".)
+- Admin: "Insert link" and "Numbered list" buttons above the news article field (the site now understands both).
+- Public: "In this post" list of the links mentioned in a news article, under the article.
+- Admin: translation workspace check for the same project name spelled differently in EN and SL.
 
 ## 2026-10-03 (second run)
 
