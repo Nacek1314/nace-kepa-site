@@ -465,6 +465,7 @@ function tabsView() {
     <button type="button" role="tab" data-tab="todo" aria-selected="${isTodo()}">To do <span>${todoItems().length}</span></button>
     <button type="button" role="tab" data-tab="arrange" aria-selected="${isArr()}">Arrange</button>
     <button type="button" role="tab" data-tab="translate" aria-selected="${isTr()}">EN ⇄ SL <span>${trCount()}</span></button>
+    <button type="button" role="tab" data-tab="table" aria-selected="${isTb()}">Table <span>${S.projects.length}</span></button>
   </div>`;
 }
 
@@ -492,6 +493,7 @@ function listView() {
   if (isTodo()) return todoListView();
   if (isArr()) return arListView();
   if (isTr()) return trListView();
+  if (isTb()) return tbListView();
   if (isNews()) return newsListView();
   const q = S.query.toLowerCase();
   const items = S.projects.map((p, i) => ({ p, i })).filter(({ p }) => !q || (p.title.en + ' ' + p.title.sl + ' ' + p.category).toLowerCase().includes(q));
@@ -959,6 +961,7 @@ function arPos(input) {
   else { input.value = i + 1; delete input.dataset.done; }
 }
 root.addEventListener('keydown', (e) => {
+  if (isTb() && tbKey(e)) return;
   if (!isArr()) return;
   if (e.target.dataset.arPos != null && e.key === 'Enter') { e.preventDefault(); arPos(e.target); return; }
   const h = e.target.closest('[data-ar-h]');
@@ -1012,6 +1015,223 @@ function arDrop(e) {
 }
 window.addEventListener('pointerup', arDrop);
 window.addEventListener('pointercancel', arDrop);
+
+// ---------- Table (tab "Table": every project as one row of a spreadsheet, with bulk edit and Excel copy/paste) ----------
+// Category, year, materials, ★ featured and hidden of all projects in one grid, in site order. Edit a cell directly
+// (Enter / Shift+Enter = next / previous row, ↑ ↓ in the materials column), tick rows and change them together, or copy the
+// table to Excel and paste it back (rows are matched by URL name; an empty cell changes nothing). Cells that differ from the
+// site are marked; ↶ Undo reverts the last bulk change or paste. Only changes S.projects in memory; nothing is saved until
+// Publish. Added 2026-10-29. Remove: this block, the "Table" tab in tabsView(), the isTb() lines in listView()/editorView(),
+// the data-tb lines in the click, input, change and keydown handlers and the "Table" rules at the end of admin.css.
+const isTb = () => S.tab === 'table';
+const TB = { f: 'all', sel: new Set(), undo: [], msg: '', paste: false, last: null, bulk: { cat: '', year: '', mat: '', matMode: 'set' } };
+const TB_COLS = [['category', 'Category'], ['year', 'Year'], ['materials', 'Materials'], ['featured', 'Featured'], ['hidden', 'Hidden']];
+const TB_YES = /^(yes|y|da|true|1|x|★)$/i, TB_NO = /^(no|n|ne|false|0|-|☆)$/i;
+function tbSavedMap() { const m = new Map(); arSaved().forEach((p) => m.set(p.slug, p)); return m; }
+const tbVal = (p, f) => f === 'featured' || f === 'hidden' ? !!p[f] : f === 'year' ? String(p.year ?? '') : String(p[f] ?? '');
+function tbChanged(p, f, saved) { const o = saved.get(p.slug); return o ? tbVal(o, f) !== tbVal(p, f) : !!p._new; }
+function tbSet(p, f, v, saved) { // keeps projects.json clean: a false flag the file never had is removed again, not written
+  if (f === 'featured' || f === 'hidden') { const o = saved.get(p.slug); if (v) p[f] = true; else if (o && !(f in o)) delete p[f]; else p[f] = false; }
+  else if (f === 'year') p.year = /^\d+$/.test(String(v).trim()) ? parseInt(v, 10) : v;
+  else p[f] = v;
+}
+const TB_VIEWS = [['all', 'All projects', () => true], ['nomat', 'Materials empty', (p) => !String(p.materials || '').trim()],
+  ['feat', '★ Featured', (p) => !!p.featured], ['hid', 'Hidden', (p) => !!p.hidden], ['chg', 'Changed, not published', (p, s) => TB_COLS.some(([f]) => tbChanged(p, f, s))]]
+  .concat(CATEGORIES.map((c) => ['c:' + c, c, (p) => p.category === c]));
+function tbShown() { const s = tbSavedMap(), v = TB_VIEWS.find(([k]) => k === TB.f) || TB_VIEWS[0]; return S.projects.filter((p) => v[2](p, s)); }
+function tbSummary() {
+  const s = tbSavedMap(); let vals = 0, rows = 0;
+  S.projects.forEach((p) => { const n = TB_COLS.filter(([f]) => tbChanged(p, f, s)).length; vals += n; if (n) rows++; });
+  return { vals, rows };
+}
+function tbListView() {
+  const s = tbSavedMap(), sum = tbSummary(), noMat = S.projects.filter((p) => !String(p.materials || '').trim()).length;
+  const item = ([id, label, fn]) => { const n = S.projects.filter((p) => fn(p, s)).length;
+    return `<div class="ad-item${id === TB.f ? ' is-sel' : ''}"><button type="button" class="ad-item__main" data-tb-f="${esc(id)}" aria-pressed="${id === TB.f}"><span class="ad-item__t">${esc(label)}</span><span class="ad-item__m">${n} project${n === 1 ? '' : 's'}</span></button></div>`; };
+  return `<div class="ad-list">
+    ${tabsView()}
+    <div class="td-sum tb-sum"><p class="ad-small" id="tb-sum"><b>${S.projects.length}</b> projects · <b>${noMat}</b> without materials${sum.vals ? ` · <b>${sum.vals}</b> value${sum.vals === 1 ? '' : 's'} changed in ${sum.rows} project${sum.rows === 1 ? '' : 's'}` : ''}</p></div>
+    <div class="ad-items tr-filters">
+      <p class="nk-label tr-fl">Show</p>${TB_VIEWS.slice(0, 5).map(item).join('')}
+      <p class="nk-label tr-fl">Category</p>${TB_VIEWS.slice(5).map(item).join('')}
+    </div>
+  </div>`;
+}
+function tbCell(p, f, s, i) {
+  const id = `tb-${f}-${p.slug}`, chg = tbChanged(p, f, s), o = s.get(p.slug), t = esc(p.title.en || p.slug);
+  const was = chg && o ? ` title="On the site: ${esc(f === 'featured' || f === 'hidden' ? (o[f] ? 'yes' : 'no') : tbVal(o, f) || '(empty)')}"` : '';
+  const a = `id="${id}" data-tb="${esc(p.slug)}|${f}" data-tb-r="${i}"`;
+  let c;
+  if (f === 'category') c = `<select class="nk-input tb-in" ${a} aria-label="Category · ${t}">${CATEGORIES.concat(CATEGORIES.includes(p.category) ? [] : [p.category]).map((x) => `<option${x === p.category ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select>`;
+  else if (f === 'year') c = `<input class="nk-input tb-in tb-in--year" ${a} type="number" inputmode="numeric" min="1990" max="2100" value="${esc(p.year)}" aria-label="Year · ${t}"${+p.year >= 1990 && +p.year <= 2100 ? '' : ' aria-invalid="true"'}>`;
+  else if (f === 'materials') c = `<input class="nk-input tb-in tb-in--mat" ${a} value="${esc(p.materials || '')}" placeholder="—" aria-label="Materials · ${t}" autocomplete="off">`;
+  else c = `<input type="checkbox" class="tb-chk" ${a} ${p[f] ? 'checked' : ''} aria-label="${f === 'featured' ? 'Featured on home page' : 'Hidden from the site'} · ${t}">`;
+  return `<td class="tb-c tb-c--${f}${chg ? ' is-chg' : ''}"${was}>${c}</td>`;
+}
+function tbRow(p, i, s, nos) {
+  const t = esc(p.title.en || 'Untitled'), on = TB.sel.has(p.slug);
+  return `<tr class="${on ? 'is-on' : ''}${p.hidden ? ' is-hidden' : ''}" data-tb-row="${esc(p.slug)}">
+    <td class="tb-c tb-c--sel"><input type="checkbox" class="tb-chk" id="tb-s-${esc(p.slug)}" data-tb-sel="${esc(p.slug)}" ${on ? 'checked' : ''} aria-label="Select ${t}"></td>
+    <th scope="row" class="tb-c tb-c--name"><span class="nk-label">${esc(nos.get(p) || '—')}</span><button type="button" class="ar-t" data-tb-open="${esc(p.slug)}" title="Open in the editor">${t}</button></th>
+    ${TB_COLS.map(([f]) => tbCell(p, f, s, i)).join('')}
+  </tr>`;
+}
+function tbView() {
+  const rows = tbShown(), s = tbSavedMap(), nos = new Map(S.projects.map((p) => [p, arSheet(S.projects, p)]));
+  const nSel = rows.filter((p) => TB.sel.has(p.slug)).length, all = rows.length && nSel === rows.length, b = TB.bulk, dis = nSel ? '' : 'disabled';
+  const label = (TB_VIEWS.find(([k]) => k === TB.f) || TB_VIEWS[0])[1];
+  return `<div class="ad-editor">
+    <div class="ad-editor__head"><div><p class="nk-label">Table · ${esc(label)} · ${rows.length} of ${S.projects.length}</p><h2 class="sub">All projects at once</h2></div>
+      <div class="tr-tools">
+        <button type="button" class="nk-btn nk-btn--sm" data-tb-copy ${rows.length ? '' : 'disabled'}>Copy ${rows.length} for Excel</button>
+        <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-tb-paste aria-expanded="${TB.paste}">Paste from Excel</button>
+        <button type="button" class="nk-btn nk-btn--sm" data-tb-undo ${TB.undo.length ? '' : 'disabled'}>↶ Undo${TB.undo.length ? ` (${TB.undo.length})` : ''}</button>
+      </div></div>
+    <p class="ad-small">Type straight into the cells — Enter / Shift+Enter moves down / up the column. Tick rows (Shift+click ticks a range) to change them
+      together below. A red mark means the cell differs from the site (hover it to see the published value). Nothing changes on the site until you press Publish.</p>
+    <p class="ad-small tr-msg" id="tb-msg" role="status" aria-live="polite">${esc(TB.msg)}</p>
+    ${TB.paste ? `<div class="ad-sec tr-paste">
+      <label class="nk-label" for="tb-in">Paste from Excel</label>
+      <p class="ad-small">Paste rows copied from Excel or Google Sheets, with the header row. The “URL name” column finds the project; Category, Year,
+        Materials, Featured (yes / no) and Hidden (yes / no) are filled in. Other columns and empty cells change nothing.</p>
+      <textarea class="nk-input" id="tb-in" rows="8" spellcheck="false"></textarea>
+      <div class="tr-tools"><button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-tb-apply>Fill in</button><button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-tb-paste>Cancel</button></div>
+    </div>` : ''}
+    <fieldset class="ad-sec tb-bulk" ${dis}><legend class="nk-label">Change ${nSel ? `the ${nSel} ticked project${nSel === 1 ? '' : 's'}` : 'ticked projects · tick rows first'}</legend>
+      <div class="tb-bulk__row">
+        <label class="tb-b"><span class="nk-label">Category</span><select class="nk-input" id="tb-b-cat" data-tb-b="cat"><option value="">—</option>${CATEGORIES.map((c) => `<option${c === b.cat ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
+        <button type="button" class="nk-btn nk-btn--sm" data-tb-do="cat">Set</button>
+        <label class="tb-b"><span class="nk-label">Year</span><input class="nk-input tb-in--year" id="tb-b-year" data-tb-b="year" type="number" inputmode="numeric" min="1990" max="2100" value="${esc(b.year)}"></label>
+        <button type="button" class="nk-btn nk-btn--sm" data-tb-do="year">Set</button>
+      </div>
+      <div class="tb-bulk__row">
+        <label class="tb-b tb-b--mat"><span class="nk-label">Materials</span><input class="nk-input" id="tb-b-mat" data-tb-b="mat" value="${esc(b.mat)}" placeholder="PETG · 0.2 mm" autocomplete="off"></label>
+        <span class="tb-seg" role="group" aria-label="How to use the materials text"><button type="button" data-tb-mode="set" aria-pressed="${b.matMode === 'set'}">Replace</button><button type="button" data-tb-mode="add" aria-pressed="${b.matMode === 'add'}">Add to the end</button></span>
+        <button type="button" class="nk-btn nk-btn--sm" data-tb-do="mat">Set</button>
+      </div>
+      <div class="tb-bulk__row">
+        <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-tb-do="feat1">★ Feature</button>
+        <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-tb-do="feat0">☆ Unfeature</button>
+        <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-tb-do="hid1">Hide</button>
+        <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-tb-do="hid0">Show</button>
+        <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost tb-none" data-tb-none>Untick all</button>
+      </div>
+    </fieldset>
+    ${rows.length ? `<div class="tb-wrap"><table class="tb-tab">
+      <caption class="ar-vh">Projects in site order: ${esc(label)}</caption>
+      <thead><tr><th scope="col" class="tb-c tb-c--sel"><input type="checkbox" class="tb-chk" id="tb-s-all" data-tb-all ${all ? 'checked' : ''} aria-label="Select all ${rows.length} shown"></th>
+        <th scope="col" class="tb-c tb-c--name">Sheet · title</th>${TB_COLS.map(([f, l]) => `<th scope="col" class="tb-c tb-c--${f}">${l}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map((p, i) => tbRow(p, i, s, nos)).join('')}</tbody></table></div>`
+      : `<div class="ad-empty"><span class="nk-tag nk-tag--ok">Nothing here</span><p class="lead">No project matches “${esc(label)}”.</p></div>`}
+  </div>`;
+}
+function tbSay(msg) { TB.msg = msg; const m = document.getElementById('tb-msg'); if (m) m.textContent = msg; }
+function tbRefresh() { // after a cell edit: the marks, the summary and the counts, without moving the focus
+  const s = tbSavedMap();
+  root.querySelectorAll('[data-tb]').forEach((el) => {
+    const [slug, f] = el.dataset.tb.split('|'), p = S.projects.find((x) => x.slug === slug); if (!p) return;
+    const td = el.closest('td'), chg = tbChanged(p, f, s), o = s.get(slug);
+    td.classList.toggle('is-chg', chg);
+    if (chg && o) td.title = 'On the site: ' + (f === 'featured' || f === 'hidden' ? (o[f] ? 'yes' : 'no') : tbVal(o, f) || '(empty)'); else td.removeAttribute('title');
+    if (f === 'hidden') el.closest('tr').classList.toggle('is-hidden', !!p.hidden);
+  });
+  const list = root.querySelector('.ad-list'); if (list) list.outerHTML = tbListView();
+  S.notice = ''; updatePublish();
+}
+function tbInput(el) {
+  const [slug, f] = el.dataset.tb.split('|'), p = S.projects.find((x) => x.slug === slug); if (!p) return;
+  tbSet(p, f, el.type === 'checkbox' ? el.checked : el.value, tbSavedMap());
+  if (f === 'year') el.setAttribute('aria-invalid', String(!(+p.year >= 1990 && +p.year <= 2100)));
+  tbRefresh();
+}
+function tbPush() { TB.undo.push(S.projects.map((p) => ({ p, v: Object.fromEntries(TB_COLS.map(([f]) => [f, [f in p, p[f]]])) }))); if (TB.undo.length > 30) TB.undo.shift(); }
+function tbUndo() {
+  const snap = TB.undo.pop(); if (!snap) return;
+  snap.forEach(({ p, v }) => Object.entries(v).forEach(([f, [had, val]]) => { if (had) p[f] = val; else delete p[f]; }));
+  tbSay('Undone.'); render(); (document.querySelector('[data-tb-undo]:not([disabled])') || document.querySelector('[data-tb-copy]'))?.focus();
+}
+function tbBulk(kind) {
+  const ps = tbShown().filter((p) => TB.sel.has(p.slug)), b = TB.bulk, s = tbSavedMap();
+  if (!ps.length) { tbSay('Tick one or more rows first.'); return; }
+  let f, v;
+  if (kind === 'cat') { if (!CATEGORIES.includes(b.cat)) { tbSay('Pick a category first.'); document.getElementById('tb-b-cat')?.focus(); return; } f = 'category'; v = b.cat; }
+  else if (kind === 'year') { if (!(+b.year >= 1990 && +b.year <= 2100)) { tbSay('Type a year like 2026 first.'); document.getElementById('tb-b-year')?.focus(); return; } f = 'year'; v = b.year; }
+  else if (kind === 'mat') { if (b.matMode === 'add' && !b.mat.trim()) { tbSay('Type the materials text first.'); document.getElementById('tb-b-mat')?.focus(); return; } f = 'materials'; }
+  else { f = kind.startsWith('feat') ? 'featured' : 'hidden'; v = kind.endsWith('1'); }
+  tbPush();
+  let n = 0;
+  ps.forEach((p) => {
+    const before = tbVal(p, f);
+    const val = f !== 'materials' ? v : b.matMode === 'add' && String(p.materials || '').trim() ? String(p.materials).trim() + ' · ' + b.mat.trim() : b.mat.trim();
+    tbSet(p, f, val, s); if (tbVal(p, f) !== before) n++;
+  });
+  if (!n) TB.undo.pop();
+  const what = { category: 'Category', year: 'Year', materials: 'Materials', featured: 'Featured', hidden: 'Hidden' }[f];
+  TB.msg = n ? `${what} changed in ${n} of ${ps.length} ticked project${ps.length === 1 ? '' : 's'}. ↶ Undo puts it back.` : `${what}: the ${ps.length} ticked project${ps.length === 1 ? ' already has' : 's already have'} that value.`;
+  render();
+}
+function tbTsv(v) { return String(v ?? '').replace(/[\t\r\n]+/g, ' '); }
+async function tbCopy() {
+  const rows = tbShown(), nos = new Map(S.projects.map((p) => [p, arSheet(S.projects, p)]));
+  const text = ['URL name\tSheet\tTitle\tCategory\tYear\tMaterials\tFeatured\tHidden']
+    .concat(rows.map((p) => [p.slug, nos.get(p) || '', p.title.en, p.category, p.year, p.materials || '', p.featured ? 'yes' : 'no', p.hidden ? 'yes' : 'no'].map(tbTsv).join('\t'))).join('\n') + '\n';
+  try { await navigator.clipboard.writeText(text); tbSay(`Copied ${rows.length} row${rows.length === 1 ? '' : 's'} with a header. Paste into Excel, edit, copy the rows back and use “Paste from Excel”.`); }
+  catch { tbSay('Could not copy to the clipboard in this browser.'); }
+}
+function tbApply() {
+  const src = (document.getElementById('tb-in')?.value || '').replace(/\r/g, '');
+  const lines = src.split('\n').filter((l) => l.trim());
+  const sep = lines[0] && lines[0].includes('\t') ? '\t' : lines[0] && lines[0].includes(';') ? ';' : ',';
+  const head = (lines[0] || '').split(sep).map((h) => h.trim().toLowerCase());
+  const col = (re) => head.findIndex((h) => re.test(h));
+  const ci = { slug: col(/^(url name|url|slug)$/), category: col(/^(category|kategorija)$/), year: col(/^(year|leto)$/), materials: col(/^(materials?|materiali?)$/), featured: col(/^(featured|★)$/), hidden: col(/^(hidden|skrito)$/) };
+  if (ci.slug < 0) { tbSay('The first line must be the header row with a “URL name” column — copy the table with “Copy for Excel” first.'); document.getElementById('tb-in')?.focus(); return; }
+  const s = tbSavedMap(), bad = []; let vals = 0; const touched = new Set();
+  tbPush();
+  lines.slice(1).forEach((l, k) => {
+    const c = l.split(sep), row = k + 2, slug = (c[ci.slug] || '').trim(), p = S.projects.find((x) => x.slug === slug);
+    if (!p) { bad.push(`row ${row}: no project “${slug || '(empty)'}”`); return; }
+    const put = (f, v) => { const before = tbVal(p, f); tbSet(p, f, v, s); if (tbVal(p, f) !== before) { vals++; touched.add(slug); } };
+    const get = (f) => ci[f] >= 0 ? String(c[ci[f]] ?? '').trim() : '';
+    const cat = get('category'), yr = get('year'), mat = get('materials'), fe = get('featured'), hi = get('hidden');
+    if (cat) { const m = CATEGORIES.find((x) => x.toLowerCase() === cat.toLowerCase()); if (m) put('category', m); else bad.push(`row ${row}: category “${cat}”`); }
+    if (yr) { if (/^\d{4}$/.test(yr) && +yr >= 1990 && +yr <= 2100) put('year', yr); else bad.push(`row ${row}: year “${yr}”`); }
+    if (mat) put('materials', mat);
+    [['featured', fe], ['hidden', hi]].forEach(([f, v]) => { if (!v) return; if (TB_YES.test(v)) put(f, true); else if (TB_NO.test(v)) put(f, false); else bad.push(`row ${row}: ${f} “${v}”`); });
+  });
+  if (!vals) TB.undo.pop();
+  TB.msg = `${vals ? `Filled in ${vals} value${vals === 1 ? '' : 's'} in ${touched.size} project${touched.size === 1 ? '' : 's'}.` : 'Nothing to change — the pasted values are the same as here.'}${bad.length ? ` Not used: ${bad.slice(0, 4).join('; ')}${bad.length > 4 ? ` and ${bad.length - 4} more` : ''}.` : ''}${vals ? ' Check the red marks, then Publish.' : ''}`;
+  if (vals) { TB.paste = false; if (TB.f !== 'all') TB.f = 'chg'; }
+  render(); (vals ? document.querySelector('[data-tb-undo]') : document.getElementById('tb-in'))?.focus();
+}
+function tbSelect(el, shift) {
+  const slug = el.dataset.tbSel, rows = tbShown(), i = rows.findIndex((p) => p.slug === slug);
+  if (shift && TB.last != null) { const j = rows.findIndex((p) => p.slug === TB.last); if (j >= 0) rows.slice(Math.min(i, j), Math.max(i, j) + 1).forEach((p) => (el.checked ? TB.sel.add(p.slug) : TB.sel.delete(p.slug))); }
+  if (el.checked) TB.sel.add(slug); else TB.sel.delete(slug);
+  TB.last = slug; render();
+}
+function tbAct(b, e) {
+  if (b.dataset.tbF != null) { TB.f = b.dataset.tbF; TB.msg = ''; render(); document.querySelector(`[data-tb-f="${CSS.escape(TB.f)}"]`)?.focus(); return; }
+  if (b.dataset.tbOpen != null) { S.tab = 'projects'; S.sel = b.dataset.tbOpen; S.query = ''; render(); document.getElementById('t-en')?.focus(); return; }
+  if (b.dataset.tbCopy != null) { tbCopy(); return; }
+  if (b.dataset.tbPaste != null) { TB.paste = !TB.paste; TB.msg = ''; render(); (TB.paste ? document.getElementById('tb-in') : document.querySelector('[data-tb-paste]'))?.focus(); return; }
+  if (b.dataset.tbApply != null) { tbApply(); return; }
+  if (b.dataset.tbUndo != null) { tbUndo(); return; }
+  if (b.dataset.tbMode != null) { TB.bulk.matMode = b.dataset.tbMode; render(); document.querySelector(`[data-tb-mode="${TB.bulk.matMode}"]`)?.focus(); return; }
+  if (b.dataset.tbDo != null) { const k = b.dataset.tbDo; tbBulk(k); document.querySelector(`[data-tb-do="${k}"]`)?.focus(); return; }
+  if (b.dataset.tbNone != null) { TB.sel.clear(); TB.last = null; TB.msg = ''; render(); document.getElementById('tb-s-all')?.focus(); }
+}
+function tbKey(e) { // Enter / Shift+Enter (and ↑ ↓ in the materials column) move along the column, like a spreadsheet
+  const el = e.target, k = el.dataset && el.dataset.tb;
+  if (el.dataset && el.dataset.tbB != null && e.key === 'Enter') { e.preventDefault(); document.querySelector(`[data-tb-do="${el.dataset.tbB}"]`)?.click(); return true; }
+  if (!k) return false;
+  const f = k.split('|')[1], down = e.key === 'Enter' ? !e.shiftKey : e.key === 'ArrowDown' ? true : e.key === 'ArrowUp' ? false : null;
+  if (down == null || (e.key !== 'Enter' && f !== 'materials') || e.altKey || e.ctrlKey || e.metaKey) return false;
+  const cells = [...root.querySelectorAll(`[data-tb$="|${f}"]`)], i = cells.indexOf(el), nx = cells[i + (down ? 1 : -1)];
+  e.preventDefault();
+  if (nx) { nx.focus(); nx.select?.(); }
+  return true;
+}
 
 // ---------- LinkedIn post (news editor: ready-to-paste text for a news post, EN or SL) ----------
 // Read-only: builds text from the post's own headline, summary and article; changes nothing in news.json.
@@ -1276,6 +1496,7 @@ function editorView() {
   if (isTodo()) return todoView();
   if (isArr()) return arView();
   if (isTr()) return trView();
+  if (isTb()) return tbView();
   if (isNews()) return newsEditorView();
   const p = cur();
   if (!p) return `<div class="ad-empty"><p class="lead">No project selected.</p><button class="nk-btn" data-act="new" type="button">+ New project</button></div>`;
@@ -1407,6 +1628,8 @@ root.addEventListener('input', (e) => {
   const k = e.target.dataset.k, p = cur();
   if (e.target.id === 'q') { S.query = e.target.value; render(); return; }
   if (e.target.dataset.tr != null) { trInput(e.target); return; }
+  if (e.target.dataset.tb != null && e.target.type !== 'checkbox') { tbInput(e.target); return; }
+  if (e.target.dataset.tbB != null) { TB.bulk[e.target.dataset.tbB] = e.target.value; return; }
   if (!k || !p) return;
   const v = e.target.value;
   if (isNews()) {
@@ -1452,6 +1675,9 @@ root.addEventListener('input', (e) => {
 root.addEventListener('change', async (e) => {
   const k = e.target.dataset.k, p = cur();
   if (e.target.dataset.arPos != null) { arPos(e.target); return; }
+  if (e.target.dataset.tb != null) { if (e.target.type === 'checkbox' || e.target.tagName === 'SELECT') tbInput(e.target); return; }
+  if (e.target.dataset.tbB != null) { TB.bulk[e.target.dataset.tbB] = e.target.value; return; }
+  if (e.target.dataset.tbAll != null) { tbShown().forEach((x) => (e.target.checked ? TB.sel.add(x.slug) : TB.sel.delete(x.slug))); TB.last = null; render(); return; }
   if (e.target.dataset.liFull != null) { LI.full = e.target.checked; LI.msg = ''; render(); document.querySelector('[data-li-full]')?.focus(); return; }
   if (e.target.id === 'model-in' && p) {
     const f = e.target.files[0];
@@ -1500,6 +1726,7 @@ root.addEventListener('change', async (e) => {
 });
 
 root.addEventListener('click', (e) => {
+  if (e.target.dataset && e.target.dataset.tbSel != null) { tbSelect(e.target, e.shiftKey); return; }
   const b = e.target.closest('button');
   if (!b) return;
   const p = cur();
@@ -1509,6 +1736,7 @@ root.addEventListener('click', (e) => {
   if (b.dataset.todoGo != null) { todoGo(b.dataset.todoGo); return; }
   if (b.dataset.ar != null) { arAct(b); return; }
   if (isTr() && Object.keys(b.dataset).some((k) => /^tr[A-Z]/.test(k))) { trAct(b); return; }
+  if (isTb() && Object.keys(b.dataset).some((k) => /^tb[A-Z]/.test(k))) { tbAct(b, e); return; }
   if (b.dataset.liLang != null) { LI.lang = b.dataset.liLang; LI.msg = ''; render(); document.querySelector(`[data-li-lang="${LI.lang}"]`)?.focus(); return; }
   if (b.dataset.liCopy != null) { liCopy(); return; }
   if (b.dataset.spLang != null || b.dataset.spW != null) { if (b.dataset.spLang) SP.lang = b.dataset.spLang; else SP.w = b.dataset.spW; render(); document.querySelector(b.dataset.spLang ? `[data-sp-lang="${SP.lang}"]` : `[data-sp-w="${SP.w}"]`)?.focus(); return; }

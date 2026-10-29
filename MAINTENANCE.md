@@ -20,6 +20,61 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-29
+
+**Checked:** build, home, #services, #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d,
+#skills, #about, #compare, #order (all 4 steps on the local build, nothing sent), /admin/ sign-in and (with a mocked GitHub
+API) the dashboard — 1280 + 390 px, light + dark, EN (`/`) + SL (`/sl/`), plus a scan for anything wider than the page and
+broken images. Last Actions run (9b0907b) succeeded; nacekepa.work, /sl/, /admin/ and /news.xml return 200 (checked via the
+laptop). No JS errors, no CSP violations, no 404s (only Google Fonts, blocked in the cloud), no horizontal scroll, no
+missing translations.
+
+**Bugs fixed:** none found.
+
+**Improvement — #services tools package (help visitors find the five tools on the long Services page):**
+- "Check it yourself first" / "Najprej preverite sami" index right under the four service cards: T-01 … T-05 with each
+  tool's title and one line (planner, fit check, file check, material picker, what to prepare). Click → the page scrolls to
+  the tool and focuses its heading (keyboard and screen readers land there too).
+- Deep links to each tool: `#services?tool=plan`, `fit`, `file`, `material`, `prep` (also on `/sl/`) — e.g. to paste into a
+  LinkedIn reply ("check if it fits: nacekepa.work/#services?tool=fit"). Opening such a link scrolls to the tool.
+- Every tool now ends with "↑ All tools" / "↑ Vsa orodja" (back to the index); the fit check got its own `id="fit"`.
+- Home page: under the four service cards a "Check it yourself first" line links straight to the first four tools.
+*To remove:* the "Tools on #services" block in `app.js` (`TL_TOOLS` … `tlGo()`), the `tlIndex()` / `tlWrap()` calls in
+`views.services`, `tlHome()` in `views.home`, the `state.tool` line in `page()`, the `tlGo` line in `render()`, the "Tools
+index" line at the top of the click handler, `tl:` in both languages in `content.js` and the "Tools index" rules at the end
+of `page.css`.
+
+**Innovation — Admin "Table" tab (`/admin/` → sixth tab "Table"): bulk editing of all projects as one spreadsheet.**
+Every project in site order as one row: sheet number + title (click = open in the editor), Category, Year, Materials,
+★ Featured, Hidden — all editable straight in the cells (Enter / Shift+Enter = next / previous row in the same column,
+↑ ↓ in the Materials column). A cell that differs from the site gets a red mark; hovering shows the published value.
+- Left column: totals ("29 projects · 29 without materials · N values changed") and filters: All, Materials empty,
+  ★ Featured, Hidden, Changed (not published), and per category.
+- Tick rows (Shift+click ticks a range, the header box ticks all shown) and change them together: set Category, set Year,
+  Materials "Replace" or "Add to the end" (joined with " · "), ★ Feature / ☆ Unfeature, Hide / Show. ↶ Undo (up to 30
+  steps) reverts a bulk change or a paste.
+- "Copy N for Excel" copies the shown rows as a table with a header (URL name, Sheet, Title, Category, Year, Materials,
+  Featured, Hidden). Edit it in Excel / Google Sheets, copy it back and use "Paste from Excel": rows are matched by URL
+  name; Category / Year / Materials / Featured (yes/no) / Hidden (yes/no) are filled in, empty cells change nothing, and the
+  message says what it could not use (unknown URL name, unknown category, bad year).
+- Everything is a normal unpublished change (the Publish button counts it). A "hidden: false" the file never had is not
+  written, so projects.json only changes where a value really changed.
+Main use today: all 29 projects have an empty "materials" field — fill them in one go (that also unlocks the materials row on
+the project sheets and the material ideas below). Tested with a mocked GitHub API: cell edit + Enter/↑ moves, change marks,
+range select, bulk materials/category/hide + undo, filters, copy → edit → paste round trip (bad category and unknown URL
+name reported), open in editor, Publish (checked the committed projects.json: only the intended values changed),
+1280 + 390 px, light + dark, no horizontal page scroll, no errors.
+*To remove:* the "Table" block in `admin.js` (`isTb` … `tbKey()`), the "Table" tab in `tabsView()`, the `isTb()` lines in
+`listView()` / `editorView()`, the `data-tb*` lines in the click, input, change and keydown handlers and the "Table tab"
+rules at the end of `admin.css`.
+*Next step (optional day 2):* a "Drawing" column and the Slovenian title as a read-only column; drag a cell's value down
+("fill down") like Excel.
+
+**Ideas for next time** (added to the list below)
+- Public: "Copy link to this tool" on each #services tool (the deep links exist since today).
+- Public: once materials are filled in (Table tab) — a "Printed in" filter on #work and material chips on project cards.
+- Admin: Table tab for news (date, pinned, draft) with the same bulk edit.
+
 ## 2026-10-28
 
 **Checked:** build, home, #services, #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d,
@@ -74,6 +129,10 @@ export of the whole site in both languages.
 - Admin: "Insert link" and "Numbered list" buttons above the news article field (the site now understands both).
 - Public: "In this post" list of the links mentioned in a news article, under the article.
 - Admin: translation workspace check for the same project name spelled differently in EN and SL.
+- (Built 2026-10-29: admin "Table" tab — bulk edit + Excel copy/paste; #services tools index + deep links as the improvement.)
+- Public: "Copy link to this tool" on each #services tool (the deep links exist since today).
+- Public: once materials are filled in (Table tab) — a "Printed in" filter on #work and material chips on project cards.
+- Admin: Table tab for news (date, pinned, draft) with the same bulk edit.
 
 ## 2026-10-27
 

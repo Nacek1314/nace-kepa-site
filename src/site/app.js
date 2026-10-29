@@ -41,6 +41,7 @@
     if (m) { lang = m[1]; try { localStorage.setItem('nk-lang', lang); } catch (e) {} h = m[2]; }
     var qi = h.indexOf('?'), qs = qi >= 0 ? h.slice(qi + 1) : ''; if (qi >= 0) { if (h.slice(0, qi) === 'work' && location.hash !== state.findHash) findRead(qs); h = h.slice(0, qi); }
     if (h === 'compare' && PROJECTS.length) { cmpRead(qs); return 'compare'; }
+    if (h === 'services') state.tool = (/(?:^|&)tool=([a-z]+)/.exec(qs) || [])[1] || '';
     if (/^p-/.test(h) && bySlug(h.slice(2))) return 'project';
     if (/^n-/.test(h) && newsBySlug(h.slice(2))) return 'post';
     return PAGES.indexOf(h) >= 0 ? h : 'home'; }
@@ -96,7 +97,7 @@
         '<h1 class="display">' + esc(x.heroA) + '<br>' + esc(x.heroB) + '<em>' + esc(x.heroEm) + '</em></h1><p class="lead">' + esc(x.heroLead) + '</p>' +
         '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', 'lg', true) + btn(x.seeWork, '#work', null, 'lg') + '</div></div>' +
         '<div class="hero-sheet">' + (PROJECTS.length ? sheetH2(featured()[0]) : '') + specs([x.heroSpecs[0], [x.heroSpecs[1][0], String(PROJECTS.length)]].concat(x.heroSpecs.slice(2))) + '</div></section>' +
-        '<section class="block">' + head(x.servicesLabel, x.servicesTitle, x.servicesLead) + '<div class="grid-4">' + SERVICES.map(function (s) { return service(s, false); }).join('') + '</div></section>' +
+        '<section class="block">' + head(x.servicesLabel, x.servicesTitle, x.servicesLead) + '<div class="grid-4">' + SERVICES.map(function (s) { return service(s, false); }).join('') + '</div>' + tlHome() + '</section>' +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' +
         '<section class="block">' + head(x.workLabel, x.workTitle) + '<div class="grid-4 sheets">' + featured().map(sheet).join('') + '</div><div class="more">' + btn(x.seeWork, '#work', null, null, true) + '</div></section>' +
         (NEWS.length ? '<section class="block">' + head(x.newsLabel, x.newsTitle, x.newsLead) + '<div class="news-list">' + NEWS.slice(0, 3).map(newsCard).join('') + '</div>' + '<div class="more">' + btn(x.allNews + ' · ' + NEWS.length, '#news', null, null, true) + '</div>' + '</section>' : '') +
@@ -106,11 +107,12 @@
     services: function () {
       var x = t();
       return '<section class="block first">' + head('S-01 … S-04', x.servicesPageTitle, x.servicesPageLead, true) + '<div class="grid-2">' + SERVICES.map(function (s) { return service(s, true); }).join('') + '</div></section>' +
-        plBox() +
-        fitChecker() +
-        fcBox() +
-        mpBox() +
-        prepBox() +
+        tlIndex() +
+        tlWrap('plan', plBox()) +
+        tlWrap('fit', fitChecker()) +
+        tlWrap('file', fcBox()) +
+        tlWrap('material', mpBox()) +
+        tlWrap('prep', prepBox()) +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     work: function () {
@@ -1620,6 +1622,35 @@
       (st < 3 ? '<button type="button" class="nk-btn nk-btn--primary nk-btn--lg" id="next">' + esc(st === 2 ? x.finish : x.next) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' : '') + '</div>';
     return '<section class="block first' + (st === 3 ? ' bp-page' : '') + '">' + head(x.orderLabel, x.orderTitle, x.orderLead, true) + steps + '<form class="wiz-body" id="wiz" novalidate>' + (st < 3 ? drBar() : '') + body + nav + '</form>' + (st === 3 ? bpSheet() : '') + '</section>';
   }
+  // ---------- Tools on #services: index of the five tools, deep links #services?tool=plan|fit|file|material|prep ----------
+  // Added 2026-10-29 (#services tools package). Only links and scrolling; the tools themselves are unchanged.
+  // To remove: TL_TOOLS … tlGo(), the tlIndex() / tlWrap() calls in views.services, tlHome() in views.home, the state.tool
+  // line in page(), the tlGo line in render(), tl: in both languages in content.js and the "Tools index" rules in page.css.
+  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep']]; // [link name, content key, section id]
+  function tlHash(k) { return '#services?tool=' + k; }
+  function tlIndex() {
+    var x = t().tl;
+    return '<section class="block tl" id="tools" aria-labelledby="tl-h"><div class="tl-head"><p class="nk-label">' + esc(x.label) + '</p><h2 class="sub" id="tl-h" tabindex="-1">' + esc(x.title) + '</h2><p class="tl-lead">' + esc(x.lead) + '</p></div>' +
+      '<ol class="tl-list">' + TL_TOOLS.map(function (d, i) {
+        return '<li><a class="tl-item" href="' + tlHash(d[0]) + '"><span class="nk-label">T-0' + (i + 1) + '</span><span class="tl-t">' + esc(t()[d[1]].title) + '</span><span class="tl-d">' + esc(x[d[0]]) + '</span><span class="tl-go" aria-hidden="true">↓</span></a></li>';
+      }).join('') + '</ol></section>';
+  }
+  function tlWrap(k, html) { // gives the tool section its id + a T-0N tag and ends it with "↑ All tools"
+    var d = TL_TOOLS.filter(function (v) { return v[0] === k; })[0], n = TL_TOOLS.indexOf(d) + 1;
+    html = html.replace(/^<section class="block ([a-z-]+)"(?: id="[^"]*")?/, '<section class="block $1 tl-tool" id="' + d[2] + '" data-tl="T-0' + n + '"');
+    return html.replace(/<\/section>$/, '<p class="tl-back"><a href="#services?tool=index">↑ ' + esc(t().tl.back) + '</a></p></section>');
+  }
+  function tlHome() {
+    var x = t().tl;
+    return '<p class="tl-home"><span class="nk-label">' + esc(x.home) + '</span>' + TL_TOOLS.slice(0, 4).map(function (d) { return '<a href="' + tlHash(d[0]) + '">' + esc(t()[d[1]].title) + '</a>'; }).join('<span aria-hidden="true"> · </span>') + '</p>';
+  }
+  function tlGo(k) {
+    var d = TL_TOOLS.filter(function (v) { return v[0] === k; })[0], el = document.getElementById(d ? d[2] : 'tools');
+    if (!el) return;
+    var h = el.querySelector('h2'); if (!h) return;
+    if (!h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1');
+    el.scrollIntoView({ block: 'start' }); h.focus({ preventScroll: true });
+  }
   // ---------- Deadline check (order form, step 2) ----------
   // Compares the client's deadline with the published turnaround of each picked service (SERVICES[].time in content.js).
   // Self-contained: remove dlRange()…dlUpdate(), the dlBox() call in orderView(), the f-deadline line in the input
@@ -1827,6 +1858,7 @@
     if (p === 'project') mountViewer();
     if (p === 'order') drSave();
     if (p === 'services' && state.fc.res) fcDraw(); // File check views
+    if (p === 'services' && state.tool && location.hash !== state.tlAt) { state.tlAt = location.hash; tlGo(state.tool); } else if (p !== 'services') state.tlAt = '';
     if (p === 'services' && state.mpFocus) { state.mpFocus = false; var mb = document.getElementById('material'); if (mb) { mb.scrollIntoView({ block: 'start' }); var mi = mb.querySelector('input'); if (mi) mi.focus({ preventScroll: true }); } }
     if (p === 'services' && state.plFocus) { state.plFocus = false; var pb = document.getElementById('plan'); if (pb) { pb.scrollIntoView({ block: 'start' }); var pr = pb.querySelector('input'); if (pr) pr.focus({ preventScroll: true }); } }
     if (p === 'work') { findApply(); if (state.findFocus) { state.findFocus = false; var fq = document.getElementById('find-q'); if (fq) fq.focus(); } }
@@ -1852,6 +1884,8 @@
   app.addEventListener('click', function (ev) {
     var el = ev.target.closest('button, a'); if (!el) return;
     if (el.hasAttribute('data-skip')) { ev.preventDefault(); var mn = document.getElementById('main'); mn.focus({ preventScroll: true }); mn.scrollIntoView({ block: 'start' }); return; }
+    var th = el.tagName === 'A' && /^#services\?tool=([a-z]+)$/.exec(el.getAttribute('href') || ''); // Tools index: same link again → jump again
+    if (th && location.hash === th[0]) { ev.preventDefault(); tlGo(th[1]); return; }
     if (el.hasAttribute('data-fit-go')) { fitToOrder(); return; }
     if (el.hasAttribute('data-fc-go')) { fcToOrder(); return; }
     if (el.hasAttribute('data-fc-fit')) { fcToFit(); return; }

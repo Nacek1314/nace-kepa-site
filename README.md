@@ -65,6 +65,9 @@ stored in the repo. If a device is lost, revoke the token on GitHub.
 materials, featured on home); attach a 3D model (STL, 3MF, OBJ, GLB/GLTF up to 50 MB); add photos (the first
 one is the cover on the project sheet). Visitors open photos in a full-screen gallery and rotate models.
 
+**Table:** the *Table* tab shows all projects as one spreadsheet (category, year, materials, featured, hidden): edit
+cells directly, tick rows to change them together, or copy the table to Excel and paste it back.
+
 **News:** the *News* tab adds posts with an EN + SL headline, summary and article (blank line =
 new paragraph, lines starting with `- ` become a list), a date, photos, *pinned* and *draft*. The newest
 three appear on the home page; all are at `/#news`, each at `/#n-<url-name>`.
