@@ -42,6 +42,7 @@
     var qi = h.indexOf('?'), qs = qi >= 0 ? h.slice(qi + 1) : ''; if (qi >= 0) { if (h.slice(0, qi) === 'work' && location.hash !== state.findHash) findRead(qs); h = h.slice(0, qi); }
     if (h === 'compare' && PROJECTS.length) { cmpRead(qs); return 'compare'; }
     if (h === 'services') state.tool = (/(?:^|&)tool=([a-z]+)/.exec(qs) || [])[1] || '';
+    if (h === 'contact') { state.ctGo = true; return 'about'; } // Contact package (2026-10-29): #contact opens the contact card on #about
     if (/^p-/.test(h) && bySlug(h.slice(2))) return 'project';
     if (/^n-/.test(h) && newsBySlug(h.slice(2))) return 'post';
     return PAGES.indexOf(h) >= 0 ? h : 'home'; }
@@ -87,7 +88,7 @@
   }
   function ctaBand() {
     var x = t();
-    return '<section class="cta-band"><div><h2 class="sec-title">' + esc(x.ctaBandTitle) + '</h2><p class="lead">' + esc(x.ctaBandBody) + '</p></div><div class="cta-row">' + btn(ctaText(), '#order', 'primary', 'lg', true) + '</div></section>';
+    return '<section class="cta-band"><div><h2 class="sec-title">' + esc(x.ctaBandTitle) + '</h2><p class="lead">' + esc(x.ctaBandBody) + '</p></div><div class="cta-row cta-band__act">' + btn(ctaText(), '#order', 'primary', 'lg', true) + ctAlt() + '</div></section>';
   }
 
   var views = {
@@ -138,7 +139,7 @@
     about: function () {
       var x = t();
       return '<section class="block first about-page">' + head(x.aboutLabel, x.aboutTitle, null, true) + '<div class="about-cols"><div><p class="lead">' + esc(x.aboutBody) + '</p>' + timelineDims() + '</div><div><p class="nk-label">' + esc(x.facts) + '</p>' +
-        specs([[lang === 'sl' ? 'Lokacija' : 'Location', lang === 'sl' ? 'Škofja Loka, Slovenija' : 'Škofja Loka, Slovenia'], [lang === 'sl' ? 'Šola' : 'School', 'Šolski center Kranj'], ['CAD', lang === 'sl' ? 'SolidWorks 4 leta · CSWA · CSWA-AM' : 'SolidWorks 4 yrs · CSWA · CSWA-AM']].concat(x.heroSpecs.slice(2))) + '</div></div></section>' +
+        specs([[lang === 'sl' ? 'Lokacija' : 'Location', lang === 'sl' ? 'Škofja Loka, Slovenija' : 'Škofja Loka, Slovenia'], [lang === 'sl' ? 'Šola' : 'School', 'Šolski center Kranj'], ['CAD', lang === 'sl' ? 'SolidWorks 4 leta · CSWA · CSWA-AM' : 'SolidWorks 4 yrs · CSWA · CSWA-AM']].concat(x.heroSpecs.slice(2))) + ctCard() + '</div></div></section>' +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     order: orderView,
@@ -236,7 +237,7 @@
     var photos = p.photos || [];
     var stage = m
       ? '<div class="nk-viewer" id="viewer" data-src="' + esc(asset(m.file)) + '" data-format="' + esc(m.format || '') + '" role="img" aria-label="' + esc(x.viewerLabel + ': ' + P(p, 'title')) + '"><div class="nk-viewer__msg" id="viewer-msg">' + esc(x.loading3d) + '</div></div>' +
-        '<p class="viewer-hint">' + esc(x.viewerHint) + '</p>'
+        v3Bar('vw') + '<p class="viewer-hint">' + esc(x.viewerHint) + '</p>'
       : (photos.length ? '<button type="button" class="nk-sheet__art project-art" data-lb="0" aria-label="' + esc(x.openPhoto) + '">' + art(p, true) + '</button>' : '<div class="nk-sheet__art project-art">' + art(p) + '</div>');
     var rows = [[x.pCategory, cat(p)], [x.pYear, String(p.year)]];
     if (p.materials) rows.push([x.pMaterials, p.materials]);
@@ -261,6 +262,30 @@
     var x = t().ask, k = kind || 'p', subj = (k === 'n' ? x.subjectPost + ': ' : x.subject + ' ' + sheetNo(p) + ' · ') + P(p, 'title');
     return '<a class="nk-btn" href="mailto:' + esc(CONTACT_EMAIL) + '?subject=' + esc(encodeURIComponent(subj)) + '&amp;body=' + esc(encodeURIComponent(shareUrl(k, p) + '\n\n')) + '">' + esc(k === 'n' ? x.btnPost : x.btn) + '</a>';
   }
+  // ---------- Contact package (2026-10-29): one place with every way to reach the studio ----------
+  // ctCard(): a "Contact" card on #about (e-mail with Copy, LinkedIn, location, reply time and languages from the hero
+  // specs, "Write an e-mail" with the subject in the page language, "Start a project"); #contact opens it from anywhere.
+  // ctAlt(): "or write an e-mail" next to "Start a project" in the band at the end of every page. Only facts already on the
+  // site. Self-contained: remove ctMail() … ctAlt(), the ctCard() call in views.about, ctAlt() in ctaBand(), the 'contact'
+  // line in page(), the ctGo block in render(), data-ct-copy in the click handler, ct: in content.js and the "Contact
+  // package" rules at the end of page.css.
+  function ctMail(subject) { return CONTACT_EMAIL ? 'mailto:' + esc(CONTACT_EMAIL) + (subject ? '?subject=' + esc(encodeURIComponent(subject)) : '') : ''; }
+  function ctCard() {
+    var x = t(), c = x.ct, rows = [];
+    if (CONTACT_EMAIL) rows.push('<div><dt>' + esc(c.email) + '</dt><dd><a href="' + ctMail(c.subject) + '" id="ct-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-ct-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="ct-msg" role="status" aria-live="polite"></span></dd></div>');
+    rows.push('<div><dt>LinkedIn</dt><dd><a href="' + LINKEDIN + '" target="_blank" rel="noopener">' + esc(c.linkedin) + ' <span aria-hidden="true">↗</span><span class="vh"> (' + esc(x.newTab) + ')</span></a></dd></div>');
+    rows.push('<div><dt>' + esc(c.where) + '</dt><dd>' + esc(lang === 'sl' ? 'Škofja Loka, Slovenija' : 'Škofja Loka, Slovenia') + '</dd></div>');
+    x.heroSpecs.slice(2).forEach(function (r) { rows.push('<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'); });
+    return '<section class="ct" id="contact" tabindex="-1" aria-labelledby="ct-title"><p class="nk-label" id="ct-title">' + esc(c.title) + '</p><p class="ct-lead">' + esc(c.lead) + '</p><dl class="nk-specs ct-specs">' + rows.join('') + '</dl>' +
+      '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', null, true) + (CONTACT_EMAIL ? '<a class="nk-btn" href="' + ctMail(c.subject) + '">' + esc(c.write) + '</a>' : '') + '</div></section>';
+  }
+  function ctAlt() { return CONTACT_EMAIL ? '<a class="cta-band__alt" href="' + ctMail(t().ct.subject) + '">' + esc(t().ct.or) + ' →</a>' : ''; }
+  function ctCopy() {
+    var x = t(), msg = document.getElementById('ct-msg'), el = document.getElementById('ct-mail'); if (!msg || !el) return;
+    var fail = function () { msg.textContent = x.mailFail; var r = document.createRange(); r.selectNodeContents(el); var g = getSelection(); g.removeAllRanges(); g.addRange(r); };
+    try { navigator.clipboard.writeText(CONTACT_EMAIL).then(function () { msg.textContent = x.tbCopied; }, fail); } catch (e) { fail(); }
+  }
+
   // ---------- Share this sheet (project + news pages) ----------
   // Self-contained: remove shareUrl()…shareCopy(), the two shareBox() calls in projectView() / postView(), the two
   // data-share-* lines in the click handler, share: in both languages in content.js and the .share-* rules at the end of page.css.
@@ -714,7 +739,7 @@
     var go = function () {
       window.NKViewer.mount(el, { url: el.dataset.src, format: el.dataset.format }).then(function (v) {
         if (!document.body.contains(el)) { v.dispose(); return; }
-        viewer = v; var msg = document.getElementById('viewer-msg'); if (msg) msg.remove();
+        viewer = v; var msg = document.getElementById('viewer-msg'); if (msg) msg.remove(); v3Sync('vw');
       }, function () { var msg = document.getElementById('viewer-msg'); if (msg) msg.textContent = t().viewerFail; });
     };
     if (window.NKViewer) go(); else { window.addEventListener('nkviewer:ready', go, { once: true }); if (window.NKViewerLoad) window.NKViewerLoad(); }
@@ -904,6 +929,47 @@
     var x = t().rg, msg = document.getElementById('rg-msg'), tab = document.getElementById('rg-tab');
     var fail = function () { msg.textContent = x.copyFail; var r = document.createRange(); r.selectNodeContents(tab); var s = getSelection(); s.removeAllRanges(); s.addRange(r); };
     try { navigator.clipboard.writeText(rgText()).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+  }
+
+  // ---------- 3D drawing views + section (project sheets and the file check on #services; 2026-10-29) ----------
+  // One control bar under a 3D view: Iso / Top / Front / Side (orthographic drawing views, like the three views of a sheet)
+  // and a "Section" slider that cuts the part at a height so the inside can be seen. Works for the project viewer
+  // (`viewer`, for="vw") and the file check's own 3D preview (`fc3d`, for="fc"). Uses viewer.js setView() / setCut() only;
+  // nothing is stored or sent. Self-contained: remove V3_VIEWS … v3Sync(), the v3Bar() calls in projectView() / fcViews(),
+  // the v3Sync() call in mountViewer(), the fc3d* functions and state.fc.v3d lines, the data-v3-* / data-fc-3d lines in the
+  // click and input handlers, v3: + fc.v3d* in both languages in content.js and the "3D views" rules at the end of page.css.
+  var V3_VIEWS = ['iso', 'top', 'front', 'side'];
+  state.vw = { view: 'iso', cut: 100 };
+  function v3State(k) { return k === 'fc' ? state.fc : state.vw; }
+  function v3Handle(k) { return k === 'fc' ? fc3d : viewer; }
+  function v3Bar(k) {
+    var x = t().v3, st = v3State(k), on = !!v3Handle(k);
+    return '<div class="v3" data-v3-bar="' + k + '"' + (on ? '' : ' hidden') + '><div class="v3-views" role="group" aria-label="' + esc(x.view) + '"><span class="nk-label">' + esc(x.view) + '</span>' +
+      V3_VIEWS.map(function (v) { return '<button type="button" class="chip v3-v" data-v3-view="' + v + '" data-v3-for="' + k + '" aria-pressed="' + ((st.view || 'iso') === v) + '">' + esc(x[v]) + '</button>'; }).join('') + '</div>' +
+      '<div class="v3-cut"><label class="nk-label" for="v3-cut-' + k + '">' + esc(x.cut) + '</label><input type="range" id="v3-cut-' + k + '" min="0" max="100" step="1" value="' + (st.cut == null ? 100 : st.cut) + '" data-v3-cut="' + k + '" aria-describedby="v3-cut-out-' + k + '"><output class="nk-label" id="v3-cut-out-' + k + '" for="v3-cut-' + k + '">' + esc(v3CutText(k)) + '</output></div></div>';
+  }
+  function v3CutText(k) {
+    var x = t().v3, st = v3State(k), h = v3Handle(k), c = st.cut == null ? 100 : +st.cut;
+    if (c >= 100 || !h) return x.full;
+    return x.at.replace('{z}', fitFmt(Math.round(h.info.size.y * c) / 100));
+  }
+  function v3Set(k, what, v) { // what: 'view' | 'cut'
+    var st = v3State(k);
+    if (what === 'view') st.view = V3_VIEWS.indexOf(v) >= 0 ? v : 'iso'; else st.cut = Math.max(0, Math.min(100, +v || 0));
+    v3Sync(k);
+  }
+  function v3Sync(k) { // push the state into the viewer and the bar (shown once the viewer is mounted)
+    var h = v3Handle(k), st = v3State(k), bar = document.querySelector('[data-v3-bar="' + k + '"]');
+    if (bar) bar.hidden = !h;
+    if (!h) return;
+    if (h.view !== (st.view || 'iso')) h.setView(st.view || 'iso');
+    var c = st.cut == null ? 100 : +st.cut;
+    h.setCut(c >= 100 ? null : h.info.size.y * c / 100);
+    if (bar) {
+      bar.querySelectorAll('[data-v3-view]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.v3View === (st.view || 'iso'))); });
+      var o = bar.querySelector('output'); if (o) o.textContent = v3CutText(k);
+      var r = bar.querySelector('input[type=range]'); if (r && +r.value !== c) r.value = c;
+    }
   }
 
   // ---------- Fit check (#services): will a part fit the X2D build volume in one piece? ----------
@@ -1097,7 +1163,7 @@
   function fcRead(file) {
     var f = t().fc, ext = (/\.([a-z0-9]+)$/i.exec(file.name) || [])[1];
     ext = ext ? ext.toLowerCase() : '';
-    state.fc.res = null; state.fc.err = '';
+    state.fc.res = null; state.fc.err = ''; state.fc.cut = 100; // a new file starts uncut in the 3D preview
     if (ext === 'step' || ext === 'stp' || ext === 'iges' || ext === 'igs') { state.fc.err = f.errStep; fcRefresh(); return; }
     if (ext !== 'stl' && ext !== 'obj' && ext !== '3mf') { state.fc.err = f.errType; fcRefresh(); return; }
     if (file.size > FC_MAX) { state.fc.err = f.errBig; fcRefresh(); return; }
@@ -1157,7 +1223,38 @@
     var r = state.fc.res, f = t().fc, s = fcSize();
     var v = function (id, label, a, b) { return '<figure class="fc-view"><canvas id="fc-' + id + '" width="300" height="225" aria-hidden="true"></canvas><figcaption class="nk-label">' + esc(label) + (s ? ' · ' + fitFmt(s[a]) + ' × ' + fitFmt(s[b]) + ' mm' : '') + '</figcaption></figure>'; };
     if (!r) return '<div class="fc-blank"><svg viewBox="0 0 120 90" aria-hidden="true" focusable="false"><path class="hid" d="M30 70 L30 30 L60 15 L90 30 L90 70 L60 85 Z M30 30 L60 45 L90 30 M60 45 V85"/></svg><p class="nk-label">' + esc(f.views) + '</p></div>';
-    return v('top', f.top + ' · X × Y', 0, 1) + v('front', f.front + ' · X × Z', 0, 2) + v('side', f.side + ' · Y × Z', 1, 2);
+    return v('top', f.top + ' · X × Y', 0, 1) + v('front', f.front + ' · X × Z', 0, 2) + v('side', f.side + ' · Y × Z', 1, 2) + fc3dBox();
+  }
+  // 3D preview on the X2D plate (2026-10-29): the triangles already read for the three views go into the site's own
+  // 3D viewer (three.js, loaded on demand) with the X2D build volume drawn as a dashed box. Still nothing is uploaded.
+  var fc3d = null, fc3dTok = 0;
+  function fc3dOver() { // bed dimensions the part exceeds in the file's own orientation, e.g. "X 300 > 256"
+    var s = fcSize(); if (!s) return [];
+    return ['X', 'Y', 'Z'].map(function (a, i) { return s[i] > BED[i] ? a + ' ' + fitFmt(s[i]) + ' > ' + BED[i] : ''; }).filter(Boolean);
+  }
+  function fc3dBox() {
+    var f = t().fc, fs = state.fc, over = fc3dOver();
+    return '<div class="fc-3d' + (fs.v3d ? ' is-open' : '') + '"><div class="cta-row fc-3d__act"><button type="button" class="nk-btn nk-btn--sm" data-fc-3d aria-pressed="' + !!fs.v3d + '" aria-controls="fc-3d"><span aria-hidden="true">⬡ </span>' + esc(fs.v3d ? f.v3dHide : f.v3d) + '</button></div>' +
+      (fs.v3d ? '<div class="nk-viewer fc-3d__view" id="fc-3d" role="img" aria-label="' + esc(f.v3dLabel + ': ' + fs.res.name) + '"><div class="nk-viewer__msg" id="fc-3d-msg">' + esc(t().loading3d) + '</div></div>' + v3Bar('fc') +
+        '<p class="fc-3d__fit">' + (over.length ? '<span class="nk-tag nk-tag--rev">' + esc(f.v3dNo.replace('{d}', over.join(', '))) + '</span>' : '<span class="nk-tag nk-tag--ok">' + esc(f.v3dFit) + '</span>') + '</p><p class="fit-note">' + esc(f.v3dHint) + '</p>' : '') + '</div>';
+  }
+  function fc3dDispose() { fc3dTok++; if (fc3d) { fc3d.dispose(); fc3d = null; } }
+  function fc3dMount() {
+    fc3dDispose();
+    var el = document.getElementById('fc-3d'), r = state.fc.res; if (!el || !r || !state.fc.v3d) return;
+    var tok = fc3dTok, go = function () {
+      if (tok !== fc3dTok || !document.body.contains(el)) return;
+      window.NKViewer.mount(el, { positions: r.pos, scale: fcK(), bed: BED, still: true }).then(function (v) {
+        if (tok !== fc3dTok || !document.body.contains(el)) { v.dispose(); return; }
+        fc3d = v; var m = document.getElementById('fc-3d-msg'); if (m) m.remove(); v3Sync('fc');
+      }, function () { var m = document.getElementById('fc-3d-msg'); if (m) m.textContent = t().viewerFail; });
+    };
+    if (window.NKViewer) go(); else { window.addEventListener('nkviewer:ready', go, { once: true }); if (window.NKViewerLoad) window.NKViewerLoad(); }
+  }
+  function fc3dToggle() {
+    state.fc.v3d = !state.fc.v3d; if (state.fc.v3d && state.fc.view == null) { state.fc.view = 'iso'; state.fc.cut = 100; }
+    fcRefresh();
+    var b = document.querySelector('[data-fc-3d]'); if (b) b.focus({ preventScroll: true });
   }
   function fcBox() {
     var f = t().fc, fs = state.fc;
@@ -1173,7 +1270,7 @@
     if (o) o.innerHTML = fcResult();
     if (v) v.innerHTML = fcViews();
     if (i) i.disabled = !!state.fc.busy;
-    fcDraw();
+    fcDraw(); fc3dMount();
     if (focus) { var b = o && o.querySelector('[data-fc-go]'); if (b) b.focus({ preventScroll: true }); }
   }
   // The three views: every triangle projected and rasterised into a pixel mask (own scanline fill — a canvas path with
@@ -1851,16 +1948,18 @@
     document.documentElement.lang = lang === 'sl' ? 'sl' : 'en';
     document.title = pageTitle(p);
     if (viewer) { viewer.dispose(); viewer = null; }
+    fc3dDispose();
     closeLightbox();
     psDone();
     app.innerHTML = frame(views[p]());
     if (!keepScroll) window.scrollTo(0, 0);
     if (p === 'project') mountViewer();
     if (p === 'order') drSave();
-    if (p === 'services' && state.fc.res) fcDraw(); // File check views
+    if (p === 'services' && state.fc.res) { fcDraw(); fc3dMount(); } // File check views + 3D preview
     if (p === 'services' && state.tool && location.hash !== state.tlAt) { state.tlAt = location.hash; tlGo(state.tool); } else if (p !== 'services') state.tlAt = '';
     if (p === 'services' && state.mpFocus) { state.mpFocus = false; var mb = document.getElementById('material'); if (mb) { mb.scrollIntoView({ block: 'start' }); var mi = mb.querySelector('input'); if (mi) mi.focus({ preventScroll: true }); } }
     if (p === 'services' && state.plFocus) { state.plFocus = false; var pb = document.getElementById('plan'); if (pb) { pb.scrollIntoView({ block: 'start' }); var pr = pb.querySelector('input'); if (pr) pr.focus({ preventScroll: true }); } }
+    if (p === 'about' && state.ctGo) { state.ctGo = false; var ct = document.getElementById('contact'); if (ct) { ct.scrollIntoView({ block: 'start' }); ct.focus({ preventScroll: true }); } }
     if (p === 'work') { findApply(); if (state.findFocus) { state.findFocus = false; var fq = document.getElementById('find-q'); if (fq) fq.focus(); } }
     // Back from a project sheet / news post to its list: scroll to and focus the card the visitor opened, not the top.
     var came = state.from; state.from = p === 'project' ? '#p-' + currentSlug() : p === 'post' ? '#n-' + currentSlug() : '';
@@ -1891,6 +1990,9 @@
     if (el.hasAttribute('data-fc-fit')) { fcToFit(); return; }
     if (el.hasAttribute('data-fc-copy')) { fcCopy(); return; }
     if (el.hasAttribute('data-fc-clear')) { fcClear(); return; }
+    if (el.hasAttribute('data-fc-3d')) { fc3dToggle(); return; }
+    if (el.hasAttribute('data-ct-copy')) { ctCopy(); return; }
+    if (el.hasAttribute('data-v3-view')) { v3Set(el.dataset.v3For, 'view', el.dataset.v3View); return; }
     if (el.hasAttribute('data-pl-go')) { plToOrder(); return; }
     if (el.hasAttribute('data-mp-go')) { mpToOrder(); return; }
     if (el.hasAttribute('data-mp-copy')) { mpCopy(); return; }
@@ -1951,7 +2053,7 @@
       try { navigator.clipboard.writeText(txt).then(function () { msg.textContent = t().copied; }, fail); } catch (e) { fail(); }
     }
   });
-  app.addEventListener('input', function (ev) { var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); ofInput(ev.target, fk); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var pf = ev.target.dataset && ev.target.dataset.plF; if (pf && pf !== 'mat') { state.pl[pf] = ev.target.value; plUpdate(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
+  app.addEventListener('input', function (ev) { var v3 = ev.target.dataset && ev.target.dataset.v3Cut; if (v3) { v3Set(v3, 'cut', ev.target.value); return; } var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); ofInput(ev.target, fk); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var pf = ev.target.dataset && ev.target.dataset.plF; if (pf && pf !== 'mat') { state.pl[pf] = ev.target.value; plUpdate(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
     if (ev.target.hasAttribute('data-fc-file')) { if (ev.target.files && ev.target.files[0]) fcRead(ev.target.files[0]); return; }
     if (ev.target.hasAttribute('data-fc-unit')) { state.fc.unit = ev.target.value; fcRefresh(); var fu = document.getElementById('fc-unit'); if (fu) fu.focus(); return; }

@@ -72,6 +72,8 @@ const jsonLd = JSON.stringify({
   logo: 'https://nacekepa.work/apple-touch-icon.png',
   description,
   email: 'mailto:' + contactEmail,
+  // Contact package (2026-10-29): the same contact facts as the card on #about (e-mail, languages, EU).
+  contactPoint: { '@type': 'ContactPoint', contactType: 'sales', email: contactEmail, url: home + '#contact', availableLanguage: ['sl', 'en'], areaServed: 'EU' },
   address: { '@type': 'PostalAddress', addressLocality: 'Škofja Loka', addressCountry: 'SI' },
   areaServed: 'EU',
   availableLanguage: ['sl', 'en'],

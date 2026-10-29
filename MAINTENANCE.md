@@ -20,6 +20,63 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-29 (second run)
+
+**Checked:** build, home, #services, #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d,
+#skills, #about, #contact, #compare, #order (all 4 steps on the local build in EN + SL, nothing sent), /admin/ sign-in —
+1280 + 390 px, light + dark, EN (`/`) + SL (`/sl/`), plus a scan for anything wider than the page, broken images, unlabelled
+controls, unnamed buttons/links, heading jumps and duplicate ids. Last Actions run (c5608fe, this morning's run) succeeded;
+nacekepa.work, /sl/, /admin/ and /news.xml return 200 (checked via the laptop — the cloud cannot reach the live site or the
+GitHub API). No JS errors, no CSP violations, no 404s (only Google Fonts, blocked in the cloud), no horizontal scroll, no
+missing translations.
+
+**Bugs fixed:** none found.
+
+**Improvement — contact package (every way to reach the studio in one place, for visitors who do not want the wizard):**
+- "Contact" / "Kontakt" card on #about under the studio facts: e-mail with Copy, LinkedIn, studio location, quote reply
+  (≤ 48 h), shipping and languages (the same facts as the hero specs), "Write an e-mail" (subject "Project enquiry —
+  nacekepa.work" / "Povpraševanje — nacekepa.work" in the page language) and "Start a project".
+- `#contact` (also `/sl/#contact`) opens #about scrolled to that card with focus on it — a short link for LinkedIn replies and
+  the e-mail signature.
+- The band at the end of every page ("Have a part, a prototype or a problem?") now has "or write an e-mail →" under
+  "Start a project", so the second way to get in touch is always one click away.
+- JSON-LD: `contactPoint` (e-mail, sl + en, EU, url `#contact`) on the ProfessionalService block.
+*To remove:* `ctMail()` … `ctCopy()` in `app.js`, the `ctCard()` call in `views.about`, `ctAlt()` in `ctaBand()`, the
+`'contact'` line in `page()`, the `ctGo` line in `render()`, `data-ct-copy` in the click handler, `ct:` in both languages
+in `content.js`, `contactPoint` in `Site.astro` and the "Contact package" rules at the end of `page.css`.
+
+**Innovation — 3D preview on the X2D build plate + drawing views + section plane (`#services?tool=file` and every
+project sheet with a 3D model):**
+- File check: once a client's STL / 3MF / OBJ is read, a new "⬡ Show in 3D on the X2D plate" / "Pokaži v 3D na mizi X2D"
+  button under the three silhouette views opens the site's own 3D viewer (three.js, loaded only then) with the part standing
+  on the X2D plate: 256 × 256 mm outline in red, the 260 mm build volume as a dashed box, a 16 mm grid. The triangles already
+  read for the views are reused — the file still never leaves the browser. A part bigger than the box in the file's own
+  orientation is drawn red and a tag says which axis is over ("Bigger than the X2D in this orientation: X 300 > 256 mm");
+  otherwise "Fits the X2D in this orientation". Changing the file units re-draws it; "Clear" removes it; the state survives
+  leaving #services and coming back.
+- Under every 3D view (file check and project sheets): "View: Iso | Top | Front | Side" — Top / Front / Side are true
+  orthographic drawing views (like the sheet's three views; orbit, pan and zoom still work from there) — and a "Section"
+  slider that cuts the part at a height ("cut at Z = 50.4 mm" / "prerez pri Z = 50,4 mm") so the inside can be seen.
+  Buttons and slider work with the keyboard (arrows / Page Up / Page Down on the slider); the bar appears only once the
+  viewer is mounted.
+- `viewer.js`: `mount()` also takes `{ positions, scale, bed }` and returns `setView()`, `setCut()`, `view`, `info.over`;
+  feature edges are skipped above 250 000 triangles so huge client meshes don't stall a phone.
+Tested in Playwright (SwiftShader WebGL) with a local 120 × 70 × 60 hollow box and a 300 × 80 × 50 box: open / hide / clear,
+all four views, slider by keyboard, unit change, bigger-than-bed tag, leaving and returning, project-sheet bar with a
+temporary local STL (no model files were committed), 1280 + 390 px, light + dark, EN + SL, no errors, no horizontal scroll.
+*To remove:* in `app.js` the "3D drawing views + section" block (`V3_VIEWS` … `v3Sync()`), `fc3dBox()` … `fc3dToggle()`
+and the `fc3dBox()` call in `fcViews()`, `fc3dMount()` in `fcRefresh()` / `render()`, `fc3dDispose()` in `render()`,
+`v3Bar('vw')` in `projectView()`, `v3Sync('vw')` in `mountViewer()`, the `state.fc.cut` line in `fcRead()`, the
+`data-fc-3d` / `data-v3-*` lines in the click and input handlers; in `viewer.js` `meshFromPositions()` and the bed / ortho /
+cut blocks; `fc.v3d*` + `v3:` in both languages in `content.js` and the "3D views" rules at the end of `page.css`.
+*Next step (optional day 2):* "Snap to best orientation" (lay the part flat / rotate it into the orientation the fit check
+found) and a measuring tool (click two points → distance) in the same bar.
+
+**Ideas for next time** (added to the list below)
+- Public: "Snap to the fitting orientation" + two-point measuring in the 3D bar (see above).
+- Public: "Copy link to this tool" on each #services tool; `#contact` is the first short link of that kind.
+- Admin: upload preview uses the same View / Section bar (viewer.js already supports it — only the bar is missing).
+
 ## 2026-10-29
 
 **Checked:** build, home, #services, #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d,
@@ -1172,6 +1229,10 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: "Insert link" and "Numbered list" buttons above the news article field (the site now understands both).
 - Public: "In this post" list of the links mentioned in a news article, under the article.
 - Admin: translation workspace check for the same project name spelled differently in EN and SL.
+- Public: "Snap to the fitting orientation" and two-point measuring in the 3D view bar (views + section exist since 2026-10-29).
+- Public: "Copy link to this tool" on each #services tool (`#contact` is the first short link of that kind).
+- Admin: the upload preview in the project editor gets the same View / Section bar (viewer.js already supports it).
+- (Built 2026-10-29, 2nd run: 3D preview on the X2D plate in the file check + Iso/Top/Front/Side drawing views and a section slider under every 3D view; contact package as the improvement.)
 
 ## 2026-10-03 (second run)
 

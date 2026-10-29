@@ -25,6 +25,8 @@ var T = {
     certs: 'Certifications',
     aboutPageTitle: 'About',
     facts: 'Studio facts',
+    // Contact package (ctCard / ctAlt in app.js, 2026-10-29)
+    ct: { title: 'Contact', lead: 'Write in Slovenian or English — a short description of the part or the problem is enough to start.', email: 'E-mail', linkedin: 'Nace Kepa on LinkedIn', where: 'Studio', write: 'Write an e-mail', or: 'or write an e-mail', subject: 'Project enquiry — nacekepa.work' },
     timelines: [['Small CAD jobs', '2–5 days'], ['3D prints', '1–4 days + post-processing'], ['Full custom builds', '2–6 weeks']],
     orderLabel: 'Order · NK-Q', orderTitle: 'Start a project', orderLead: 'About two minutes. At the end you get a written brief and an indicative turnaround to send me.',
     steps: ['Services', 'Project', 'Contact', 'Brief'],
@@ -68,7 +70,12 @@ var T = {
       odd: 'The size looks unusual — check the units in the file.', openNote: 'The mesh has holes or doubled edges. Mention it in the brief — it may need repairing before printing.',
       sumClosed: 'closed mesh', sumOpen: 'open mesh', fitY: 'fits in one piece', fitN: 'does not fit in one piece',
       go: 'Add to the order form', toFit: 'Use in the fit check', copy: 'Copy summary', clear: 'Clear',
-      views: 'Top, front and side view appear here', top: 'Top', front: 'Front', side: 'Side', brief: 'File check' },
+      views: 'Top, front and side view appear here', top: 'Top', front: 'Front', side: 'Side', brief: 'File check',
+      // 3D preview on the X2D plate (fc3dBox in app.js, 2026-10-29)
+      v3d: 'Show in 3D on the X2D plate', v3dHide: 'Hide the 3D preview', v3dLabel: '3D preview on the X2D build plate', v3dFit: 'Fits the X2D in this orientation', v3dNo: 'Bigger than the X2D in this orientation: {d} mm',
+      v3dHint: 'Drag to rotate, scroll or pinch to zoom, right-drag to pan. Shown as oriented in the file; the dashed box is the X2D build volume, 256 × 256 × 260 mm, one grid square = 16 mm. The file still stays in your browser.' },
+    // 3D drawing views + section bar under every 3D view (v3Bar in app.js, 2026-10-29)
+    v3: { view: 'View', iso: 'Iso', top: 'Top', front: 'Front', side: 'Side', cut: 'Section', full: 'whole part', at: 'cut at Z = {z} mm' },
     // Material picker on #services (mpBox in app.js): ticked needs → ranked materials from the list on #skills → order form.
     mp: { label: 'Material · NK-M', title: 'Which material should it be printed in?', lead: 'Tick what the part has to cope with. The table ranks the materials I print and shows why — then hand your choice to the order form.',
       q: 'The part has to…', needs: { flex: 'bend or grip, like rubber', out: 'stay outdoors in sun and rain', heat: 'cope with heat — in a car, next to a motor or lamp', load: 'carry load and stay stiff', wear: 'slide, click or wear — hinges, gears, snap-fits', impact: 'survive knocks and drops', look: 'look good, with fine detail — a model or prototype' },
@@ -163,6 +170,8 @@ var T = {
     certs: 'Certifikati',
     aboutPageTitle: 'O meni',
     facts: 'O studiu',
+    // Kontakt (ctCard / ctAlt v app.js, 2026-10-29)
+    ct: { title: 'Kontakt', lead: 'Pišite v slovenščini ali angleščini — za začetek je dovolj kratek opis dela ali težave.', email: 'E-pošta', linkedin: 'Nace Kepa na LinkedInu', where: 'Studio', write: 'Pišite mi e-pošto', or: 'ali mi pišite e-pošto', subject: 'Povpraševanje — nacekepa.work' },
     timelines: [['Manjša CAD dela', '2–5 dni'], ['3D tisk', '1–4 dni + obdelava'], ['Celoten izdelek', '2–6 tednov']],
     orderLabel: 'Naročilo · NK-Q', orderTitle: 'Začni projekt', orderLead: 'Približno dve minuti. Na koncu dobite pisni opis projekta in okviren rok, ki mi ga pošljete.',
     steps: ['Storitve', 'Projekt', 'Kontakt', 'Povzetek'],
@@ -203,7 +212,12 @@ var T = {
       odd: 'Velikost je nenavadna — preverite enote v datoteki.', openNote: 'Mreža ima luknje ali podvojene robove. Omenite to v opisu projekta — pred tiskom jo bo morda treba popraviti.',
       sumClosed: 'zaprta mreža', sumOpen: 'odprta mreža', fitY: 'gre v enem kosu', fitN: 'ne gre v enem kosu',
       go: 'Dodaj v obrazec za naročilo', toFit: 'Uporabi pri preverjanju velikosti', copy: 'Kopiraj povzetek', clear: 'Počisti',
-      views: 'Tu se prikažejo tloris, naris in stranski ris', top: 'Tloris', front: 'Naris', side: 'Stranski ris', brief: 'Preverjanje datoteke' },
+      views: 'Tu se prikažejo tloris, naris in stranski ris', top: 'Tloris', front: 'Naris', side: 'Stranski ris', brief: 'Preverjanje datoteke',
+      // 3D predogled na mizi X2D (fc3dBox v app.js, 2026-10-29)
+      v3d: 'Pokaži v 3D na mizi X2D', v3dHide: 'Skrij 3D predogled', v3dLabel: '3D predogled na delovni mizi X2D', v3dFit: 'V tej legi gre v X2D', v3dNo: 'V tej legi je večji od X2D: {d} mm',
+      v3dHint: 'Z vlečenjem vrtite, s koleščkom ali prstoma povečate, z desnim gumbom premikate. Prikaz v legi iz datoteke; črtkan okvir je delovni prostor X2D, 256 × 256 × 260 mm, en kvadrat mreže = 16 mm. Datoteka še vedno ostane v vašem brskalniku.' },
+    // Risarski pogledi + prerez pod vsakim 3D prikazom (v3Bar v app.js, 2026-10-29)
+    v3: { view: 'Pogled', iso: 'Izo', top: 'Tloris', front: 'Naris', side: 'Stranski ris', cut: 'Prerez', full: 'cel del', at: 'prerez pri Z = {z} mm' },
     mp: { label: 'Material · NK-M', title: 'V katerem materialu naj bo natisnjen?', lead: 'Označite, kaj mora del prenesti. Tabela razvrsti materiale, ki jih tiskam, in pokaže zakaj — nato izbiro prenesete v obrazec za naročilo.',
       q: 'Del mora…', needs: { flex: 'se upogibati ali oprijemati kot guma', out: 'zdržati zunaj na soncu in dežju', heat: 'prenesti toploto — v avtu, ob motorju ali svetilki', load: 'nositi obremenitev in ostati tog', wear: 'drseti, zaskočiti ali se obrabljati — tečaji, zobniki, zaskočni spoji', impact: 'preživeti udarce in padce', look: 'lepo izgledati, z drobnimi detajli — maketa ali prototip' },
       short: { flex: 'fleksibilnost', out: 'zunaj', heat: 'toplota', load: 'obremenitev', wear: 'obraba', impact: 'udarci', look: 'videz' },
