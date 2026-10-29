@@ -15,7 +15,7 @@
   var PROJECTS = (window.NK_PROJECTS || []).filter(function (p) { return !p.hidden; });
   // News comes from src/data/news.json (also edited in the admin): pinned first, then newest.
   var NEWS = (window.NK_NEWS || []).filter(function (n) { return !n.hidden; }).sort(function (x, y) { return (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0) || String(y.date).localeCompare(String(x.date)); });
-  var PAGES = ['home', 'services', 'work', 'news', 'skills', 'about', 'order'];
+  var PAGES = ['home', 'services', 'work', 'news', 'skills', 'about', 'studio', 'order'];
   var viewer = null;
 
   // NK monogram — the same N/K geometry as the original logo, redrawn as a drawing-sheet mark.
@@ -150,7 +150,8 @@
         (NEWS.length ? '<div class="news-list">' + NEWS.map(newsCard).join('') + '</div>' + feedBox() : '<p class="lead">' + esc(x.newsEmpty) + '</p>') + '</section>' + ctaBand();
     },
     post: postView,
-    compare: function () { return cmpView(); }
+    compare: function () { return cmpView(); },
+    studio: function () { return stView(); }
   };
 
   // Machine-readable date for search engines and screen readers (<time datetime="YYYY-MM-DD">).
@@ -940,8 +941,8 @@
   // click and input handlers, v3: + fc.v3d* in both languages in content.js and the "3D views" rules at the end of page.css.
   var V3_VIEWS = ['iso', 'top', 'front', 'side'];
   state.vw = { view: 'iso', cut: 100 };
-  function v3State(k) { return k === 'fc' ? state.fc : state.vw; }
-  function v3Handle(k) { return k === 'fc' ? fc3d : viewer; }
+  function v3State(k) { return k === 'fc' ? state.fc : k === 'st' ? state.st : state.vw; }
+  function v3Handle(k) { return k === 'fc' ? fc3d : k === 'st' ? st3d : viewer; }
   function v3Bar(k) {
     var x = t().v3, st = v3State(k), on = !!v3Handle(k);
     return '<div class="v3" data-v3-bar="' + k + '"' + (on ? '' : ' hidden') + '><div class="v3-views" role="group" aria-label="' + esc(x.view) + '"><span class="nk-label">' + esc(x.view) + '</span>' +
@@ -1217,7 +1218,7 @@
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-fc-go>' + esc(f.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
       '<button type="button" class="nk-btn" data-fc-fit>' + esc(f.toFit) + '</button>' +
       '<button type="button" class="nk-btn nk-btn--ghost" data-fc-copy>' + esc(f.copy) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-fc-clear>' + esc(f.clear) + '</button></div>' +
-      '<p class="fc-msg" id="fc-msg" role="status" aria-live="polite"></p>';
+      '<p class="fc-msg" id="fc-msg" role="status" aria-live="polite"></p>' + stOpen();
   }
   function fcViews() {
     var r = state.fc.res, f = t().fc, s = fcSize();
@@ -1271,6 +1272,7 @@
     if (v) v.innerHTML = fcViews();
     if (i) i.disabled = !!state.fc.busy;
     fcDraw(); fc3dMount();
+    stRefresh(state.fc.res ? '#st-axes' : '#st-file'); // Part studio shares the read file
     if (focus) { var b = o && o.querySelector('[data-fc-go]'); if (b) b.focus({ preventScroll: true }); }
   }
   // The three views: every triangle projected and rasterised into a pixel mask (own scanline fill — a canvas path with
@@ -1719,6 +1721,202 @@
       (st < 3 ? '<button type="button" class="nk-btn nk-btn--primary nk-btn--lg" id="next">' + esc(st === 2 ? x.finish : x.next) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' : '') + '</div>';
     return '<section class="block first' + (st === 3 ? ' bp-page' : '') + '">' + head(x.orderLabel, x.orderTitle, x.orderLead, true) + steps + '<form class="wiz-body" id="wiz" novalidate>' + (st < 3 ? drBar() : '') + body + nav + '</form>' + (st === 3 ? bpSheet() : '') + '</section>';
   }
+  // ---------- Part studio (#studio; 2026-10-29, 2nd run — "update 2.0") ----------
+  // One page from file to order: the part (a client's STL / 3MF / OBJ read by the file check, or a typed size shown as a
+  // box) on the X2D build plate with the drawing views + section bar, an orientation picker (all six axis orders, "Turn to
+  // fit the printer" from fitCalc), two-point measuring, the material picker's needs, quantity + deadline check, and a live
+  // spec sheet (NK-S) that prints as an A4 page, copies as text or fills the order form. Uses only the visitor's own numbers
+  // and what is already on the site (BED, MP_MATS, SERVICES turnarounds). Nothing is stored or sent.
+  // Self-contained: remove ST_PERMS … stToOrder(), views.studio, 'studio' in PAGES / KBD_GO, the stRefresh() line in
+  // fcRefresh(), the 'st' cases in v3State() / v3Handle(), the stMount() / stDispose() lines in render(), the studio items
+  // in tlIndex() / tlHome(), the data-st-* lines in the click / input / change handlers, st: + nav.studio in both languages
+  // in content.js and the "Part studio" rules at the end of page.css.
+  var ST_PERMS = [[0, 1, 2], [1, 0, 2], [0, 2, 1], [2, 0, 1], [1, 2, 0], [2, 1, 0]]; // same order as fitCalc()
+  state.st = { name: '', l: '', w: '', h: '', qty: '1', deadline: '', fn: '', axes: 0, meas: null, mon: false, view: 'iso', cut: 100 };
+  var st3d = null, st3dTok = 0, stDimTimer = 0;
+  function stBoxPos(l, w, h) { // 12 triangles of an l × w × h box (file units = mm, Z-up), for the "typed size" part
+    var P = [[0, 0, 0], [l, 0, 0], [l, w, 0], [0, w, 0], [0, 0, h], [l, 0, h], [l, w, h], [0, w, h]], F = [[0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]], out = [];
+    F.forEach(function (f) { [[0, 1, 2], [0, 2, 3]].forEach(function (tri) { tri.forEach(function (i) { out.push.apply(out, P[f[i]]); }); }); });
+    return new Float32Array(out);
+  }
+  function stSrc() { // { kind: 'file' | 'box', pos, scale, size: [X, Y, Z] mm } or null
+    var r = state.fc.res, s = state.st;
+    if (r) return { kind: 'file', pos: r.pos, scale: fcK(), size: fcSize(), name: r.name };
+    var d = [fitNum(s.l), fitNum(s.w), fitNum(s.h)];
+    if (d[0] && d[1] && d[2]) return { kind: 'box', pos: stBoxPos(d[0], d[1], d[2]), scale: 1, size: d };
+    return null;
+  }
+  function stPerm() { return ST_PERMS[state.st.axes] || ST_PERMS[0]; }
+  function stDims(src) { var p = stPerm(); return p.map(function (k) { return fcR1(src.size[k]); }); }
+  function stFit(src) { return fitCalc({ l: src.size[0], w: src.size[1], h: src.size[2] }); } // over all orientations
+  function stFitPerm(src) { // index into ST_PERMS of the orientation fitCalc found, or -1
+    var r = stFit(src); if (!r || !r.fits) return -1;
+    for (var i = 0; i < ST_PERMS.length; i++) { var o = ST_PERMS[i].map(function (k) { return src.size[k]; }); if (o[0] === r.o[0] && o[1] === r.o[1] && o[2] === r.o[2]) return i; }
+    return -1;
+  }
+  function stOver(src) { // bed axes the part exceeds in the chosen orientation
+    var d = stDims(src);
+    return ['X', 'Y', 'Z'].map(function (a, i) { return d[i] > BED[i] ? a + ' ' + fitFmt(d[i]) + ' > ' + BED[i] : ''; }).filter(Boolean);
+  }
+  function stFitLine(src) {
+    var f = t().st, over = stOver(src), r = stFit(src);
+    if (!over.length) return ['ok', f.fitsNow];
+    if (r && !r.fits) return ['rev', f.noFitAny.replace('{d}', fitFmt(r.over))];
+    return ['rev', f.noFit.replace('{d}', over.join(', '))];
+  }
+  function stDue() { // deadline against the published printing turnaround (S-02), like the planner
+    var x = t().dl, d = dlDays(state.st.deadline); if (d == null) return '';
+    if (d <= 0) return '<span class="nk-tag nk-tag--rev">' + esc(x.pastTag) + '</span>';
+    var svc = SERVICES.filter(function (s) { return s.key === 'print'; })[0], r = svc && dlRange(svc); if (!r) return '';
+    var v = d < r[0] ? ['rev', x.short] : d < r[1] ? ['', x.tight] : ['ok', x.ok];
+    return '<span class="nk-tag' + (v[0] ? ' nk-tag--' + v[0] : '') + '">' + esc(v[1]) + '</span> ' + esc(d === 1 ? x.day : x.days.replace('{n}', d));
+  }
+  function stMeasText() {
+    var f = t().st, m = state.st.meas;
+    if (!m) return st3d && st3d.measuring ? f.measureOn : f.mNone;
+    return f.mRes.replace('{mm}', fitFmt(fcR1(m.mm))) + ' · ' + f.mDelta.replace('{x}', fitFmt(fcR1(m.d[0]))).replace('{y}', fitFmt(fcR1(m.d[1]))).replace('{z}', fitFmt(fcR1(m.d[2])));
+  }
+  function stRows(src) { // [[label, text, tagHtml?]] for the sheet, the clipboard and the brief
+    var f = t().st, x = t(), s = state.st, rows = [], fc = t().fc, r = state.fc.res, k = fcK();
+    rows.push([f.rows.name, s.name.trim() || f.unnamed]);
+    if (!src) return rows;
+    rows.push([f.rows.src, src.kind === 'file' ? f.srcFile.replace('{n}', r.name).replace('{f}', r.fmt).replace('{t}', fcNum(r.st.n, 0)) : f.srcBox]);
+    rows.push([f.rows.size, fitDims(stDims(src)) + ' mm']);
+    rows.push([f.rows.orient, s.axes ? f.turned + ' (' + ['X', 'Y', 'Z'].map(function (a, i) { return 'XYZ'[stPerm()[i]] + '→' + a; }).join(' ') + ')' : f.asFile]);
+    var fl = stFitLine(src); rows.push([f.rows.fit, fl[1], fl[0]]);
+    if (src.kind === 'file') {
+      rows.push([f.rows.closed, r.st.open === null ? fc.closedSkip : r.st.open === 0 ? fc.closedY : fc.closedN + ' · ' + fc.openEdges.replace('{n}', fcNum(r.st.open, 0))]);
+      if (r.st.open === 0) rows.push([f.rows.vol, fcNum(r.st.vol * k * k * k / 1000) + ' cm³']);
+      rows.push([f.rows.area, fcNum(r.st.area * k * k / 100) + ' cm²']);
+    }
+    var ch = mpChosen(), need = mpTicked();
+    rows.push([f.rows.mat, ch ? ch.name + (ch.ch ? ' · ' + t().mp.chamber : '') : f.matNone]);
+    rows.push([f.rows.needs, need.length ? need.map(function (n) { return t().mp.short[n]; }).join(', ') : f.noNeeds]);
+    rows.push([f.rows.qty, String(Math.max(1, Math.round(+s.qty || 1)))]);
+    var svc = SERVICES.filter(function (v) { return v.key === 'print'; })[0];
+    rows.push([f.rows.due, s.deadline ? fmtDate(s.deadline) : '—', 'due']);
+    if (svc) rows.push([f.rows.time, svc.code + ' · ' + L(svc.time)]);
+    if (s.meas) rows.push([f.rows.meas, stMeasText()]);
+    if (s.fn.trim()) rows.push([f.rows.fn, s.fn.trim()]);
+    return rows;
+  }
+  function stSheet() {
+    var f = t().st, src = stSrc(), rows = stRows(src), due = stDue();
+    return '<div class="pl-head"><span class="nk-label">' + esc(f.sheet) + '</span><span class="nk-label">NK-S · ' + esc(new Date().toISOString().slice(0, 10)) + '</span></div>' +
+      '<dl class="st-rows">' + rows.map(function (r) {
+        var v = r[2] === 'due' ? esc(r[1]) + (due ? ' <span class="st-due">' + due + '</span>' : '') : r[2] ? '<span class="nk-tag nk-tag--' + r[2] + '">' + esc(r[1]) + '</span>' : esc(r[1]);
+        return '<div><dt>' + esc(r[0]) + '</dt><dd>' + v + '</dd></div>';
+      }).join('') + '</dl>' +
+      (src ? '<div class="cta-row st-act"><button type="button" class="nk-btn nk-btn--primary" data-st-go>' + esc(f.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
+        '<button type="button" class="nk-btn" data-st-print>' + psIco() + ' ' + esc(f.print) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-st-copy>' + esc(f.copy) + '</button></div>' : '<p class="hint st-hint">' + esc(f.emptyD) + '</p>') +
+      '<p class="share-msg" id="st-msg" role="status" aria-live="polite"></p><p class="fit-note st-note">' + esc(f.note) + '</p>';
+  }
+  function stTools(src) {
+    var f = t().st, s = state.st, fp = src ? stFitPerm(src) : -1;
+    if (!src) return '';
+    return '<div class="st-tools"><div class="st-orient"><label class="nk-field__label" for="st-axes">' + esc(f.orient) + '</label><select class="nk-input" id="st-axes" data-st-axes>' +
+      ST_PERMS.map(function (p, i) { var d = p.map(function (k) { return fitFmt(fcR1(src.size[k])); }).join(' × '), ok = p.every(function (k, j) { return src.size[k] <= BED[j]; }); return '<option value="' + i + '"' + (s.axes === i ? ' selected' : '') + '>' + esc(d + ' mm' + (i === 0 ? ' · ' + f.asFile : '') + (ok ? ' ✓' : '')) + '</option>'; }).join('') + '</select>' +
+      (fp >= 0 && fp !== s.axes ? '<button type="button" class="nk-btn nk-btn--sm" data-st-fit>' + esc(f.fitBtn) + '</button>' : '') + '</div>' +
+      '<div class="st-measure"><button type="button" class="chip" data-st-measure aria-pressed="' + !!s.mon + '"><span aria-hidden="true">⟷ </span>' + esc(f.measure) + '</button><output class="nk-label st-meas" id="st-meas">' + esc(stMeasText()) + '</output>' + (s.meas ? '<button type="button" class="pl-link" data-st-mclear>' + esc(f.mClear) + '</button>' : '') + '</div></div>';
+  }
+  function stStage(src) {
+    var f = t().st, x = t();
+    if (!src) return '<div class="nk-sheet__art st-empty"><svg viewBox="0 0 120 90" aria-hidden="true" focusable="false"><path class="hid" d="M30 70 L30 30 L60 15 L90 30 L90 70 L60 85 Z M30 30 L60 45 L90 30 M60 45 V85"/></svg><p class="nk-label">' + esc(f.emptyT) + '</p><p class="hint">' + esc(f.emptyD) + '</p></div>';
+    return '<div class="nk-viewer st-3d" id="st-3d" role="img" aria-label="' + esc(f.label + ': ' + (src.name || f.srcBox)) + '"><div class="nk-viewer__msg" id="st-3d-msg">' + esc(x.loading3d) + '</div></div>' + v3Bar('st') + stTools(src) + '<p class="viewer-hint">' + esc(f.hint3d) + '</p>';
+  }
+  function stForm() {
+    var f = t().st, x = t(), s = state.st, r = state.fc.res, fs = state.fc, mp = t().mp;
+    var num = function (k, label, attrs) { return '<div class="nk-field"><label class="nk-field__label" for="st-' + k + '">' + esc(label) + '</label><input class="nk-input" id="st-' + k + '" data-st-f="' + k + '" ' + attrs + ' value="' + esc(s[k]) + '"></div>'; };
+    var file = r ? '<p class="st-file"><span class="nk-label">' + esc(f.file) + '</span> <b>' + esc(r.name) + '</b> · ' + esc(r.fmt) + ' <button type="button" class="pl-link" data-st-fclear>' + esc(f.remove) + '</button></p>' :
+      '<label class="fc-drop st-drop" for="st-file"><span class="fc-drop__t">' + esc(t().fc.pick) + '</span><span class="fc-drop__h">' + esc(f.fileHint) + '</span><input class="fc-file" id="st-file" type="file" accept=".stl,.3mf,.obj,model/stl,model/3mf" data-st-file' + (fs.busy ? ' disabled' : '') + '></label>' +
+      (fs.busy ? '<p class="hint">' + esc(t().fc.busy) + '</p>' : fs.err ? '<p class="fc-err"><span class="nk-tag nk-tag--rev">' + esc(t().fc.errTag) + '</span> ' + esc(fs.err) + '</p>' : '');
+    return '<form class="pl-form st-form" novalidate>' +
+      '<fieldset class="pl-q"><legend class="nk-label">' + esc(f.s1) + '</legend>' + num('name', f.name, 'type="text" maxlength="80" placeholder="' + esc(f.namePh) + '" autocomplete="off"') + file +
+      (r ? '' : '<p class="nk-field__label st-or" id="st-size-l">' + esc(f.orSize) + '</p><div class="fit-inputs" role="group" aria-labelledby="st-size-l">' + num('l', t().fit.l, 'type="number" inputmode="decimal" min="0" step="any"') + num('w', t().fit.w, 'type="number" inputmode="decimal" min="0" step="any"') + num('h', t().fit.h, 'type="number" inputmode="decimal" min="0" step="any"') + '</div>') + '</fieldset>' +
+      '<fieldset class="pl-q"><legend class="nk-label">' + esc(f.s2) + '</legend><div class="mp-opts">' + MP_NEEDS.map(function (k) { return '<label class="pl-opt"><input type="checkbox" value="' + k + '" data-st-need' + (state.mp.needs[k] ? ' checked' : '') + '><span>' + esc(mp.needs[k]) + '</span></label>'; }).join('') + '</div></fieldset>' +
+      '<fieldset class="pl-q"><legend class="nk-label">' + esc(f.s3) + '</legend><div class="pl-pair">' + num('qty', x.fQty, 'type="number" min="1" step="1"') + num('deadline', x.fDeadline, 'type="date" min="' + dlMin() + '"') + '</div>' +
+      '<div class="nk-field"><label class="nk-field__label" for="st-fn">' + esc(f.fn) + '</label><textarea class="nk-input st-fn" id="st-fn" data-st-f="fn" rows="3" placeholder="' + esc(f.fnPh) + '">' + esc(s.fn) + '</textarea></div></fieldset></form>';
+  }
+  function stView() {
+    var f = t().st, src = stSrc();
+    return '<section class="block first st" id="studio">' + head(f.label, f.title, f.lead, true) +
+      '<div class="st-grid"><div class="st-stage" id="st-stage">' + stStage(src) + '</div><div class="st-side" id="st-side">' + stForm() + '</div>' +
+      '<div class="pl-sheet st-sheet" id="st-sheet">' + stSheet() + '</div></div></section>' + ctaBand();
+  }
+  function stDispose() { st3dTok++; if (st3d) { st3d.dispose(); st3d = null; } }
+  function stMount() {
+    stDispose();
+    var el = document.getElementById('st-3d'), src = stSrc(); if (!el || !src) return;
+    var tok = st3dTok, go = function () {
+      if (tok !== st3dTok || !document.body.contains(el)) return;
+      window.NKViewer.mount(el, { positions: src.pos, scale: src.scale, bed: BED, still: true, onMeasure: function (m) { state.st.meas = m; stMeasShow(); } }).then(function (v) {
+        if (tok !== st3dTok || !document.body.contains(el)) { v.dispose(); return; }
+        st3d = v; var m = document.getElementById('st-3d-msg'); if (m) m.remove();
+        if (state.st.axes) v.setAxes(stPerm());
+        v.setMeasure(!!state.st.mon);
+        v3Sync('st'); stMeasShow();
+      }, function () { var m = document.getElementById('st-3d-msg'); if (m) m.textContent = t().viewerFail; });
+    };
+    if (window.NKViewer) go(); else { window.addEventListener('nkviewer:ready', go, { once: true }); if (window.NKViewerLoad) window.NKViewerLoad(); }
+  }
+  function stSheetShow() { var el = document.getElementById('st-sheet'); if (el) el.innerHTML = stSheet(); }
+  function stMeasShow() {
+    var o = document.getElementById('st-meas'); if (o) o.textContent = stMeasText();
+    var c = document.querySelector('[data-st-mclear]'), tools = document.querySelector('.st-measure');
+    if (state.st.meas && !c && tools) tools.insertAdjacentHTML('beforeend', '<button type="button" class="pl-link" data-st-mclear>' + esc(t().st.mClear) + '</button>');
+    if (!state.st.meas && c) c.remove();
+    stSheetShow();
+  }
+  function stRefresh(focusSel) { // the file changed (read, failed or removed): stage, form and sheet are rebuilt
+    var stage = document.getElementById('st-stage'), side = document.getElementById('st-side'); if (!stage || !side) return;
+    state.st.axes = 0; state.st.meas = null;
+    stage.innerHTML = stStage(stSrc()); side.innerHTML = stForm(); stSheetShow(); stMount();
+    var el = focusSel && document.querySelector(focusSel); if (el) el.focus({ preventScroll: true });
+  }
+  function stDims3d() { // typed size changed: a new box after a short pause (not on every keystroke)
+    clearTimeout(stDimTimer);
+    stDimTimer = setTimeout(function () { if (!document.getElementById('st-stage') || state.fc.res) return; var stage = document.getElementById('st-stage'); state.st.axes = 0; state.st.meas = null; stage.innerHTML = stStage(stSrc()); stSheetShow(); stMount(); }, 350);
+  }
+  function stAxes(i) {
+    state.st.axes = +i || 0; state.st.meas = null;
+    if (st3d) st3d.setAxes(stPerm());
+    var src = stSrc(), tools = document.querySelector('.st-tools'); if (tools && src) tools.outerHTML = stTools(src);
+    stSheetShow();
+    var sel = document.getElementById('st-axes'); if (sel) sel.focus({ preventScroll: true });
+  }
+  function stMeasure() {
+    state.st.mon = !state.st.mon; if (!state.st.mon) state.st.meas = null;
+    if (st3d) st3d.setMeasure(state.st.mon);
+    var b = document.querySelector('[data-st-measure]'); if (b) b.setAttribute('aria-pressed', String(state.st.mon));
+    stMeasShow();
+  }
+  function stText() {
+    var f = t().st, rows = stRows(stSrc());
+    return [f.sheet.toUpperCase() + ' NK-S — nacekepa.work'].concat(rows.map(function (r) { return r[0] + ': ' + r[1]; })).join('\n');
+  }
+  function stCopy() {
+    var msg = document.getElementById('st-msg'), f = t().st;
+    var fail = function () { msg.textContent = f.copyFail; var o = document.querySelector('.st-rows'); if (o) { var r = document.createRange(); r.selectNodeContents(o); var g = getSelection(); g.removeAllRanges(); g.addRange(r); } };
+    try { navigator.clipboard.writeText(stText()).then(function () { msg.textContent = f.copied; }, fail); } catch (e) { fail(); }
+  }
+  function stToOrder() {
+    var o = state.order, f = t().st, s = state.st, src = stSrc(); if (!src) return;
+    if (o.services.indexOf('print') < 0) o.services.push('print');
+    if (src.kind === 'box' && o.services.indexOf('cad') < 0) o.services.push('cad');
+    o.files = src.kind === 'file' ? 2 : Math.max(+o.files || 0, 0);
+    var ch = mpChosen(); o.mat = ch ? ch.o : 0;
+    o.qty = String(Math.max(1, Math.round(+s.qty || 1)));
+    if (dlDays(s.deadline) > 0) o.deadline = s.deadline;
+    var rows = stRows(src).filter(function (r) { return r[0] !== f.rows.fn && r[0] !== f.rows.needs; });
+    var line = f.brief + ': ' + rows.map(function (r) { return r[0] + ': ' + r[1]; }).join('; ') + '.';
+    if (o.what.indexOf(f.brief + ':') < 0) o.what = o.what ? line + '\n' + o.what : line;
+    else o.what = o.what.split('\n').map(function (l) { return l.indexOf(f.brief + ':') === 0 ? line : l; }).join('\n');
+    if (s.fn.trim() && o.what.indexOf(s.fn.trim()) < 0) o.what += '\n' + s.fn.trim();
+    state.step = 1; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+  function stOpen() { return '<p class="pl-open st-open"><a href="#studio">' + esc(t().st.open) + ' →</a></p>'; }
+
   // ---------- Tools on #services: index of the five tools, deep links #services?tool=plan|fit|file|material|prep ----------
   // Added 2026-10-29 (#services tools package). Only links and scrolling; the tools themselves are unchanged.
   // To remove: TL_TOOLS … tlGo(), the tlIndex() / tlWrap() calls in views.services, tlHome() in views.home, the state.tool
@@ -1730,7 +1928,7 @@
     return '<section class="block tl" id="tools" aria-labelledby="tl-h"><div class="tl-head"><p class="nk-label">' + esc(x.label) + '</p><h2 class="sub" id="tl-h" tabindex="-1">' + esc(x.title) + '</h2><p class="tl-lead">' + esc(x.lead) + '</p></div>' +
       '<ol class="tl-list">' + TL_TOOLS.map(function (d, i) {
         return '<li><a class="tl-item" href="' + tlHash(d[0]) + '"><span class="nk-label">T-0' + (i + 1) + '</span><span class="tl-t">' + esc(t()[d[1]].title) + '</span><span class="tl-d">' + esc(x[d[0]]) + '</span><span class="tl-go" aria-hidden="true">↓</span></a></li>';
-      }).join('') + '</ol></section>';
+      }).join('') + '<li><a class="tl-item tl-item--st" href="#studio"><span class="nk-label">T-0' + (TL_TOOLS.length + 1) + '</span><span class="tl-t">' + esc(t().st.label.split(' · ')[0]) + '</span><span class="tl-d">' + esc(t().st.tlLine) + '</span><span class="tl-go" aria-hidden="true">→</span></a></li></ol></section>';
   }
   function tlWrap(k, html) { // gives the tool section its id + a T-0N tag and ends it with "↑ All tools"
     var d = TL_TOOLS.filter(function (v) { return v[0] === k; })[0], n = TL_TOOLS.indexOf(d) + 1;
@@ -1739,7 +1937,7 @@
   }
   function tlHome() {
     var x = t().tl;
-    return '<p class="tl-home"><span class="nk-label">' + esc(x.home) + '</span>' + TL_TOOLS.slice(0, 4).map(function (d) { return '<a href="' + tlHash(d[0]) + '">' + esc(t()[d[1]].title) + '</a>'; }).join('<span aria-hidden="true"> · </span>') + '</p>';
+    return '<p class="tl-home"><span class="nk-label">' + esc(x.home) + '</span>' + TL_TOOLS.slice(0, 4).map(function (d) { return '<a href="' + tlHash(d[0]) + '">' + esc(t()[d[1]].title) + '</a>'; }).concat(['<a href="#studio"><b>' + esc(t().st.label.split(' · ')[0]) + '</b></a>']).join('<span aria-hidden="true"> · </span>') + '</p>';
   }
   function tlGo(k) {
     var d = TL_TOOLS.filter(function (v) { return v[0] === k; })[0], el = document.getElementById(d ? d[2] : 'tools');
@@ -1948,7 +2146,7 @@
     document.documentElement.lang = lang === 'sl' ? 'sl' : 'en';
     document.title = pageTitle(p);
     if (viewer) { viewer.dispose(); viewer = null; }
-    fc3dDispose();
+    fc3dDispose(); stDispose();
     closeLightbox();
     psDone();
     app.innerHTML = frame(views[p]());
@@ -1956,6 +2154,7 @@
     if (p === 'project') mountViewer();
     if (p === 'order') drSave();
     if (p === 'services' && state.fc.res) { fcDraw(); fc3dMount(); } // File check views + 3D preview
+    if (p === 'studio') stMount();
     if (p === 'services' && state.tool && location.hash !== state.tlAt) { state.tlAt = location.hash; tlGo(state.tool); } else if (p !== 'services') state.tlAt = '';
     if (p === 'services' && state.mpFocus) { state.mpFocus = false; var mb = document.getElementById('material'); if (mb) { mb.scrollIntoView({ block: 'start' }); var mi = mb.querySelector('input'); if (mi) mi.focus({ preventScroll: true }); } }
     if (p === 'services' && state.plFocus) { state.plFocus = false; var pb = document.getElementById('plan'); if (pb) { pb.scrollIntoView({ block: 'start' }); var pr = pb.querySelector('input'); if (pr) pr.focus({ preventScroll: true }); } }
@@ -1992,6 +2191,13 @@
     if (el.hasAttribute('data-fc-clear')) { fcClear(); return; }
     if (el.hasAttribute('data-fc-3d')) { fc3dToggle(); return; }
     if (el.hasAttribute('data-ct-copy')) { ctCopy(); return; }
+    if (el.hasAttribute('data-st-go')) { stToOrder(); return; }
+    if (el.hasAttribute('data-st-copy')) { stCopy(); return; }
+    if (el.hasAttribute('data-st-print')) { printSheet(); return; }
+    if (el.hasAttribute('data-st-fit')) { var sfp = stFitPerm(stSrc()); if (sfp >= 0) stAxes(sfp); return; }
+    if (el.hasAttribute('data-st-measure')) { stMeasure(); return; }
+    if (el.hasAttribute('data-st-mclear')) { if (st3d) st3d.clearMeasure(); state.st.meas = null; stMeasShow(); return; }
+    if (el.hasAttribute('data-st-fclear')) { state.fc = { busy: false, err: '', res: null, unit: state.fc.unit }; fcRefresh(); return; }
     if (el.hasAttribute('data-v3-view')) { v3Set(el.dataset.v3For, 'view', el.dataset.v3View); return; }
     if (el.hasAttribute('data-pl-go')) { plToOrder(); return; }
     if (el.hasAttribute('data-mp-go')) { mpToOrder(); return; }
@@ -2053,9 +2259,12 @@
       try { navigator.clipboard.writeText(txt).then(function () { msg.textContent = t().copied; }, fail); } catch (e) { fail(); }
     }
   });
-  app.addEventListener('input', function (ev) { var v3 = ev.target.dataset && ev.target.dataset.v3Cut; if (v3) { v3Set(v3, 'cut', ev.target.value); return; } var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); ofInput(ev.target, fk); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var pf = ev.target.dataset && ev.target.dataset.plF; if (pf && pf !== 'mat') { state.pl[pf] = ev.target.value; plUpdate(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
+  app.addEventListener('input', function (ev) { var v3 = ev.target.dataset && ev.target.dataset.v3Cut; if (v3) { v3Set(v3, 'cut', ev.target.value); return; } var sf = ev.target.dataset && ev.target.dataset.stF; if (sf) { state.st[sf] = ev.target.value; if (sf === 'l' || sf === 'w' || sf === 'h') stDims3d(); stSheetShow(); return; } var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); ofInput(ev.target, fk); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var pf = ev.target.dataset && ev.target.dataset.plF; if (pf && pf !== 'mat') { state.pl[pf] = ev.target.value; plUpdate(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
     if (ev.target.hasAttribute('data-fc-file')) { if (ev.target.files && ev.target.files[0]) fcRead(ev.target.files[0]); return; }
+    if (ev.target.hasAttribute('data-st-file')) { if (ev.target.files && ev.target.files[0]) fcRead(ev.target.files[0]); return; }
+    if (ev.target.hasAttribute('data-st-need')) { state.mp.needs[ev.target.value] = ev.target.checked; stSheetShow(); return; }
+    if (ev.target.hasAttribute('data-st-axes')) { stAxes(ev.target.value); return; }
     if (ev.target.hasAttribute('data-fc-unit')) { state.fc.unit = ev.target.value; fcRefresh(); var fu = document.getElementById('fc-unit'); if (fu) fu.focus(); return; }
     if (ev.target.dataset.cmpSlot) { var cs = state.cmp.slice(), ck = +ev.target.dataset.cmpSlot; cs[ck] = ev.target.value; cmpSet(cs, '#cmp-' + ck); return; }
     if (ev.target.hasAttribute('data-ps-scope')) { state.ps.scope = ev.target.value; psSync(); return; }
@@ -2110,7 +2319,7 @@
   // ---------- Keyboard shortcuts: "?" opens a list; ← / → previous/next sheet; H S W N O jump; L switches EN/SL ----------
   // Self-contained: remove this block (KBD_GO … kbdKey()), kbdBtn() in frame(), the data-kbd line in the click handler,
   // the kbdKey(ev) line in the keydown handler, keys: in both languages in content.js and the "Keyboard shortcuts" rules in page.css.
-  var KBD_GO = { h: 'home', s: 'services', w: 'work', n: 'news', o: 'order', c: 'compare' };
+  var KBD_GO = { h: 'home', s: 'services', w: 'work', n: 'news', p: 'studio', o: 'order', c: 'compare' };
   function kbdBtn() { return '<button type="button" class="kbd-open" data-kbd aria-haspopup="dialog">' + esc(t().keys.btn) + ' <kbd>?</kbd></button>'; }
   function kbdRows() {
     var x = t(), k = x.keys, r = [['?', k.help], ['/', k.find], ['← →', k.prevNext]];

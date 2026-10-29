@@ -5,8 +5,10 @@
 // (the file check on #services: Float32Array, 9 numbers per triangle, Z-up, in file units × scale = mm) shown on the X2D
 // build plate (bed = [X, Y, Z] mm as a dashed box; the part turns red where it is bigger than the box). Every viewer gets
 // setView('iso' | 'top' | 'front' | 'side') — orthographic drawing views — and setCut(mm | null), a section plane that
-// hides everything above that height. Remove: meshFromPositions(), the bed / ortho / cut blocks below and the two returned
-// functions; mount({ url }) then works as before.
+// hides everything above that height. Part studio (2026-10-29, 2nd): setAxes([a, b, c]) turns the part so that file axes
+// a, b, c become X, Y, Z (the orientation the fit check found), setMeasure(on) + clearMeasure() measure the distance between
+// two clicked points on the part (opts.onMeasure gets { mm, d: [ΔX, ΔY, ΔZ] } or null). Remove: meshFromPositions(), the
+// bed / ortho / cut / axes / measure blocks below and the returned functions; mount({ url }) then works as before.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
@@ -114,21 +116,30 @@ export async function mount(container, opts) {
   if (format === 'stl' || format === '3mf') obj.rotation.x = -Math.PI / 2; // NKM is stored Y-up already
   if (raw && opts.scale > 0 && opts.scale !== 1) obj.scale.setScalar(opts.scale); // file units → mm
   const info = styleObject(obj, pal);
+  // holder (centred on the plate) > axes (orientation, see setAxes) > obj (file → three.js rotation, scale) > mesh(es)
+  const axes = new THREE.Group();
+  axes.matrixAutoUpdate = false;
+  axes.add(obj);
   const holder = new THREE.Group();
-  holder.add(obj);
+  holder.add(axes);
   scene.add(holder);
 
   // Centre on the floor and fit the camera.
-  holder.updateMatrixWorld(true);
-  let box = new THREE.Box3().setFromObject(holder);
-  const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
-  holder.position.set(-center.x, -box.min.y, -center.z);
-  holder.updateMatrixWorld(true);
-  box = new THREE.Box3().setFromObject(holder);
+  const size = new THREE.Vector3();
+  const refit = () => { // after a load or a turn: part centred on the plate, size measured in three.js axes
+    holder.position.set(0, 0, 0);
+    holder.updateMatrixWorld(true);
+    const b = new THREE.Box3().setFromObject(holder);
+    b.getSize(size);
+    const c = b.getCenter(new THREE.Vector3());
+    holder.position.set(-c.x, -b.min.y, -c.z);
+    holder.updateMatrixWorld(true);
+  };
+  refit();
   // Build plate mode: the X2D volume as a dashed box on a 16 mm grid; a part bigger than the box in this orientation is red.
   const bed = Array.isArray(opts.bed) && opts.bed.length === 3 ? opts.bed.map(Number) : null; // [X, Y, Z] mm → three.js x, z, y
-  const over = bed ? size.x > bed[0] + 0.05 || size.z > bed[1] + 0.05 || size.y > bed[2] + 0.05 : false;
+  const isOver = () => (bed ? size.x > bed[0] + 0.05 || size.z > bed[1] + 0.05 || size.y > bed[2] + 0.05 : false);
+  let over = isOver();
   if (over) info.materials[0].color.copy(pal.accent);
   const radius = Math.max(size.x, size.y, size.z, bed ? Math.max(bed[0], bed[1], bed[2]) : 0) || 1;
 
@@ -159,7 +170,8 @@ export async function mount(container, opts) {
 
   // The camera orbits the part's centre; in build plate mode it stands further back so the whole box stays in view.
   const home = bed ? [radius * 2.1, radius * 1.5, radius * 2.5] : [radius * 1.6, radius * 1.1, radius * 1.9];
-  const look = bed ? Math.max(size.y / 2, bed[2] * 0.3) : size.y / 2;
+  const lookAt = () => (bed ? Math.max(size.y / 2, bed[2] * 0.3) : size.y / 2);
+  let look = lookAt();
   camera.near = radius / 100;
   camera.far = radius * 100;
   camera.position.set(home[0], home[1], home[2]);
@@ -203,6 +215,7 @@ export async function mount(container, opts) {
     info.materials[1].color.copy(p.ink);
     grid.material.color.copy(p.grid);
     if (bed) { info.materials[2].color.copy(p.muted); info.materials[3].color.copy(p.accent); }
+    mMat.color.copy(p.accent); mLineMat.color.copy(p.accent);
   };
   mq.addEventListener('change', retheme);
   const mo = new MutationObserver(retheme);
@@ -240,13 +253,88 @@ export async function mount(container, opts) {
   };
   const setCut = (mm) => { cutPlane.constant = typeof mm === 'number' && isFinite(mm) ? Math.max(0, mm) : 1e9; };
 
+  // Measuring: in measure mode a click (not a drag) on the part adds a point; two points give a distance line in mm.
+  const meshes = [];
+  obj.traverse((o) => { if (o.isMesh) meshes.push(o); });
+  const ray = new THREE.Raycaster();
+  const mPts = [];
+  let mObjs = [], measuring = false, down = null;
+  const mMat = new THREE.MeshBasicMaterial({ color: pal.accent, depthTest: false, depthWrite: false });
+  const mLineMat = new THREE.LineBasicMaterial({ color: pal.accent, depthTest: false, depthWrite: false });
+  info.materials.push(mMat, mLineMat);
+  const report = () => {
+    if (typeof opts.onMeasure !== 'function') return;
+    if (mPts.length < 2) { opts.onMeasure(null); return; }
+    const a = mPts[0], b = mPts[1];
+    opts.onMeasure({ mm: a.distanceTo(b), d: [Math.abs(a.x - b.x), Math.abs(a.z - b.z), Math.abs(a.y - b.y)] }); // file X, Y, Z
+  };
+  const clearMeasure = (quiet) => {
+    mObjs.forEach((o) => { scene.remove(o); if (o.geometry) o.geometry.dispose(); });
+    mObjs = []; mPts.length = 0;
+    if (!quiet) report();
+  };
+  const addPoint = (p) => {
+    if (mPts.length >= 2) clearMeasure(true);
+    mPts.push(p);
+    const mark = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.012, 12, 8), mMat);
+    mark.position.copy(p); mark.renderOrder = 10; scene.add(mark); mObjs.push(mark);
+    if (mPts.length === 2) {
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([mPts[0], mPts[1]]), mLineMat);
+      line.renderOrder = 10; scene.add(line); mObjs.push(line);
+    }
+    report();
+  };
+  renderer.domElement.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
+  renderer.domElement.addEventListener('pointerup', (e) => {
+    if (!down) return;
+    const dx = e.clientX - down[0], dy = e.clientY - down[1]; down = null;
+    if (!measuring || dx * dx + dy * dy > 36) return;
+    const r = renderer.domElement.getBoundingClientRect();
+    ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), controls.object);
+    const hit = ray.intersectObjects(meshes, false)[0];
+    if (hit) addPoint(hit.point.clone());
+  });
+  const setMeasure = (on) => {
+    measuring = !!on;
+    renderer.domElement.style.cursor = measuring ? 'crosshair' : '';
+    if (!measuring) clearMeasure();
+  };
+
+  // Orientation: file axes perm[0], perm[1], perm[2] become X, Y, Z (a proper rotation — an odd permutation gets one axis
+  // mirrored back so the part is never a mirror image). The part is re-centred on the plate and the camera re-aimed.
+  const C = new THREE.Matrix4().makeRotationX(-Math.PI / 2), Ci = C.clone().invert();
+  let axesPerm = [0, 1, 2];
+  const setAxes = (perm) => {
+    if (!Array.isArray(perm) || perm.length !== 3 || perm.slice().sort().join() !== '0,1,2') perm = [0, 1, 2];
+    axesPerm = perm.slice();
+    const odd = (perm[0] === 1 && perm[1] === 0 && perm[2] === 2) || (perm[0] === 0 && perm[1] === 2 && perm[2] === 1) || (perm[0] === 2 && perm[1] === 1 && perm[2] === 0);
+    const e = [0, 0, 0, 0, 0, 0, 0, 0, 0]; // row-major 3×3: new axis j ← old axis perm[j]
+    perm.forEach((old, j) => { e[j * 3 + old] = odd && j === 0 ? -1 : 1; });
+    const P = new THREE.Matrix4().set(e[0], e[1], e[2], 0, e[3], e[4], e[5], 0, e[6], e[7], e[8], 0, 0, 0, 0, 1);
+    axes.matrix.copy(C).multiply(P).multiply(Ci);
+    axes.matrixWorldNeedsUpdate = true;
+    clearMeasure();
+    refit();
+    over = isOver();
+    info.materials[0].color.copy(over ? palette().accent : palette().surface);
+    info.over = over; info.size.x = size.x; info.size.y = size.y; info.size.z = size.z;
+    look = lookAt();
+    controls.target.set(0, look, 0);
+    controls.update();
+  };
+
   return {
-    info: { ...info, size: { x: size.x, y: size.y, z: size.z }, format, over, bed },
+    info: Object.assign(info, { size: { x: size.x, y: size.y, z: size.z }, format, over, bed }),
     views: ['iso', 'top', 'front', 'side'],
     get view() { return view; },
+    get axes() { return axesPerm.slice(); },
+    get measuring() { return measuring; },
     setView,
     setCut,
-    reset: () => { setView('iso'); setCut(null); },
+    setAxes,
+    setMeasure,
+    clearMeasure: () => clearMeasure(),
+    reset: () => { setView('iso'); setCut(null); setAxes([0, 1, 2]); setMeasure(false); },
     dispose: () => {
       alive = false;
       cancelAnimationFrame(raf);

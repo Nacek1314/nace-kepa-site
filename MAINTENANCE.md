@@ -20,6 +20,43 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-29 (update 2.0 — Nace asked for a "mega innovative update" live)
+
+**Checked:** the same pass as the second run below after the change (build, all pages incl. #studio, 1280 + 390 px, light +
+dark, EN + SL, a11y scan, order walk, file check 3D test) — no errors, no horizontal scroll.
+
+**Innovation — Part studio / "Studio dela" (`#studio`, shortcut `P`, T-06 in the #services tools index, link on the home
+"Check it yourself first" line and under the file check result):** one page from file to order.
+- 01 Part: drop an STL / 3MF / OBJ (the file check's own reader, so the two tools share the loaded file) or type the outer
+  size — a typed size is shown as a box of that size on the X2D plate. Part name.
+- Stage: the part on the X2D plate (the 2nd-run viewer: Iso / Top / Front / Side + Section) plus **Orientation** (all six axis
+  orders with their X × Y × Z and a ✓ where the part fits; "Turn to fit the printer" appears when fitCalc finds a fitting
+  orientation that differs from the current one — the part really turns in 3D, never mirrored) and **Measure** (toggle; a
+  click, not a drag, on the part adds a point; two points give the distance in mm with ΔX ΔY ΔZ, drawn as a red dimension
+  line; "Clear points").
+- 02 What it has to cope with: the material picker's seven needs → the same ranking (mpChosen) → material (or "Not sure —
+  recommend one").
+- 03 Job: quantity, deadline (checked against the published S-02 printing turnaround like the planner), optional function.
+- **Spec sheet NK-S** (live): part, source (file · format · triangles, or typed size), size in the chosen orientation,
+  orientation, fits the X2D (per orientation, or "in no orientation, over by N mm"), closed mesh / volume / surface for a
+  file, material + why, quantity, deadline + verdict, printing turnaround, measurement, function. "Send to the order form"
+  (services print [+ cad for a typed size], files, material, quantity, deadline, "Part studio: …" line + function in
+  "What should it do?"), "Print or save as PDF" (only the sheet prints, A4) and "Copy spec".
+- `viewer.js`: `setAxes([a, b, c])` (proper rotation, re-centred on the plate, camera re-aimed), `setMeasure(on)`,
+  `clearMeasure()`, `opts.onMeasure`, getters `axes` / `measuring`.
+Tested in Playwright (SwiftShader): typed size 258 × 100 × 50 → does not fit as in the file → "Turn to fit" → 100 × 50 × 258
+fits; measuring two clicks in the Front view (82.4 mm, ΔZ 82.4); needs → PA-CF; qty 3 + deadline in 2 days → "Tight";
+copy (12 lines); loading small.stl replaces the typed size (closed mesh, 178.8 cm³); "Remove file" brings the typed size back;
+"Send to the order form" fills step 2 (what / qty / material Nylon / PA-CF / files STL / deadline); back to #studio keeps
+everything; `P` shortcut; 1280 + 390 px, light + dark, EN + SL, no errors, no horizontal scroll.
+*To remove:* `ST_PERMS` … `stOpen()` in `app.js`, `views.studio`, `'studio'` in `PAGES` / `KBD_GO`, the `stRefresh()` line
+in `fcRefresh()`, the `'st'` cases in `v3State()` / `v3Handle()`, `stDispose()` / `stMount()` in `render()`, `stOpen()` in
+`fcResult()`, the studio items in `tlIndex()` / `tlHome()`, the `data-st-*` lines in the click / input / change handlers;
+in `viewer.js` the axes / measure blocks; `st:` + `nav.studio` in both languages in `content.js` and the "Part studio" rules
+at the end of `page.css`.
+*Next steps:* "lay on the largest face" orientation from the mesh itself, a wall-thickness hint from the section plane,
+and the sheet's three silhouette views (fcDraw canvases) printed on the NK-S page.
+
 ## 2026-10-29 (second run)
 
 **Checked:** build, home, #services, #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d,
@@ -1233,6 +1270,8 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: "Copy link to this tool" on each #services tool (`#contact` is the first short link of that kind).
 - Admin: the upload preview in the project editor gets the same View / Section bar (viewer.js already supports it).
 - (Built 2026-10-29, 2nd run: 3D preview on the X2D plate in the file check + Iso/Top/Front/Side drawing views and a section slider under every 3D view; contact package as the improvement.)
+- (Built 2026-10-29, update 2.0: Part studio `#studio` — file or size → 3D on the plate → orientation + measuring → material → deadline → spec sheet NK-S → order form.)
+- Public: Part studio — orientation "lay on the largest face" from the mesh; wall-thickness hint from the section plane; silhouette views printed on the NK-S sheet.
 
 ## 2026-10-03 (second run)
 

@@ -25,6 +25,17 @@ var T = {
     certs: 'Certifications',
     aboutPageTitle: 'About',
     facts: 'Studio facts',
+    // Part studio (#studio, stView in app.js, 2026-10-29 2nd run)
+    st: { label: 'Part studio · NK-S', title: 'Your part, from file to order.', lead: 'Drop a 3D file or type a size, see the part on the X2D plate, turn it, measure it, pick a material, set quantity and deadline — and get a spec sheet to print or send straight to the order form. Everything stays in your browser.',
+      s1: '01 · Part', s2: '02 · What it has to cope with', s3: '03 · Job', name: 'Part name', namePh: 'e.g. fan bracket', orSize: 'No file? Type the outer size · mm', file: 'File', fileHint: 'STL, 3MF or OBJ — read in your browser, never uploaded', remove: 'Remove file', fn: 'What should it do? (optional)', fnPh: 'Function, where it lives, what it touches…',
+      emptyT: 'Your part appears here on the X2D build plate', emptyD: 'Drop a file or type a size in step 01.',
+      orient: 'Orientation', asFile: 'as in the file', turned: 'turned', fitBtn: 'Turn to fit the printer', fitsNow: 'Fits the X2D in this orientation', noFit: 'Bigger than the X2D in this orientation: {d} mm', noFitAny: 'Does not fit the X2D in one piece in any orientation (over by {d} mm)',
+      measure: 'Measure', measureOn: 'click two points on the part', mNone: 'no measurement yet', mRes: '{mm} mm', mDelta: 'ΔX {x} · ΔY {y} · ΔZ {z} mm', mClear: 'Clear points',
+      sheet: 'Spec sheet', rows: { name: 'Part', src: 'Source', size: 'Size X × Y × Z', orient: 'Orientation', fit: 'Fits the X2D', vol: 'Volume', area: 'Surface', closed: 'Closed mesh', mat: 'Material', needs: 'Has to', qty: 'Quantity', due: 'Deadline', time: 'Printing turnaround', meas: 'Measured', fn: 'Function' },
+      unnamed: 'unnamed part', srcBox: 'typed size (no file)', srcFile: '{n} · {f} · {t} triangles', matNone: 'Not sure — recommend one', noNeeds: '—',
+      go: 'Send to the order form', print: 'Print or save as PDF', copy: 'Copy spec', copied: 'Copied.', copyFail: 'Could not copy — the sheet is selected, press Ctrl+C.', brief: 'Part studio',
+      note: 'Only your own numbers and the published X2D build volume, materials and turnarounds — no prices. Nothing is uploaded until you send the brief.',
+      hint3d: 'Drag to rotate · scroll or pinch to zoom · right-drag to pan · dashed box = X2D build volume 256 × 256 × 260 mm', open: 'Open this file in the Part studio', tlLine: 'File or size → 3D on the plate → turn, measure, material, deadline → spec sheet → order form' },
     // Contact package (ctCard / ctAlt in app.js, 2026-10-29)
     ct: { title: 'Contact', lead: 'Write in Slovenian or English — a short description of the part or the problem is enough to start.', email: 'E-mail', linkedin: 'Nace Kepa on LinkedIn', where: 'Studio', write: 'Write an e-mail', or: 'or write an e-mail', subject: 'Project enquiry — nacekepa.work' },
     timelines: [['Small CAD jobs', '2–5 days'], ['3D prints', '1–4 days + post-processing'], ['Full custom builds', '2–6 weeks']],
@@ -145,7 +156,7 @@ var T = {
     tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale', contact: 'Contact', order: 'Order' }
   },
   sl: {
-    nav: { home: 'Domov', services: 'Storitve', work: 'Projekti', news: 'Novice', skills: 'Znanja', about: 'O meni', compare: 'Primerjava listov' },
+    nav: { home: 'Domov', services: 'Storitve', work: 'Projekti', news: 'Novice', skills: 'Znanja', about: 'O meni', compare: 'Primerjava listov', studio: 'Studio dela' },
     newsLabel: 'Novice', newsTitle: 'Iz delavnice.', newsLead: 'Novi stroji, materiali in zaključeni projekti.', allNews: 'Vse novice', readMore: 'Preberi', pinned: 'Pripeto', newsPageTitle: 'Novice', newsEmpty: 'Novic še ni.',
     cta: 'Začni projekt', seeWork: 'Vsi projekti', allServices: 'Vse storitve', quote: 'Zahtevaj ponudbo',
     status: 'Sprejemam projekte',
@@ -170,6 +181,17 @@ var T = {
     certs: 'Certifikati',
     aboutPageTitle: 'O meni',
     facts: 'O studiu',
+    // Studio dela (#studio, stView v app.js, 2026-10-29, 2. tek)
+    st: { label: 'Studio dela · NK-S', title: 'Vaš del, od datoteke do naročila.', lead: 'Spustite 3D datoteko ali vpišite mere, oglejte si del na mizi X2D, ga zavrtite, izmerite, izberite material, vpišite količino in rok — in dobite specifikacijski list, ki ga natisnete ali pošljete naravnost v obrazec za naročilo. Vse ostane v vašem brskalniku.',
+      s1: '01 · Del', s2: '02 · Kaj mora prenesti', s3: '03 · Naročilo', name: 'Ime dela', namePh: 'npr. nosilec ventilatorja', orSize: 'Brez datoteke? Vpišite zunanje mere · mm', file: 'Datoteka', fileHint: 'STL, 3MF ali OBJ — prebrano v vašem brskalniku, nikoli naloženo', remove: 'Odstrani datoteko', fn: 'Kaj naj del počne? (neobvezno)', fnPh: 'Funkcija, kje bo, s čim je v stiku…',
+      emptyT: 'Tu se pokaže vaš del na mizi X2D', emptyD: 'Spustite datoteko ali vpišite mere v koraku 01.',
+      orient: 'Lega', asFile: 'kot v datoteki', turned: 'zavrteno', fitBtn: 'Zavrti v lego za tiskalnik', fitsNow: 'V tej legi gre v X2D', noFit: 'V tej legi je večji od X2D: {d} mm', noFitAny: 'V nobeni legi ne gre v X2D v enem kosu (čez za {d} mm)',
+      measure: 'Izmeri', measureOn: 'kliknite dve točki na delu', mNone: 'še ni meritve', mRes: '{mm} mm', mDelta: 'ΔX {x} · ΔY {y} · ΔZ {z} mm', mClear: 'Počisti točki',
+      sheet: 'Specifikacijski list', rows: { name: 'Del', src: 'Vir', size: 'Mere X × Y × Z', orient: 'Lega', fit: 'Gre v X2D', vol: 'Prostornina', area: 'Površina', closed: 'Zaprta mreža', mat: 'Material', needs: 'Mora', qty: 'Količina', due: 'Rok', time: 'Rok tiska', meas: 'Izmerjeno', fn: 'Funkcija' },
+      unnamed: 'del brez imena', srcBox: 'vpisane mere (brez datoteke)', srcFile: '{n} · {f} · {t} trikotnikov', matNone: 'Ne vem — predlagajte', noNeeds: '—',
+      go: 'Pošlji v obrazec za naročilo', print: 'Natisni ali shrani kot PDF', copy: 'Kopiraj specifikacijo', copied: 'Kopirano.', copyFail: 'Kopiranje ni uspelo — list je označen, pritisnite Ctrl+C.', brief: 'Studio dela',
+      note: 'Samo vaše številke in objavljeni delovni prostor X2D, materiali in roki — brez cen. Nič se ne naloži, dokler ne pošljete povzetka.',
+      hint3d: 'Z vlečenjem vrtite · kolešček ali prsta za povečavo · desni gumb za premik · črtkan okvir = delovni prostor X2D 256 × 256 × 260 mm', open: 'Odpri to datoteko v Studiu dela', tlLine: 'Datoteka ali mere → 3D na mizi → lega, merjenje, material, rok → specifikacijski list → obrazec za naročilo' },
     // Kontakt (ctCard / ctAlt v app.js, 2026-10-29)
     ct: { title: 'Kontakt', lead: 'Pišite v slovenščini ali angleščini — za začetek je dovolj kratek opis dela ali težave.', email: 'E-pošta', linkedin: 'Nace Kepa na LinkedInu', where: 'Studio', write: 'Pišite mi e-pošto', or: 'ali mi pišite e-pošto', subject: 'Povpraševanje — nacekepa.work' },
     timelines: [['Manjša CAD dela', '2–5 dni'], ['3D tisk', '1–4 dni + obdelava'], ['Celoten izdelek', '2–6 tednov']],
