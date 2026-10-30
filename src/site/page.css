@@ -941,3 +941,26 @@ th[aria-sort] .rg-arr { color: var(--redline); }
   .st-sheet { border: 1.5px solid #000; }
   .st-rows > div { break-inside: avoid; }
 }
+/* Batch on the plate (2026-10-30, #services?tool=plate): pbBox() in app.js — form, layout buttons, top-view drawing */
+.pb-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.pb-out { min-height: 0; justify-items: stretch; }
+.pb-lays { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); width: 100%; }
+.pb-lay { display: grid; gap: 2px; text-align: left; padding: var(--space-2) var(--space-3); background: var(--paper); border: 1px solid var(--line-strong); color: var(--ink); cursor: pointer; font: inherit; min-width: 0; }
+.pb-lay .nk-label { white-space: normal; }
+.pb-lay b { font-size: 15px; line-height: 20px; }
+.pb-lay[aria-pressed="true"] { border-color: var(--redline); box-shadow: inset 0 0 0 1px var(--redline); }
+.pb-lay:hover { background: var(--redline-soft); }
+.pb-lay:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+.pb-sum, .pb-warn { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: 14px; line-height: 20px; }
+.fit-fig .pb-fig { aspect-ratio: auto; padding: var(--space-4); border: 1px solid var(--line-strong); }
+.pb-fig .pb-svg { display: block; width: 100%; height: auto; max-width: 440px; margin: 0 auto; }
+.pb-svg .pb-grid { fill: none; stroke: var(--grid); stroke-width: .6; }
+.pb-svg .pb-plate { stroke-width: 1.2; }
+.pb-svg .fit-part { stroke-width: .8; }
+.pb-svg .pb-n { fill: var(--ink); font: 8px var(--font-mono); pointer-events: none; }
+.pb-svg .dimt { font-size: 9px; }
+.pb-open { margin-top: var(--space-2); } .st-form .pb-open { margin: var(--space-1) 0 var(--space-3); }
+/* seven tools in the index: four per row on desktop (the rule on .tl-list above set five) */
+@media (min-width: 1001px) { .tl-list { grid-template-columns: repeat(4, minmax(0, 1fr)); } .tl-list li:nth-child(n + 5) { border-top: 1px solid var(--line); } .tl-list li:nth-child(5) { border-left: 0; } }
+@media (max-width: 720px) { .pb-lays { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .pb-pair { grid-template-columns: 1fr; } }

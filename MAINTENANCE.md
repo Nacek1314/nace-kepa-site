@@ -20,6 +20,74 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-30
+
+**Checked:** build, home, #services (all tools incl. the new `#services?tool=plate`), #work, #work?view=list, #p-famfive,
+#p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about, #contact, #compare, #studio, #order (all 4 steps on the local
+build in EN + SL, nothing sent), /admin/ sign-in and the 404 page (six wrong addresses) — 1280 + 390 px, light + dark, EN (`/`)
++ SL (`/sl/`), plus a scan for anything wider than the page, broken images, unlabelled controls, unnamed buttons/links and
+duplicate ids. Last Actions run (bc053c6) succeeded; nacekepa.work, /sl/ and /admin/ return 200 (checked via the laptop).
+No JS errors, no CSP violations, no 404s (only Google Fonts, blocked in the cloud), no horizontal scroll.
+
+**Bugs fixed:**
+- English `nav.studio` was missing in `content.js`: on the English page the tab title of `#studio` fell back to the generic
+  "Nace Kepa · Engineering Studio" and the `P` row of the keyboard-shortcuts list (`?`) had no label. Now "Part studio".
+- Tools index copy still said "T-01 … T-05" / "Five free tools on this page" although the Part studio was T-06 — now
+  "T-01 … T-07" / "Seven free tools — six on this page and the Part studio" (EN + SL).
+- Tools index at desktop width: six (now seven) items on a five-column grid left one orphan on a second row without a
+  dividing line — now four per row with a line between the rows (`page.css`, bottom).
+
+**Improvement — lost-visitor package (`404.astro`, served by GitHub Pages for every unknown address):**
+- The 404 page had its own plain sans-serif look and a 10-second auto-redirect to the home page; it is now the same drawing
+  sheet as the site (page.css + components.css minified like `Site.astro`, zones, wordmark, nav, "ERR 404 · SHEET NOT
+  FOUND", footer with e-mail + LinkedIn), light + dark, and no auto-redirect.
+- Language from the address (`/sl/…` → Slovenian, `/en/…` → English) or else the browser language; the whole page, the
+  nav and the links to `/` or `/sl/` follow it. Without JavaScript both languages show.
+- "Did you mean …": the words in the address are matched against every published project (slug + EN/SL title) and news
+  post — exact words, prefixes and words one or two letters off (`/portfolio/famfiv` → FamFive, `/sl/portfolio/
+  rfid-kljucavnica` → RFID ključavnica za predal, `/projects/cocktail-dispenser.html` → Avtomatski točilnik koktajlov,
+  `/bambu-x2d` → the X2D post). Up to three cards with category / "News" + year, linking to `#p-…` / `#n-…` on the right
+  language page.
+- "Or search the projects and news for “famfiv” →" opens `#work?q=…` (the existing search link); then "All work",
+  "Start a project", "Free tools" (`#services?tool=index`), "Contact" (`#contact`) and the other language.
+- Only titles and slugs from `projects.json` / `news.json` are embedded (nothing fetched); the inline script is pinned by
+  its SHA-256 hash in the page's own Content-Security-Policy (`connect-src 'none'`); `noindex` kept.
+*To remove:* put back the old `src/pages/404.astro` from git (`git show bc053c6:src/pages/404.astro`).
+
+**Innovation — Batch on the plate / "Serija na mizi" (`#services?tool=plate`, T-06 in the tools index; links "How many
+fit on one plate? →" under the fit check result and under Quantity in the Part studio):** how many copies of a part fit on
+one X2D plate and how many plates the whole batch needs.
+- Inputs: footprint X × Y, height (checked against the 260 mm build height), quantity and the gap between parts (default
+  5 mm, visitor's choice). Three layouts are counted on the 256 × 256 mm plate: as entered, turned 90°, and mixed (a grid
+  plus the leftover strip, right or bottom, filled with turned parts — tried with both orientations as the grid). The best
+  is marked and selected; the three are buttons (keyboard, `aria-pressed`) that switch the drawing.
+- Output: "18 per plate", % of the plate area, "6 plates for 100 pcs (last plate: 10)" (Slovenian plural forms for
+  miza/mizi/mize/miz; "kos." for the pieces), warnings "Too big for the plate" (with the mm over 256, even when turned) and
+  "Too tall" (over 260 mm). Top-view drawing of the plate: 1 unit = 1 mm, 16 mm grid like the 3D view, red parts numbered
+  up to 60, dimension lines 256 × 256; at most 600 rectangles are drawn (the count is still exact — 0.1 mm parts give
+  6 553 600 per plate without stalling).
+- "Start a project with this batch" ticks Printing, sets the quantity and puts one "Batch on the plate: 90 × 30 mm,
+  gap 5 mm → 18 per plate (mixed), 6 plates for 100 pcs." line into "What should it do?" (replaced, not duplicated, on a
+  second hand-off); "Copy layout" copies the same line.
+- From the fit check the link carries the entered (or turned-to-fit) size; from the Part studio the size in the chosen
+  orientation (after "Turn to fit") plus the quantity. The note says the number of plates says nothing about price or
+  printing time (no prices, no times anywhere — only the published 256 × 256 × 260 mm volume).
+Tested in Playwright: 120 × 40 / 90 × 30 (mixed = 18 vs 14) / 100 × 100 × 270 (square: no "turned", too tall) / 300 wide
+(too big) / 3 × 3 (7225, 600 drawn) / 0.1 × 0.1 gap 0; layout buttons by mouse and keyboard; copy; order hand-off in EN + SL
+(print ticked, qty, brief line); links from the fit check and the studio; 1280 + 390 px, light + dark, no errors, no
+horizontal scroll.
+*To remove:* `PB_LAYS` … `pbToOrder()` in `app.js`, `tlWrap('plate', pbBox())` in `views.services`, the `'plate'` entry
+in `TL_TOOLS`, `pbFitLink()` in `fitChecker()`, `pbStLink()` in `stForm()`, the `data-pb-*` lines in the click
+handler, the one-line `pb` input listener after the change handler, `pb:` + `tl.plate` in both languages in `content.js` (and the T-01 … T-07 copy back to T-06) and the "Batch on the
+plate" rules at the end of `page.css`.
+*Next step (optional day 2):* several different parts in one batch (a list of footprints, plates for the whole order) and
+the plate layout printed on the Part studio's NK-S sheet.
+
+**Ideas for next time** (added to the list below)
+- Public: batch of several different parts (list of footprints + quantities → plates for the whole order).
+- Public: the plate layout drawn on the NK-S spec sheet and in the order brief's printable page.
+- Public: 404 page — "Copy e-mail" button and the three newest posts when the address matches nothing.
+
 ## 2026-10-29 (update 2.0 — Nace asked for a "mega innovative update" live)
 
 **Checked:** the same pass as the second run below after the change (build, all pages incl. #studio, 1280 + 390 px, light +
@@ -1272,6 +1340,10 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - (Built 2026-10-29, 2nd run: 3D preview on the X2D plate in the file check + Iso/Top/Front/Side drawing views and a section slider under every 3D view; contact package as the improvement.)
 - (Built 2026-10-29, update 2.0: Part studio `#studio` — file or size → 3D on the plate → orientation + measuring → material → deadline → spec sheet NK-S → order form.)
 - Public: Part studio — orientation "lay on the largest face" from the mesh; wall-thickness hint from the section plane; silhouette views printed on the NK-S sheet.
+- (Built 2026-10-30: batch on the plate `#services?tool=plate` — copies per X2D plate, plates per batch, top-view drawing → order form; lost-visitor 404 package as the improvement.)
+- Public: batch of several different parts (list of footprints + quantities → plates for the whole order).
+- Public: the plate layout drawn on the NK-S spec sheet and in the order brief's printable page.
+- Public: 404 page — "Copy e-mail" button and the three newest posts when the address matches nothing.
 
 ## 2026-10-03 (second run)
 

@@ -1,6 +1,6 @@
 var T = {
   en: {
-    nav: { home: 'Home', services: 'Services', work: 'Work', news: 'News', skills: 'Skills', about: 'About', compare: 'Compare sheets' },
+    nav: { home: 'Home', services: 'Services', work: 'Work', news: 'News', skills: 'Skills', about: 'About', compare: 'Compare sheets', studio: 'Part studio' },
     newsLabel: 'News', newsTitle: 'From the workshop.', newsLead: 'New machines, materials and finished jobs.', allNews: 'All news', readMore: 'Read', pinned: 'Pinned', newsPageTitle: 'News', newsEmpty: 'No news yet.',
     cta: 'Start a project', seeWork: 'See all work', allServices: 'All services', quote: 'Request a quote',
     status: 'Taking projects',
@@ -56,8 +56,9 @@ var T = {
     sending: 'Sending…', sentTag: 'Sent', sentTitle: 'Thanks — your project is on my desk.', sentBody: 'I reply with a fixed-price quote or an hourly estimate within 48 hours. A copy of what you sent is below.', sendFail: 'Sending didn\u2019t work. Copy the brief below and send it to me directly.', sendLimited: 'Too many requests from this connection. Wait a few minutes, or copy the brief and send it directly.',
     with3d: '3D models', viewerLabel: '3D model', loading3d: 'Loading 3D model…', viewerHint: 'Drag to rotate · scroll or pinch to zoom · right-drag to pan', viewerFail: 'The 3D model could not be loaded.', pCategory: 'Category', pYear: 'Year', pMaterials: 'Materials', pModel: '3D model', interactive: 'Interactive preview', photos: 'Photos', openPhoto: 'Open photo', lbClose: 'Close', lbPrev: 'Previous photo', lbNext: 'Next photo', allWork: 'All work', nextProject: 'Next project',
     skip: 'Skip to content',
-    tl: { label: 'Tools · T-01 … T-05', title: 'Check it yourself first', lead: 'Five free tools on this page. They work in your browser and can fill in the order form for you.',
+    tl: { label: 'Tools · T-01 … T-07', title: 'Check it yourself first', lead: 'Seven free tools — six on this page and the Part studio. They work in your browser and can fill in the order form for you.',
       plan: 'Three questions → the services you need', fit: 'Part size against the X2D build volume', file: 'Size, volume and fit of your STL / 3MF / OBJ', material: 'What the part must handle → a material', prep: 'What to have ready before you write',
+      plate: 'Parts per plate and plates for the whole batch',
       back: 'All tools', home: 'Check it yourself first' },
     // What to prepare on #services (prepBox in app.js): combines the SERVICES[].need lists.
     prep: { label: 'Checklist · S-01 … S-04', title: 'What to prepare', lead: 'Pick the services you need. The list puts together what each of them needs from you, so the first message already has everything.',
@@ -71,6 +72,15 @@ var T = {
       cta: 'Start a project with this size', brief: 'Part size' },
     // Screen-reader labels (nav, language switch, filters, logo link).
     // Project planner on #services (plBox in app.js): three questions → services, turnaround, fit, brief handed to #order.
+    // Batch on the plate on #services (pbBox in app.js, 2026-10-30): copies of one footprint on the 256 × 256 mm X2D plate.
+    pb: { label: 'Batch on the plate · Bambu Lab X2D', title: 'How many fit on one plate?', lead: 'Enter the footprint of your part and how many you need. The parts are laid out on the 256 × 256 mm X2D plate — as entered, turned by 90° or mixed — and the plates for the whole batch are counted.',
+      x: 'Footprint X', y: 'Footprint Y', z: 'Height', qty: 'Quantity', gap: 'Gap between parts', empty: 'Enter the footprint, X and Y, in millimetres. The gap and the quantity are yours to set.',
+      noFit: 'Too big for the plate', tooBig: 'The footprint is {d} mm over the 256 mm plate even when turned. Try it standing in the fit check, or describe the part in the brief — big parts are often printed in sections.',
+      tallTag: 'Too tall', tooTall: 'Height {h} mm is over the 260 mm build height — lay the part differently or split it.',
+      perPlate: '{n} per plate', plates: ['1 plate for {q} pcs', '{n} plates for {q} pcs'], last: 'last plate: {n}', full: 'all plates full',
+      asIs: 'as entered', turned: 'turned 90°', mixed: 'mixed', best: 'best', layout: 'Layout', layoutOf: 'Layout on the X2D plate', used: '{p} % of the plate area', gapShort: 'gap {g} mm',
+      link: 'How many fit on one plate?', go: 'Start a project with this batch', copy: 'Copy layout', copied: 'Layout copied.', copyFail: 'Copy failed — select the text and copy it by hand.', brief: 'Batch on the plate',
+      note: 'A rectangular layout with the gap you set, on the published 256 × 256 × 260 mm build volume; a slicer may pack a shaped part tighter. The number of plates says nothing about price or printing time — that comes with the quote.' },
     fc: { label: 'File check · STL / 3MF / OBJ', title: 'Already have a 3D file?', lead: 'Open it here to see its size, volume and whether the mesh is closed, checked against the X2D build volume — before you send anything.',
       pick: 'Choose a 3D file', pickHint: 'STL, 3MF or OBJ — or drop it here', private: 'The file is read only in your browser. It is not uploaded or sent anywhere; only the numbers can go into your brief.',
       empty: 'No file yet. The results appear here.', busy: 'Reading the file…', errTag: 'Can’t read', errStep: 'STEP and IGES files can’t be read in the browser. Export an STL or 3MF for this check, or simply send the STEP with your brief.',
@@ -212,8 +222,9 @@ var T = {
     sending: 'Pošiljam…', sentTag: 'Poslano', sentTitle: 'Hvala — vaš projekt je na moji mizi.', sentBody: 'V 48 urah odgovorim s ponudbo s fiksno ceno ali urno oceno. Spodaj je kopija poslanega.', sendFail: 'Pošiljanje ni uspelo. Kopirajte povzetek spodaj in mi ga pošljite neposredno.', sendLimited: 'Preveč zahtevkov s te povezave. Počakajte nekaj minut ali kopirajte povzetek in mi ga pošljite.',
     with3d: '3D modeli', viewerLabel: '3D model', loading3d: 'Nalagam 3D model…', viewerHint: 'Povlecite za vrtenje · kolešček ali prsta za povečavo · desni klik za premik', viewerFail: '3D modela ni bilo mogoče naložiti.', pCategory: 'Področje', pYear: 'Leto', pMaterials: 'Materiali', pModel: '3D model', interactive: 'Interaktivni predogled', photos: 'Fotografije', openPhoto: 'Odpri fotografijo', lbClose: 'Zapri', lbPrev: 'Prejšnja fotografija', lbNext: 'Naslednja fotografija', allWork: 'Vsi projekti', nextProject: 'Naslednji projekt',
     skip: 'Preskoči na vsebino',
-    tl: { label: 'Orodja · T-01 … T-05', title: 'Najprej preverite sami', lead: 'Na tej strani je pet brezplačnih orodij. Delujejo v vašem brskalniku in lahko namesto vas izpolnijo obrazec za naročilo.',
+    tl: { label: 'Orodja · T-01 … T-07', title: 'Najprej preverite sami', lead: 'Sedem brezplačnih orodij — šest na tej strani in Studio dela. Delujejo v vašem brskalniku in lahko namesto vas izpolnijo obrazec za naročilo.',
       plan: 'Tri vprašanja → storitve, ki jih potrebujete', fit: 'Velikost dela glede na delovni prostor X2D', file: 'Velikost, prostornina in ustreznost vaše datoteke STL / 3MF / OBJ', material: 'Kaj mora del zdržati → material', prep: 'Kaj pripraviti, preden mi pišete',
+      plate: 'Kosov na mizo in miz za celotno serijo',
       back: 'Vsa orodja', home: 'Najprej preverite sami' },
     prep: { label: 'Seznam · S-01 … S-04', title: 'Kaj pripraviti', lead: 'Izberite storitve, ki jih potrebujete. Seznam združi, kaj vsaka od njih potrebuje od vas, da ima že prvo sporočilo vse.',
       pick: 'Storitve', none: 'Izberite vsaj eno storitev in prikaže se seznam.', count: 'Pripravljeno: {n} od {t}', all: 'Vse je pripravljeno — začnite projekt.', go: 'Začni projekt s temi storitvami', copy: 'Kopiraj seznam', copied: 'Seznam je kopiran.', copyFail: 'Kopiranje ni uspelo — označite seznam in ga kopirajte ročno.', head: 'Kaj pripraviti' },
@@ -224,6 +235,15 @@ var T = {
       note: 'Preverjanje za en kos, poravnan z osmi. Končno ustreznost potrdim v ponudbi.', top: 'Tloris', front: 'Naris', views: 'Del na tiskalni plošči',
       cta: 'Začni projekt s to velikostjo', brief: 'Velikost dela' },
     // Načrtovalnik projekta na #services (plBox v app.js).
+    // Serija na mizi na #services (pbBox v app.js, 2026-10-30).
+    pb: { label: 'Serija na mizi · Bambu Lab X2D', title: 'Koliko kosov gre na eno mizo?', lead: 'Vpišite tloris svojega dela in koliko kosov potrebujete. Deli se razporedijo po mizi X2D (256 × 256 mm) — kot so vpisani, zasukani za 90° ali mešano — in preštejejo se mize za celotno serijo.',
+      x: 'Tloris X', y: 'Tloris Y', z: 'Višina', qty: 'Količina', gap: 'Razmik med deli', empty: 'Vpišite tloris, X in Y, v milimetrih. Razmik in količino določite sami.',
+      noFit: 'Prevelik za mizo', tooBig: 'Tloris presega mizo 256 mm za {d} mm tudi zasukan. Preverite pokončno lego v preverjanju velikosti ali del opišite v povpraševanju — velike dele pogosto tiskam po kosih.',
+      tallTag: 'Previsok', tooTall: 'Višina {h} mm presega višino tiskanja 260 mm — del položite drugače ali ga razdelite.',
+      perPlate: '{n} na mizo', plates: ['{n} miza za {q} kos.', '{n} mizi za {q} kos.', '{n} mize za {q} kos.', '{n} miz za {q} kos.'], last: 'zadnja miza: {n}', full: 'vse mize polne',
+      asIs: 'kot vpisano', turned: 'zasukano za 90°', mixed: 'mešano', best: 'najbolje', layout: 'Razporeditev', layoutOf: 'Razporeditev na mizi X2D', used: '{p} % površine mize', gapShort: 'razmik {g} mm',
+      link: 'Koliko kosov gre na eno mizo?', go: 'Začni projekt s to serijo', copy: 'Kopiraj razporeditev', copied: 'Razporeditev je kopirana.', copyFail: 'Kopiranje ni uspelo — označite besedilo in ga kopirajte ročno.', brief: 'Serija na mizi',
+      note: 'Pravokotna razporeditev z razmikom, ki ga določite sami, na objavljenem delovnem prostoru 256 × 256 × 260 mm; rezalnik lahko oblikovan del zloži gosteje. Število miz ne pove ničesar o ceni ali času tiskanja — to dobite s ponudbo.' },
     fc: { label: 'Preverjanje datoteke · STL / 3MF / OBJ', title: 'Že imate 3D datoteko?', lead: 'Odprite jo tukaj: vidite velikost, prostornino in ali je mreža zaprta, preverjeno glede na delovni prostor X2D — še preden karkoli pošljete.',
       pick: 'Izberite 3D datoteko', pickHint: 'STL, 3MF ali OBJ — ali jo povlecite sem', private: 'Datoteka se prebere samo v vašem brskalniku. Nikamor se ne naloži in ne pošlje; v opis projekta gredo lahko samo številke.',
       empty: 'Datoteka še ni izbrana. Rezultati se prikažejo tukaj.', busy: 'Berem datoteko …', errTag: 'Ni mogoče prebrati', errStep: 'Datotek STEP in IGES ni mogoče prebrati v brskalniku. Za to preverjanje izvozite STL ali 3MF ali pa STEP preprosto pošljite z opisom projekta.',

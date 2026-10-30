@@ -114,6 +114,7 @@
         tlWrap('file', fcBox()) +
         tlWrap('material', mpBox()) +
         tlWrap('prep', prepBox()) +
+        tlWrap('plate', pbBox()) +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     work: function () {
@@ -1024,7 +1025,7 @@
     var inp = function (k) { return '<div class="nk-field"><label class="nk-field__label" for="fit-' + k + '">' + esc(f[k]) + ' · mm</label><input class="nk-input" id="fit-' + k + '" data-fit="' + k + '" type="number" inputmode="decimal" min="0" step="any" value="' + esc(state.fit[k]) + '"></div>'; };
     return '<section class="block fit">' + head(f.label, f.title, f.lead) + '<div class="fit-grid"><div class="fit-form"><div class="fit-inputs">' + inp('l') + inp('w') + inp('h') + '</div>' +
       '<div class="fit-out" id="fit-out" role="status" aria-live="polite">' + fitResult(r) + '</div>' +
-      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-fit-go>' + esc(f.cta) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button></div>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-fit-go>' + esc(f.cta) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button></div>' + pbFitLink() +
       '<p class="fit-note">' + esc(f.note) + '</p></div>' +
       '<figure class="fit-fig"><div class="nk-sheet__art fit-views" id="fit-views">' + fitViews(r) + '</div><figcaption class="nk-label">' + esc(f.views) + ' · ' + fitDims(BED) + ' mm</figcaption></figure></div></section>';
   }
@@ -1834,7 +1835,7 @@
       '<fieldset class="pl-q"><legend class="nk-label">' + esc(f.s1) + '</legend>' + num('name', f.name, 'type="text" maxlength="80" placeholder="' + esc(f.namePh) + '" autocomplete="off"') + file +
       (r ? '' : '<p class="nk-field__label st-or" id="st-size-l">' + esc(f.orSize) + '</p><div class="fit-inputs" role="group" aria-labelledby="st-size-l">' + num('l', t().fit.l, 'type="number" inputmode="decimal" min="0" step="any"') + num('w', t().fit.w, 'type="number" inputmode="decimal" min="0" step="any"') + num('h', t().fit.h, 'type="number" inputmode="decimal" min="0" step="any"') + '</div>') + '</fieldset>' +
       '<fieldset class="pl-q"><legend class="nk-label">' + esc(f.s2) + '</legend><div class="mp-opts">' + MP_NEEDS.map(function (k) { return '<label class="pl-opt"><input type="checkbox" value="' + k + '" data-st-need' + (state.mp.needs[k] ? ' checked' : '') + '><span>' + esc(mp.needs[k]) + '</span></label>'; }).join('') + '</div></fieldset>' +
-      '<fieldset class="pl-q"><legend class="nk-label">' + esc(f.s3) + '</legend><div class="pl-pair">' + num('qty', x.fQty, 'type="number" min="1" step="1"') + num('deadline', x.fDeadline, 'type="date" min="' + dlMin() + '"') + '</div>' +
+      '<fieldset class="pl-q"><legend class="nk-label">' + esc(f.s3) + '</legend><div class="pl-pair">' + num('qty', x.fQty, 'type="number" min="1" step="1"') + num('deadline', x.fDeadline, 'type="date" min="' + dlMin() + '"') + '</div>' + pbStLink() +
       '<div class="nk-field"><label class="nk-field__label" for="st-fn">' + esc(f.fn) + '</label><textarea class="nk-input st-fn" id="st-fn" data-st-f="fn" rows="3" placeholder="' + esc(f.fnPh) + '">' + esc(s.fn) + '</textarea></div></fieldset></form>';
   }
   function stView() {
@@ -1917,11 +1918,142 @@
   }
   function stOpen() { return '<p class="pl-open st-open"><a href="#studio">' + esc(t().st.open) + ' →</a></p>'; }
 
+  // ---------- Batch on the plate (#services?tool=plate): how many copies of a part fit on one X2D plate, plates per batch ----------
+  // Added 2026-10-30. Rectangular nesting of one footprint (as entered, turned 90°, or a grid plus a strip of turned parts) on
+  // the published 256 × 256 mm plate (BED), with the gap the visitor sets. No prices, no print times — only counts and a
+  // top-view drawing. Self-contained: remove PB_LAYS … pbToOrder(), tlWrap('plate', pbBox()) in views.services, the 'plate'
+  // entry in TL_TOOLS, pbFitLink() in fitChecker(), pbStLink() in stForm(), the data-pb-* lines in the click handler, the pb input listener,
+  // pb: + tl.plate in both languages in content.js and the "Batch on the plate" rules at the end of page.css.
+  var PB_LAYS = ['asIs', 'turned', 'mixed'], PB_DRAW_MAX = 600;
+  state.pb = { x: '', y: '', z: '', qty: '', gap: '5', lay: '' };
+  function pbNum(v) { var n = parseFloat(String(v).replace(',', '.')); return n >= 0 && n < 100000 ? Math.round(n * 10) / 10 : -1; }
+  function pbPlural(n, forms) { // forms: EN [1, more], SL [1, 2, 3–4, 5+]
+    if (lang !== 'sl') return forms[n === 1 ? 0 : 1];
+    var m = n % 100; return forms[m === 1 ? 0 : m === 2 ? 1 : m === 3 || m === 4 ? 2 : 3];
+  }
+  function pbGrid(W, H, pa, pb, g) { // parts of pa × pb in a W × H plate with gap g: columns, rows
+    return [Math.floor((W + g) / (pa + g)), Math.floor((H + g) / (pb + g))];
+  }
+  function pbFill(x0, y0, W, H, pa, pb, g) { // grid of pa × pb parts in a W × H area at (x0, y0); rects only for the first PB_DRAW_MAX
+    var cr = pbGrid(W, H, pa, pb, g), cols = cr[0], rows = cr[1], rects = [];
+    if (cols < 1 || rows < 1) return { n: 0, cols: 0, rows: 0, w: 0, h: 0, rects: rects };
+    for (var j = 0; j < rows && rects.length < PB_DRAW_MAX; j++) for (var i = 0; i < cols && rects.length < PB_DRAW_MAX; i++) rects.push([x0 + i * (pa + g), y0 + j * (pb + g), pa, pb]);
+    return { n: cols * rows, cols: cols, rows: rows, w: cols * (pa + g) - g, h: rows * (pb + g) - g, rects: rects };
+  }
+  function pbLayout(a, b, g, lay) { // a × b footprint on the plate: { n, rects, w, h } or null
+    var W = BED[0], H = BED[1], best = null;
+    if (lay !== 'mixed') {
+      var pa = lay === 'turned' ? b : a, pb = lay === 'turned' ? a : b; if (pa > W || pb > H) return null;
+      var m = pbFill(0, 0, W, H, pa, pb, g); return m.n ? m : null;
+    }
+    [[a, b], [b, a]].forEach(function (d) { // a grid of d[0] × d[1] plus the leftover strip (right or bottom, whichever takes more) filled with turned parts
+      var pa = d[0], pb = d[1]; if (pa > W || pb > H) return;
+      var m = pbFill(0, 0, W, H, pa, pb, g); if (!m.n) return;
+      var right = pbFill(m.cols * (pa + g), 0, W - m.cols * (pa + g), H, pb, pa, g), bottom = pbFill(0, m.rows * (pb + g), W, H - m.rows * (pb + g), pb, pa, g);
+      var ex = right.n >= bottom.n ? right : bottom; if (!ex.n) return;
+      var r = { n: m.n + ex.n, rects: m.rects.concat(ex.rects).slice(0, PB_DRAW_MAX), w: ex === right ? m.cols * (pa + g) + ex.w : Math.max(m.w, ex.w), h: ex === bottom ? m.rows * (pb + g) + ex.h : Math.max(m.h, ex.h) };
+      if (!best || r.n > best.n) best = r;
+    });
+    return best;
+  }
+  function pbCalc() { // { a, b, z, g, qty, lays: { asIs, turned, mixed }, best, lay, res, over, tall } or null when the footprint is incomplete
+    var s = state.pb, a = pbNum(s.x), b = pbNum(s.y), z = pbNum(s.z), g = pbNum(s.gap), qty = Math.round(pbNum(s.qty));
+    if (a <= 0 || b <= 0) return null;
+    if (g < 0) g = 0;
+    var out = { a: a, b: b, z: z > 0 ? z : 0, g: g, qty: qty > 0 ? qty : 0, lays: {}, best: '', tall: z > BED[2] };
+    PB_LAYS.forEach(function (k) { out.lays[k] = pbLayout(a, b, g, k); });
+    if (out.lays.mixed && out.lays.mixed.n <= (out.lays.asIs ? out.lays.asIs.n : 0)) out.lays.mixed = null;
+    if (out.lays.turned && out.lays.asIs && a === b) out.lays.turned = null; // a square part turns into itself
+    var bestN = 0; PB_LAYS.forEach(function (k) { var l = out.lays[k]; if (l && l.n > bestN) { bestN = l.n; out.best = k; } });
+    if (!bestN) { out.over = Math.round((Math.max(a, b) - BED[0]) * 10) / 10; return out; }
+    out.lay = out.lays[s.lay] ? s.lay : out.best;
+    out.res = out.lays[out.lay];
+    return out;
+  }
+  function pbPlates(c) { // plates for the batch, parts on the last plate
+    if (!c || !c.res || !c.qty) return null;
+    var plates = Math.ceil(c.qty / c.res.n), last = c.qty - (plates - 1) * c.res.n;
+    return { plates: plates, last: last, full: last === c.res.n };
+  }
+  function pbSvg(c) { // top view of the plate: 1 unit = 1 mm, 16 mm grid like the 3D view, parts in red, dimension lines
+    var W = BED[0], H = BED[1], M = 22, f = t().pb, out = '<svg class="pb-svg" viewBox="0 0 ' + (W + M + 10) + ' ' + (H + M + 14) + '" role="img" aria-label="' + esc(f.layoutOf) + (c && c.res ? ' · ' + esc(f.perPlate.replace('{n}', c.res.n)) : '') + '"><g transform="translate(8 8)">';
+    var grid = ''; for (var k = 16; k < W; k += 16) grid += 'M' + k + ' 0 V' + H + ' M0 ' + k + ' H' + W + ' ';
+    out += '<path class="pb-grid" d="' + grid + '"/><rect class="ln pb-plate" x="0" y="0" width="' + W + '" height="' + H + '"/>';
+    if (c && c.res) {
+      var ox = Math.round((W - c.res.w) / 2 * 10) / 10, oy = Math.round((H - c.res.h) / 2 * 10) / 10, num = c.res.n <= 60, rs = c.res.rects.slice(0, PB_DRAW_MAX);
+      out += '<g transform="translate(' + ox + ' ' + oy + ')">' + rs.map(function (r, i) {
+        return '<rect class="fit-part" x="' + r[0] + '" y="' + r[1] + '" width="' + r[2] + '" height="' + r[3] + '"/>' + (num && Math.min(r[2], r[3]) >= 12 ? '<text class="pb-n" x="' + (r[0] + r[2] / 2) + '" y="' + (r[1] + r[3] / 2) + '" text-anchor="middle" dominant-baseline="central">' + (i + 1) + '</text>' : '');
+      }).join('') + '</g>';
+    }
+    out += '<path class="dim" d="M0 ' + (H + 6) + ' v10 M' + W + ' ' + (H + 6) + ' v10 M0 ' + (H + 11) + ' H' + W + '"/><text class="dimt" x="' + (W / 2) + '" y="' + (H + M + 1) + '" text-anchor="middle">' + W + '</text>' +
+      '<path class="dim" d="M' + (W + 6) + ' 0 h10 M' + (W + 6) + ' ' + H + ' h10 M' + (W + 11) + ' 0 V' + H + '"/><text class="dimt" x="' + (W + 17) + '" y="' + (H / 2) + '" text-anchor="middle" transform="rotate(-90 ' + (W + 17) + ' ' + (H / 2) + ')">' + H + '</text>';
+    return out + '</g></svg>';
+  }
+  function pbOut(c) {
+    var f = t().pb;
+    if (!c) return '<p class="hint">' + esc(f.empty) + '</p>';
+    if (!c.res) return '<span class="nk-tag nk-tag--rev">' + esc(f.noFit) + '</span><p>' + esc(f.tooBig.replace('{d}', fitFmt(c.over))) + '</p>';
+    var p = pbPlates(c), lays = PB_LAYS.filter(function (k) { return c.lays[k]; });
+    var h = '<div class="pb-lays" role="group" aria-label="' + esc(f.layout) + '">' + lays.map(function (k) {
+      var l = c.lays[k]; return '<button type="button" class="pb-lay" data-pb-lay="' + k + '" aria-pressed="' + (k === c.lay) + '"><span class="nk-label">' + esc(f[k]) + (k === c.best ? ' · ' + esc(f.best) : '') + '</span><b>' + esc(f.perPlate.replace('{n}', l.n)) + '</b></button>';
+    }).join('') + '</div>';
+    h += '<p class="pb-sum"><span class="nk-tag nk-tag--ok">' + esc(f.perPlate.replace('{n}', c.res.n)) + '</span> ' + esc(f.used.replace('{p}', Math.round(c.res.n * c.a * c.b / (BED[0] * BED[1]) * 100))) +
+      (p ? ' · <b>' + esc(pbPlural(p.plates, f.plates).replace('{n}', p.plates).replace('{q}', c.qty)) + '</b>' + (p.plates > 1 ? ' (' + esc(p.full ? f.full : f.last.replace('{n}', p.last)) + ')' : '') : '') + '</p>';
+    if (c.tall) h += '<p class="pb-warn"><span class="nk-tag nk-tag--rev">' + esc(f.tallTag) + '</span> ' + esc(f.tooTall.replace('{h}', fitFmt(c.z))) + '</p>';
+    return h;
+  }
+  function pbText(c) { // the layout as plain text (copy + brief)
+    var f = t().pb, p = pbPlates(c);
+    var s = f.brief + ': ' + fitFmt(c.a) + ' × ' + fitFmt(c.b) + (c.z ? ' × ' + fitFmt(c.z) : '') + ' mm, ' + f.gapShort.replace('{g}', fitFmt(c.g)) + ' → ' + f.perPlate.replace('{n}', c.res.n) + ' (' + f[c.lay] + ')' +
+      (p ? ', ' + pbPlural(p.plates, f.plates).replace('{n}', p.plates).replace('{q}', c.qty) : '');
+    return /\.$/.test(s) ? s : s + '.';
+  }
+  function pbBox() {
+    var f = t().pb, s = state.pb, c = pbCalc();
+    var num = function (k, label, attrs) { return '<div class="nk-field"><label class="nk-field__label" for="pb-' + k + '">' + esc(label) + '</label><input class="nk-input" id="pb-' + k + '" data-pb-f="' + k + '" type="number" inputmode="decimal" min="0" ' + attrs + ' value="' + esc(s[k]) + '"></div>'; };
+    return '<section class="block pb">' + head(f.label, f.title, f.lead) + '<div class="fit-grid"><div class="fit-form">' +
+      '<div class="fit-inputs">' + num('x', f.x + ' · mm', 'step="any"') + num('y', f.y + ' · mm', 'step="any"') + num('z', f.z + ' · mm', 'step="any"') + '</div>' +
+      '<div class="pb-pair">' + num('qty', f.qty, 'step="1" inputmode="numeric"') + num('gap', f.gap + ' · mm', 'step="any"') + '</div>' +
+      '<div class="fit-out pb-out" id="pb-out" role="status" aria-live="polite">' + pbOut(c) + '</div>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-pb-go' + (c && c.res ? '' : ' disabled') + '>' + esc(f.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-pb-copy' + (c && c.res ? '' : ' disabled') + '>' + esc(f.copy) + '</button><span class="copy-msg" id="pb-msg" role="status"></span></div>' +
+      '<p class="fit-note">' + esc(f.note) + '</p></div>' +
+      '<figure class="fit-fig"><div class="nk-sheet__art pb-fig" id="pb-fig">' + pbSvg(c) + '</div><figcaption class="nk-label" id="pb-cap">' + esc(f.layoutOf) + ' · ' + BED[0] + ' × ' + BED[1] + ' mm</figcaption></figure></div></section>';
+  }
+  function pbUpdate(keepLay) {
+    if (!keepLay) state.pb.lay = '';
+    var c = pbCalc(), o = document.getElementById('pb-out'), fg = document.getElementById('pb-fig');
+    if (o) o.innerHTML = pbOut(c);
+    if (fg) fg.innerHTML = pbSvg(c);
+    var ok = !!(c && c.res); ['data-pb-go', 'data-pb-copy'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !ok; });
+  }
+  function pbLay(k) { state.pb.lay = k; pbUpdate(true); var b = document.querySelector('[data-pb-lay="' + k + '"]'); if (b) b.focus(); }
+  function pbSet(d, qty) { // another tool hands over a size [X, Y, Z] and a quantity before the link opens the tool
+    state.pb.x = d[0] ? String(d[0]) : ''; state.pb.y = d[1] ? String(d[1]) : ''; state.pb.z = d[2] ? String(d[2]) : ''; state.pb.lay = '';
+    if (qty) state.pb.qty = String(qty);
+  }
+  function pbFitLink() { return '<p class="pl-open pb-open"><a href="#services?tool=plate" data-pb-fit>' + esc(t().pb.link) + ' →</a></p>'; }
+  function pbStLink() { return '<p class="pl-open pb-open"><a href="#services?tool=plate" data-pb-st>' + esc(t().pb.link) + ' →</a></p>'; }
+  function pbCopy() {
+    var c = pbCalc(), msg = document.getElementById('pb-msg'), f = t().pb; if (!c || !c.res || !msg) return;
+    var fail = function () { msg.textContent = f.copyFail; };
+    try { navigator.clipboard.writeText(pbText(c)).then(function () { msg.textContent = f.copied; }, fail); } catch (e) { fail(); }
+  }
+  function pbToOrder() {
+    var c = pbCalc(), o = state.order, f = t().pb; if (!c || !c.res) return;
+    if (o.services.indexOf('print') < 0) o.services.push('print');
+    if (c.qty) o.qty = String(c.qty);
+    var line = pbText(c);
+    if (o.what.indexOf(f.brief + ':') < 0) o.what = o.what ? o.what + '\n' + line : line;
+    else o.what = o.what.split('\n').map(function (l) { return l.indexOf(f.brief + ':') === 0 ? line : l; }).join('\n');
+    state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+
   // ---------- Tools on #services: index of the five tools, deep links #services?tool=plan|fit|file|material|prep ----------
   // Added 2026-10-29 (#services tools package). Only links and scrolling; the tools themselves are unchanged.
   // To remove: TL_TOOLS … tlGo(), the tlIndex() / tlWrap() calls in views.services, tlHome() in views.home, the state.tool
   // line in page(), the tlGo line in render(), tl: in both languages in content.js and the "Tools index" rules in page.css.
-  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep']]; // [link name, content key, section id]
+  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']]; // [link name, content key, section id]
   function tlHash(k) { return '#services?tool=' + k; }
   function tlIndex() {
     var x = t().tl;
@@ -2185,6 +2317,11 @@
     var th = el.tagName === 'A' && /^#services\?tool=([a-z]+)$/.exec(el.getAttribute('href') || ''); // Tools index: same link again → jump again
     if (th && location.hash === th[0]) { ev.preventDefault(); tlGo(th[1]); return; }
     if (el.hasAttribute('data-fit-go')) { fitToOrder(); return; }
+    if (el.hasAttribute('data-pb-go')) { pbToOrder(); return; }
+    if (el.hasAttribute('data-pb-copy')) { pbCopy(); return; }
+    if (el.dataset.pbLay) { pbLay(el.dataset.pbLay); return; }
+    if (el.hasAttribute('data-pb-fit')) { var pbr = fitCalc(); pbSet(pbr ? pbr.o : [fitNum(state.fit.l), fitNum(state.fit.w), fitNum(state.fit.h)]); } // the link itself opens the tool
+    if (el.hasAttribute('data-pb-st')) { var pbs = stSrc(); if (pbs) pbSet(stDims(pbs), Math.round(+state.st.qty) || 0); }
     if (el.hasAttribute('data-fc-go')) { fcToOrder(); return; }
     if (el.hasAttribute('data-fc-fit')) { fcToFit(); return; }
     if (el.hasAttribute('data-fc-copy')) { fcCopy(); return; }
@@ -2281,6 +2418,7 @@
     if (a.length) state.errors = {};
     drSave();
   });
+  app.addEventListener('input', function (ev) { var pbf = ev.target.dataset && ev.target.dataset.pbF; if (pbf) { state.pb[pbf] = ev.target.value; pbUpdate(); } }); // Batch on the plate (2026-10-30)
   // File check: drop a file on the box; the views follow the light/dark theme.
   app.addEventListener('dragover', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop'); if (!d) return; ev.preventDefault(); d.classList.add('is-over'); });
   app.addEventListener('dragleave', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop'); if (d) d.classList.remove('is-over'); });

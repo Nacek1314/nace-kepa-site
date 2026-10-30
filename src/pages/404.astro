@@ -1,38 +1,152 @@
 ---
+// 404 "sheet not found" page (lost-visitor package, 2026-10-30). Served by GitHub Pages for every unknown address.
+// Same drawing-sheet look as the site (page.css + components.css, minified like Site.astro), EN + SL by the address
+// (/sl/…) or the browser language, and a small inline script that reads the address and suggests the closest project
+// sheets and news posts by name ("Did you mean …"), plus a search link for the words in the address. Only titles and
+// slugs from projects.json / news.json are embedded; nothing is fetched. The inline script is pinned by its SHA-256
+// hash in the page's Content-Security-Policy, like the main page.
+import pageCss from '../site/page.css?raw';
+import componentsCss from '../site/components.css?raw';
+import projects from '../data/projects.json';
+import news from '../data/news.json';
+import content from '../site/content.js?raw';
+import { createHash } from 'node:crypto';
+
+const contactEmail = 'kepanace@gmail.com';
+const CATS: any = new Function(content + '\nreturn CATS;')(); // category names in both languages, as on #work
+const data = { // [slug, EN title, SL title, EN category, SL category, year]
+  p: (projects as any[]).filter((p) => !p.hidden).map((p) => [p.slug, p.title?.en || '', p.title?.sl || '', CATS[p.category]?.en || p.category || '', CATS[p.category]?.sl || p.category || '', p.year || '']),
+  n: (news as any[]).filter((n) => !n.hidden && !n.draft).map((n) => [n.slug, n.title?.en || '', n.title?.sl || '', 'News', 'Novica', String(n.date || '').slice(0, 4)])
+};
+let css = pageCss + '\n' + componentsCss;
+let script = `window.NK404 = ${JSON.stringify(data).replace(/</g, '\\u003c')};
+(function () {
+  var D = window.NK404, path = '';
+  try { path = decodeURIComponent(location.pathname); } catch (e) { path = location.pathname; }
+  var sl = /^\\/sl(\\/|$)/i.test(path) || (!/^\\/en(\\/|$)/i.test(path) && String(navigator.language || '').slice(0, 2).toLowerCase() === 'sl');
+  document.documentElement.lang = sl ? 'sl' : 'en';
+  document.title = (sl ? 'List ni najden' : 'Sheet not found') + ' · Nace Kepa';
+  var home = sl ? '/sl/' : '/';
+  document.querySelectorAll('[data-lang]').forEach(function (el) { el.hidden = el.getAttribute('data-lang') !== (sl ? 'sl' : 'en'); });
+  document.querySelectorAll('[data-home]').forEach(function (a) { a.setAttribute('href', home + (a.getAttribute('data-home') || '')); });
+  var raw = path.toLowerCase().replace(/^\\/(sl|en)(?=\\/|$)/, '').replace(/^\\/(portfolio|projects?|project|work|news|post|p|n|sheet)(?=\\/)/, '').replace(/\\.html?$/, '').replace(/\\/+$/, '');
+  var words = raw.split(/[^a-z0-9čšžćđ]+/).filter(function (w) { return w.length > 1 && w !== 'index'; });
+  var out = document.getElementById('nf-sug'), ask = document.getElementById('nf-ask');
+  if (!words.length || !out) return;
+  function lev(a, b) { // edit distance for short words
+    var m = a.length, n = b.length, d = [], i, j; if (!m) return n; if (!n) return m;
+    for (i = 0; i <= m; i++) { d[i] = [i]; } for (j = 1; j <= n; j++) d[0][j] = j;
+    for (i = 1; i <= m; i++) for (j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[m][n];
+  }
+  function score(item) { // how many address words appear in the slug or the titles (exact, prefix, or one typo away)
+    var hay = (item[0] + ' ' + item[1] + ' ' + item[2]).toLowerCase().split(/[^a-z0-9čšžćđ]+/).filter(Boolean), s = 0;
+    words.forEach(function (w) {
+      var best = 0;
+      hay.forEach(function (h) {
+        if (h === w) best = Math.max(best, 1);
+        else if (w.length >= 3 && (h.indexOf(w) === 0 || w.indexOf(h) === 0)) best = Math.max(best, .6);
+        else if (w.length >= 5 && Math.abs(h.length - w.length) <= 2 && lev(h, w) <= 2) best = Math.max(best, .8);
+      });
+      s += best;
+    });
+    return s;
+  }
+  var hits = D.p.map(function (p) { return { it: p, s: score(p), k: 'p' }; }).concat(D.n.map(function (n) { return { it: n, s: score(n), k: 'n' }; }))
+    .filter(function (h) { return h.s >= Math.min(1, words.length * .5); }).sort(function (a, b) { return b.s - a.s; }).slice(0, 3);
+  var esc = function (v) { return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+  if (hits.length) {
+    out.innerHTML = '<p class="nk-label">' + (sl ? 'Ste iskali' : 'Did you mean') + '</p><ul class="nf-list">' + hits.map(function (h) {
+      var title = (sl && h.it[2]) || h.it[1] || h.it[0], meta = sl ? h.it[4] : h.it[3], yr = h.it[5];
+      return '<li><a class="nf-item" href="' + home + '#' + h.k + '-' + esc(h.it[0]) + '"><span class="nk-label">' + esc(meta) + (yr ? ' · ' + esc(yr) : '') + '</span><span class="nf-t">' + esc(title) + '</span><span class="nf-go" aria-hidden="true">→</span></a></li>';
+    }).join('') + '</ul>';
+    out.hidden = false;
+  }
+  if (ask) { ask.setAttribute('href', home + '#work?q=' + encodeURIComponent(words.join(' '))); ask.querySelector('b').textContent = words.join(' '); ask.parentNode.hidden = false; }
+})();`;
+try {
+  const { transform } = await import('esbuild');
+  css = (await transform(css, { loader: 'css', minify: true, legalComments: 'none', charset: 'utf8' })).code.trim();
+  script = (await transform(script, { loader: 'js', minify: true, legalComments: 'none', charset: 'utf8' })).code.trim();
+} catch (e) { console.warn('[404.astro] minify skipped:', (e as Error).message); }
+const hash = "'sha256-" + createHash('sha256').update(script, 'utf8').digest('base64') + "'";
+const csp = ["default-src 'self'", `script-src ${hash}`, "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com", "img-src 'self' data:", "connect-src 'none'", "object-src 'none'", "frame-src 'none'", "base-uri 'self'", "form-action 'self'", 'upgrade-insecure-requests'].join('; ');
+const logo = '<svg class="nk-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect class="nk-mark__frame" x="3" y="3" width="58" height="58"/><path class="nk-mark__ln" d="M14 48 V16 L30 48 V16"/><path class="nk-mark__ln" d="M38 16 V48 M38 32 L52 16 M38 32 L52 48"/><rect class="nk-mark__dot" x="53" y="40" width="6" height="6"/></svg>';
 ---
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta http-equiv="Content-Security-Policy" content={csp} />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>Sheet not found · Nace Kepa</title>
     <meta name="robots" content="noindex" />
-    <meta http-equiv="refresh" content="10; url=/" />
-    <style>
-      :root { --paper:#eef0ec; --ink:#1a1c1e; --muted:#53585e; --red:#b52b16; }
-      @media (prefers-color-scheme: dark) { :root { --paper:#131517; --ink:#e8e9e4; --muted:#a1a6ac; --red:#ff6b4f; } }
-      body { margin:0; min-height:100vh; display:grid; place-items:center; background:var(--paper); color:var(--ink); font-family:"Helvetica Neue",Arial,sans-serif; padding:16px; }
-      p { margin:8px 0; } nav { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:16px; font-family:ui-monospace,Menlo,monospace; font-size:14px; } code { font-family:ui-monospace,Menlo,monospace; color:var(--muted); } a { color:var(--red); }
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#eef0ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#131517" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <style is:inline set:html={css}></style>
+    <style is:inline>
+      [hidden] { display: none !important; }
+      .nf-main { min-height: 60vh; }
+      .nf-sug { display: grid; gap: var(--space-3); }
+      .nf-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line-strong); background: var(--paper-raised); }
+      .nf-list li { display: flex; min-width: 0; } .nf-list li + li { border-left: 1px solid var(--line); }
+      .nf-item { position: relative; flex: 1; min-width: 0; display: grid; gap: var(--space-2); align-content: start; padding: var(--space-4) var(--space-4) var(--space-8); color: var(--ink); text-decoration: none; }
+      .nf-item .nk-label { color: var(--redline); } .nf-t { font-weight: 600; line-height: 1.3; }
+      .nf-go { position: absolute; left: var(--space-4); bottom: var(--space-3); font: 13px var(--font-mono); color: var(--ink-muted); }
+      .nf-item:hover { background: var(--redline-soft); } .nf-item:hover .nf-go { color: var(--redline); }
+      .nf-item:focus-visible { outline: 2px solid var(--redline); outline-offset: -2px; }
+      .nf-ask { margin: 0; font-size: 15px; line-height: 24px; } .nf-ask a { color: var(--ink); text-decoration-color: var(--redline); text-underline-offset: 3px; } .nf-ask a:hover { color: var(--redline); }
+      .nf-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+      .nf-links { margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); font: 13px/24px var(--font-mono); }
+      .nf-links a { color: var(--ink-muted); } .nf-links a:hover, .nf-links a:focus-visible { color: var(--redline); }
+      .nf-path { font: 13px/20px var(--font-mono); color: var(--ink-muted); overflow-wrap: anywhere; }
+      .nf-foot { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); padding: var(--space-5) 0 var(--space-6); font: 12px/20px var(--font-mono); color: var(--ink-muted); }
+      .nf-foot a { color: inherit; } .nf-foot a:hover { color: var(--redline); }
+      @media (max-width: 720px) { .nf-list { grid-template-columns: 1fr; } .nf-list li + li { border-left: 0; border-top: 1px solid var(--line); } .nf-item { padding-bottom: var(--space-4); padding-right: var(--space-8); } .nf-go { left: auto; right: var(--space-4); top: var(--space-4); bottom: auto; } }
     </style>
   </head>
   <body>
-    <main>
-      <code>ERR 404 · SHEET NOT FOUND</code>
-      <p><strong>This page moved.</strong> Taking you to the <a href="/">home page</a>…</p>
-      <p lang="sl"><strong>Ta stran je bila premaknjena.</strong> Preusmerjam na <a href="/sl/">domačo stran</a>…</p>
-      <nav aria-label="Shortcuts">
-        <a href="/#work">Projects</a>
-        <a href="/#news">News</a>
-        <a href="/#order">Start a project</a>
-      </nav>
-      <nav aria-label="Bližnjice" lang="sl">
-        <a href="/sl/#work">Projekti</a>
-        <a href="/sl/#news">Novice</a>
-        <a href="/sl/#order">Začni projekt</a>
-      </nav>
-      <nav aria-label="Contact / Kontakt">
-        <a href="mailto:kepanace@gmail.com">kepanace@gmail.com</a>
-      </nav>
-    </main>
+    <div class="frame">
+      <div class="zones zones-top" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></div>
+      <div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>
+      <div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>
+      <header class="top">
+        <a class="wordmark" href="/" data-home="" aria-label="nacekepa.work"><Fragment set:html={logo} /><span class="wm-text">nacekepa<span>.work</span></span></a>
+        <nav aria-label="Main" data-lang="en"><a href="/#services" data-home="#services">Services</a><a href="/#work" data-home="#work">Work</a><a href="/#news" data-home="#news">News</a><a href="/#about" data-home="#about">About</a></nav>
+        <nav aria-label="Glavni meni" data-lang="sl" hidden lang="sl"><a href="/sl/#services">Storitve</a><a href="/sl/#work">Projekti</a><a href="/sl/#news">Novice</a><a href="/sl/#about">O meni</a></nav>
+      </header>
+      <main class="nf-main">
+        <section class="block first">
+          <div data-lang="en">
+            <header class="sec-head"><div><p class="nk-label">ERR 404 · SHEET NOT FOUND</p><h1 class="page-title">This sheet is not in the register.</h1></div>
+              <p class="lead">The address may be old or mistyped. Below are the closest sheets, a search for the words in the address, and the way to the studio.</p></header>
+          </div>
+          <div data-lang="sl" hidden lang="sl">
+            <header class="sec-head"><div><p class="nk-label">NAPAKA 404 · LIST NI NAJDEN</p><h1 class="page-title">Tega lista ni v seznamu risb.</h1></div>
+              <p class="lead">Naslov je morda star ali napačno vpisan. Spodaj so najbližji listi, iskanje po besedah iz naslova in pot do studia.</p></header>
+          </div>
+          <div class="nf-sug" id="nf-sug" hidden></div>
+          <p class="nf-ask" hidden><span data-lang="en">Or search the projects and news for </span><span data-lang="sl" hidden lang="sl">Ali poiščite med projekti in novicami </span><a id="nf-ask" href="/#work">“<b></b>” →</a></p>
+          <div class="nf-row" data-lang="en">
+            <a class="nk-btn nk-btn--primary" href="/#work" data-home="#work">All work<span class="nk-btn__arrow" aria-hidden="true">→</span></a>
+            <a class="nk-btn" href="/#order" data-home="#order">Start a project</a>
+            <p class="nf-links"><a href="/#services?tool=index" data-home="#services?tool=index">Free tools</a><a href="/#contact" data-home="#contact">Contact</a><a href="/sl/" hreflang="sl" lang="sl">Slovenščina</a></p>
+          </div>
+          <div class="nf-row" data-lang="sl" hidden lang="sl">
+            <a class="nk-btn nk-btn--primary" href="/sl/#work">Vsi projekti<span class="nk-btn__arrow" aria-hidden="true">→</span></a>
+            <a class="nk-btn" href="/sl/#order">Začni projekt</a>
+            <p class="nf-links"><a href="/sl/#services?tool=index">Brezplačna orodja</a><a href="/sl/#contact">Kontakt</a><a href="/" hreflang="en" lang="en">English</a></p>
+          </div>
+        </section>
+      </main>
+      <footer class="nf-foot"><span>Nace Kepa · Škofja Loka, SI</span><a href={'mailto:' + contactEmail}>{contactEmail}</a><a href="https://www.linkedin.com/in/nace-kepa-82735038a" rel="noopener">LinkedIn ↗</a></footer>
+    </div>
+    <script is:inline set:html={script}></script>
   </body>
 </html>
