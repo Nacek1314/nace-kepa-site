@@ -7,8 +7,10 @@
 // setView('iso' | 'top' | 'front' | 'side') — orthographic drawing views — and setCut(mm | null), a section plane that
 // hides everything above that height. Part studio (2026-10-29, 2nd): setAxes([a, b, c]) turns the part so that file axes
 // a, b, c become X, Y, Z (the orientation the fit check found), setMeasure(on) + clearMeasure() measure the distance between
-// two clicked points on the part (opts.onMeasure gets { mm, d: [ΔX, ΔY, ΔZ] } or null). Remove: meshFromPositions(), the
-// bed / ortho / cut / axes / measure blocks below and the returned functions; mount({ url }) then works as before.
+// two clicked points on the part (opts.onMeasure gets { mm, d: [ΔX, ΔY, ΔZ] } or null). Support check (2026-10-31):
+// setOverlay(positions | null) paints the given triangles (file coordinates, 9 numbers each, same units as the part) in the
+// accent colour on top of the part — the Part studio hands it the faces that need support. Remove: meshFromPositions(), the
+// bed / ortho / cut / axes / measure / overlay blocks below and the returned functions; mount({ url }) then works as before.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
@@ -215,7 +217,7 @@ export async function mount(container, opts) {
     info.materials[1].color.copy(p.ink);
     grid.material.color.copy(p.grid);
     if (bed) { info.materials[2].color.copy(p.muted); info.materials[3].color.copy(p.accent); }
-    mMat.color.copy(p.accent); mLineMat.color.copy(p.accent);
+    mMat.color.copy(p.accent); mLineMat.color.copy(p.accent); ovMat.color.copy(p.accent);
   };
   mq.addEventListener('change', retheme);
   const mo = new MutationObserver(retheme);
@@ -300,6 +302,21 @@ export async function mount(container, opts) {
     if (!measuring) clearMeasure();
   };
 
+  // Overlay: a second mesh of selected triangles (file coordinates) as a child of the part, so it follows every turn,
+  // the scale and the section plane; drawn slightly in front of the surface so it never flickers against it.
+  const ovMat = new THREE.MeshStandardMaterial({ color: pal.accent, roughness: 0.85, metalness: 0, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+  ovMat.clippingPlanes = [cutPlane];
+  info.materials.push(ovMat);
+  let ovMesh = null;
+  const setOverlay = (positions) => {
+    if (ovMesh) { obj.remove(ovMesh); ovMesh.geometry.dispose(); ovMesh = null; }
+    if (!raw || !(positions instanceof Float32Array) || positions.length < 9) return;
+    ovMesh = meshFromPositions(positions);
+    ovMesh.material = ovMat;
+    ovMesh.renderOrder = 1;
+    obj.add(ovMesh);
+  };
+
   // Orientation: file axes perm[0], perm[1], perm[2] become X, Y, Z (a proper rotation — an odd permutation gets one axis
   // mirrored back so the part is never a mirror image). The part is re-centred on the plate and the camera re-aimed.
   const C = new THREE.Matrix4().makeRotationX(-Math.PI / 2), Ci = C.clone().invert();
@@ -333,8 +350,9 @@ export async function mount(container, opts) {
     setCut,
     setAxes,
     setMeasure,
+    setOverlay,
     clearMeasure: () => clearMeasure(),
-    reset: () => { setView('iso'); setCut(null); setAxes([0, 1, 2]); setMeasure(false); },
+    reset: () => { setView('iso'); setCut(null); setAxes([0, 1, 2]); setMeasure(false); setOverlay(null); },
     dispose: () => {
       alive = false;
       cancelAnimationFrame(raf);

@@ -964,3 +964,30 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 @media (min-width: 1001px) { .tl-list { grid-template-columns: repeat(4, minmax(0, 1fr)); } .tl-list li:nth-child(n + 5) { border-top: 1px solid var(--line); } .tl-list li:nth-child(5) { border-left: 0; } }
 @media (max-width: 720px) { .pb-lays { grid-template-columns: 1fr; } }
 @media (max-width: 480px) { .pb-pair { grid-template-columns: 1fr; } }
+/* Phone results package (2026-10-31): long status tags wrap inside result cards instead of running off the sheet; on
+   narrow phones the action buttons of the NK-S sheet and the file check stack full width; "Back to top" in the footer
+   on touch screens (the keyboard-shortcuts button takes that spot on desktops) */
+.st-rows .nk-tag, .fc-3d__fit .nk-tag, .fc-fit .nk-tag, .pb-warn .nk-tag, .fc-err .nk-tag { white-space: normal; text-align: left; }
+.to-top { display: none; font: 12px/16px var(--font-mono); color: var(--ink-muted); background: none; border: 0; padding: 4px 0; min-height: 24px; cursor: pointer; }
+.to-top:hover { color: var(--redline); }
+.to-top:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+@media (hover: none) and (pointer: coarse) { .to-top { display: inline-block; } }
+@media (max-width: 480px) { .st-act .nk-btn, .fc-out .cta-row .nk-btn { flex: 1 1 100%; justify-content: center; } }
+@media print { .to-top { display: none !important; } }
+/* Support check in the Part studio (2026-10-31): spBox() in app.js — toggle, limit, result line, table of orientations */
+.st-sup { display: grid; gap: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--line); }
+.st-sup__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.st-sup__deg { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: auto; }
+.st-sup__deg .nk-input { width: 5.5em; height: 36px; }
+.st-sup__res { margin: 0; font-size: 14px; line-height: 20px; }
+.st-sup__t { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 18px; font-variant-numeric: tabular-nums; }
+.st-sup__t caption { text-align: left; padding-bottom: var(--space-2); }
+.st-sup__t th { font: 500 11px/16px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); text-align: left; padding: 4px var(--space-2); border-bottom: 1px solid var(--line-strong); font-weight: 500; }
+.st-sup__t td { padding: 6px var(--space-2); border-bottom: 1px solid var(--line); vertical-align: top; }
+.st-sup__t tr.is-cur td { background: var(--paper-raised); }
+.st-sup__t .pl-link { padding: 0; min-height: 0; }
+.st-sup__ok { color: var(--ok); }
+.st-sup__no { font: 11px/16px var(--font-mono); color: var(--redline); }
+.st-sup__best { color: var(--redline); font: 500 11px/16px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+.st-sup__note { margin: 0; }
+@media (max-width: 480px) { .st-sup__deg { margin-left: 0; } .st-sup__t th:nth-child(3), .st-sup__t td:nth-child(3) { display: none; } .st-sup__t th, .st-sup__t td { padding-inline: 4px; } }

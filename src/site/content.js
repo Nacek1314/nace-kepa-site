@@ -35,7 +35,13 @@ var T = {
       unnamed: 'unnamed part', srcBox: 'typed size (no file)', srcFile: '{n} · {f} · {t} triangles', matNone: 'Not sure — recommend one', noNeeds: '—',
       go: 'Send to the order form', print: 'Print or save as PDF', copy: 'Copy spec', copied: 'Copied.', copyFail: 'Could not copy — the sheet is selected, press Ctrl+C.', brief: 'Part studio',
       note: 'Only your own numbers and the published X2D build volume, materials and turnarounds — no prices. Nothing is uploaded until you send the brief.',
-      hint3d: 'Drag to rotate · scroll or pinch to zoom · right-drag to pan · dashed box = X2D build volume 256 × 256 × 260 mm', open: 'Open this file in the Part studio', tlLine: 'File or size → 3D on the plate → turn, measure, material, deadline → spec sheet → order form' },
+      hint3d: 'Drag to rotate · scroll or pinch to zoom · right-drag to pan · dashed box = X2D build volume 256 × 256 × 260 mm', open: 'Open this file in the Part studio',
+      // Support check (spBox in app.js, 2026-10-31)
+      sp: { label: 'Support check', toggle: 'Show overhangs', deg: 'Overhang limit', none: 'No faces over {d}° — prints without support in this orientation.', sup: 'Needs support: {a} cm² · {p} % of the surface', base: 'On the plate (first layer): {a} cm²',
+        table: 'Support by orientation', colSize: 'X × Y × Z mm', colSup: 'Support', colBase: 'On the plate', colUse: 'Orientation', use: 'Use', cur: 'current', best: 'least support', fits: 'fits', noFit: 'too big',
+        rowSup: 'Support ({d}°)', rowBase: 'First layer', rowNone: 'none',
+        note: 'Rule of thumb: faces leaning more than {d}° past vertical usually need support; bridges and small details are not counted. The final orientation and supports are set when the job is prepared.',
+        box: 'A typed size is a plain box — no overhangs in any orientation. Drop the real file to check it.' }, tlLine: 'File or size → 3D on the plate → turn, measure, material, deadline → spec sheet → order form' },
     // Contact package (ctCard / ctAlt in app.js, 2026-10-29)
     ct: { title: 'Contact', lead: 'Write in Slovenian or English — a short description of the part or the problem is enough to start.', email: 'E-mail', linkedin: 'Nace Kepa on LinkedIn', where: 'Studio', write: 'Write an e-mail', or: 'or write an e-mail', subject: 'Project enquiry — nacekepa.work' },
     timelines: [['Small CAD jobs', '2–5 days'], ['3D prints', '1–4 days + post-processing'], ['Full custom builds', '2–6 weeks']],
@@ -158,6 +164,7 @@ var T = {
       linkL: 'Link to this comparison', from: 'Compare with a similar sheet', open: 'Compare sheets side by side', slBtn: 'Compare {n} sheets', few: 'There are not enough project sheets to compare yet.' },
     rel: { title: 'Similar projects', all: 'All {n} {c} projects', start: 'Start a project like this', brief: 'Similar to' },
     // Search on #work (findBox in app.js).
+    toTop: 'Back to top',
     keys: { btn: 'Keyboard shortcuts', label: 'Shortcuts · keyboard', title: 'Get around without the mouse.', help: 'Show or hide this list', find: 'Search projects and news', prevNext: 'Previous / next sheet (on a project or news post)', lang: 'Switch EN / SL', close: 'Close', note: 'Shortcuts are off while you type in a field.' },
     newTab: 'opens in a new tab',
     rd: { min: '{n} min read', nav: 'News posts', prev: 'Previous post', next: 'Next post' },
@@ -201,7 +208,13 @@ var T = {
       unnamed: 'del brez imena', srcBox: 'vpisane mere (brez datoteke)', srcFile: '{n} · {f} · {t} trikotnikov', matNone: 'Ne vem — predlagajte', noNeeds: '—',
       go: 'Pošlji v obrazec za naročilo', print: 'Natisni ali shrani kot PDF', copy: 'Kopiraj specifikacijo', copied: 'Kopirano.', copyFail: 'Kopiranje ni uspelo — list je označen, pritisnite Ctrl+C.', brief: 'Studio dela',
       note: 'Samo vaše številke in objavljeni delovni prostor X2D, materiali in roki — brez cen. Nič se ne naloži, dokler ne pošljete povzetka.',
-      hint3d: 'Z vlečenjem vrtite · kolešček ali prsta za povečavo · desni gumb za premik · črtkan okvir = delovni prostor X2D 256 × 256 × 260 mm', open: 'Odpri to datoteko v Studiu dela', tlLine: 'Datoteka ali mere → 3D na mizi → lega, merjenje, material, rok → specifikacijski list → obrazec za naročilo' },
+      hint3d: 'Z vlečenjem vrtite · kolešček ali prsta za povečavo · desni gumb za premik · črtkan okvir = delovni prostor X2D 256 × 256 × 260 mm', open: 'Odpri to datoteko v Studiu dela',
+      // Preverjanje podpor (spBox v app.js, 2026-10-31)
+      sp: { label: 'Preverjanje podpor', toggle: 'Pokaži previse', deg: 'Meja previsa', none: 'Brez ploskev čez {d}° — v tej legi se tiska brez podpor.', sup: 'Potrebuje podpore: {a} cm² · {p} % površine', base: 'Na mizi (prvi sloj): {a} cm²',
+        table: 'Podpore po legah', colSize: 'X × Y × Z mm', colSup: 'Podpore', colBase: 'Na mizi', colUse: 'Lega', use: 'Uporabi', cur: 'trenutna', best: 'najmanj podpor', fits: 'gre', noFit: 'prevelik',
+        rowSup: 'Podpore ({d}°)', rowBase: 'Prvi sloj', rowNone: 'brez',
+        note: 'Groba ocena: ploskve, nagnjene več kot {d}° od navpičnice, običajno potrebujejo podpore; mostovi in drobni detajli niso šteti. Končno lego in podpore določim pri pripravi tiska.',
+        box: 'Vpisane mere so navaden kvader — brez previsov v nobeni legi. Za preverjanje spustite pravo datoteko.' }, tlLine: 'Datoteka ali mere → 3D na mizi → lega, merjenje, material, rok → specifikacijski list → obrazec za naročilo' },
     // Kontakt (ctCard / ctAlt v app.js, 2026-10-29)
     ct: { title: 'Kontakt', lead: 'Pišite v slovenščini ali angleščini — za začetek je dovolj kratek opis dela ali težave.', email: 'E-pošta', linkedin: 'Nace Kepa na LinkedInu', where: 'Studio', write: 'Pišite mi e-pošto', or: 'ali mi pišite e-pošto', subject: 'Povpraševanje — nacekepa.work' },
     timelines: [['Manjša CAD dela', '2–5 dni'], ['3D tisk', '1–4 dni + obdelava'], ['Celoten izdelek', '2–6 tednov']],
@@ -314,6 +327,7 @@ var T = {
       start: 'Začni podoben projekt', brief: 'Primerjani listi', toSl: 'Dodaj vse v izbor', slDone: 'Dodano — v izboru: {n}.', slAll: 'Vsi so že v vašem izboru.',
       linkL: 'Povezava do te primerjave', from: 'Primerjaj s podobnim listom', open: 'Primerjaj liste drug ob drugem', slBtn: 'Primerjaj liste ({n})', few: 'Za primerjavo še ni dovolj projektnih listov.' },
     rel: { title: 'Podobni projekti', all: 'Vsi projekti: {c} ({n})', start: 'Začni podoben projekt', brief: 'Podobno kot' },
+    toTop: 'Na vrh strani',
     keys: { btn: 'Bližnjice na tipkovnici', label: 'Bližnjice · tipkovnica', title: 'Po strani brez miške.', help: 'Pokaži ali skrij ta seznam', find: 'Iskanje po projektih in novicah', prevNext: 'Prejšnji / naslednji list (na projektu ali novici)', lang: 'Preklop EN / SL', close: 'Zapri', note: 'Med tipkanjem v polje so bližnjice izklopljene.' },
     newTab: 'odpre se v novem zavihku',
     rd: { min: '{n} min branja', nav: 'Objave', prev: 'Prejšnja objava', next: 'Naslednja objava' },

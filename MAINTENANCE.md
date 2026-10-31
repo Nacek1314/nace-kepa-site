@@ -20,6 +20,71 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-10-31
+
+**Checked:** build, home, #services (all tools incl. `#services?tool=index` / `?tool=plate`), #work, #work?view=list, #p-famfive,
+#p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about, #contact, #compare, #studio (typed size + two test STL files),
+#order (all 4 steps on the local build in EN + SL, validation messages, nothing sent), /admin/ sign-in and the 404 page —
+1280 + 390 px, light + dark, EN (`/`) + SL (`/sl/`), plus a scan for anything wider than the page, broken images, unlabelled
+controls, unnamed buttons/links and duplicate ids. Last Actions run (04c2f84) succeeded; nacekepa.work, /sl/, /admin/ and
+/news.xml return 200 (checked from the laptop — the cloud sandbox cannot reach the live site or api.github.com). No JS errors,
+no CSP violations, no 404s (only Google Fonts, blocked in the cloud), no horizontal scroll.
+
+**Bugs fixed:**
+- Long status tags (`.nk-tag`, `white-space: nowrap`) ran out of their card on phones: in the NK-S spec sheet "Bigger than
+  the X2D in this orientation: X 258 > 256 mm" / "V tej legi je večji od X2D …" was clipped at the right edge of the sheet
+  at 390 px, and the same could happen to the 3D fit line under the file check and the batch warnings. Tags inside result
+  cards now wrap (`page.css`, "Phone results package").
+
+**Improvement — phone results package (`page.css`, `app.js` frame(), `content.js`):**
+- Status tags wrap inside the spec sheet, the 3D fit line, the fit-check result, the file-check error and the batch warnings
+  (the bug above, fixed for all of them at once).
+- Under 480 px the action buttons of the NK-S sheet ("Send to the order form", "Print or save as PDF", "Copy spec") and of the
+  file-check result stack full width — one thumb-sized row each instead of a ragged wrap.
+- "Back to top ↑" / "Na vrh strani ↑" button in the footer line next to the copyright, shown only on touch screens
+  (`(hover: none) and (pointer: coarse)` — the same spot the "Keyboard shortcuts ?" button has on desktops). Scrolls to the
+  top (no animation with `prefers-reduced-motion`) and moves focus to `#main`; keyboard works (Enter); hidden in print.
+  Helps on the 14 000 px long #services page and the long NK-S / batch pages on phones.
+*To remove:* the `<button class="to-top" data-top>` in `frame()`, the `data-top` line in the click handler, `toTop` in both
+languages in `content.js` and the "Phone results package" rules in `page.css`.
+
+**Innovation — Support check / "Preverjanje podpor" (`#studio`, block under Orientation + Measure on the stage; rows
+"Support (45°)" + "First layer" on the NK-S spec sheet, in "Copy spec", the print and the order brief):** which faces of the
+part need support, and which orientation needs the least.
+- Every triangle's downward tilt is compared with the overhang limit (default 45° from vertical, adjustable 10–89°) in each of
+  the six orientations the studio already offers (ST_PERMS); faces lying flat on the plate count as the first layer instead.
+  Output: "Needs support: 466.5 cm² · 54 % of the surface · On the plate (first layer): 0 cm²" (or "No faces over 45° —
+  prints without support in this orientation."), and a table "Support by orientation" with X × Y × Z, ✓ fits / too big,
+  support cm² + %, first-layer cm², the current row marked, "least support" on the best (fits first, then least support,
+  then largest first layer) and a "Use" button on every other row that turns the part (same as the Orientation select).
+- "▲ Show overhangs" (chip, `aria-pressed`) paints the faces that need support red in the 3D view: `viewer.js` got
+  `setOverlay(positions | null)` — a second mesh of the given triangles as a child of the part, so it follows every turn,
+  the scale and the section plane, drawn with a negative polygon offset so it never flickers; re-coloured on theme change.
+- A typed size is a plain box (no overhangs) — the block says so and asks for the real file. No print times, no prices;
+  the note calls the 45° rule a rule of thumb and says bridges and small details are not counted.
+- Tested in Playwright (SwiftShader) with two generated STLs: a T-part (10 × 10 × 30 post under a 40 × 40 × 10 plate →
+  16 cm² / 26 % as in the file, 3 cm² / 5 % lying on its side = "least support", first layer 1 cm² vs 4 cm²) and an
+  inverted pyramid (200 × 200 × 60, faces 59° from vertical → 466.5 cm² at 45°, nothing at 60°, nothing on its side);
+  red pixels in the 3D view 5 → 458 when the overlay is on, overlay visible inside the section cut; "Use" by keyboard
+  (Enter) changes the select and the sheet; the limit input keeps focus while the results re-render; the rows reach
+  "Copy spec" and the order brief ("Support (45°): 16 cm² · 26 %; First layer: 1 cm²"); file removed → block gone; EN + SL,
+  1280 + 390 px, light + dark, no errors, no horizontal scroll.
+*To remove:* `SP_DEF` … `spToggle()` in `app.js`, `spBox(src)` in `stStage()`, the `spRows(src)` line in `stRows()`,
+`spApply()` in `stMount()` / `stAxes()`, the `data-st-sp` / `data-st-sp-use` lines in the click handler and the
+`data-st-sp-deg` input listener, `sp:` inside `st` in both languages in `content.js`, the overlay block + `setOverlay` in
+`viewer.js` and the "Support check" rules at the end of `page.css`.
+*Next step (optional day 2):* paint the first-layer faces in a second colour, count bridges (down-facing faces whose edges
+are both supported) separately, and print the support row on the NK-S sheet's silhouette views.
+
+**Ideas for next time** (added to the list below)
+- Public: project landing pages — real `/portfolio/<slug>/` (+ `/sl/…`) HTML pages per project (title, description, details,
+  JSON-LD, canonical, hreflang) that open the same app view, so each project can rank in search on its own (today the old
+  `/portfolio/<old-slug>` paths are `noindex` meta-refresh redirects to `#p-…`).
+- Public: wall-thickness check in the Part studio — thinnest wall from the section plane / ray casts, warned against the
+  nozzle width only if Nace publishes it.
+- Admin: support-check preview for an uploaded model (same spBox on the admin upload preview), to note "prints without
+  support" on the project sheet.
+
 ## 2026-10-30
 
 **Checked:** build, home, #services (all tools incl. the new `#services?tool=plate`), #work, #work?view=list, #p-famfive,
@@ -1344,6 +1409,10 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: batch of several different parts (list of footprints + quantities → plates for the whole order).
 - Public: the plate layout drawn on the NK-S spec sheet and in the order brief's printable page.
 - Public: 404 page — "Copy e-mail" button and the three newest posts when the address matches nothing.
+- (Built 2026-10-31: support check in the Part studio — overhang area per orientation, "least support" ranking, red overlay in the 3D view, rows on the NK-S sheet; phone results package as the improvement.)
+- Public: project landing pages `/portfolio/<slug>/` + `/sl/…` (real HTML per project for search engines, opening the app view).
+- Public: Part studio — wall-thickness check from the section plane / ray casts (nozzle width only if Nace publishes it).
+- Admin: support-check preview on the upload preview, so the sheet can say "prints without support".
 
 ## 2026-10-03 (second run)
 
