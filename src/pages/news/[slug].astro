@@ -1,0 +1,14 @@
+---
+// News landing pages (2026-11-01): one real HTML page per published post at /news/<slug>/ (English) — same site as /,
+// with the post's own title, summary, photo as the link preview, structured data and static snapshot (from
+// src/data/news.json), opening that post. Slovenian twin: src/pages/sl/news/[slug].astro. The photos of a post live in
+// public/news/<slug>/, next to this page's index.html.
+// To remove: delete this file and the other three landing page files (see the note at the top of src/site/Site.astro).
+import Site from '../../site/Site.astro';
+import news from '../../data/news.json';
+export function getStaticPaths() {
+  return (news as any[]).filter((n) => !n.hidden && !n.draft && /^[a-z0-9-]+$/.test(String(n.slug))).map((n) => ({ params: { slug: n.slug }, props: { post: n } }));
+}
+const { post } = Astro.props;
+---
+<Site lang="en" post={post} />

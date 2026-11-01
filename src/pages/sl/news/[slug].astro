@@ -1,0 +1,10 @@
+---
+// Slovenian news landing pages (2026-11-01): /sl/news/<slug>/ — see src/pages/news/[slug].astro.
+import Site from '../../../site/Site.astro';
+import news from '../../../data/news.json';
+export function getStaticPaths() {
+  return (news as any[]).filter((n) => !n.hidden && !n.draft && /^[a-z0-9-]+$/.test(String(n.slug))).map((n) => ({ params: { slug: n.slug }, props: { post: n } }));
+}
+const { post } = Astro.props;
+---
+<Site lang="sl" post={post} />

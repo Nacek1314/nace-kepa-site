@@ -1,0 +1,10 @@
+---
+// Slovenian project landing pages (2026-11-01): /sl/portfolio/<slug>/ — see src/pages/portfolio/[slug].astro.
+import Site from '../../../site/Site.astro';
+import projects from '../../../data/projects.json';
+export function getStaticPaths() {
+  return (projects as any[]).filter((p) => !p.hidden && /^[a-z0-9-]+$/.test(String(p.slug))).map((p) => ({ params: { slug: p.slug }, props: { project: p } }));
+}
+const { project } = Astro.props;
+---
+<Site lang="sl" project={project} />

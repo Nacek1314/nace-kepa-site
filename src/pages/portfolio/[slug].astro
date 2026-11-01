@@ -1,0 +1,13 @@
+---
+// Project landing pages (2026-11-01): one real HTML page per published project at /portfolio/<slug>/ (English) — same site
+// as /, with the sheet's own title, description, link-preview tags, structured data and static snapshot (from
+// src/data/projects.json), opening that sheet. Links inside the app move the address back to /. Slovenian twin: src/pages/sl/portfolio/[slug].astro.
+// To remove: delete this file and the other three landing page files (see the note at the top of src/site/Site.astro).
+import Site from '../../site/Site.astro';
+import projects from '../../data/projects.json';
+export function getStaticPaths() {
+  return (projects as any[]).filter((p) => !p.hidden && /^[a-z0-9-]+$/.test(String(p.slug))).map((p) => ({ params: { slug: p.slug }, props: { project: p } }));
+}
+const { project } = Astro.props;
+---
+<Site lang="en" project={project} />

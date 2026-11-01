@@ -12,9 +12,22 @@ import projects from '../data/projects.json';
 import news from '../data/news.json';
 import { createHash } from 'node:crypto';
 
-const { lang = 'en' } = Astro.props as { lang?: 'en' | 'sl' };
+// Landing pages (2026-11-01): the same site rendered once more per published project (/portfolio/<slug>/, /sl/portfolio/
+// <slug>/) and news post (/news/<slug>/, /sl/news/<slug>/) — src/pages/portfolio/[slug].astro, src/pages/news/[slug].astro
+// and their /sl/ twins pass `project` or `post`. Such a page has its own title, description, canonical, hreflang, link-preview
+// tags, structured data and static snapshot (all from projects.json / news.json), and a <meta name="nk-start"> that tells
+// app.js to open that sheet; the app then carries on as usual (its links move the address back to / or /sl/).
+// To remove: delete those four page files, this block and the `landing`-conditional parts below, the START_VIEW lines in
+// app.js and the landing entries in astro.config.mjs (sitemap filter + redirects).
+const { lang = 'en', project = null, post = null } = Astro.props as { lang?: 'en' | 'sl'; project?: any; post?: any };
 const SL = lang === 'sl';
 const home = SL ? 'https://nacekepa.work/sl/' : 'https://nacekepa.work/';
+const item: any = project || post;
+const landing = item ? (SL ? '/sl' : '') + (project ? '/portfolio/' : '/news/') + item.slug + '/' : '';
+const pageUrl = landing ? 'https://nacekepa.work' + landing : home; // canonical address of this page
+const altEn = landing ? 'https://nacekepa.work' + landing.replace(/^\/sl/, '') : 'https://nacekepa.work/';
+const altSl = landing ? 'https://nacekepa.work/sl' + landing.replace(/^\/sl/, '') : 'https://nacekepa.work/sl/';
+const landingOf = (kind: 'p' | 'n', slug: string, sl = SL) => 'https://nacekepa.work' + (sl ? '/sl' : '') + (kind === 'p' ? '/portfolio/' : '/news/') + slug + '/';
 const endpoint = (import.meta.env.PUBLIC_ORDER_ENDPOINT || '').trim();
 const contactEmail = 'kepanace@gmail.com';
 const projectsJs = 'window.NK_PROJECTS = ' + JSON.stringify(projects).replace(/</g, '\\u003c') + ';\nwindow.NK_NEWS = ' + JSON.stringify(news).replace(/</g, '\\u003c') + ';';
@@ -26,10 +39,13 @@ let css = pageCss + '\n' + componentsCss;
 // (no new dependency). Only whitespace, comments and local names change — top-level names stay, so the app works the
 // same. The CSP hash below is computed from the minified script, so it still matches. If esbuild is ever missing or
 // fails, the page is built unminified exactly as before.
+// The script and styles are the same on every page (home, /sl/ and the landing pages), so they are minified once per build.
+const memo: any = ((globalThis as any).__nkMin ||= {});
 try {
   const { transform } = await import('esbuild');
-  script = (await transform(script, { loader: 'js', minify: true, legalComments: 'none', charset: 'utf8' })).code.trim();
-  css = (await transform(css, { loader: 'css', minify: true, legalComments: 'none', charset: 'utf8' })).code.trim();
+  if (memo.src !== script) { memo.src = script; memo.js = (await transform(script, { loader: 'js', minify: true, legalComments: 'none', charset: 'utf8' })).code.trim(); }
+  if (memo.cssSrc !== css) { memo.cssSrc = css; memo.css = (await transform(css, { loader: 'css', minify: true, legalComments: 'none', charset: 'utf8' })).code.trim(); }
+  script = memo.js; css = memo.css;
 } catch (e) { console.warn('[Site.astro] minify skipped:', (e as Error).message); }
 // Content-Security-Policy as a meta tag (GitHub Pages can't set headers): only this site's own scripts
 // (the inline one is pinned by hash), only the order Worker and this origin for network requests.
@@ -50,12 +66,23 @@ const csp = [
   "manifest-src 'self'",
   'upgrade-insecure-requests'
 ].join('; ');
-const title = SL ? 'Nace Kepa · Inženirski studio' : 'Nace Kepa · Engineering Studio';
-const description = SL
+const siteTitle = SL ? 'Nace Kepa · Inženirski studio' : 'Nace Kepa · Engineering Studio';
+const siteDescription = SL
   ? 'Samostojni inženirski studio v Škofji Loki: CAD v SolidWorksu, 3D tisk, firmware za ESP32 in celotni izdelki po meri — od prve skice do firmwara.'
   : 'One-person engineering studio in Škofja Loka, Slovenia: SolidWorks CAD, 3D printing, ESP32 firmware and full custom builds — from the first sketch to the firmware.';
 // Text in the page language for structured data and the snapshot (EN fallback when a field has no SL text).
 const tl = (v: any) => (v && typeof v === 'object' ? v[lang] || v.en || '' : v || '');
+const CATS: any = new Function(content + '\nreturn CATS;')();
+const catName = (p: any) => (CATS[p.category] ? CATS[p.category][lang] : p.category);
+const shown = (projects as any[]).filter((p) => !p.hidden);
+const sheetNo = (p: any) => 'NK-' + String(p.year).slice(2) + '-' + String(shown.indexOf(p) + 1).padStart(2, '0'); // same as sheetNo() in app.js
+// A landing page is titled and described by its sheet / post (same title as app.js gives the tab); the home pages keep the studio text.
+const title = item ? tl(item.title) + ' · Nace Kepa' : siteTitle;
+const description = project
+  ? [tl(project.description), (SL ? 'List ' : 'Sheet ') + sheetNo(project) + ' · ' + catName(project) + ' · ' + project.year + (project.materials ? ' · ' + project.materials : '') + ' — Nace Kepa, ' + (SL ? 'inženirski studio, Škofja Loka.' : 'engineering studio, Škofja Loka.')].filter(Boolean).join(' ')
+  : post ? (tl(post.summary) || siteDescription) : siteDescription;
+const photoUrl = (ph: string) => 'https://nacekepa.work/' + String(ph).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/');
+const ogImage = item && (item.photos || []).length ? photoUrl(item.photos[0]) : 'https://nacekepa.work/og.png';
 // Links inside the snapshot and structured data point at this page (/ or /sl/) so each language stays on its own URL.
 const at = (h: string) => (SL ? '/sl/' : '/') + h;
 // Service names and descriptions come from SERVICES in content.js (same text as on #services), read at build time.
@@ -65,12 +92,12 @@ const services: any[] = new Function(content + '\nreturn SERVICES;')();
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'ProfessionalService',
-  name: title,
+  name: siteTitle,
   url: home,
   inLanguage: lang,
   image: 'https://nacekepa.work/og.png',
   logo: 'https://nacekepa.work/apple-touch-icon.png',
-  description,
+  description: siteDescription,
   email: 'mailto:' + contactEmail,
   // Contact package (2026-10-29): the same contact facts as the card on #about (e-mail, languages, EU).
   contactPoint: { '@type': 'ContactPoint', contactType: 'sales', email: contactEmail, url: home + '#contact', availableLanguage: ['sl', 'en'], areaServed: 'EU' },
@@ -88,70 +115,98 @@ const jsonLd = JSON.stringify({
     itemListElement: services.map((s: any) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: tl(s.title), description: tl(s.body), url: home + '#services', provider: { '@type': 'Person', name: 'Nace Kepa' } } }))
   }
 }).replace(/</g, '\\u003c');
-// News posts as BlogPosting (data block, not executed). Only published posts; text, date and photos from news.json.
+// One news post as BlogPosting and one project as CreativeWork (data blocks, not executed). Text, dates, years, categories
+// and photos from news.json / projects.json. Each item's url is its landing page (2026-11-01), so search engines get one
+// real address per sheet / post; the lists below and the landing pages share these.
+const postLd = (n: any) => ({
+  '@type': 'BlogPosting',
+  headline: tl(n.title),
+  description: tl(n.summary),
+  datePublished: n.date,
+  url: landingOf('n', n.slug),
+  mainEntityOfPage: landingOf('n', n.slug),
+  inLanguage: lang,
+  image: (n.photos || []).length ? n.photos.map(photoUrl) : 'https://nacekepa.work/og.png',
+  author: { '@type': 'Person', name: 'Nace Kepa', url: 'https://nacekepa.work/' },
+  publisher: { '@type': 'Organization', name: 'Nace Kepa · Engineering Studio', logo: { '@type': 'ImageObject', url: 'https://nacekepa.work/apple-touch-icon.png' } }
+});
+const projectLd = (p: any) => ({
+  '@type': 'CreativeWork',
+  name: tl(p.title),
+  alternateName: sheetNo(p),
+  description: tl(p.description) || undefined,
+  url: landingOf('p', p.slug),
+  dateCreated: p.year ? String(p.year) : undefined,
+  genre: p.category || undefined,
+  keywords: p.materials || undefined,
+  image: (p.photos || []).length ? p.photos.map(photoUrl) : undefined,
+  inLanguage: lang,
+  creator: { '@type': 'Person', name: 'Nace Kepa', url: 'https://nacekepa.work/' }
+});
 const posts = (news as any[]).filter((n) => !n.hidden);
-const newsLd = posts.length ? JSON.stringify({
-  '@context': 'https://schema.org',
-  '@graph': posts.map((n) => ({
-    '@type': 'BlogPosting',
-    headline: tl(n.title),
-    description: tl(n.summary),
-    datePublished: n.date,
-    url: home + '#n-' + n.slug,
-    mainEntityOfPage: home + '#n-' + n.slug,
-    inLanguage: lang,
-    image: (n.photos || []).length ? n.photos.map((ph: string) => 'https://nacekepa.work/' + String(ph).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/')) : 'https://nacekepa.work/og.png',
-    author: { '@type': 'Person', name: 'Nace Kepa', url: 'https://nacekepa.work/' },
-    publisher: { '@type': 'Organization', name: 'Nace Kepa · Engineering Studio', logo: { '@type': 'ImageObject', url: 'https://nacekepa.work/apple-touch-icon.png' } }
-  }))
-}).replace(/</g, '\\u003c') : '';
-// Published projects as an ItemList of CreativeWork (data block, not executed). Text, year and category from projects.json.
-const shown = (projects as any[]).filter((p) => !p.hidden);
-const projectsLd = shown.length ? JSON.stringify({
+// Home pages: all posts and the project list. Landing pages: the one item plus a breadcrumb (Home › Work / News › item).
+const newsLd = !item && posts.length ? JSON.stringify({ '@context': 'https://schema.org', '@graph': posts.map(postLd) }).replace(/</g, '\\u003c') : '';
+const projectsLd = !item && shown.length ? JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'ItemList',
   name: (SL ? 'Projekti' : 'Projects') + ' · Nace Kepa',
   url: home + '#work',
   numberOfItems: shown.length,
-  itemListElement: shown.map((p, i) => ({
-    '@type': 'ListItem',
-    position: i + 1,
-    item: {
-      '@type': 'CreativeWork',
-      name: tl(p.title),
-      description: tl(p.description) || undefined,
-      url: home + '#p-' + p.slug,
-      dateCreated: p.year ? String(p.year) : undefined,
-      genre: p.category || undefined,
-      keywords: p.materials || undefined,
-      image: (p.photos || []).length ? p.photos.map((ph: string) => 'https://nacekepa.work/' + String(ph).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/')) : undefined,
-      inLanguage: lang,
-      creator: { '@type': 'Person', name: 'Nace Kepa', url: 'https://nacekepa.work/' }
-    }
-  }))
+  itemListElement: shown.map((p, i) => ({ '@type': 'ListItem', position: i + 1, item: projectLd(p) }))
+}).replace(/</g, '\\u003c') : '';
+const T: any = new Function(content + '\nreturn T;')();
+const itemLd = item ? JSON.stringify({
+  '@context': 'https://schema.org',
+  '@graph': [
+    Object.assign(project ? projectLd(project) : postLd(post), { mainEntityOfPage: pageUrl, isPartOf: { '@type': 'WebSite', name: siteTitle, url: home } }),
+    { '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Nace Kepa', item: home },
+      { '@type': 'ListItem', position: 2, name: project ? T[lang].nav.work : T[lang].nav.news, item: home + (project ? '#work' : '#news') },
+      { '@type': 'ListItem', position: 3, name: tl(item.title), item: pageUrl }
+    ] }
+  ]
 }).replace(/</g, '\\u003c') : '';
 // Static snapshot of the page for crawlers, link previews and visitors without JavaScript (SEO package, 2026-10-20).
 // app.js replaces it on its first render, so normal visitors never see it. Only text already on the site (content.js,
 // projects.json, news.json). Remove: this block, {snapshot} in #app and the ".ssr" rules at the end of page.css.
-const T: any = new Function(content + '\nreturn T;')();
 const ex = (v: any) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const CATS: any = new Function(content + '\nreturn CATS;')();
+// Same text rules as richText() in app.js, without links: blank line = paragraph, "- " lines = list, "1. " lines = numbered list.
+const rich = (s: string) => String(s || '').split(/\n{2,}/).filter((b) => b.trim()).map((block) => {
+  const lines = block.split('\n');
+  if (lines.every((l) => /^\s*-\s+/.test(l))) return '<ul>' + lines.map((l) => '<li>' + ex(l.replace(/^\s*-\s+/, '')) + '</li>').join('') + '</ul>';
+  if (lines.every((l) => /^\s*\d+[.)]\s+/.test(l))) return '<ol>' + lines.map((l) => '<li>' + ex(l.replace(/^\s*\d+[.)]\s+/, '')) + '</li>').join('') + '</ol>';
+  return '<p>' + lines.map(ex).join('<br>') + '</p>';
+}).join('');
 const snapshot = (() => {
   const x = T[lang];
-  const other = SL ? `<a href="/" hreflang="en" lang="en">English</a>` : `<a href="/sl/" hreflang="sl" lang="sl">Slovenščina</a>`;
+  // On a landing page the language link goes to the same sheet / post in the other language.
+  const other = SL ? `<a href="${ex(landing ? altEn : '/')}" hreflang="en" lang="en">English</a>` : `<a href="${ex(landing ? altSl : '/sl/')}" hreflang="sl" lang="sl">Slovenščina</a>`;
+  const header = `<div class="ssr" lang="${lang}"><header><p><a href="${at('')}">nacekepa.work</a> · ${ex(x.heroLabel)}</p><nav aria-label="${SL ? 'Razdelki' : 'Sections'}"><a href="${at('#services')}">${ex(x.nav.services)}</a> · <a href="${at('#work')}">${ex(x.nav.work)}</a> · <a href="${at('#news')}">${ex(x.nav.news)}</a> · <a href="${at('#about')}">${ex(x.nav.about)}</a> · <a href="${at('#order')}">${ex(x.cta)}</a> · ${other}</nav></header>`;
+  const foot = `<p><a href="${at('#order')}">${ex(x.cta)}</a> · <a href="mailto:${contactEmail}">${contactEmail}</a> · <a href="https://www.linkedin.com/in/nace-kepa-82735038a">LinkedIn</a></p></main></div>`;
+  if (project) {
+    const p = project;
+    const rows = [[x.pCategory, catName(p)], [x.pYear, String(p.year)]].concat(p.materials ? [[x.pMaterials, p.materials]] : []);
+    const photos = (p.photos || []).map((ph: string, i: number) => `<img src="${ex('/' + String(ph).replace(/^\/+/, ''))}" alt="${ex(tl(p.title) + ' · ' + (i + 1))}" loading="lazy" decoding="async">`).join('');
+    return header + `<main><p><a href="${at('#work')}">← ${ex(x.allWork)}</a></p><p>${ex(sheetNo(p))} · ${ex(catName(p))} · ${ex(p.year)}</p><h1>${ex(tl(p.title))}</h1><p>${ex(tl(p.description))}</p>` +
+      `<dl>${rows.map((r) => `<dt>${ex(r[0])}</dt><dd>${ex(r[1])}</dd>`).join('')}</dl>${rich(tl(p.details))}${photos}` + foot;
+  }
+  if (post) {
+    const n = post;
+    const photos = (n.photos || []).map((ph: string, i: number) => `<img src="${ex('/' + String(ph).replace(/^\/+/, ''))}" alt="${ex(tl(n.title) + ' · ' + (i + 1))}" loading="lazy" decoding="async">`).join('');
+    return header + `<main><p><a href="${at('#news')}">← ${ex(x.nav.news)}</a></p><h1>${ex(tl(n.title))}</h1><p><time datetime="${ex(n.date)}">${ex(n.date)}</time></p><p>${ex(tl(n.summary))}</p>${rich(tl(n.body))}${photos}` + foot;
+  }
   const svc = services.map((s: any) => `<li><h3>${ex(s.code)} · ${ex(tl(s.title))}</h3><p>${ex(tl(s.body))}</p><p>${ex(x.turnaround)}: ${ex(s.time ? tl(s.time) : x.onRequest)}</p></li>`).join('');
-  const work = (projects as any[]).filter((p) => !p.hidden).map((p) => `<li><a href="${at('#p-' + ex(p.slug))}">${ex(tl(p.title))}</a> — ${ex(CATS[p.category] ? CATS[p.category][lang] : p.category)}, ${ex(p.year)}. ${ex(tl(p.description))}</li>`).join('');
+  const work = shown.map((p) => `<li><a href="${ex(landingOf('p', p.slug))}">${ex(tl(p.title))}</a> — ${ex(catName(p))}, ${ex(p.year)}. ${ex(tl(p.description))}</li>`).join('');
   const posts2 = (news as any[]).filter((n) => !n.hidden && !n.draft).sort((a, b) => String(b.date).localeCompare(String(a.date)));
-  const newsHtml = posts2.length ? `<h2>${ex(x.newsPageTitle)}</h2><ul>${posts2.map((n) => `<li><a href="${at('#n-' + ex(n.slug))}">${ex(tl(n.title))}</a> (<time datetime="${ex(n.date)}">${ex(n.date)}</time>) — ${ex(tl(n.summary))}</li>`).join('')}</ul>` : '';
-  return `<div class="ssr" lang="${lang}"><header><p><a href="${at('')}">nacekepa.work</a> · ${ex(x.heroLabel)}</p><nav aria-label="${SL ? 'Razdelki' : 'Sections'}"><a href="${at('#services')}">${ex(x.nav.services)}</a> · <a href="${at('#work')}">${ex(x.nav.work)}</a> · <a href="${at('#news')}">${ex(x.nav.news)}</a> · <a href="${at('#about')}">${ex(x.nav.about)}</a> · <a href="${at('#order')}">${ex(x.cta)}</a> · ${other}</nav></header>` +
+  const newsHtml = posts2.length ? `<h2>${ex(x.newsPageTitle)}</h2><ul>${posts2.map((n) => `<li><a href="${ex(landingOf('n', n.slug))}">${ex(tl(n.title))}</a> (<time datetime="${ex(n.date)}">${ex(n.date)}</time>) — ${ex(tl(n.summary))}</li>`).join('')}</ul>` : '';
+  return header +
     `<main><h1>${ex(x.heroA)} ${ex(x.heroB)}${ex(x.heroEm)}</h1><p>${ex(x.heroLead)}</p>` +
     `<h2>${ex(x.servicesPageTitle)}</h2><p>${ex(x.servicesPageLead)}</p><ul>${svc}</ul>` +
     `<h2>${ex(x.nav.work)} · ${shown.length}</h2><ul>${work}</ul>${newsHtml}` +
-    `<h2>${ex(x.nav.about)}</h2><p>${ex(x.aboutBody)}</p>` +
-    `<p><a href="${at('#order')}">${ex(x.cta)}</a> · <a href="mailto:${contactEmail}">${contactEmail}</a> · <a href="https://www.linkedin.com/in/nace-kepa-82735038a">LinkedIn</a></p></main></div>`;
+    `<h2>${ex(x.nav.about)}</h2><p>${ex(x.aboutBody)}</p>` + foot;
 })();
-// Alt text of the link-preview image, in the page language (the hero line).
-const ogAlt = 'nacekepa.work — ' + T[lang].heroA + ' ' + T[lang].heroB + T[lang].heroEm;
+// Alt text of the link-preview image: the sheet / post title on a landing page with a photo, else the hero line.
+const ogAlt = item && (item.photos || []).length ? tl(item.title) + ' — nacekepa.work' : 'nacekepa.work — ' + T[lang].heroA + ' ' + T[lang].heroB + T[lang].heroEm;
 ---
 <!doctype html>
 <html lang={lang}>
@@ -162,10 +217,11 @@ const ogAlt = 'nacekepa.work — ' + T[lang].heroA + ' ' + T[lang].heroB + T[lan
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <link rel="canonical" href={home} />
-    <link rel="alternate" hreflang="en" href="https://nacekepa.work/" />
-    <link rel="alternate" hreflang="sl" href="https://nacekepa.work/sl/" />
-    <link rel="alternate" hreflang="x-default" href="https://nacekepa.work/" />
+    <link rel="canonical" href={pageUrl} />
+    <link rel="alternate" hreflang="en" href={altEn} />
+    <link rel="alternate" hreflang="sl" href={altSl} />
+    <link rel="alternate" hreflang="x-default" href={altEn} />
+    {landing && <meta name="nk-start" content={(project ? 'p-' : 'n-') + item.slug} />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
@@ -176,19 +232,20 @@ const ogAlt = 'nacekepa.work — ' + T[lang].heroA + ' ' + T[lang].heroB + T[lan
     <meta name="color-scheme" content="light dark" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content={title} />
+    <meta property="og:type" content={post ? 'article' : 'website'} />
+    <meta property="og:site_name" content={siteTitle} />
     <meta property="og:locale" content={SL ? 'sl_SI' : 'en_GB'} />
     <meta property="og:locale:alternate" content={SL ? 'en_GB' : 'sl_SI'} />
-    <meta property="og:url" content={home} />
-    <meta property="og:image" content="https://nacekepa.work/og.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:url" content={pageUrl} />
+    {post && <meta property="article:published_time" content={post.date} />}
+    <meta property="og:image" content={ogImage} />
+    {ogImage.endsWith('/og.png') && <meta property="og:image:width" content="1200" />}
+    {ogImage.endsWith('/og.png') && <meta property="og:image:height" content="630" />}
     <meta property="og:image:alt" content={ogAlt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content="https://nacekepa.work/og.png" />
+    <meta name="twitter:image" content={ogImage} />
     <meta name="twitter:image:alt" content={ogAlt} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -197,6 +254,7 @@ const ogAlt = 'nacekepa.work — ' + T[lang].heroA + ' ' + T[lang].heroB + T[lan
     <script is:inline type="application/ld+json" set:html={jsonLd}></script>
     {newsLd && <script is:inline type="application/ld+json" set:html={newsLd}></script>}
     {projectsLd && <script is:inline type="application/ld+json" set:html={projectsLd}></script>}
+    {itemLd && <script is:inline type="application/ld+json" set:html={itemLd}></script>}
   </head>
   <body>
     <div id="app">

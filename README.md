@@ -25,7 +25,11 @@ The site is a single page: `src/site/Site.astro` inlines the plain HTML/CSS/JS i
 | `src/site/components.css` | Component styles — same as the nacekepa.work design system |
 | `src/site/drawings.js` | The line drawings on project sheets |
 
-Old URLs (`/services`, `/portfolio/...`, `/sl/...`) redirect to the matching section (see `astro.config.mjs`).
+Every published project also has its own page at `/portfolio/<slug>/` (Slovenian: `/sl/portfolio/<slug>/`) and every news
+post at `/news/<slug>/` (`/sl/news/<slug>/`) — `src/pages/portfolio/[slug].astro`, `src/pages/news/[slug].astro` and their `/sl/`
+twins render the same site with that sheet's own title, description, link preview and structured data, and open it. These
+are the addresses the "Share this sheet" box, the admin and the feed hand out. Old URLs (`/services`, `/portfolio/<old-slug>`,
+`/sl/...`) redirect to the matching section or landing page (see `astro.config.mjs`).
 
 ## How orders work
 
@@ -70,7 +74,7 @@ cells directly, tick rows to change them together, or copy the table to Excel an
 
 **News:** the *News* tab adds posts with an EN + SL headline, summary and article (blank line =
 new paragraph, lines starting with `- ` become a list), a date, photos, *pinned* and *draft*. The newest
-three appear on the home page; all are at `/#news`, each at `/#n-<url-name>`.
+three appear on the home page; all are at `/#news`, each at `/news/<url-name>/` (also `/#n-<url-name>`).
 
 ## Protection
 
@@ -97,6 +101,7 @@ private repo needs a paid GitHub plan).
 ```
 src/site/Site.astro     the site (inlines src/site/*, projects from src/data/projects.json)
 src/pages/index.astro   English page (/) · src/pages/sl/index.astro Slovenian page (/sl/)
+src/pages/portfolio/    project landing pages /portfolio/<slug>/ · src/pages/news/ news landing pages /news/<slug>/ (+ sl/ twins)
 src/pages/admin.astro   the admin dashboard (src/site/admin.js)
 src/data/projects.json  all projects, edited by the dashboard
 src/data/news.json      news posts, edited by the dashboard

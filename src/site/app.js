@@ -9,6 +9,15 @@
   try { var s = localStorage.getItem('nk-lang'); if (s === 'sl' || s === 'en') lang = s; } catch (e) {}
   // The Slovenian page (/sl/, <html lang="sl">) always starts in Slovenian; a #en-… link still switches (page()).
   var START_LANG = document.documentElement.lang === 'sl' ? 'sl' : ''; if (START_LANG) lang = START_LANG;
+  // Landing pages (2026-11-01): /portfolio/<slug>/ and /news/<slug>/ (+ /sl/…) are the same site with <meta name="nk-start">
+  // naming the sheet / post to open when there is no hash. The first in-app navigation moves the address back to / or /sl/
+  // (see the hashchange listener at the end), so every other view keeps its usual address.
+  function landingView() { var m = /^\/(?:sl\/)?(portfolio|news)\/([a-z0-9-]+)\/?$/.exec(location.pathname); return m ? (m[1] === 'news' ? 'n-' : 'p-') + m[2] : ''; }
+  var START_VIEW = (function () { var m = document.querySelector('meta[name="nk-start"]'); return m ? String(m.getAttribute('content') || '') : landingView(); })();
+  var LANDING = !!START_VIEW;
+  // EN/SL on a landing page: keep the address on the right language (/portfolio/… ↔ /sl/portfolio/…).
+  function landingLang() { if (!LANDING) return; try { history.replaceState(history.state, '', (lang === 'sl' ? '/sl' : '') + location.pathname.replace(/^\/sl(?=\/)/, '') + location.hash); } catch (e) {} }
+  function hashPath() { var h = (location.hash || '').replace('#', ''); return h || START_VIEW; }
   var state = { send: 'idle', filter: 'all', step: 0, order: { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '' }, errors: {} };
   var app = document.getElementById('app');
   // Projects come from src/data/projects.json, inlined at build time (the admin dashboard edits that file).
@@ -36,7 +45,7 @@
   function fmtDate(d) { try { return new Date(d + 'T12:00:00').toLocaleDateString(lang === 'sl' ? 'sl-SI' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return d; } }
   function asset(path) { return '/' + String(path).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/'); }
   function page() {
-    var h = (location.hash || '').replace('#', '');
+    var h = hashPath();
     var m = /^(en|sl)-?(.*)$/.exec(h);
     if (m) { lang = m[1]; try { localStorage.setItem('nk-lang', lang); } catch (e) {} h = m[2]; }
     var qi = h.indexOf('?'), qs = qi >= 0 ? h.slice(qi + 1) : ''; if (qi >= 0) { if (h.slice(0, qi) === 'work' && location.hash !== state.findHash) findRead(qs); h = h.slice(0, qi); }
@@ -49,7 +58,7 @@
   // A hash with a language prefix (#en-…, #sl-… from shared links and feeds) would switch the language back on render,
   // so the EN/SL buttons rewrite the prefix to the chosen language.
   function langHash() { var h = location.hash; if (/^#(en|sl)-?/.test(h)) try { history.replaceState(history.state, '', h.replace(/^#(en|sl)/, '#' + lang)); } catch (e) {} }
-  function currentSlug() { var h = (location.hash || '').replace('#', '').replace(/^(en|sl)-?/, ''); return h.slice(2); }
+  function currentSlug() { var h = hashPath().replace(/^(en|sl)-?/, ''); return h.slice(2); }
 
   function btn(label, href, variant, size, arrow) {
     return '<a class="nk-btn' + (variant ? ' nk-btn--' + variant : '') + (size ? ' nk-btn--' + size : '') + '" href="' + href + '">' + esc(label) + (arrow ? '<span class="nk-btn__arrow" aria-hidden="true">→</span>' : '') + '</a>';
@@ -291,29 +300,32 @@
   // ---------- Share this sheet (project + news pages) ----------
   // Self-contained: remove shareUrl()…shareCopy(), the two shareBox() calls in projectView() / postView(), the two
   // data-share-* lines in the click handler, share: in both languages in content.js and the .share-* rules at the end of page.css.
-  function shareUrl(kind, item) { return 'https://nacekepa.work/#' + lang + '-' + kind + '-' + item.slug; }
+  // Share & link package (2026-11-01): the short address of a sheet / post is its landing page (/portfolio/<slug>/,
+  // /news/<slug>/, Slovenian under /sl/) — one real page per item with its own link preview; #en-p-… links still work.
+  function shareUrl(kind, item) { return 'https://nacekepa.work/' + (lang === 'sl' ? 'sl/' : '') + (kind === 'n' ? 'news/' : 'portfolio/') + item.slug + '/'; }
   function shareBox(kind, item) {
     var x = t().share, url = shareUrl(kind, item), title = P(item, 'title');
     var mail = 'mailto:?subject=' + encodeURIComponent(x.subject + ': ' + title) + '&body=' + encodeURIComponent(title + '\n' + url);
     return '<div class="share" data-share-title="' + esc(title) + '"><p class="nk-label" id="share-l">' + esc(x.label) + '</p>' +
       '<div class="share-row"><input class="share-url" id="share-url" type="text" readonly value="' + esc(url) + '" aria-labelledby="share-l" spellcheck="false">' +
       '<button type="button" class="nk-btn nk-btn--sm" data-share-copy>' + esc(x.copy) + '</button></div>' +
+      (kind === 'p' ? '<p class="share-no"><span class="nk-label">' + esc(x.no) + '</span> <code id="share-no">' + esc(sheetNo(item)) + '</code> <button type="button" class="tb-copy" data-share-no>' + esc(x.noCopy) + '</button></p>' : '') +
       '<div class="share-act"><a class="share-link" href="' + esc(mail) + '">' + esc(x.mail) + ' →</a>' +
       (navigator.share ? '<button type="button" class="share-link" data-share-more>' + esc(x.more) + '</button>' : '') +
       '<span class="share-note">' + esc(x.note) + '</span></div>' +
       '<p class="share-msg" id="share-msg" role="status" aria-live="polite"></p></div>';
   }
-  function shareCopy() {
-    var f = document.getElementById('share-url'), msg = document.getElementById('share-msg'), x = t().share; if (!f) return;
-    var fail = function () { f.focus(); f.select(); msg.textContent = x.copyFail; };
-    try { navigator.clipboard.writeText(f.value).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+  function shareCopy(no) {
+    var f = document.getElementById(no ? 'share-no' : 'share-url'), msg = document.getElementById('share-msg'), x = t().share; if (!f) return;
+    var fail = function () { if (no) { var r = document.createRange(); r.selectNodeContents(f); var g = getSelection(); g.removeAllRanges(); g.addRange(r); } else { f.focus(); f.select(); } msg.textContent = no ? x.noCopyFail : x.copyFail; };
+    try { navigator.clipboard.writeText(no ? f.textContent : f.value).then(function () { msg.textContent = no ? x.noCopied : x.copied; }, fail); } catch (e) { fail(); }
   }
   // ---------- Print this sheet (project + news pages) ----------
   // Self-contained: remove printBox()…printSheet(), the two printBox() calls in projectView() / postView(), the data-print
   // line in the click handler, print: in both languages in content.js and the "Print this sheet" rules at the end of page.css.
   // The print rules also apply to Ctrl+P on any page (clean A4 sheet: no menu, buttons, photos or 3D model).
   function printBox(kind, item) {
-    var x = t().print, url = 'https://nacekepa.work/#' + lang + '-' + kind + '-' + item.slug;
+    var x = t().print, url = shareUrl(kind, item);
     return '<div class="print-act"><button type="button" class="nk-btn nk-btn--sm" data-print>' +
       '<svg class="print-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>' + esc(x.btn) + '</button>' +
       '<span class="print-note">' + esc(x.note) + '</span></div>' +
@@ -426,7 +438,7 @@
       out.push('<section class="ps-page"><div class="ps-body"><p class="nk-label">' + esc(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year) + '</p><h2 class="ps-t">' + esc(P(p, 'title')) + '</h2>' +
         '<p class="ps-desc">' + esc(P(p, 'description')) + '</p><div class="ps-art">' + psArt(p) + '</div>' + psDl(rows) +
         (det ? '<div class="ps-det">' + det.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') + '</div>' +
-        foot(sheetNo(p), 'nacekepa.work/#' + lang + '-p-' + p.slug) + '</section>');
+        foot(sheetNo(p), shareUrl('p', p).replace(/^https:\/\//, '')) + '</section>');
     });
     return out.join('');
   }
@@ -2455,7 +2467,7 @@
     if (el.hasAttribute('data-sl-clear')) { slClear(); return; }
     if (el.hasAttribute('data-tb-copy')) { tbCopy(); return; }
     if (el.hasAttribute('data-find-clear')) { state.q = ''; var fq = document.getElementById('find-q'); fq.value = ''; findApply(); fq.focus(); return; }
-    if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); render(true); return; }
+    if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); landingLang(); render(true); return; }
     if (el.dataset.filter) { // keep keyboard focus on the chip and announce how many sheets are shown
       state.filter = el.dataset.filter; render(true);
       var fc = app.querySelector('[data-filter="' + state.filter + '"]'); if (fc) fc.focus({ preventScroll: true });
@@ -2465,6 +2477,7 @@
     if (el.dataset.relCat) { state.filter = el.dataset.relCat; state.q = ''; return; }
     if (el.hasAttribute('data-rel-go')) { relToOrder(); return; }
     if (el.hasAttribute('data-share-copy')) { shareCopy(); return; }
+    if (el.hasAttribute('data-share-no')) { shareCopy(true); return; } // Share & link package (2026-11-01): copy the sheet number
     if (el.hasAttribute('data-find-copy')) { findShareCopy(); return; }
     if (el.hasAttribute('data-rg-view')) { rgView(el.getAttribute('data-rg-view')); return; }
     if (el.hasAttribute('data-rg-sort')) { rgSort(el.getAttribute('data-rg-sort')); return; }
@@ -2586,7 +2599,7 @@
     if ((ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') && !ev.shiftKey) { if (kbdStep(ev.key === 'ArrowRight' ? 1 : -1)) { ev.preventDefault(); return true; } return false; }
     if (ev.shiftKey || !ev.key || ev.key.length !== 1) return false;
     var c = ev.key.toLowerCase();
-    if (c === 'l') { lang = lang === 'en' ? 'sl' : 'en'; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); render(true); ev.preventDefault(); return true; }
+    if (c === 'l') { lang = lang === 'en' ? 'sl' : 'en'; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); landingLang(); render(true); ev.preventDefault(); return true; }
     var to = KBD_GO[c]; if (!to || (to === 'news' && !NEWS.length) || (to === 'compare' && PROJECTS.length < 2)) return false;
     ev.preventDefault(); if (page() === to) window.scrollTo(0, 0); else location.hash = to; return true;
   }
@@ -2602,7 +2615,21 @@
     if (page() === 'work') { var fq = document.getElementById('find-q'); if (fq) fq.focus(); }
     else { state.findFocus = true; location.hash = 'work'; }
   });
-  window.addEventListener('hashchange', function () { render(false); navFocus(); });
+  // Landing pages: once the visitor moves on from the sheet / post the page opened with, carry on at / or /sl/ (same app,
+  // same state) so the address bar shows the usual address of every view; the landing address stays in history, and Back
+  // to it (popstate without a hash) opens that sheet again. hashchange and popstate both fire on a hash link, so the
+  // address is compared to the last one handled and rendered once.
+  function onNav() {
+    var lv = landingView();
+    if (lv && !location.hash) { START_VIEW = lv; LANDING = true; }
+    else if (LANDING) { LANDING = false; START_VIEW = ''; try { history.replaceState(history.state, '', (lang === 'sl' ? '/sl/' : '/') + (location.hash || '')); } catch (e) {} }
+    if (location.href === state.navHref) return;
+    state.navHref = location.href;
+    render(false); navFocus();
+  }
+  window.addEventListener('hashchange', onNav);
+  window.addEventListener('popstate', onNav);
   drLoad();
+  state.navHref = location.href;
   render(true);
 })();

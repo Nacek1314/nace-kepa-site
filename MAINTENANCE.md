@@ -20,6 +20,77 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-11-01
+
+**Checked:** build, home, #services (all tools incl. `?tool=index` / `?tool=plate`), #work, #work?view=list, #p-famfive,
+#p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about, #contact, #compare, #studio, #order (all 4 steps on the local
+build in EN + SL, validation messages, the e-mail typo hint, nothing sent), /admin/ sign-in and the 404 page — 1280 + 390 px,
+light + dark, EN (`/`) + SL (`/sl/`), plus a scan for anything wider than the page, broken images, unlabelled controls,
+unnamed buttons/links, duplicate ids and a diff of the EN/SL text keys in `content.js` (none missing). Last Actions run
+(48951b1) succeeded; nacekepa.work, /sl/, /admin/ and /news.xml return 200 (checked from the laptop — the cloud sandbox
+cannot reach the live site or api.github.com). No JS errors, no CSP violations, no 404s (only Google Fonts, blocked in the
+cloud), no horizontal scroll.
+
+**Bugs fixed:** none found today.
+
+**Improvement — share & link package (every place the site hands out the address of a sheet or a post):**
+- "Share this sheet" on project sheets and news posts shows the sheet's own short address (`nacekepa.work/portfolio/famfive/`,
+  Slovenian `…/sl/portfolio/famfive/`; posts `…/news/<slug>/`) instead of `…/#en-p-famfive` — the same address goes into
+  the share e-mail, the native "Share…" sheet, "Ask about this project" (mail body), the printed sheet footer, the A4
+  portfolio set footers and the shortlist text (`shareUrl()` in `app.js`; `#en-p-…` links still work).
+- New "Sheet no. NK-25-01 · Copy" line under the share link on project sheets (`data-share-no`, status message, Ctrl+C
+  fallback that selects the number), so a client can quote the sheet number in an e-mail (idea from the list).
+- The admin's "LinkedIn post" box and the URL-name hints in the project / news editors use the new addresses
+  (`admin.js`), so a shared post gets its own title + photo as the link preview.
+- The Atom feeds link each entry to its landing page (`feed.ts`; the entry `<id>` is unchanged, so readers don't re-show
+  old posts); the 404 page's "Did you mean" cards open the landing pages; the static snapshot of the home pages links every
+  project and post to its landing page; the JSON-LD lists (CreativeWork / BlogPosting) use the same URLs.
+*To remove:* `shareUrl()` back to `'https://nacekepa.work/#' + lang + '-' + kind + '-' + item.slug`, the `share-no` line in
+`shareBox()`, `shareCopy(no)` → `shareCopy()`, the `data-share-no` click line, `no` / `noCopy` / `noCopied` / `noCopyFail` in
+`share:` (both languages) in `content.js`, the "Share & link package" rules in `page.css`, and the three link lines in
+`admin.js`, `404.astro` and `feed.ts` (see the diff of this commit).
+
+**Innovation — landing pages / "Lastne strani projektov in objav" (`/portfolio/<slug>/`, `/sl/portfolio/<slug>/`,
+`/news/<slug>/`, `/sl/news/<slug>/`; 60 pages today — 29 projects + 1 post × 2 languages):** every published project and news
+post is now a real HTML page with its own address, so it can be found in search on its own and shared with a proper preview.
+- `src/pages/portfolio/[slug].astro`, `src/pages/news/[slug].astro` and the `/sl/` twins render `Site.astro` once more per
+  item (`getStaticPaths` from `projects.json` / `news.json`, hidden / draft items skipped, slugs `[a-z0-9-]` only).
+  `Site.astro` takes `project` / `post` props: `<title>` "FamFive · Nace Kepa", description (project description + "Sheet
+  NK-25-01 · IoT · 2025 · materials — Nace Kepa, engineering studio, Škofja Loka" / post summary), canonical + `hreflang`
+  en/sl/x-default per item, `og:url`, `og:title`, `og:type article` + `article:published_time` for posts, `og:image` = the
+  first photo when there is one (else og.png), JSON-LD `CreativeWork` (with `alternateName` = sheet number) / `BlogPosting`
+  + `BreadcrumbList`, and a static snapshot of that sheet / post (title, sheet no., category, year, description, details,
+  materials, photos with alt, back link, order link, other-language link) for crawlers and visitors without JavaScript.
+  The home pages keep their lists; the inline script, styles and CSP hash are identical on every page (minified once per
+  build — `globalThis.__nkMin` memo in `Site.astro`).
+- `<meta name="nk-start" content="p-<slug>">` (or `n-…`) tells `app.js` which sheet to open when there is no hash
+  (`START_VIEW` / `hashPath()` in `page()` and `currentSlug()`); the first in-app navigation moves the address back to `/` or
+  `/sl/` + hash (`onNav()`, `history.replaceState`), Back to the landing address re-opens the sheet (`popstate`, `landingView()`
+  from the path), EN/SL on a landing page swaps `/portfolio/…` ↔ `/sl/portfolio/…` (`landingLang()`), and
+  `/portfolio/<slug>/#about`-style deep links still open the hash view.
+- Sitemap: home pages + all landing pages (62 URLs; redirect pages and /admin stay out — `landingPaths` in
+  `astro.config.mjs`). Old-slug redirects (`/portfolio/backpack-buckle` …) now point at the landing pages; the three old slugs
+  that equal the new ones (famfive, rfid-drawer-lock, plant-moisture-monitor) are real pages now (redirects removed).
+- Tested in Playwright: all four kinds of landing page (EN/SL, 1280/390 px): title, h1, lang, share address, sheet number,
+  snapshot replaced, no horizontal scroll, no errors; nav link → `/#work` (`/sl/#work`), Back → sheet again, Forward,
+  keyboard `s` / `l`, wordmark → home, deep link with hash, language switch, "Copy" of the sheet number (clipboard granted +
+  denied), 404 "Did you mean" → `/sl/portfolio/famfive/`, feed links, the full audit of every section + the order walk on
+  the new build. Build: 64 pages in ~5 s, dist 22 MB (each landing page carries the same 330 KB inline app).
+*To remove:* delete the four `[slug].astro` files, the `landing`/`item` parts of `Site.astro` (see the note at its top),
+`landingView()` … `landingLang()`, `hashPath()`, the `landingLang()` calls and `onNav()` in `app.js` (put back
+`window.addEventListener('hashchange', function () { render(false); navFocus(); })`), the `landingPaths` sitemap filter and
+the redirect targets in `astro.config.mjs` (`git show 48951b1:astro.config.mjs`), and the README lines.
+*Next step (optional day 2):* per-project `og.png`-style preview image drawn from the sheet (line drawing + title) at build
+time — needs a renderer without new dependencies, so probably an SVG `og:image` only where supported; "Copy link to this
+tool" on each #services tool.
+
+**Ideas for next time** (added to the list below)
+- Public: Part studio — wall-thickness check (thinnest wall from ray casts along face normals, warned only against a limit
+  the visitor types; nozzle width only if Nace publishes it).
+- Public: news archive by year/month with a year strip, and a `/news/` index landing page (once there are more posts).
+- Admin: "Open landing page" button next to each project / post (the new `/portfolio/<slug>/` address) and a check that
+  the slug is URL-safe before publishing.
+
 ## 2026-10-31
 
 **Checked:** build, home, #services (all tools incl. `#services?tool=index` / `?tool=plate`), #work, #work?view=list, #p-famfive,
@@ -1413,6 +1484,10 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: project landing pages `/portfolio/<slug>/` + `/sl/…` (real HTML per project for search engines, opening the app view).
 - Public: Part studio — wall-thickness check from the section plane / ray casts (nozzle width only if Nace publishes it).
 - Admin: support-check preview on the upload preview, so the sheet can say "prints without support".
+- (Built 2026-11-01: landing pages `/portfolio/<slug>/`, `/news/<slug>/` + `/sl/…` — real HTML per project / post with own title, description, link preview, JSON-LD and snapshot; share & link package as the improvement, incl. "Copy sheet number".)
+- Public: Part studio — wall-thickness check from ray casts along face normals (limit typed by the visitor; nozzle width only if Nace publishes it).
+- Public: news archive by year/month + a `/news/` index landing page (once there are more posts).
+- Admin: "Open landing page" button per project / post and a URL-safe slug check before publishing.
 
 ## 2026-10-03 (second run)
 

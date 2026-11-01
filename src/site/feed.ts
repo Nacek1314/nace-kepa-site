@@ -27,7 +27,7 @@ export function atom(lang: 'en' | 'sl'): Response {
   const stamp = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? d + 'T12:00:00Z' : new Date().toISOString());
   const updated = posts.length ? stamp(posts[0].date) : '2026-10-01T12:00:00Z';
   const entries = posts.map((n) => {
-    const url = base + 'n-' + n.slug;
+    const url = SITE + (lang === 'sl' ? '/sl' : '') + '/news/' + n.slug + '/'; // the post's landing page (2026-11-01); the <id> stays as it was
     const img = (n.photos || []).length ? '<p><img src="' + x(asset(n.photos[0])) + '" alt=""></p>' : '';
     return '  <entry>\n' +
       '    <id>tag:nacekepa.work,2026:news/' + x(n.slug) + '</id>\n' +

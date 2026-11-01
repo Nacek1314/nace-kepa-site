@@ -1242,7 +1242,7 @@ function liText(n) {
   const sl = LI.lang === 'sl';
   const pick = (o) => (sl && o.sl.trim()) ? o.sl.trim() : o.en.trim();
   const body = pick(n.body).replace(/^- /gm, '• ');
-  const link = 'https://nacekepa.work/#' + (sl ? 'sl' : 'en') + '-n-' + n.slug;
+  const link = 'https://nacekepa.work/' + (sl ? 'sl/' : '') + 'news/' + n.slug + '/'; // the post's landing page (2026-11-01): LinkedIn shows its title + photo
   return [pick(n.title), pick(n.summary), LI.full ? body : '', (sl ? 'Več: ' : 'Read more: ') + link].filter(Boolean).join('\n\n');
 }
 function liMissing(n) {
@@ -1476,7 +1476,7 @@ function newsEditorView() {
     </div></fieldset>
     <fieldset class="ad-sec"><legend class="nk-label">Settings</legend><div class="form form-3">
       ${fld('n-date', 'Date', inp('n-date', n.date, 'type="date"'))}
-      ${fld('n-slug', 'URL name', inp('n-slug', n.slug, committed ? 'readonly' : ''), committed ? 'nacekepa.work/#n-' + esc(n.slug) : 'Lowercase, numbers, dashes.')}
+      ${fld('n-slug', 'URL name', inp('n-slug', n.slug, committed ? 'readonly' : ''), committed ? 'nacekepa.work/news/' + esc(n.slug) + '/' : 'Lowercase, numbers, dashes.')}
       <div class="nk-field"><span class="nk-field__label">Visibility</span>
         <label class="ad-check"><input type="checkbox" data-k="n-pin" ${n.pinned ? 'checked' : ''}> Pinned to the top</label>
         <label class="ad-check"><input type="checkbox" data-k="n-hid" ${n.hidden ? 'checked' : ''}> Draft (not on the site)</label>
@@ -1521,7 +1521,7 @@ function editorView() {
       ${fld('cat', 'Category', `<select class="nk-input" id="cat" data-k="cat">${CATEGORIES.map((c) => `<option${c === p.category ? ' selected' : ''}>${c}</option>`).join('')}</select>`)}
       ${fld('year', 'Year', inp('year', p.year, 'type="number" min="1990" max="2100"'))}
       ${fld('mat', 'Materials', inp('mat', p.materials || '', 'placeholder="PETG · 0.2 mm · 3 perimeters"'))}
-      ${fld('slug', 'URL name', inp('slug', p.slug, committed ? 'readonly' : ''), committed ? 'nacekepa.work/#p-' + esc(p.slug) + ' · fixed after publishing' : 'Lowercase, numbers, dashes.')}
+      ${fld('slug', 'URL name', inp('slug', p.slug, committed ? 'readonly' : ''), committed ? 'nacekepa.work/portfolio/' + esc(p.slug) + '/ · fixed after publishing' : 'Lowercase, numbers, dashes.')}
       ${fld('drw', 'Drawing (when no photo)', `<select class="nk-input" id="drw" data-k="drw"><option value="">By category</option>${DRAWINGS.map((d) => `<option${d === p.drawing ? ' selected' : ''}>${d}</option>`).join('')}</select>`)}
       <div class="nk-field"><span class="nk-field__label">Visibility</span>
         <label class="ad-check"><input type="checkbox" data-k="feat" ${p.featured ? 'checked' : ''}> Featured on home page</label>

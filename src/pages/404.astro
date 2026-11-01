@@ -58,7 +58,7 @@ let script = `window.NK404 = ${JSON.stringify(data).replace(/</g, '\\u003c')};
   if (hits.length) {
     out.innerHTML = '<p class="nk-label">' + (sl ? 'Ste iskali' : 'Did you mean') + '</p><ul class="nf-list">' + hits.map(function (h) {
       var title = (sl && h.it[2]) || h.it[1] || h.it[0], meta = sl ? h.it[4] : h.it[3], yr = h.it[5];
-      return '<li><a class="nf-item" href="' + home + '#' + h.k + '-' + esc(h.it[0]) + '"><span class="nk-label">' + esc(meta) + (yr ? ' · ' + esc(yr) : '') + '</span><span class="nf-t">' + esc(title) + '</span><span class="nf-go" aria-hidden="true">→</span></a></li>';
+      return '<li><a class="nf-item" href="' + home + (h.k === 'n' ? 'news/' : 'portfolio/') + esc(h.it[0]) + '/"><span class="nk-label">' + esc(meta) + (yr ? ' · ' + esc(yr) : '') + '</span><span class="nf-t">' + esc(title) + '</span><span class="nf-go" aria-hidden="true">→</span></a></li>';
     }).join('') + '</ul>';
     out.hidden = false;
   }
