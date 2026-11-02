@@ -58,6 +58,31 @@ TL_TOOLS entries + `promoBand()` calls + `data-qc-*` handler lines in `app.js`, 
 `quote` tool lines (and T-01 … T-09 → T-07) in `content.js`, the "Pricing package" CSS, and the Settings tab in `admin.js` /
 `admin.css` (see the comment above `isSet`).
 
+### Part 2 — gift cards (#gift) + FAQ + Google Business Profile link
+
+- **Gift cards** `#gift` (`giftView()` … `giftLink()` in `app.js`, `gift:` in `content.js`, "Gift cards" rules in `page.css`;
+  amounts 30 / 50 / 100 € + custom (min 20 €) and the validity (12 months) from `settings.json › gift`): amount buttons
+  (keyboard, `aria-pressed`), recipient, sender, message (160 chars), the buyer's name + e-mail, honeypot; a live **NK-G
+  card preview** (wordmark, date, amount, for/from/message, "Code NK-G-______ · issued after payment", validity + how to
+  redeem) that also prints on its own ("Print the preview" / Ctrl+P hides everything else); validation messages; "Request
+  this gift card" posts the same payload shape as a brief to the existing Worker (subject "Gift card 75 € — name", the
+  request text as summary, the buyer's e-mail as contact — **no Worker change**); sent state with the tracking code and
+  "Request another card"; without an endpoint or on failure: the request text with "Copy request" + "Send by e-mail".
+  Linked from the price list, the footer ("Start a project → · Gift card →") and `nav.gift` for the tab title. The page
+  exists only when `gift.amounts` is non-empty (`giftOn()`; `#gift` falls back to home otherwise). No payments on the site:
+  Nace invoices by e-mail and issues the code after payment (that flow is written on the page in EN + SL).
+- **FAQ** on `#services` under the tools (`faqBox()`: `<details>` list, first open, from `settings.json › faq`, EN/SL) and
+  as `FAQPage` JSON-LD + a block in the static snapshot on the home pages (`Site.astro`). Empty today — the admin Settings
+  tab has the editor; nothing is shown until Nace writes the questions.
+- **Google Business Profile**: `settings.json › links.gbp` → a "Google" row on the contact card (#about / #contact) and
+  `sameAs` in the ProfessionalService JSON-LD. Empty today.
+- Tested (build with a mocked Worker endpoint + a temporary FAQ/GBP, then rebuilt without): EN/SL, 1280/390, light/dark;
+  empty submit → three errors; 50 € + names + message → card text; custom 15 € → error, 75 € → card; valid request →
+  POST payload checked (subject, summary, contact, lang) → sent state; print media: only the card is visible; FAQ
+  keyboard toggle; Google row on the contact card; footer link; full audit of every page: no errors, no horizontal scroll.
+*To remove part 2:* see the comment above `GIFT` in `app.js`; the `faqLd` / `faqs` lines and the FAQ block in the
+snapshot in `Site.astro`; the Google row line in `ctCard()`.
+
 ## 2026-11-01
 
 **Checked:** build, home, #services (all tools incl. `?tool=index` / `?tool=plate`), #work, #work?view=list, #p-famfive,

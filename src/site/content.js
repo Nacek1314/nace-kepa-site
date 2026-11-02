@@ -1,6 +1,6 @@
 var T = {
   en: {
-    nav: { home: 'Home', services: 'Services', work: 'Work', news: 'News', skills: 'Skills', about: 'About', compare: 'Compare sheets', studio: 'Part studio' },
+    nav: { home: 'Home', services: 'Services', work: 'Work', news: 'News', skills: 'Skills', about: 'About', compare: 'Compare sheets', studio: 'Part studio', gift: 'Gift card' },
     newsLabel: 'News', newsTitle: 'From the workshop.', newsLead: 'New machines, materials and finished jobs.', allNews: 'All news', readMore: 'Read', pinned: 'Pinned', newsPageTitle: 'News', newsEmpty: 'No news yet.',
     cta: 'Start a project', seeWork: 'See all work', allServices: 'All services', quote: 'Request a quote',
     status: 'Taking projects',
@@ -79,6 +79,16 @@ var T = {
     // Screen-reader labels (nav, language switch, filters, logo link).
     // Project planner on #services (plBox in app.js): three questions → services, turnaround, fit, brief handed to #order.
     // Batch on the plate on #services (pbBox in app.js, 2026-10-30): copies of one footprint on the 256 × 256 mm X2D plate.
+    // Gift cards + FAQ (2026-11-02, big update part 2). Amounts, validity and the FAQ come from settings.json.
+    gift: { label: 'Gift card · NK-G', title: 'Give a part, a print or an hour of engineering.', lead: 'A gift card for any service in the studio — a printed part, a CAD job, a firmware fix or a full build. Pick the amount, write who it is for, and I send you the invoice; after payment you get the card with its code by e-mail.',
+      amount: 'Amount', custom: 'Custom amount', customH: 'At least {n} €', to: 'For (name)', from: 'From (name)', msg: 'Message on the card (optional)', you: 'Your details', name: 'Your name', email: 'Your e-mail', emailH: 'The invoice and the card go here.',
+      preview: 'Card preview', print: 'Print the preview', send: 'Request this gift card', sending: 'Sending…', sent: 'Request sent', sentBody: 'Thank you — the invoice arrives within 48 hours; after payment the card with its code follows by e-mail. Tracking code {c}.',
+      fail: 'The request did not go through. Copy the text below and send it by e-mail.', copy: 'Copy request', copied: 'Request copied.', mail: 'Send by e-mail',
+      errAmt: 'Pick an amount or enter one of at least {n} €.', errName: 'Your name is needed for the invoice.', errEmail: 'A valid e-mail is needed for the card.',
+      card: 'GIFT CARD', cardFor: 'For', cardFrom: 'From', cardValue: 'Value', cardValid: 'Valid {n} months from issue', cardCode: 'Code', cardCodeHint: 'issued after payment', cardUse: 'Redeemable for any service at nacekepa.work — quote the code in the brief.',
+      how: 'How it works', how1: 'Pick the amount and who it is for.', how2: 'You get an invoice by e-mail; pay by bank transfer.', how3: 'The card with its code arrives by e-mail — print it or forward it.', how4: 'The recipient quotes the code in the brief; the amount is taken off the quote.',
+      brief: 'Gift card request', link: 'Gift card', tbLink: 'Gift card →', another: 'Request another card' },
+    faq: { label: 'FAQ', title: 'Questions clients ask', lead: 'Short answers before you write. Anything else — ask in the brief.' },
     // Pricing package (2026-11-02): price list, quote calculator, promo banner. Numbers come from src/data/settings.json (admin › Settings).
     pc: { label: 'Price list · NK-C', title: 'What does it cost?', lead: 'Published rates, so you know where you stand before you write. Every job still gets a fixed quote after a look at your files.',
       hourly: 'Hourly rates', perHour: '{n} / h', minHours: 'Minimum {n} h', build: 'Full custom builds', printing: '3D printing', material: 'Material', perGram: '{n} / g', density: 'density {d} g/cm³',
@@ -184,7 +194,7 @@ var T = {
     tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale', contact: 'Contact', order: 'Order' }
   },
   sl: {
-    nav: { home: 'Domov', services: 'Storitve', work: 'Projekti', news: 'Novice', skills: 'Znanja', about: 'O meni', compare: 'Primerjava listov', studio: 'Studio dela' },
+    nav: { home: 'Domov', services: 'Storitve', work: 'Projekti', news: 'Novice', skills: 'Znanja', about: 'O meni', compare: 'Primerjava listov', studio: 'Studio dela', gift: 'Darilni bon' },
     newsLabel: 'Novice', newsTitle: 'Iz delavnice.', newsLead: 'Novi stroji, materiali in zaključeni projekti.', allNews: 'Vse novice', readMore: 'Preberi', pinned: 'Pripeto', newsPageTitle: 'Novice', newsEmpty: 'Novic še ni.',
     cta: 'Začni projekt', seeWork: 'Vsi projekti', allServices: 'Vse storitve', quote: 'Zahtevaj ponudbo',
     status: 'Sprejemam projekte',
@@ -260,6 +270,16 @@ var T = {
       cta: 'Začni projekt s to velikostjo', brief: 'Velikost dela' },
     // Načrtovalnik projekta na #services (plBox v app.js).
     // Serija na mizi na #services (pbBox v app.js, 2026-10-30).
+    // Darilni boni + FAQ (2026-11-02, velika posodobitev, del 2). Zneski, veljavnost in FAQ so v settings.json.
+    gift: { label: 'Darilni bon · NK-G', title: 'Podarite del, tisk ali uro inženiringa.', lead: 'Darilni bon za katero koli storitev v studiu — natisnjen del, CAD nalogo, popravek firmwara ali celoten izdelek. Izberite znesek, napišite, za koga je, in pošljem vam predračun; po plačilu dobite bon s kodo po e-pošti.',
+      amount: 'Znesek', custom: 'Poljuben znesek', customH: 'Najmanj {n} €', to: 'Za (ime)', from: 'Od (ime)', msg: 'Sporočilo na bonu (po želji)', you: 'Vaši podatki', name: 'Vaše ime', email: 'Vaš e-naslov', emailH: 'Sem pošljem predračun in bon.',
+      preview: 'Predogled bona', print: 'Natisni predogled', send: 'Naroči ta darilni bon', sending: 'Pošiljam …', sent: 'Povpraševanje poslano', sentBody: 'Hvala — predračun prejmete v 48 urah; po plačilu sledi bon s kodo po e-pošti. Sledilna koda {c}.',
+      fail: 'Povpraševanje ni šlo skozi. Kopirajte spodnje besedilo in ga pošljite po e-pošti.', copy: 'Kopiraj povpraševanje', copied: 'Povpraševanje je kopirano.', mail: 'Pošlji po e-pošti',
+      errAmt: 'Izberite znesek ali vpišite vsaj {n} €.', errName: 'Za predračun potrebujem vaše ime.', errEmail: 'Za bon potrebujem veljaven e-naslov.',
+      card: 'DARILNI BON', cardFor: 'Za', cardFrom: 'Od', cardValue: 'Vrednost', cardValid: 'Velja {n} mesecev od izdaje', cardCode: 'Koda', cardCodeHint: 'izdana po plačilu', cardUse: 'Unovčljiv za katero koli storitev na nacekepa.work — kodo navedite v povzetku.',
+      how: 'Kako deluje', how1: 'Izberite znesek in za koga je.', how2: 'Po e-pošti prejmete predračun; plačate z nakazilom.', how3: 'Bon s kodo prispe po e-pošti — natisnete ga ali posredujete.', how4: 'Prejemnik kodo navede v povzetku; znesek se odšteje od ponudbe.',
+      brief: 'Povpraševanje za darilni bon', link: 'Darilni bon', tbLink: 'Darilni bon →', another: 'Naroči še en bon' },
+    faq: { label: 'FAQ', title: 'Pogosta vprašanja', lead: 'Kratki odgovori, preden pišete. Vse drugo — vprašajte v povzetku.' },
     // Paket cen (2026-11-02): cenik, kalkulator ponudbe, akcija. Številke so v src/data/settings.json (admin › Settings).
     pc: { label: 'Cenik · NK-C', title: 'Koliko stane?', lead: 'Objavljene postavke, da veste, kje ste, še preden pišete. Vsako naročilo vseeno dobi fiksno ponudbo po pregledu vaših datotek.',
       hourly: 'Urne postavke', perHour: '{n} / h', minHours: 'Najmanj {n} h', build: 'Celoten izdelek po meri', printing: '3D tisk', material: 'Material', perGram: '{n} / g', density: 'gostota {d} g/cm³',

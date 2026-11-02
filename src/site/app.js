@@ -24,7 +24,7 @@
   var PROJECTS = (window.NK_PROJECTS || []).filter(function (p) { return !p.hidden; });
   // News comes from src/data/news.json (also edited in the admin): pinned first, then newest.
   var NEWS = (window.NK_NEWS || []).filter(function (n) { return !n.hidden; }).sort(function (x, y) { return (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0) || String(y.date).localeCompare(String(x.date)); });
-  var PAGES = ['home', 'services', 'work', 'news', 'skills', 'about', 'studio', 'order'];
+  var PAGES = ['home', 'services', 'work', 'news', 'skills', 'about', 'studio', 'order', 'gift'];
   var viewer = null;
 
   // NK monogram — the same N/K geometry as the original logo, redrawn as a drawing-sheet mark.
@@ -54,6 +54,7 @@
     if (h === 'contact') { state.ctGo = true; return 'about'; } // Contact package (2026-10-29): #contact opens the contact card on #about
     if (/^p-/.test(h) && bySlug(h.slice(2))) return 'project';
     if (/^n-/.test(h) && newsBySlug(h.slice(2))) return 'post';
+    if (h === 'gift' && !giftOn()) return 'home';
     return PAGES.indexOf(h) >= 0 ? h : 'home'; }
   // A hash with a language prefix (#en-…, #sl-… from shared links and feeds) would switch the language back on render,
   // so the EN/SL buttons rewrite the prefix to the chosen language.
@@ -124,7 +125,7 @@
         tlWrap('material', mpBox()) +
         tlWrap('prep', prepBox()) +
         tlWrap('plate', pbBox()) +
-        (pcOn() ? tlWrap('prices', pcList()) + tlWrap('quote', qcBox()) : '') +
+        (pcOn() ? tlWrap('prices', pcList()) + tlWrap('quote', qcBox()) : '') + faqBox() +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     work: function () {
@@ -154,6 +155,7 @@
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     order: orderView,
+    gift: giftView,
     project: projectView,
     news: function () {
       var x = t();
@@ -286,6 +288,7 @@
     var x = t(), c = x.ct, rows = [];
     if (CONTACT_EMAIL) rows.push('<div><dt>' + esc(c.email) + '</dt><dd><a href="' + ctMail(c.subject) + '" id="ct-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-ct-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="ct-msg" role="status" aria-live="polite"></span></dd></div>');
     rows.push('<div><dt>LinkedIn</dt><dd><a href="' + LINKEDIN + '" target="_blank" rel="noopener">' + esc(c.linkedin) + ' <span aria-hidden="true">↗</span><span class="vh"> (' + esc(x.newTab) + ')</span></a></dd></div>');
+    if (SET.links && SET.links.gbp) rows.push('<div><dt>Google</dt><dd><a href="' + esc(SET.links.gbp) + '" target="_blank" rel="noopener">' + esc(lang === 'sl' ? 'Google profil podjetja' : 'Google Business Profile') + ' <span aria-hidden="true">↗</span><span class="vh"> (' + esc(x.newTab) + ')</span></a></dd></div>'); // from admin › Settings › Links (2026-11-02)
     rows.push('<div><dt>' + esc(c.where) + '</dt><dd>' + esc(lang === 'sl' ? 'Škofja Loka, Slovenija' : 'Škofja Loka, Slovenia') + '</dd></div>');
     x.heroSpecs.slice(2).forEach(function (r) { rows.push('<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'); });
     return '<section class="ct" id="contact" tabindex="-1" aria-labelledby="ct-title"><p class="nk-label" id="ct-title">' + esc(c.title) + '</p><p class="ct-lead">' + esc(c.lead) + '</p><dl class="nk-specs ct-specs">' + rows.join('') + '</dl>' +
@@ -2195,7 +2198,7 @@
     return '<section class="block pc">' + head(x.label, x.title, x.lead) + '<div class="pc-grid">' +
       '<div class="pc-col"><p class="nk-label">' + esc(x.hourly) + '</p>' + specs(rows) + (+P.minHours > 0 ? '<p class="pc-how">' + esc(x.minHours.replace('{n}', P.minHours)) + '</p>' : '') + (pm ? '<p class="pc-promo"><span class="nk-tag nk-tag--rev">' + esc(x.promoRow) + '</span> ' + esc(L(pm.title)) + (pm.until ? ' · ' + esc(t().promo.until.replace('{d}', pcDate(pm.until))) : '') + '</p>' : '') + '</div>' +
       '<div class="pc-col"><p class="nk-label">' + esc(x.printing) + '</p>' + specs(pros) + '<p class="pc-how">' + esc(x.printHow) + '</p></div></div>' +
-      '<p class="fit-note">' + esc(L(P.vatNote) || '') + '</p><p class="pl-open"><a href="#services?tool=quote">' + esc(x.calc) + ' →</a></p></section>';
+      '<p class="fit-note">' + esc(L(P.vatNote) || '') + '</p><p class="pl-open"><a href="#services?tool=quote">' + esc(x.calc) + ' →</a>' + (giftOn() ? '<span aria-hidden="true"> · </span><a href="#gift">' + esc(t().gift.link) + ' →</a>' : '') + '</p></section>';
   }
   // Quote estimate: state.qc holds what the visitor typed; qcCalc() applies the published rates and minimums.
   state.qc = { cad: 0, iot: 0, build: 0, print: 0, cadH: '', iotH: '', buildH: '', mat: '', g: '', h: '', qty: '1', postH: '', rush: 0, first: 1, src: '' };
@@ -2275,6 +2278,84 @@
     else o.what = o.what.split('\n').map(function (l) { return l.indexOf(x.brief + ':') === 0 ? line : l; }).join('\n');
     state.step = 0; state.errors = {}; state.send = 'idle';
     location.hash = 'order';
+  }
+
+
+  // ---------- Gift cards (#gift) + FAQ (2026-11-02, big update part 2) ----------
+  // A gift card is a request, not a sale: the visitor picks an amount (settings.json gift.amounts / gift.min), names the
+  // recipient and sends the request through the same Worker endpoint as a brief; Nace invoices by e-mail and issues the
+  // code after payment. The live preview is the card itself (NK-G sheet) and prints on its own. The FAQ renders the
+  // questions from settings.json as <details> on #services. Self-contained: remove GIFT … faqBox(), 'gift' in PAGES /
+  // views, giftLink() calls, the data-gift-* lines in the click / input handlers, gift: + faq: + nav.gift in both languages
+  // in content.js and the "Gift cards" / "FAQ" rules at the end of page.css.
+  var GIFT = SET.gift && Array.isArray(SET.gift.amounts) && SET.gift.amounts.length ? SET.gift : null;
+  state.gift = { amt: '', custom: '', to: '', from: '', msg: '', name: '', email: '', website: '', send: 'idle', errors: {} };
+  function giftOn() { return !!GIFT; }
+  function giftMin() { return +GIFT.min > 0 ? +GIFT.min : 1; }
+  function giftAmount() { var g = state.gift; if (g.amt === 'custom') { var n = qcNum(g.custom); return n >= giftMin() ? Math.round(n) : 0; } return +g.amt > 0 ? +g.amt : 0; }
+  function giftValidate() {
+    var g = state.gift, e = {};
+    if (!giftAmount()) e.amt = 1;
+    if (!g.name.trim()) e.name = 1;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g.email)) e.email = 1;
+    g.errors = e; return !Object.keys(e).length;
+  }
+  function giftText() {
+    var g = state.gift, x = t().gift, a = giftAmount();
+    return [x.brief.toUpperCase() + ' — nacekepa.work', '', x.amount + ': ' + (a ? pcMoney(a) : '—'), x.to + ': ' + (g.to || '—'), x.from + ': ' + (g.from || '—'), g.msg ? x.msg + ': ' + g.msg : '', '', x.name + ': ' + g.name, x.email + ': ' + g.email].filter(function (l, i, arr) { return l !== '' || arr[i - 1] !== ''; }).join('\n').trim();
+  }
+  function giftCard(forPrint) { // the card as an NK-G sheet (live preview + print)
+    var g = state.gift, x = t().gift, a = giftAmount(), d = new Date(), iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return '<div class="gift-card' + (forPrint ? ' gift-card--print' : '') + '" id="' + (forPrint ? 'gift-print' : 'gift-card') + '"' + (forPrint ? ' aria-hidden="true"' : ' role="img" aria-label="' + esc(x.preview) + '"') + '>' +
+      '<div class="gift-card__top">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span><span class="nk-label">NK-G · ' + esc(fmtDate(iso)) + '</span></div>' +
+      '<p class="gift-card__kind">' + esc(x.card) + '</p>' +
+      '<p class="gift-card__amt">' + esc(a ? pcMoney(a) : '— €') + '</p>' +
+      '<dl class="gift-card__rows"><div><dt>' + esc(x.cardFor) + '</dt><dd>' + esc(g.to || '…') + '</dd></div><div><dt>' + esc(x.cardFrom) + '</dt><dd>' + esc(g.from || '…') + '</dd></div>' +
+      (g.msg ? '<div class="gift-card__msg"><dt>' + esc(x.msg.replace(/ \(.*\)$/, '')) + '</dt><dd>' + esc(g.msg) + '</dd></div>' : '') +
+      '<div><dt>' + esc(x.cardCode) + '</dt><dd class="gift-card__code">NK-G-______ <span>' + esc(x.cardCodeHint) + '</span></dd></div></dl>' +
+      '<p class="gift-card__foot">' + esc(+GIFT.validMonths > 0 ? x.cardValid.replace('{n}', GIFT.validMonths) + ' · ' : '') + esc(x.cardUse) + '</p></div>';
+  }
+  function giftView() {
+    var g = state.gift, x = t().gift, e = g.errors, a = giftAmount(), sent = g.send === 'sent';
+    var amts = GIFT.amounts.map(function (n) { return '<button type="button" class="pb-lay gift-amt" data-gift-amt="' + n + '" aria-pressed="' + (String(g.amt) === String(n)) + '"><b>' + esc(pcMoney(n)) + '</b></button>'; }).join('') +
+      '<button type="button" class="pb-lay gift-amt" data-gift-amt="custom" aria-pressed="' + (g.amt === 'custom') + '"><span class="nk-label">' + esc(x.custom) + '</span><b>' + esc(g.amt === 'custom' && a ? pcMoney(a) : '…') + '</b></button>';
+    var fieldG = function (k, label, ctl, hint, err) { return '<div class="nk-field' + (err ? ' nk-field--error' : '') + '"><label class="nk-field__label" for="gift-' + k + '">' + esc(label) + '</label>' + ctl.replace('<input ', '<input id="gift-' + k + '" ' + (hint || err ? 'aria-describedby="gift-' + k + '-h" ' : '') + (err ? 'aria-invalid="true" ' : '')).replace('<textarea ', '<textarea id="gift-' + k + '" ') + (hint || err ? '<span class="nk-field__hint" id="gift-' + k + '-h">' + esc(err || hint) + '</span>' : '') + '</div>'; };
+    var form = '<div class="fit-form gift-form"><p class="nk-label">' + esc(x.amount) + '</p><div class="pb-lays gift-amts" role="group" aria-label="' + esc(x.amount) + '">' + amts + '</div>' +
+      (g.amt === 'custom' ? fieldG('custom', x.custom + ' · €', '<input class="nk-input" data-gift-f="custom" type="number" inputmode="numeric" min="' + giftMin() + '" step="1" value="' + esc(g.custom) + '">', x.customH.replace('{n}', giftMin()), e.amt ? x.errAmt.replace('{n}', giftMin()) : '') : (e.amt ? '<p class="err" role="alert">' + esc(x.errAmt.replace('{n}', giftMin())) + '</p>' : '')) +
+      '<div class="form">' + fieldG('to', x.to, '<input class="nk-input" data-gift-f="to" autocomplete="off" value="' + esc(g.to) + '">') + fieldG('from', x.from, '<input class="nk-input" data-gift-f="from" autocomplete="off" value="' + esc(g.from) + '">') +
+      '<div class="full">' + fieldG('msg', x.msg, '<textarea class="nk-input" data-gift-f="msg" rows="2" maxlength="160">' + esc(g.msg) + '</textarea>') + '</div></div>' +
+      '<p class="nk-label">' + esc(x.you) + '</p><div class="form">' + fieldG('name', x.name, '<input class="nk-input" data-gift-f="name" autocomplete="name" value="' + esc(g.name) + '">', '', e.name ? x.errName : '') + fieldG('email', x.email, '<input class="nk-input" data-gift-f="email" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" value="' + esc(g.email) + '">', x.emailH, e.email ? x.errEmail : '') + '</div>' +
+      '<div class="hp" aria-hidden="true"><label for="gift-website">Website</label><input id="gift-website" data-gift-f="website" tabindex="-1" autocomplete="off"></div>' +
+      (g.send === 'error' ? '<p class="err" role="alert">' + esc(x.fail) + '</p><pre class="brief" tabindex="0">' + esc(giftText()) + '</pre><div class="cta-row"><button type="button" class="nk-btn" data-gift-copy>' + esc(x.copy) + '</button>' + (CONTACT_EMAIL ? '<a class="nk-btn" href="mailto:' + esc(CONTACT_EMAIL) + '?subject=' + esc(encodeURIComponent(x.brief)) + '&amp;body=' + esc(encodeURIComponent(giftText())) + '">' + esc(x.mail) + '</a>' : '') + '<span class="copy-msg" id="gift-msg" role="status"></span></div>' : '') +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--lg" data-gift-send' + (g.send === 'sending' ? ' disabled' : '') + '>' + esc(g.send === 'sending' ? x.sending : x.send) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-gift-print>' + esc(x.print) + '</button></div>' +
+      '<p class="fit-note">' + esc(L(GIFT.note) || '') + (PRICE && L(PRICE.vatNote) ? ' ' + esc(L(PRICE.vatNote)) : '') + '</p></div>';
+    var done = '<div class="fit-form gift-form"><div class="sent" role="status"><span class="nk-tag nk-tag--ok">' + esc(x.sent) + '</span><p class="hint">' + esc(x.sentBody.replace('{c}', CODE)) + '</p></div><pre class="brief" tabindex="0">' + esc(giftText()) + '</pre><div class="cta-row"><button type="button" class="nk-btn" data-gift-print>' + esc(x.print) + '</button><button type="button" class="nk-btn" data-gift-reset>' + esc(x.another) + '</button></div></div>';
+    return '<section class="block first gift-page"><a class="back" href="#services?tool=prices">← ' + esc(t().pc.title) + '</a>' + head(x.label, x.title, x.lead, true) +
+      '<div class="fit-grid gift-grid">' + (sent ? done : form) + '<div class="gift-side"><p class="nk-label">' + esc(x.preview) + '</p>' + giftCard(false) +
+      '<p class="nk-label gift-how">' + esc(x.how) + '</p><ol class="gift-steps">' + [x.how1, x.how2, x.how3, x.how4].map(function (h) { return '<li>' + esc(h) + '</li>'; }).join('') + '</ol></div></div>' + giftCard(true) + '</section>' + ctaBand();
+  }
+  function giftRefresh() { var c = document.getElementById('gift-card'), p = document.getElementById('gift-print'); if (c) c.outerHTML = giftCard(false); if (p) p.outerHTML = giftCard(true); }
+  function giftSend() {
+    var g = state.gift, x = t().gift;
+    if (!giftValidate()) { render(true); var f = document.querySelector('.gift-form [aria-invalid="true"], .gift-form .err'); if (f) (f.focus ? f : f).focus && f.focus(); return; }
+    if (!ORDER_ENDPOINT) { g.send = 'error'; render(true); return; }
+    if (g.send === 'sending') return;
+    g.send = 'sending'; render(true);
+    var payload = JSON.stringify({ code: CODE, subject: (lang === 'sl' ? 'Darilni bon' : 'Gift card') + ' ' + pcMoney(giftAmount()) + ' — ' + g.name, summary: 'Tracking code: ' + CODE + '\n\n' + giftText(), contact: g.email, lang: lang, attachments: [], website: g.website || '' });
+    var url = ORDER_ENDPOINT.replace(/\/+$/, '') + '/';
+    var post = function (type) { return fetch(url, { method: 'POST', mode: 'cors', credentials: 'omit', referrerPolicy: 'origin', cache: 'no-store', headers: { 'content-type': type }, body: payload }); };
+    post('text/plain;charset=UTF-8')
+      .then(function (r) { return r.status === 415 ? post('application/json') : r; }, function () { return post('application/json'); })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return r.ok && j.ok !== false; }); })
+      .then(function (ok) { g.send = ok ? 'sent' : 'error'; render(true); }, function () { g.send = 'error'; render(true); });
+  }
+  function giftCopy() { var msg = document.getElementById('gift-msg'), x = t().gift; if (!msg) return; var fail = function () { msg.textContent = t().share.copyFail; }; try { navigator.clipboard.writeText(giftText()).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); } }
+  function giftLink(cls) { return giftOn() ? '<a class="' + (cls || 'pl-open') + '" href="#gift">' + esc(t().gift.link) + ' →</a>' : ''; }
+  function faqBox() {
+    var list = (SET.faq || []).filter(function (f) { return f && f.q && L(f.q) && f.a && L(f.a); }), x = t().faq;
+    if (!list.length) return '';
+    return '<section class="block faq" id="faq" aria-labelledby="faq-h"><header class="sec-head"><div><p class="nk-label">' + esc(x.label) + ' · ' + list.length + '</p><h2 class="sec-title" id="faq-h">' + esc(x.title) + '</h2></div><p class="lead">' + esc(x.lead) + '</p></header>' +
+      '<div class="faq-list">' + list.map(function (f, i) { return '<details class="faq-item"' + (i === 0 ? ' open' : '') + '><summary>' + esc(L(f.q)) + '</summary><div class="faq-a">' + L(f.a).split(/\n{2,}/).map(function (par) { return '<p>' + esc(par) + '</p>'; }).join('') + '</div></details>'; }).join('') + '</div></section>';
   }
 
   // ---------- Tools on #services: index of the five tools, deep links #services?tool=plan|fit|file|material|prep ----------
@@ -2485,7 +2566,7 @@
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
-      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '" id="tb-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-tb-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="tb-msg" role="status" aria-live="polite"></span> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span><span class="vh"> (' + esc(t().newTab) + ')</span></a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(ctaText()) + ' →</a>', 'wide', false, true) +
+      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '" id="tb-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-tb-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="tb-msg" role="status" aria-live="polite"></span> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span><span class="vh"> (' + esc(t().newTab) + ')</span></a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(ctaText()) + ' →</a>' + (giftOn() ? ' · <a href="#gift">' + esc(t().gift.tbLink) + '</a>' : ''), 'wide', false, true) +
       cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa' + kbdBtn() + '<button type="button" class="to-top" data-top>' + esc(x.toTop) + ' <span aria-hidden="true">↑</span></button></p></footer>';
     return '<div class="frame"><a class="skip" href="#main" data-skip>' + esc(x.skip) + '</a>' + zones + nav + '<main id="main" tabindex="-1">' + inner + '</main>' + tb + '</div>';
   }
@@ -2549,6 +2630,11 @@
     if (el.hasAttribute('data-fit-go')) { fitToOrder(); return; }
     if (el.hasAttribute('data-pb-go')) { pbToOrder(); return; }
     if (el.hasAttribute('data-qc-go')) { qcToOrder(); return; } // Pricing package (2026-11-02)
+    if (el.dataset.giftAmt) { state.gift.amt = el.dataset.giftAmt; state.gift.errors = {}; render(true); var gc = document.getElementById('gift-custom'); if (gc) gc.focus(); else { var ga = document.querySelector('[data-gift-amt="' + el.dataset.giftAmt + '"]'); if (ga) ga.focus(); } return; } // Gift cards (2026-11-02)
+    if (el.hasAttribute('data-gift-send')) { giftSend(); return; }
+    if (el.hasAttribute('data-gift-copy')) { giftCopy(); return; }
+    if (el.hasAttribute('data-gift-print')) { printSheet(); return; }
+    if (el.hasAttribute('data-gift-reset')) { state.gift = { amt: '', custom: '', to: '', from: '', msg: '', name: state.gift.name, email: state.gift.email, website: '', send: 'idle', errors: {} }; render(false); return; }
     if (el.hasAttribute('data-qc-copy')) { qcCopy(); return; }
     if (el.hasAttribute('data-pb-copy')) { pbCopy(); return; }
     if (el.dataset.pbLay) { pbLay(el.dataset.pbLay); return; }
@@ -2654,6 +2740,7 @@
     drSave();
   });
   app.addEventListener('input', function (ev) { var pbf = ev.target.dataset && ev.target.dataset.pbF; if (pbf) { state.pb[pbf] = ev.target.value; pbUpdate(); } }); // Batch on the plate (2026-10-30)
+  app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.giftF; if (k) { state.gift[k] = ev.target.value; if (state.gift.send === 'error') state.gift.send = 'idle'; giftRefresh(); } }); // Gift cards (2026-11-02)
   app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.qcF; if (k && ev.target.tagName !== 'SELECT') { state.qc[k] = ev.target.value; state.qc.src = ''; qcUpdate(); } }); // Quote estimate (2026-11-02)
   app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.qcK) { state.qc[d.qcK] = ev.target.checked ? 1 : 0; qcUpdate(true); } else if (d.qcF === 'mat') { state.qc.mat = ev.target.value; qcUpdate(); } });
   app.addEventListener('input', function (ev) { if (ev.target.hasAttribute('data-st-sp-deg')) { state.sp.deg = ev.target.value; spUpdate(); } }); // Support check (2026-10-31)

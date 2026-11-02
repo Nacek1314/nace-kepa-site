@@ -108,7 +108,7 @@ const jsonLd = JSON.stringify({
   founder: { '@type': 'Person', name: 'Nace Kepa', sameAs: ['https://www.linkedin.com/in/nace-kepa-82735038a'],
     hasCredential: ['Certified SolidWorks Associate', 'Certified SolidWorks Associate — Additive Manufacturing']
       .map((name) => ({ '@type': 'EducationalOccupationalCredential', name, credentialCategory: 'certification' })) },
-  sameAs: ['https://www.linkedin.com/in/nace-kepa-82735038a'],
+  sameAs: ['https://www.linkedin.com/in/nace-kepa-82735038a'].concat((settings as any).links && (settings as any).links.gbp ? [(settings as any).links.gbp] : []), // + Google Business Profile once set in admin › Settings
   knowsAbout: ['SolidWorks', 'CAD', '3D printing', 'ESP32', 'Embedded systems', 'IoT', 'Rapid prototyping', 'PLC programming', 'Siemens S7-1200', 'Beckhoff TwinCAT'],
   hasOfferCatalog: {
     '@type': 'OfferCatalog',
@@ -156,6 +156,9 @@ const projectsLd = !item && shown.length ? JSON.stringify({
   itemListElement: shown.map((p, i) => ({ '@type': 'ListItem', position: i + 1, item: projectLd(p) }))
 }).replace(/</g, '\\u003c') : '';
 const T: any = new Function(content + '\nreturn T;')();
+// FAQ from settings.json as FAQPage (home pages only; the same questions render as <details> on #services).
+const faqs = ((settings as any).faq || []).filter((f: any) => f && f.q && f.a && tl(f.q) && tl(f.a));
+const faqLd = !item && faqs.length ? JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map((f: any) => ({ '@type': 'Question', name: tl(f.q), acceptedAnswer: { '@type': 'Answer', text: tl(f.a) } })) }).replace(/</g, '\\u003c') : '';
 const itemLd = item ? JSON.stringify({
   '@context': 'https://schema.org',
   '@graph': [
@@ -204,6 +207,7 @@ const snapshot = (() => {
     `<main><h1>${ex(x.heroA)} ${ex(x.heroB)}${ex(x.heroEm)}</h1><p>${ex(x.heroLead)}</p>` +
     `<h2>${ex(x.servicesPageTitle)}</h2><p>${ex(x.servicesPageLead)}</p><ul>${svc}</ul>` +
     `<h2>${ex(x.nav.work)} · ${shown.length}</h2><ul>${work}</ul>${newsHtml}` +
+    (faqs.length ? `<h2>${ex(x.faq.title)}</h2><dl>${faqs.map((f: any) => `<dt>${ex(tl(f.q))}</dt><dd>${ex(tl(f.a))}</dd>`).join('')}</dl>` : '') +
     `<h2>${ex(x.nav.about)}</h2><p>${ex(x.aboutBody)}</p>` + foot;
 })();
 // Alt text of the link-preview image: the sheet / post title on a landing page with a photo, else the hero line.
@@ -256,6 +260,7 @@ const ogAlt = item && (item.photos || []).length ? tl(item.title) + ' — naceke
     {newsLd && <script is:inline type="application/ld+json" set:html={newsLd}></script>}
     {projectsLd && <script is:inline type="application/ld+json" set:html={projectsLd}></script>}
     {itemLd && <script is:inline type="application/ld+json" set:html={itemLd}></script>}
+    {faqLd && <script is:inline type="application/ld+json" set:html={faqLd}></script>}
   </head>
   <body>
     <div id="app">

@@ -1029,3 +1029,45 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 .qc-was { font-family: var(--font-mono); font-size: 12px; color: var(--ink-muted); }
 .qc-notes { margin: var(--space-3) 0 0; font-family: var(--font-mono); font-size: 12px; color: var(--ink-muted); }
 @media (max-width: 480px) { .qc-print { grid-template-columns: 1fr; } .qc-svc .nk-field, .qc-print { margin-left: 0; } }
+
+/* Gift cards (2026-11-02, #gift): giftView() / giftCard() in app.js — form, amount buttons (reuse .pb-lay), the NK-G card, print */
+.gift-grid { align-items: start; }
+.gift-amts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.gift-amt b { font-size: 18px; line-height: 24px; }
+.gift-form .form { gap: var(--space-4); }
+.gift-form .err { margin: 0; }
+.gift-side { display: grid; gap: var(--space-3); }
+.gift-side .nk-label { margin: 0; }
+.gift-card { position: relative; display: grid; gap: var(--space-3); padding: var(--space-5) var(--space-6); background: var(--paper-raised); border: 1px solid var(--ink); box-shadow: inset 0 0 0 4px var(--paper-raised), inset 0 0 0 5px var(--line-strong); background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 16px 16px; }
+.gift-card__top { display: flex; align-items: center; gap: var(--space-2); }
+.gift-card__top .nk-mark { width: 28px; height: 28px; }
+.gift-card__top .wm-text { font-weight: 700; }
+.gift-card__top .nk-label { margin-left: auto; }
+.gift-card__kind { margin: var(--space-2) 0 0; font-family: var(--font-mono); font-size: 12px; letter-spacing: .18em; color: var(--redline); }
+.gift-card__amt { margin: 0; font-weight: 800; font-size: clamp(40px, 8vw, 56px); line-height: 1; letter-spacing: -.02em; }
+.gift-card__rows { display: grid; gap: var(--space-2); margin: var(--space-2) 0 0; padding-top: var(--space-3); border-top: 1px solid var(--line-strong); }
+.gift-card__rows > div { display: grid; grid-template-columns: 72px 1fr; gap: var(--space-3); align-items: baseline; }
+.gift-card__rows dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); padding-top: 3px; }
+.gift-card__rows dd { margin: 0; font-size: 16px; line-height: 22px; overflow-wrap: anywhere; }
+.gift-card__msg dd { font-style: italic; }
+.gift-card__code { font-family: var(--font-mono); }
+.gift-card__code span { font-size: 11px; color: var(--ink-muted); }
+.gift-card__foot { margin: var(--space-2) 0 0; font-family: var(--font-mono); font-size: 11px; line-height: 16px; color: var(--ink-muted); }
+.gift-how { margin-top: var(--space-4) !important; }
+.gift-steps { margin: 0; padding-left: 20px; display: grid; gap: var(--space-1); font-size: 14px; line-height: 20px; color: var(--ink-muted); }
+.gift-card--print { display: none; }
+@media (max-width: 640px) { .gift-amts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media print {
+  .gift-page .sec-head, .gift-page .back, .gift-page .gift-grid, .frame:has(.gift-page) .foot, .frame:has(.gift-page) .cta-band, .frame:has(.gift-page) .top, .frame:has(.gift-page) .zones { display: none !important; }
+  .gift-card--print { display: grid; max-width: 150mm; margin: 20mm auto; page-break-inside: avoid; }
+}
+/* FAQ (2026-11-02, #services): faqBox() in app.js — <details> list from settings.json */
+.faq-list { display: grid; gap: var(--space-2); }
+.faq-item { background: var(--paper-raised); border: 1px solid var(--line-strong); }
+.faq-item summary { cursor: pointer; padding: var(--space-4) var(--space-5); font-weight: 600; font-size: 17px; line-height: 24px; list-style: none; display: flex; justify-content: space-between; gap: var(--space-4); }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: '+'; font-family: var(--font-mono); color: var(--redline); flex: 0 0 auto; }
+.faq-item[open] summary::after { content: '−'; }
+.faq-item summary:focus-visible { outline: 2px solid var(--redline); outline-offset: -2px; }
+.faq-a { padding: 0 var(--space-5) var(--space-4); color: var(--ink-muted); font-size: 15px; line-height: 22px; }
+.faq-a p { margin: 0 0 var(--space-2); }
