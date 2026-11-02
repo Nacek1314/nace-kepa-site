@@ -30,7 +30,11 @@ post at `/news/<slug>/` (`/sl/news/<slug>/`) — `src/pages/portfolio/[slug].ast
 twins render the same site with that sheet's own title, description, link preview and structured data, and open it. These
 are the addresses the "Share this sheet" box, the admin and the feed hand out. Each page's link preview is its first photo or, without
 photos, a card drawn at build time from the sheet (`/og/portfolio/<slug>.png`, `/og/news/<slug>.png`, `/og/sl/…`) — see
-`src/og/card.ts`; the admin Overview links to every card ("Card ↗"). Old URLs (`/services`, `/portfolio/<old-slug>`,
+`src/og/card.ts`; the admin Overview links to every card ("Card ↗").
+
+`#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
+studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
+and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,
 `/sl/...`) redirect to the matching section or landing page (see `astro.config.mjs`).
 
 ## How orders work

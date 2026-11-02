@@ -25,7 +25,7 @@
   // News comes from src/data/news.json (also edited in the admin): pinned first, then newest.
   var TODAY = new Date().toISOString().slice(0, 10);
   var NEWS = (window.NK_NEWS || []).filter(function (n) { return !n.hidden && !(n.date && n.date > TODAY); }) // a post dated in the future is scheduled (blog package, 2026-11-02).sort(function (x, y) { return (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0) || String(y.date).localeCompare(String(x.date)); });
-  var PAGES = ['home', 'services', 'work', 'news', 'skills', 'about', 'studio', 'order', 'gift'];
+  var PAGES = ['home', 'services', 'work', 'news', 'skills', 'about', 'studio', 'order', 'gift', 'mine'];
   var viewer = null;
 
   // NK monogram — the same N/K geometry as the original logo, redrawn as a drawing-sheet mark.
@@ -157,6 +157,7 @@
     },
     order: orderView,
     gift: giftView,
+    mine: mnView, // My corner (2026-11-02)
     project: projectView,
     news: function () {
       var x = t();
@@ -658,7 +659,7 @@
       '<p class="cmp-common"><span class="nk-label">' + esc(c.common) + '</span> ' + (common.length ? common.map(esc).join(' · ') : esc(c.noCommon)) + '</p>' +
       cmpTable(list) +
       '<div class="cmp-act"><div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--sm" data-cmp-go>' + esc(c.start) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
-      '<button type="button" class="nk-btn nk-btn--sm" data-cmp-sl><span class="sl-star" aria-hidden="true">☆</span>' + esc(c.toSl) + '</button></div>' +
+      '<button type="button" class="nk-btn nk-btn--sm" data-cmp-sl><span class="sl-star" aria-hidden="true">☆</span>' + esc(c.toSl) + '</button><button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-mn-cmp>' + esc(t().mn.cmpSave) + '</button></div>' +
       '<div class="share"><p class="nk-label" id="cmp-l">' + esc(c.linkL) + '</p><div class="share-row"><input class="share-url" id="cmp-url" type="text" readonly value="' + esc(cmpLink()) + '" aria-labelledby="cmp-l" spellcheck="false">' +
       '<button type="button" class="nk-btn nk-btn--sm" data-cmp-copy>' + esc(x.share.copy) + '</button></div></div>' +
       '<p class="share-msg" id="cmp-msg" role="status" aria-live="polite"></p></div>') +
@@ -1829,7 +1830,7 @@
         return '<div><dt>' + esc(r[0]) + '</dt><dd>' + v + '</dd></div>';
       }).join('') + '</dl>' +
       (src ? '<div class="cta-row st-act"><button type="button" class="nk-btn nk-btn--primary" data-st-go>' + esc(f.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
-        '<button type="button" class="nk-btn" data-st-print>' + psIco() + ' ' + esc(f.print) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-st-copy>' + esc(f.copy) + '</button></div>' : '<p class="hint st-hint">' + esc(f.emptyD) + '</p>') +
+        '<button type="button" class="nk-btn" data-st-print>' + psIco() + ' ' + esc(f.print) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-st-copy>' + esc(f.copy) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-mn-st>' + esc(t().mn.stSave) + '</button></div>' : '<p class="hint st-hint">' + esc(f.emptyD) + '</p>') +
       '<p class="share-msg" id="st-msg" role="status" aria-live="polite"></p>' + (src ? stEstBox(src) : '') + '<p class="fit-note st-note">' + esc(f.note) + '</p>';
   }
   function stTools(src) {
@@ -2400,14 +2401,14 @@
     });
     return '<section class="block qc">' + head(x.label, x.title, x.lead) + '<div class="fit-grid"><div class="fit-form"><p class="nk-label">' + esc(x.services) + '</p><div class="qc-svcs">' + svcs + '</div>' +
       (pm ? '<label class="ad-check qc-check qc-first"><input type="checkbox" data-qc-k="first"' + (q.first ? ' checked' : '') + '> ' + esc(x.first.replace('{n}', pm.pct)) + '</label>' : '') +
-      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-qc-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-qc-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><span class="copy-msg" id="qc-msg" role="status"></span></div>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-qc-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-qc-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-mn-qc' + (c ? '' : ' disabled') + '>' + esc(t().mn.qcSave) + '</button><span class="copy-msg" id="qc-msg" role="status"></span></div>' +
       '<p class="fit-note">' + esc(x.note.replace('{vat}', L(P.vatNote) || '')) + '</p></div>' +
       '<div class="fit-out qc-out" id="qc-out" role="status" aria-live="polite">' + qcOut(c) + '</div></div></section>';
   }
   function qcUpdate(full) {
     if (full) { var sec = document.querySelector('.qc'); if (sec) { var f = document.activeElement && document.activeElement.id; sec.outerHTML = qcBox(); if (f) { var el = document.getElementById(f); if (el) el.focus(); } } return; }
     var c = qcCalc(), o = document.getElementById('qc-out'); if (o) o.innerHTML = qcOut(c);
-    ['data-qc-go', 'data-qc-copy'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
+    ['data-qc-go', 'data-qc-copy', 'data-mn-qc'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
   }
   function qcSet(o) { // the Part studio hands over material, weight, print time and quantity before the link opens the tool
     var q = state.qc; q.print = 1; if (o.mat) q.mat = o.mat; if (o.g) q.g = String(Math.round(o.g)); if (o.h) q.h = String(Math.round(o.h * 10) / 10); if (o.qty) q.qty = String(o.qty); q.src = 'studio';
@@ -2737,19 +2738,123 @@
       x.fFiles + ' ' + x.fFilesO[o.files], x.fMat + ': ' + x.fMatO[o.mat], '', x.fName + ': ' + o.name, x.fEmail + ': ' + o.email, o.note ? x.fNote + ' ' + o.note : ''].concat(ocRows().length ? [''].concat(ocRows().map(function (r) { return r[0] + ' ' + r[1]; })) : []).join('\n').replace(/\n{3,}/g, '\n\n').trim();
   }
 
+
+  // ---------- My corner (#mine, 2026-11-02): everything a visitor saved in this browser, on one page ----------
+  // Shortlist (nk-shortlist) and the unfinished brief (nk-order-draft) are read through their own functions; saved
+  // comparisons, Part studio sheets and price estimates live in localStorage "nk-mine" ({ v: 1, cmp: [], st: [], qc: [] },
+  // newest first, MN_MAX of each; in memory if storage is blocked). Nothing leaves the browser unless the visitor puts it
+  // in a brief and sends that. Export: print (the "Print" rules for .mine-page in page.css) and a plain-text download
+  // (blob URL on an <a download>). Self-contained: remove MN_KEY … mnView(), 'mine' in PAGES / views, the mnLink() calls in
+  // frame(), the data-mn-* save buttons in cmpView() / stSheet() / qcBox(), the data-mn-* lines in the click handler,
+  // mn: + nav.mine in both languages in content.js and the "My corner" rules in page.css.
+  var MN_KEY = 'nk-mine', MN_MAX = 20, mnMem = null, mnAsk = false, mnMsg = '';
+  function mnRead() {
+    if (!mnMem) {
+      mnMem = { v: 1, cmp: [], st: [], qc: [] };
+      try { var d = JSON.parse(localStorage.getItem(MN_KEY) || 'null'); if (d && d.v === 1) ['cmp', 'st', 'qc'].forEach(function (k) { if (Array.isArray(d[k])) mnMem[k] = d[k].filter(function (e) { return e && typeof e === 'object' && typeof e.at === 'number'; }).slice(0, MN_MAX); }); } catch (e) {}
+    }
+    return mnMem;
+  }
+  function mnSave() { try { localStorage.setItem(MN_KEY, JSON.stringify(mnMem)); } catch (e) {} }
+  function mnAdd(kind, entry) { var m = mnRead(); entry.at = Date.now(); m[kind] = [entry].concat(m[kind]).slice(0, MN_MAX); mnSave(); return entry; }
+  function mnDrop(kind, at) { var m = mnRead(); m[kind] = m[kind].filter(function (e) { return e.at !== +at; }); mnSave(); }
+  function mnCount() { var m = mnRead(); return slRead().length + (dr.at && state.send !== 'sent' ? 1 : 0) + m.cmp.length + m.st.length + m.qc.length; }
+  function mnWhen(at) { try { return new Date(at).toLocaleString(lang === 'sl' ? 'sl-SI' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+  function mnLink() { var n = mnCount(), x = t().mn; return '<a class="mine-link" href="#mine" aria-label="' + esc(n ? x.linkN.replace('{n}', n) : x.link) + '" title="' + esc(x.link) + '"' + (page() === 'mine' ? ' aria-current="page"' : '') + '><span aria-hidden="true">★</span>' + (n ? '<b>' + n + '</b>' : '') + '</a>'; }
+  function mnFlash(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
+  // Save buttons on the compare page, the studio sheet and the quote tool (rows are stored as [label, text] pairs in the
+  // language they were made in, so a saved sheet reads the same later).
+  function mnSaveCmp() { var a = state.cmp.filter(bySlug); if (a.length < 2) return; mnAdd('cmp', { s: a.slice(0, 3) }); mnFlash('cmp-msg', t().mn.cmpSaved); mnLinkShow(); }
+  function mnSaveSt() {
+    var src = stSrc(), f = t().st; if (!src) return;
+    var rows = stRows(src).map(function (r) { return [r[0], r[1]]; });
+    mnAdd('st', { name: state.st.name.trim() || f.unnamed, kind: src.kind, size: stDims(src), qty: Math.max(1, Math.round(+state.st.qty || 1)), rows: rows, line: f.brief });
+    mnFlash('st-msg', t().mn.stSaved); mnLinkShow();
+  }
+  function mnSaveQc() {
+    var c = qcCalc(); if (!c) return;
+    mnAdd('qc', { rows: c.rows.map(function (r) { return [r[0], pcMoney(r[1], 2)]; }), total: pcMoney(c.disc ? c.after : c.total, 2), text: qcText(c), svcs: ['cad', 'iot', 'build', 'print'].filter(function (k) { return state.qc[k]; }) });
+    mnFlash('qc-msg', t().mn.qcSaved); mnLinkShow();
+  }
+  function mnLinkShow() { var el = document.querySelector('.mine-link'); if (el) el.outerHTML = mnLink(); }
+  // A saved sheet or estimate goes into the brief the same way the studio and the quote tool hand over (one line each).
+  function mnToBrief(kind, at) {
+    var m = mnRead(), e = m[kind].filter(function (v) { return v.at === +at; })[0], o = state.order, x = t().mn; if (!e) return;
+    var line;
+    if (kind === 'st') {
+      line = (e.line || t().st.brief) + ': ' + e.rows.filter(function (r) { return r[0] !== t().st.rows.fn && r[0] !== t().st.rows.needs; }).map(function (r) { return r[0] + ': ' + r[1]; }).join('; ') + '.';
+      if (o.services.indexOf('print') < 0) o.services.push('print');
+      if (e.kind === 'box' && o.services.indexOf('cad') < 0) o.services.push('cad');
+      o.qty = String(e.qty || 1);
+    } else {
+      line = e.text || '';
+      (e.svcs || []).forEach(function (k) { if (o.services.indexOf(k) < 0) o.services.push(k); });
+    }
+    if (line && o.what.indexOf(line) < 0) o.what = o.what ? o.what + '\n' + line : line;
+    state.step = 1; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+  function mnForget() {
+    mnMem = { v: 1, cmp: [], st: [], qc: [] }; try { localStorage.removeItem(MN_KEY); localStorage.removeItem(SL_KEY); } catch (e) {}
+    slMem = []; mnAsk = false;
+    try { localStorage.removeItem(DR_KEY); } catch (e) {}
+    state.order = { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '' };
+    state.prep.have = {}; state.prep.svc = null; state.step = 0; state.errors = {}; state.send = 'idle'; dr.at = 0; dr.restored = false; dr.ask = false;
+    mnMsg = t().mn.forgotten; render(true); mnMsg = '';
+  }
+  function mnText() { // plain-text export, in the page language
+    var x = t().mn, m = mnRead(), out = [x.label + ' · nacekepa.work · ' + new Date().toISOString().slice(0, 10), ''];
+    var sl = slRead().map(bySlug);
+    out.push(x.slT); out.push(sl.length ? sl.map(function (p) { return '- ' + P(p, 'title') + ' (' + sheetNo(p) + ') ' + shareUrl('p', p); }).join('\n') : x.slEmpty); out.push('');
+    out.push(x.drT); out.push(dr.at && state.send !== 'sent' ? x.drSaved.replace('{d}', drWhen()).replace('{s}', state.step + 1) + '\n' + x.drServices + ': ' + state.order.services.map(function (k) { var sv = SERVICES.filter(function (v) { return v.key === k; })[0]; return sv ? L(sv.title) : k; }).join(', ') + (state.order.what ? '\n' + x.drWhat + ': ' + state.order.what : '') : x.drEmpty); out.push('');
+    out.push(x.cmpT); out.push(m.cmp.length ? m.cmp.map(function (e) { return '- ' + e.s.map(function (sl) { var p = bySlug(sl); return p ? P(p, 'title') : sl; }).join(' · ') + ' — ' + mnWhen(e.at) + '\n  https://nacekepa.work/' + (lang === 'sl' ? 'sl/' : '') + cmpHash(e.s); }).join('\n') : x.cmpEmpty); out.push('');
+    out.push(x.stT); out.push(m.st.length ? m.st.map(function (e) { return '- ' + e.name + ' — ' + mnWhen(e.at) + '\n' + e.rows.map(function (r) { return '  ' + r[0] + ': ' + r[1]; }).join('\n'); }).join('\n') : x.stEmpty); out.push('');
+    out.push(x.qcT); out.push(m.qc.length ? m.qc.map(function (e) { return '- ' + mnWhen(e.at) + ': ' + e.text; }).join('\n') : x.qcEmpty); out.push('');
+    out.push(x.privacy);
+    return out.join('\n');
+  }
+  function mnDownload() {
+    try {
+      var blob = new Blob([mnText()], { type: 'text/plain;charset=utf-8' }), url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = t().mn.file + '-' + new Date().toISOString().slice(0, 10) + '.txt'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+    } catch (e) {}
+  }
+  function mnView() {
+    var x = t().mn, m = mnRead(), sl = slRead().map(bySlug), total = mnCount();
+    var sec = function (title, body, n) { return '<section class="mn-sec"><h2 class="sub">' + esc(title) + (n ? ' <span class="nk-label">' + n + '</span>' : '') + '</h2>' + body + '</section>'; };
+    var when = function (e) { return '<span class="mn-when">' + esc(x.on) + ' ' + esc(mnWhen(e.at)) + '</span>'; };
+    var rm = function (kind, e) { return '<button type="button" class="tb-copy" data-mn-rm="' + kind + '" data-mn-at="' + e.at + '">' + esc(x.remove) + '</button>'; };
+    var slB = sl.length ? '<ul class="mn-list">' + sl.map(function (p) { return '<li><a href="#p-' + esc(p.slug) + '"><b>' + esc(P(p, 'title')) + '</b> <span class="nk-label">' + esc(sheetNo(p)) + '</span></a><button type="button" class="tb-copy" data-sl-tog="' + esc(p.slug) + '" data-mn-sl>' + esc(x.slRemove) + '</button></li>'; }).join('') + '</ul>' +
+      '<div class="cta-row">' + (sl.length > 1 ? btn(x.slCompare.replace('{n}', Math.min(3, sl.length)), cmpHash(slRead().slice(0, 3)), '', 'sm') : '') + '<button type="button" class="nk-btn nk-btn--sm" data-sl-go>' + esc(x.slStart) + '</button></div>' : '<p class="hint">' + esc(x.slEmpty) + '</p>';
+    var drB = dr.at && state.send !== 'sent' ? '<p class="mn-row"><b>' + esc(x.drSaved.replace('{d}', drWhen()).replace('{s}', state.step + 1)) + '</b></p>' +
+      '<dl class="nk-specs mn-specs"><div><dt>' + esc(x.drServices) + '</dt><dd>' + esc(state.order.services.map(function (k) { var sv = SERVICES.filter(function (v) { return v.key === k; })[0]; return sv ? L(sv.title) : k; }).join(', ') || '—') + '</dd></div>' +
+      (state.order.what ? '<div><dt>' + esc(x.drWhat) + '</dt><dd class="mn-pre">' + esc(state.order.what.slice(0, 600)) + (state.order.what.length > 600 ? '…' : '') + '</dd></div>' : '') + '</dl>' +
+      '<div class="cta-row">' + btn(x.drCont, '#order', 'primary', 'sm', true) + '<button type="button" class="nk-btn nk-btn--sm" data-mn-drclear>' + esc(t().dr.clear) + '</button></div>' : '<p class="hint">' + esc(x.drEmpty) + '</p>';
+    var cmpB = m.cmp.length ? '<ul class="mn-list">' + m.cmp.map(function (e) { return '<li><a href="' + esc(cmpHash(e.s)) + '"><b>' + esc(e.s.map(function (sl) { var p = bySlug(sl); return p ? P(p, 'title') : sl; }).join(' · ')) + '</b>' + when(e) + '</a>' + rm('cmp', e) + '</li>'; }).join('') + '</ul>' : '<p class="hint">' + esc(x.cmpEmpty) + '</p>';
+    var stB = m.st.length ? m.st.map(function (e) { return '<details class="mn-card"><summary><b>' + esc(e.name) + '</b> <span class="nk-label">' + esc((e.size || []).map(fitFmt).join(' × ')) + (e.size ? ' mm' : '') + ' · ×' + esc(e.qty || 1) + '</span>' + when(e) + '</summary><dl class="nk-specs mn-specs">' + e.rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('') + '</dl>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mn-brief="st" data-mn-at="' + e.at + '">' + esc(x.stBrief) + '</button>' + btn(x.stAgain, '#studio', 'ghost', 'sm') + rm('st', e) + '</div></details>'; }).join('') : '<p class="hint">' + esc(x.stEmpty) + '</p>';
+    var qcB = m.qc.length ? m.qc.map(function (e) { return '<details class="mn-card"><summary><b>≈ ' + esc(e.total) + '</b> <span class="nk-label">' + esc(e.rows.map(function (r) { return r[0]; }).join(' · ')) + '</span>' + when(e) + '</summary><dl class="nk-specs mn-specs">' + e.rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('') + '</dl>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mn-brief="qc" data-mn-at="' + e.at + '">' + esc(x.qcBrief) + '</button>' + btn(t().qc.title, '#services?tool=quote', 'ghost', 'sm') + rm('qc', e) + '</div></details>'; }).join('') : '<p class="hint">' + esc(x.qcEmpty) + '</p>';
+    var tools = '<div class="mn-tools"><div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mn-print>' + psIco() + ' ' + esc(x.print) + '</button><button type="button" class="nk-btn nk-btn--sm" data-mn-dl>' + esc(x.download) + '</button>' +
+      (mnAsk ? '<span class="mn-ask">' + esc(x.forgetAsk) + ' <button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-mn-forget="yes">' + esc(x.forgetYes) + '</button> <button type="button" class="nk-btn nk-btn--sm" data-mn-forget="no">' + esc(x.forgetNo) + '</button></span>' : '<button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-mn-forget="ask">' + esc(x.forget) + '</button>') + '</div>' +
+      '<p class="share-msg" id="mn-msg" role="status" aria-live="polite">' + esc(mnMsg) + '</p><p class="fit-note">' + esc(x.privacy) + ' ' + esc(x.max.replace('{n}', MN_MAX)) + '</p></div>';
+    return '<section class="block first mine-page">' + head(x.label, x.title, x.lead, true) + (total ? '' : '<p class="mn-empty">' + esc(x.empty) + '</p>') +
+      sec(x.slT, slB, sl.length) + sec(x.drT, drB) + sec(x.cmpT, cmpB, m.cmp.length) + sec(x.stT, stB, m.st.length) + sec(x.qcT, qcB, m.qc.length) + tools + '</section>' + ctaBand();
+  }
   function frame(inner) {
     var x = t(), p = page();
     var zones = '<div class="zones zones-top" aria-hidden="true">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (n) { return '<span>' + n + '</span>'; }).join('') + '</div>' +
       '<div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div><div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>';
     var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="' + esc(x.aria.home) + '">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="' + esc(x.aria.main) + '">' +
       ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a href="#' + k + '"' + (p === k || ((p === 'project' || p === 'compare') && k === 'work') || (p === 'post' && k === 'news') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
-      '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '"><button type="button" data-lang="en" aria-pressed="' + (lang === 'en') + '">EN</button><button type="button" data-lang="sl" aria-pressed="' + (lang === 'sl') + '">SL</button></div>' + btn(ctaText(), '#order', 'primary', 'sm') + '</div></header>';
+      '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '"><button type="button" data-lang="en" aria-pressed="' + (lang === 'en') + '">EN</button><button type="button" data-lang="sl" aria-pressed="' + (lang === 'sl') + '">SL</button></div>' + mnLink() + btn(ctaText(), '#order', 'primary', 'sm') + '</div></header>';
     var idx = PAGES.indexOf(p === 'project' || p === 'compare' ? 'work' : p === 'post' ? 'news' : p) + 1;
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
       cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '" id="tb-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-tb-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="tb-msg" role="status" aria-live="polite"></span> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span><span class="vh"> (' + esc(t().newTab) + ')</span></a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(ctaText()) + ' →</a>' + (giftOn() ? ' · <a href="#gift">' + esc(t().gift.tbLink) + '</a>' : ''), 'wide', false, true) +
-      cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa' + kbdBtn() + '<button type="button" class="to-top" data-top>' + esc(x.toTop) + ' <span aria-hidden="true">↑</span></button></p></footer>';
+      cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa' + kbdBtn() + '<a class="mine-foot" href="#mine">' + esc(x.mn.link) + '</a>' + '<button type="button" class="to-top" data-top>' + esc(x.toTop) + ' <span aria-hidden="true">↑</span></button></p></footer>';
     return '<div class="frame"><a class="skip" href="#main" data-skip>' + esc(x.skip) + '</a>' + zones + nav + '<main id="main" tabindex="-1">' + inner + '</main>' + tb + '</div>';
   }
   function cell(k, v, span, title, raw) {
@@ -2854,6 +2959,16 @@
     if (el.hasAttribute('data-prep-go')) { prepToOrder(); return; }
     if (el.hasAttribute('data-prep-copy')) { prepCopy(); return; }
     if (el.hasAttribute('data-mail-copy')) { mailCopy(); return; }
+    if (el.hasAttribute('data-mn-sl')) { slFlip(el.dataset.slTog); mnMsg = t().mn.removed; render(true); mnMsg = ''; return; } // My corner (2026-11-02)
+    if (el.dataset.mnRm) { mnDrop(el.dataset.mnRm, el.dataset.mnAt); mnMsg = t().mn.removed; render(true); mnMsg = ''; return; }
+    if (el.dataset.mnBrief) { mnToBrief(el.dataset.mnBrief, el.dataset.mnAt); return; }
+    if (el.hasAttribute('data-mn-cmp')) { mnSaveCmp(); return; }
+    if (el.hasAttribute('data-mn-st')) { mnSaveSt(); return; }
+    if (el.hasAttribute('data-mn-qc')) { mnSaveQc(); return; }
+    if (el.hasAttribute('data-mn-print')) { [].forEach.call(document.querySelectorAll('.mn-card'), function (d) { d.open = true; }); printSheet(); return; }
+    if (el.hasAttribute('data-mn-dl')) { mnDownload(); return; }
+    if (el.hasAttribute('data-mn-drclear')) { drClearAll(); return; }
+    if (el.dataset.mnForget) { if (el.dataset.mnForget === 'yes') { mnForget(); return; } mnAsk = el.dataset.mnForget === 'ask'; render(true); var mf = document.querySelector(mnAsk ? '[data-mn-forget="no"]' : '[data-mn-forget="ask"]'); if (mf) mf.focus(); return; }
     if (el.dataset.slTog) { slFlip(el.dataset.slTog); return; }
     if (el.dataset.slDel) { slDel(el.dataset.slDel); return; }
     if (el.hasAttribute('data-sl-go')) { slToOrder(); return; }

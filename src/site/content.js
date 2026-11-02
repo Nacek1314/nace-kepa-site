@@ -1,6 +1,6 @@
 var T = {
   en: {
-    nav: { home: 'Home', services: 'Services', work: 'Work', news: 'News', skills: 'Skills', about: 'About', compare: 'Compare sheets', studio: 'Part studio', gift: 'Gift card' },
+    nav: { home: 'Home', services: 'Services', work: 'Work', news: 'News', skills: 'Skills', about: 'About', compare: 'Compare sheets', studio: 'Part studio', gift: 'Gift card', mine: 'My corner' },
     newsLabel: 'News', newsTitle: 'From the workshop.', newsLead: 'New machines, materials and finished jobs.', allNews: 'All news', readMore: 'Read', pinned: 'Pinned', newsPageTitle: 'News', newsEmpty: 'No news yet.',
     cta: 'Start a project', seeWork: 'See all work', allServices: 'All services', quote: 'Request a quote',
     status: 'Taking projects',
@@ -85,6 +85,15 @@ var T = {
     // Project planner on #services (plBox in app.js): three questions → services, turnaround, fit, brief handed to #order.
     // Batch on the plate on #services (pbBox in app.js, 2026-10-30): copies of one footprint on the 256 × 256 mm X2D plate.
     // Gift cards + FAQ (2026-11-02, big update part 2). Amounts, validity and the FAQ come from settings.json.
+    mn: { label: 'My corner · NK-M', title: 'Everything you saved here.', lead: 'Your shortlist, your unfinished brief, saved comparisons, Part studio sheets and price estimates — kept only in this browser, never sent anywhere. Print it, download it, or forget it all.',
+      link: 'My corner', linkN: 'My corner · {n} saved', empty: 'Nothing saved yet. Star a project sheet, start a brief, compare sheets, analyse a part in the Part studio or run a price estimate — it all lands here.',
+      slT: 'Shortlist', slEmpty: 'No starred sheets.', slCompare: 'Compare the first {n}', slStart: 'Start a project with these', slRemove: 'Remove',
+      drT: 'Unfinished brief', drEmpty: 'No saved brief.', drSaved: 'Saved {d} · step {s} of 4', drCont: 'Continue the brief', drServices: 'Services', drWhat: 'What it should do',
+      cmpT: 'Saved comparisons', cmpEmpty: 'No saved comparisons.', cmpSave: 'Save this comparison', cmpSaved: 'Comparison saved to My corner.', cmpOpen: 'Open',
+      stT: 'Part studio sheets', stEmpty: 'No saved part sheets.', stSave: 'Save sheet to My corner', stSaved: 'Part sheet saved to My corner.', stAgain: 'Open the studio', stBrief: 'Put it in the brief',
+      qcT: 'Price estimates', qcEmpty: 'No saved estimates.', qcSave: 'Save estimate', qcSaved: 'Estimate saved to My corner.', qcBrief: 'Put it in the brief',
+      remove: 'Remove', removed: 'Removed.', on: 'saved on', print: 'Print / save as PDF', download: 'Download as text', forget: 'Forget everything in this browser', forgetAsk: 'Delete your shortlist, brief, comparisons, sheets and estimates from this browser?', forgetYes: 'Yes, forget it all', forgetNo: 'Keep', forgotten: 'Everything forgotten.',
+      privacy: 'Nothing here is sent to the studio until you put it in a brief and send that. Clearing the browser data removes it too.', max: 'The newest {n} of each are kept.', file: 'my-corner' },
     gift: { label: 'Gift card · NK-G', title: 'Give a part, a print or an hour of engineering.', lead: 'A gift card for any service in the studio — a printed part, a CAD job, a firmware fix or a full build. Pick the amount, write who it is for, and I send you the invoice; after payment you get the card with its code by e-mail.',
       amount: 'Amount', custom: 'Custom amount', customH: 'At least {n} €', to: 'For (name)', from: 'From (name)', msg: 'Message on the card (optional)', you: 'Your details', name: 'Your name', email: 'Your e-mail', emailH: 'The invoice and the card go here.',
       preview: 'Card preview', print: 'Print the preview', send: 'Request this gift card', sending: 'Sending…', sent: 'Request sent', sentBody: 'Thank you — the invoice arrives within 48 hours; after payment the card with its code follows by e-mail. Tracking code {c}.',
@@ -201,7 +210,7 @@ var T = {
     tb: { title: 'Title', drawn: 'Drawn', loc: 'Location', sheet: 'Sheet', rev: 'Rev', date: 'Date', scale: 'Scale', contact: 'Contact', order: 'Order' }
   },
   sl: {
-    nav: { home: 'Domov', services: 'Storitve', work: 'Projekti', news: 'Novice', skills: 'Znanja', about: 'O meni', compare: 'Primerjava listov', studio: 'Studio dela', gift: 'Darilni bon' },
+    nav: { home: 'Domov', services: 'Storitve', work: 'Projekti', news: 'Novice', skills: 'Znanja', about: 'O meni', compare: 'Primerjava listov', studio: 'Studio dela', gift: 'Darilni bon', mine: 'Moj kotiček' },
     newsLabel: 'Novice', newsTitle: 'Iz delavnice.', newsLead: 'Novi stroji, materiali in zaključeni projekti.', allNews: 'Vse novice', readMore: 'Preberi', pinned: 'Pripeto', newsPageTitle: 'Novice', newsEmpty: 'Novic še ni.',
     cta: 'Začni projekt', seeWork: 'Vsi projekti', allServices: 'Vse storitve', quote: 'Zahtevaj ponudbo',
     status: 'Sprejemam projekte',
@@ -283,6 +292,15 @@ var T = {
     // Načrtovalnik projekta na #services (plBox v app.js).
     // Serija na mizi na #services (pbBox v app.js, 2026-10-30).
     // Darilni boni + FAQ (2026-11-02, velika posodobitev, del 2). Zneski, veljavnost in FAQ so v settings.json.
+    mn: { label: 'Moj kotiček · NK-M', title: 'Vse, kar ste tu shranili.', lead: 'Vaš izbor, nedokončano povpraševanje, shranjene primerjave, listi iz Studia dela in ocene cen — shranjeno samo v tem brskalniku, nikamor poslano. Natisnite, prenesite ali vse pozabite.',
+      link: 'Moj kotiček', linkN: 'Moj kotiček · shranjeno: {n}', empty: 'Še nič shranjenega. Označite projektni list z zvezdico, začnite povpraševanje, primerjajte liste, analizirajte del v Studiu dela ali izračunajte okvirno ceno — vse pristane tukaj.',
+      slT: 'Izbor', slEmpty: 'Ni označenih listov.', slCompare: 'Primerjaj prve {n}', slStart: 'Začni projekt s temi', slRemove: 'Odstrani',
+      drT: 'Nedokončano povpraševanje', drEmpty: 'Ni shranjenega povpraševanja.', drSaved: 'Shranjeno {d} · korak {s} od 4', drCont: 'Nadaljuj povpraševanje', drServices: 'Storitve', drWhat: 'Kaj naj počne',
+      cmpT: 'Shranjene primerjave', cmpEmpty: 'Ni shranjenih primerjav.', cmpSave: 'Shrani to primerjavo', cmpSaved: 'Primerjava shranjena v Moj kotiček.', cmpOpen: 'Odpri',
+      stT: 'Listi iz Studia dela', stEmpty: 'Ni shranjenih listov.', stSave: 'Shrani list v Moj kotiček', stSaved: 'List shranjen v Moj kotiček.', stAgain: 'Odpri studio', stBrief: 'Dodaj v povpraševanje',
+      qcT: 'Ocene cen', qcEmpty: 'Ni shranjenih ocen.', qcSave: 'Shrani oceno', qcSaved: 'Ocena shranjena v Moj kotiček.', qcBrief: 'Dodaj v povpraševanje',
+      remove: 'Odstrani', removed: 'Odstranjeno.', on: 'shranjeno', print: 'Natisni / shrani kot PDF', download: 'Prenesi kot besedilo', forget: 'Pozabi vse v tem brskalniku', forgetAsk: 'Izbrišem vaš izbor, povpraševanje, primerjave, liste in ocene iz tega brskalnika?', forgetYes: 'Da, pozabi vse', forgetNo: 'Obdrži', forgotten: 'Vse pozabljeno.',
+      privacy: 'Nič od tega ne gre v studio, dokler tega ne dodate v povpraševanje in ga pošljete. Tudi brisanje podatkov brskalnika to odstrani.', max: 'Shranjenih je zadnjih {n} od vsakega.', file: 'moj-koticek' },
     gift: { label: 'Darilni bon · NK-G', title: 'Podarite del, tisk ali uro inženiringa.', lead: 'Darilni bon za katero koli storitev v studiu — natisnjen del, CAD nalogo, popravek firmwara ali celoten izdelek. Izberite znesek, napišite, za koga je, in pošljem vam predračun; po plačilu dobite bon s kodo po e-pošti.',
       amount: 'Znesek', custom: 'Poljuben znesek', customH: 'Najmanj {n} €', to: 'Za (ime)', from: 'Od (ime)', msg: 'Sporočilo na bonu (po želji)', you: 'Vaši podatki', name: 'Vaše ime', email: 'Vaš e-naslov', emailH: 'Sem pošljem predračun in bon.',
       preview: 'Predogled bona', print: 'Natisni predogled', send: 'Naroči ta darilni bon', sending: 'Pošiljam …', sent: 'Povpraševanje poslano', sentBody: 'Hvala — predračun prejmete v 48 urah; po plačilu sledi bon s kodo po e-pošti. Sledilna koda {c}.',

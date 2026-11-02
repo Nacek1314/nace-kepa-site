@@ -179,6 +179,27 @@ fallbacks in `Site.astro`, the enclosure line in `feed.ts`, `tlUrl` / `tlCopy` +
 `tl.copy…` in `content.js`, `.tl-back .tb-copy / .tl-msg` in `page.css`, `ovCard()` in `admin.js`, and
 `@resvg/resvg-js` from `package.json` (`npm uninstall @resvg/resvg-js`).
 
+### Part 7 — "My corner" (#mine)
+
+- One page (`mnView()` in `app.js`, `mn:` + `nav.mine` in `content.js`, "My corner" CSS) with everything a visitor saved in
+  this browser: the **shortlist** (★ sheets, remove, "Compare the first 3", "Start a project with these"), the **unfinished
+  brief** (saved when, step, services, the "what" text; continue / clear), **saved comparisons**, **Part studio sheets**
+  (every row of the sheet, "Put it in the brief" → the same one-line hand-off as the studio, "Open the studio") and **price
+  estimates** ("Put it in the brief"). New save buttons: "Save this comparison" on #compare, "Save sheet to My corner" on
+  the studio sheet, "Save estimate" in the quote tool. Storage: localStorage `nk-mine` ({ v: 1, cmp, st, qc }, newest 20
+  of each; rows stored as [label, text] in the language they were made in), next to the existing `nk-shortlist` and
+  `nk-order-draft`. **Export**: "Print / save as PDF" (opens every card first; print rules hide the controls) and
+  "Download as text" (`my-corner-<date>.txt` / `moj-koticek-<date>.txt`, a blob URL on an `<a download>`). **Forget
+  everything in this browser** asks first, then clears all three keys and the in-memory state. Entry points: a ★ with the
+  count of saved things in the header (`mnLink()`, next to the language switch) and a "My corner" link in the footer.
+  Nothing is sent anywhere — the page says so.
+- Tested (EN 1280 light, SL 390 dark): empty page; star two sheets → compare → save; studio typed box → save; quote 3 h CAD
+  → save; start a brief; #mine shows 2 / brief / 1 / 1 / 1 with the header ★ 6; card opens with 15 rows; text download
+  (name, size, first lines); "Put it in the brief" lands on #order step 2 with the Part studio line; remove a comparison;
+  forget: ask → yes → empty page, all three storage keys gone, header ★ without a count; full audit of every page incl.
+  #mine; studio regression.
+*To remove part 7:* see the comment above `MN_KEY` in `app.js`.
+
 ## 2026-11-01
 
 **Checked:** build, home, #services (all tools incl. `?tool=index` / `?tool=plate`), #work, #work?view=list, #p-famfive,
