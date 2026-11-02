@@ -69,6 +69,10 @@ stored in the repo. If a device is lost, revoke the token on GitHub.
 materials, featured on home); attach a 3D model (STL, 3MF, OBJ, GLB/GLTF up to 50 MB); add photos (the first
 one is the cover on the project sheet). Visitors open photos in a full-screen gallery and rotate models.
 
+**Settings:** the *Settings* tab edits `src/data/settings.json` — hourly rates and 3D-printing prices (the price list and
+the quote estimate on `/#services`), print parameters (time / material estimate in the Part studio), the promotion banner,
+gift-card amounts, the FAQ and links. Empty numbers hide the matching feature on the site.
+
 **Table:** the *Table* tab shows all projects as one spreadsheet (category, year, materials, featured, hidden): edit
 cells directly, tick rows to change them together, or copy the table to Excel and paste it back.
 
@@ -105,6 +109,7 @@ src/pages/portfolio/    project landing pages /portfolio/<slug>/ · src/pages/ne
 src/pages/admin.astro   the admin dashboard (src/site/admin.js)
 src/data/projects.json  all projects, edited by the dashboard
 src/data/news.json      news posts, edited by the dashboard
+src/data/settings.json  prices, print parameters, promotion, gift cards, FAQ, links — edited by the dashboard
 src/site/viewer.js      3D model viewer (three.js), loaded only on project pages
 src/site/nkm.js         protected preview-mesh format (simplify, encode, decode)
 src/pages/404.astro     not-found page

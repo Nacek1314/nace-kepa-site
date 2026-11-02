@@ -106,7 +106,7 @@
       return '<section class="hero"><div class="hero-text"><p class="nk-label"><b>' + esc(x.status) + ' · </b>' + esc(x.heroLabel) + '</p>' +
         '<h1 class="display">' + esc(x.heroA) + '<br>' + esc(x.heroB) + '<em>' + esc(x.heroEm) + '</em></h1><p class="lead">' + esc(x.heroLead) + '</p>' +
         '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', 'lg', true) + btn(x.seeWork, '#work', null, 'lg') + '</div></div>' +
-        '<div class="hero-sheet">' + (PROJECTS.length ? sheetH2(featured()[0]) : '') + specs([x.heroSpecs[0], [x.heroSpecs[1][0], String(PROJECTS.length)]].concat(x.heroSpecs.slice(2))) + '</div></section>' +
+        '<div class="hero-sheet">' + (PROJECTS.length ? sheetH2(featured()[0]) : '') + specs([x.heroSpecs[0], [x.heroSpecs[1][0], String(PROJECTS.length)]].concat(x.heroSpecs.slice(2))) + '</div></section>' + promoBand('promo--home') +
         '<section class="block">' + head(x.servicesLabel, x.servicesTitle, x.servicesLead) + '<div class="grid-4">' + SERVICES.map(function (s) { return service(s, false); }).join('') + '</div>' + tlHome() + '</section>' +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' +
         '<section class="block">' + head(x.workLabel, x.workTitle) + '<div class="grid-4 sheets">' + featured().map(sheet).join('') + '</div><div class="more">' + btn(x.seeWork, '#work', null, null, true) + '</div></section>' +
@@ -124,6 +124,7 @@
         tlWrap('material', mpBox()) +
         tlWrap('prep', prepBox()) +
         tlWrap('plate', pbBox()) +
+        (pcOn() ? tlWrap('prices', pcList()) + tlWrap('quote', qcBox()) : '') +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     work: function () {
@@ -2149,11 +2150,138 @@
     location.hash = 'order';
   }
 
+
+  // ---------- Pricing package (2026-11-02): price list (T-07), quote estimate (T-08) and the promotion banner ----------
+  // Every number comes from src/data/settings.json (inlined as window.NK_SETTINGS, edited in /admin/ › Settings). With no
+  // pricing in the file the two tools and the banner do not render at all. Self-contained: remove SET … promoBand(), the
+  // two entries in TL_TOOLS, tlWrap('prices' / 'quote') in views.services, promoBand() in views.home / orderView(), the
+  // data-qc-* lines in the click / input / change handlers, pc: / qc: / promo: in both languages in content.js and the
+  // "Pricing package" rules at the end of page.css.
+  var SET = window.NK_SETTINGS || {};
+  var PRICE = SET.pricing && SET.pricing.hourly && SET.pricing.print ? SET.pricing : null;
+  function pcOn() { return !!(PRICE && (PRICE.hourly.cad || PRICE.hourly.iot || PRICE.print.machineHour || (PRICE.print.materials || []).length)); }
+  function pcMats() { return PRICE ? (PRICE.print.materials || []).filter(function (m) { return m && m.name && +m.perGram > 0; }) : []; }
+  function pcMat(key) { var ms = pcMats(); return ms.filter(function (m) { return m.key === key; })[0] || ms[0] || null; }
+  function pcMoney(n, dec) { // 42 → "42 €", 0.036 → "0,036 €" (SL) / "0.036 €"
+    var d = dec != null ? dec : (Math.abs(n - Math.round(n)) < 0.005 ? 0 : 2), str = (+n).toFixed(d);
+    if (lang === 'sl') str = str.replace('.', ',');
+    return str + ' €';
+  }
+  function pcDate(d) { // 2026-12-31 → 31. 12. 2026
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d || '')); if (!m) return d || '';
+    return lang === 'sl' ? +m[3] + '. ' + +m[2] + '. ' + m[1] : +m[3] + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m[2] - 1] + ' ' + m[1];
+  }
+  function promo() { // the promotion while it runs (pct > 0, text, not past its last day)
+    var pr = SET.promo; if (!pr || !(+pr.pct > 0) || !L(pr.title)) return null;
+    if (pr.until && /^\d{4}-\d{2}-\d{2}$/.test(pr.until) && new Date().toISOString().slice(0, 10) > pr.until) return null;
+    return pr;
+  }
+  function promoBand(cls) {
+    var pr = promo(), x = t().promo; if (!pr) return '';
+    return '<aside class="promo' + (cls ? ' ' + cls : '') + '" aria-label="' + esc(x.label) + '"><span class="nk-tag nk-tag--rev promo-tag">' + esc(x.label) + (pr.until ? ' · ' + esc(x.until.replace('{d}', pcDate(pr.until))) : '') + '</span>' +
+      '<p class="promo-t">' + esc(L(pr.title)) + '</p><p class="promo-x">' + esc(L(pr.text)) + (pr.code ? ' <b>' + esc(pr.code) + '</b>' : '') + '</p>' + btn(x.cta, '#order', 'primary', 'sm', true) + '</aside>';
+  }
+  function pcList() {
+    var x = t().pc, P = PRICE, h = P.hourly, pr = P.print, rows = [], pros = [];
+    SERVICES.forEach(function (s) { if (s.key !== 'print' && +h[s.key] > 0) rows.push([L(s.title), x.perHour.replace('{n}', pcMoney(h[s.key])) + (s.key === 'build' && L(P.buildNote) ? ' · ' + L(P.buildNote) : '')]); });
+    pcMats().forEach(function (m) { pros.push([m.name, x.perGram.replace('{n}', pcMoney(m.perGram, 3)) + (+m.density > 0 ? ' · ' + x.density.replace('{d}', String(m.density).replace('.', lang === 'sl' ? ',' : '.')) : '')]); });
+    if (+pr.machineHour > 0) pros.push([x.machine, x.perHour.replace('{n}', pcMoney(pr.machineHour))]);
+    if (+pr.setup > 0) pros.push([x.setup, pcMoney(pr.setup) + ' ' + x.perOrder]);
+    if (+pr.minPart > 0) pros.push([x.minPart, pcMoney(pr.minPart)]);
+    if (+pr.minOrder > 0) pros.push([x.minOrder, pcMoney(pr.minOrder)]);
+    if (+h.post > 0) pros.push([x.post, x.perHour.replace('{n}', pcMoney(h.post))]);
+    if (+pr.rushPct > 0) pros.push([x.rush, '+' + pr.rushPct + ' %']);
+    var pm = promo();
+    return '<section class="block pc">' + head(x.label, x.title, x.lead) + '<div class="pc-grid">' +
+      '<div class="pc-col"><p class="nk-label">' + esc(x.hourly) + '</p>' + specs(rows) + (+P.minHours > 0 ? '<p class="pc-how">' + esc(x.minHours.replace('{n}', P.minHours)) + '</p>' : '') + (pm ? '<p class="pc-promo"><span class="nk-tag nk-tag--rev">' + esc(x.promoRow) + '</span> ' + esc(L(pm.title)) + (pm.until ? ' · ' + esc(t().promo.until.replace('{d}', pcDate(pm.until))) : '') + '</p>' : '') + '</div>' +
+      '<div class="pc-col"><p class="nk-label">' + esc(x.printing) + '</p>' + specs(pros) + '<p class="pc-how">' + esc(x.printHow) + '</p></div></div>' +
+      '<p class="fit-note">' + esc(L(P.vatNote) || '') + '</p><p class="pl-open"><a href="#services?tool=quote">' + esc(x.calc) + ' →</a></p></section>';
+  }
+  // Quote estimate: state.qc holds what the visitor typed; qcCalc() applies the published rates and minimums.
+  state.qc = { cad: 0, iot: 0, build: 0, print: 0, cadH: '', iotH: '', buildH: '', mat: '', g: '', h: '', qty: '1', postH: '', rush: 0, first: 1, src: '' };
+  function qcNum(v) { var n = parseFloat(String(v).replace(',', '.')); return isFinite(n) && n > 0 ? n : 0; }
+  function qcCalc() {
+    var q = state.qc, P = PRICE, x = t().qc, rows = [], total = 0, notes = [];
+    if (!P) return null;
+    [['cad', 'cadH'], ['iot', 'iotH'], ['build', 'buildH']].forEach(function (k) {
+      if (!q[k[0]] || !(+P.hourly[k[0]] > 0)) return;
+      var hrs = qcNum(q[k[1]]); if (!hrs) return;
+      if (+P.minHours > 0 && hrs < +P.minHours) hrs = +P.minHours;
+      var c = hrs * +P.hourly[k[0]], sv = SERVICES.filter(function (s) { return s.key === k[0]; })[0];
+      rows.push([L(sv.title) + ' · ' + hrs + ' h', c]); total += c;
+    });
+    if (q.print) {
+      var m = pcMat(q.mat), g = qcNum(q.g), hh = qcNum(q.h), qty = Math.max(1, Math.round(qcNum(q.qty) || 1)), pr = P.print;
+      if (g || hh) {
+        var part = g * (m ? +m.perGram : 0) + hh * (+pr.machineHour || 0);
+        if (+pr.minPart > 0 && part < +pr.minPart) { part = +pr.minPart; notes.push(x.minPartApplied); }
+        var pc = part * qty, lbl = (m ? m.name + ' · ' : '') + (g ? g + ' g' : '') + (g && hh ? ' + ' : '') + (hh ? hh + ' h' : '') + (qty > 1 ? ' × ' + qty : '');
+        if (q.rush && +pr.rushPct > 0) { pc *= 1 + pr.rushPct / 100; lbl += ' · +' + pr.rushPct + ' %'; }
+        rows.push([L(SERVICES[1].title) + ' · ' + lbl, pc]); total += pc;
+        if (+pr.setup > 0) { rows.push([t().pc.setup, +pr.setup]); total += +pr.setup; }
+      }
+      var ph = qcNum(q.postH); if (ph && +P.hourly.post > 0) { rows.push([t().pc.post + ' · ' + ph + ' h', ph * +P.hourly.post]); total += ph * +P.hourly.post; }
+    }
+    if (!rows.length) return null;
+    if (+P.print.minOrder > 0 && total < +P.print.minOrder) { total = +P.print.minOrder; notes.push(x.minApplied); }
+    var pm = promo(), disc = 0;
+    if (pm && q.first && (pm.scope === 'all' || pm.scope === 'first' || (pm.scope === 'print' && q.print))) disc = Math.round(total * pm.pct) / 100;
+    return { rows: rows, total: Math.round(total * 100) / 100, disc: disc, after: Math.round((total - disc) * 100) / 100, notes: notes, promo: pm };
+  }
+  function qcOut(c) {
+    var x = t().qc; if (!c) return '<p class="hint">' + esc(x.empty) + '</p>';
+    return '<p class="nk-label">' + esc(x.rows) + '</p><dl class="nk-specs qc-rows">' + c.rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(pcMoney(r[1], 2)) + '</dd></div>'; }).join('') + '</dl>' +
+      '<p class="qc-total"><span class="nk-label">' + esc(x.total) + '</span><b>' + esc('≈ ' + pcMoney(c.disc ? c.after : c.total, 2)) + '</b>' + (c.disc ? '<span class="qc-was">' + esc(pcMoney(c.total, 2)) + ' → −' + esc(pcMoney(c.disc, 2)) + ' ' + esc(x.withPromo) + '</span>' : '') + '</p>' +
+      (c.notes.length ? '<p class="qc-notes">' + c.notes.map(esc).join(' · ') + '</p>' : '');
+  }
+  function qcText(c) {
+    var x = t().qc; if (!c) return '';
+    return x.brief + ': ' + c.rows.map(function (r) { return r[0] + ' ' + pcMoney(r[1], 2); }).join('; ') + ' → ≈ ' + pcMoney(c.disc ? c.after : c.total, 2) + (c.disc ? ' (' + x.withPromo + ' −' + pcMoney(c.disc, 2) + ')' : '') + '.';
+  }
+  function qcBox() {
+    var x = t().qc, q = state.qc, P = PRICE, c = qcCalc(), pm = promo();
+    var chk = function (k, label, extra) { return '<div class="qc-svc"><label class="nk-choice qc-choice"><input type="checkbox" data-qc-k="' + k + '"' + (q[k] ? ' checked' : '') + '><span class="nk-choice__t">' + esc(label) + '</span></label>' + (q[k] ? extra : '') + '</div>'; };
+    var num = function (k, label, unit, attrs, hint) { return '<div class="nk-field"><label class="nk-field__label" for="qc-' + k + '">' + esc(label) + (unit ? ' · ' + esc(unit) : '') + '</label><input class="nk-input" id="qc-' + k + '" data-qc-f="' + k + '" type="number" inputmode="decimal" min="0" ' + (attrs || 'step="0.5"') + ' value="' + esc(q[k]) + '">' + (hint ? '<span class="nk-field__hint">' + esc(hint) + '</span>' : '') + '</div>'; };
+    var svcs = '';
+    SERVICES.forEach(function (s) {
+      if (s.key === 'print') { if (+P.print.machineHour > 0 || pcMats().length) svcs += chk('print', L(s.title), '<div class="qc-print"><div class="nk-field"><label class="nk-field__label" for="qc-mat">' + esc(t().pc.material) + '</label><select class="nk-input" id="qc-mat" data-qc-f="mat">' + pcMats().map(function (m) { return '<option value="' + esc(m.key) + '"' + (pcMat(q.mat) === m ? ' selected' : '') + '>' + esc(m.name) + '</option>'; }).join('') + '</select></div>' + num('g', x.weight, x.grams, 'step="1"', q.src ? x.fromStudio : x.weightHint) + num('h', x.printHours, x.h, 'step="0.25"') + num('qty', x.qty, '', 'step="1" inputmode="numeric" min="1"') + (+P.hourly.post > 0 ? num('postH', x.postHours, x.h) : '') + (+P.print.rushPct > 0 ? '<label class="ad-check qc-check"><input type="checkbox" data-qc-k="rush"' + (q.rush ? ' checked' : '') + '> ' + esc(x.rush.replace('{n}', P.print.rushPct)) + '</label>' : '') + '</div>'); }
+      else if (+P.hourly[s.key] > 0) svcs += chk(s.key, L(s.title), num(s.key + 'H', x.hours, x.h));
+    });
+    return '<section class="block qc">' + head(x.label, x.title, x.lead) + '<div class="fit-grid"><div class="fit-form"><p class="nk-label">' + esc(x.services) + '</p><div class="qc-svcs">' + svcs + '</div>' +
+      (pm ? '<label class="ad-check qc-check qc-first"><input type="checkbox" data-qc-k="first"' + (q.first ? ' checked' : '') + '> ' + esc(x.first.replace('{n}', pm.pct)) + '</label>' : '') +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-qc-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-qc-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><span class="copy-msg" id="qc-msg" role="status"></span></div>' +
+      '<p class="fit-note">' + esc(x.note.replace('{vat}', L(P.vatNote) || '')) + '</p></div>' +
+      '<div class="fit-out qc-out" id="qc-out" role="status" aria-live="polite">' + qcOut(c) + '</div></div></section>';
+  }
+  function qcUpdate(full) {
+    if (full) { var sec = document.querySelector('.qc'); if (sec) { var f = document.activeElement && document.activeElement.id; sec.outerHTML = qcBox(); if (f) { var el = document.getElementById(f); if (el) el.focus(); } } return; }
+    var c = qcCalc(), o = document.getElementById('qc-out'); if (o) o.innerHTML = qcOut(c);
+    ['data-qc-go', 'data-qc-copy'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
+  }
+  function qcSet(o) { // the Part studio hands over material, weight, print time and quantity before the link opens the tool
+    var q = state.qc; q.print = 1; if (o.mat) q.mat = o.mat; if (o.g) q.g = String(Math.round(o.g)); if (o.h) q.h = String(Math.round(o.h * 4) / 4); if (o.qty) q.qty = String(o.qty); q.src = 'studio';
+  }
+  function qcCopy() {
+    var c = qcCalc(), msg = document.getElementById('qc-msg'), x = t().qc; if (!c || !msg) return;
+    var fail = function () { msg.textContent = x.copyFail; };
+    try { navigator.clipboard.writeText(qcText(c)).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+  }
+  function qcToOrder() {
+    var c = qcCalc(), q = state.qc, o = state.order, x = t().qc; if (!c) return;
+    ['cad', 'iot', 'build', 'print'].forEach(function (k) { if (q[k] && o.services.indexOf(k) < 0) o.services.push(k); });
+    if (q.print) { var m = pcMat(q.mat), mm = m && MP_MATS.filter(function (v) { return v.id === m.key; })[0]; if (mm) o.mat = mm.o; var qty = Math.round(qcNum(q.qty)); if (qty > 0) o.qty = String(qty); }
+    var line = qcText(c);
+    if (o.what.indexOf(x.brief + ':') < 0) o.what = o.what ? o.what + '\n' + line : line;
+    else o.what = o.what.split('\n').map(function (l) { return l.indexOf(x.brief + ':') === 0 ? line : l; }).join('\n');
+    state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+
   // ---------- Tools on #services: index of the five tools, deep links #services?tool=plan|fit|file|material|prep ----------
   // Added 2026-10-29 (#services tools package). Only links and scrolling; the tools themselves are unchanged.
   // To remove: TL_TOOLS … tlGo(), the tlIndex() / tlWrap() calls in views.services, tlHome() in views.home, the state.tool
   // line in page(), the tlGo line in render(), tl: in both languages in content.js and the "Tools index" rules in page.css.
-  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']]; // [link name, content key, section id]
+  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']].concat(pcOn() ? [['prices', 'pc', 'prices'], ['quote', 'qc', 'quote']] : []); // [link name, content key, section id]; the two pricing tools only with a price list in settings.json
   function tlHash(k) { return '#services?tool=' + k; }
   function tlIndex() {
     var x = t().tl;
@@ -2336,6 +2464,7 @@
   function estimate() {
     var o = state.order, x = t(), rows = [];
     SERVICES.forEach(function (s) { if (o.services.indexOf(s.key) >= 0) rows.push([L(s.title), s.time ? L(s.time) : x.onRequest]); });
+    var pm = promo(); if (pm) rows.push([t().promo.label, L(pm.title)]); // Pricing package (2026-11-02)
     return specs(rows);
   }
   function briefText() {
@@ -2419,6 +2548,8 @@
     if (th && location.hash === th[0]) { ev.preventDefault(); tlGo(th[1]); return; }
     if (el.hasAttribute('data-fit-go')) { fitToOrder(); return; }
     if (el.hasAttribute('data-pb-go')) { pbToOrder(); return; }
+    if (el.hasAttribute('data-qc-go')) { qcToOrder(); return; } // Pricing package (2026-11-02)
+    if (el.hasAttribute('data-qc-copy')) { qcCopy(); return; }
     if (el.hasAttribute('data-pb-copy')) { pbCopy(); return; }
     if (el.dataset.pbLay) { pbLay(el.dataset.pbLay); return; }
     if (el.hasAttribute('data-pb-fit')) { var pbr = fitCalc(); pbSet(pbr ? pbr.o : [fitNum(state.fit.l), fitNum(state.fit.w), fitNum(state.fit.h)]); } // the link itself opens the tool
@@ -2523,6 +2654,8 @@
     drSave();
   });
   app.addEventListener('input', function (ev) { var pbf = ev.target.dataset && ev.target.dataset.pbF; if (pbf) { state.pb[pbf] = ev.target.value; pbUpdate(); } }); // Batch on the plate (2026-10-30)
+  app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.qcF; if (k && ev.target.tagName !== 'SELECT') { state.qc[k] = ev.target.value; state.qc.src = ''; qcUpdate(); } }); // Quote estimate (2026-11-02)
+  app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.qcK) { state.qc[d.qcK] = ev.target.checked ? 1 : 0; qcUpdate(true); } else if (d.qcF === 'mat') { state.qc.mat = ev.target.value; qcUpdate(); } });
   app.addEventListener('input', function (ev) { if (ev.target.hasAttribute('data-st-sp-deg')) { state.sp.deg = ev.target.value; spUpdate(); } }); // Support check (2026-10-31)
   // File check: drop a file on the box; the views follow the light/dark theme.
   app.addEventListener('dragover', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop'); if (!d) return; ev.preventDefault(); d.classList.add('is-over'); });

@@ -62,9 +62,9 @@ var T = {
     sending: 'Sending…', sentTag: 'Sent', sentTitle: 'Thanks — your project is on my desk.', sentBody: 'I reply with a fixed-price quote or an hourly estimate within 48 hours. A copy of what you sent is below.', sendFail: 'Sending didn\u2019t work. Copy the brief below and send it to me directly.', sendLimited: 'Too many requests from this connection. Wait a few minutes, or copy the brief and send it directly.',
     with3d: '3D models', viewerLabel: '3D model', loading3d: 'Loading 3D model…', viewerHint: 'Drag to rotate · scroll or pinch to zoom · right-drag to pan', viewerFail: 'The 3D model could not be loaded.', pCategory: 'Category', pYear: 'Year', pMaterials: 'Materials', pModel: '3D model', interactive: 'Interactive preview', photos: 'Photos', openPhoto: 'Open photo', lbClose: 'Close', lbPrev: 'Previous photo', lbNext: 'Next photo', allWork: 'All work', nextProject: 'Next project',
     skip: 'Skip to content',
-    tl: { label: 'Tools · T-01 … T-07', title: 'Check it yourself first', lead: 'Seven free tools — six on this page and the Part studio. They work in your browser and can fill in the order form for you.',
+    tl: { label: 'Tools · T-01 … T-09', title: 'Check it yourself first', lead: 'Nine free tools — eight on this page and the Part studio. They work in your browser and can fill in the order form for you.',
       plan: 'Three questions → the services you need', fit: 'Part size against the X2D build volume', file: 'Size, volume and fit of your STL / 3MF / OBJ', material: 'What the part must handle → a material', prep: 'What to have ready before you write',
-      plate: 'Parts per plate and plates for the whole batch',
+      plate: 'Parts per plate and plates for the whole batch', prices: 'Published hourly rates and 3D printing prices', quote: 'Hours or weight → an indicative price',
       back: 'All tools', home: 'Check it yourself first' },
     // What to prepare on #services (prepBox in app.js): combines the SERVICES[].need lists.
     prep: { label: 'Checklist · S-01 … S-04', title: 'What to prepare', lead: 'Pick the services you need. The list puts together what each of them needs from you, so the first message already has everything.',
@@ -79,6 +79,17 @@ var T = {
     // Screen-reader labels (nav, language switch, filters, logo link).
     // Project planner on #services (plBox in app.js): three questions → services, turnaround, fit, brief handed to #order.
     // Batch on the plate on #services (pbBox in app.js, 2026-10-30): copies of one footprint on the 256 × 256 mm X2D plate.
+    // Pricing package (2026-11-02): price list, quote calculator, promo banner. Numbers come from src/data/settings.json (admin › Settings).
+    pc: { label: 'Price list · NK-C', title: 'What does it cost?', lead: 'Published rates, so you know where you stand before you write. Every job still gets a fixed quote after a look at your files.',
+      hourly: 'Hourly rates', perHour: '{n} / h', minHours: 'Minimum {n} h', build: 'Full custom builds', printing: '3D printing', material: 'Material', perGram: '{n} / g', density: 'density {d} g/cm³',
+      machine: 'Machine time', setup: 'File preparation', perOrder: 'per order', minPart: 'Minimum per part', minOrder: 'Minimum order', rush: 'Rush (within 48 h)', post: 'Post-processing', printHow: 'Price per part = material (weight × price per gram) + machine time + file preparation per order, never below the minimums.',
+      calc: 'Estimate your job', promoRow: 'Promotion' },
+    qc: { label: 'Quote estimate · NK-Q', title: 'Estimate your job', lead: 'Tick what you need, enter hours or weight, and see an indicative price from the published rates. The real quote may differ — this is a starting point, not an offer.',
+      services: 'Services', hours: 'Hours', weight: 'Weight per part', grams: 'g', printHours: 'Print time per part', h: 'h', qty: 'Quantity', postHours: 'Post-processing', rush: 'Rush — within 48 h (+{n} %)', first: 'My first order (promotion −{n} %)',
+      empty: 'Tick a service and enter hours or a weight. The estimate appears here.', rows: 'Breakdown', total: 'Indicative total', withPromo: 'with the promotion', minApplied: 'minimum order applied', minPartApplied: 'minimum per part applied',
+      weightHint: 'From the Part studio or your slicer. Not sure? Leave it — the quote will fill it in.', go: 'Start a project with this estimate', copy: 'Copy estimate', copied: 'Estimate copied.', copyFail: 'Copy failed — select the text and copy it by hand.',
+      brief: 'Estimate', note: 'Indicative only: the final price depends on the part, the material and the finish and is confirmed in the quote. {vat}', fromStudio: 'Weight and print time from the Part studio' },
+    promo: { label: 'Promotion', until: 'until {d}', cta: 'Start a project', code: 'Mention it in your brief.' },
     pb: { label: 'Batch on the plate · Bambu Lab X2D', title: 'How many fit on one plate?', lead: 'Enter the footprint of your part and how many you need. The parts are laid out on the 256 × 256 mm X2D plate — as entered, turned by 90° or mixed — and the plates for the whole batch are counted.',
       x: 'Footprint X', y: 'Footprint Y', z: 'Height', qty: 'Quantity', gap: 'Gap between parts', empty: 'Enter the footprint, X and Y, in millimetres. The gap and the quantity are yours to set.',
       noFit: 'Too big for the plate', tooBig: 'The footprint is {d} mm over the 256 mm plate even when turned. Try it standing in the fit check, or describe the part in the brief — big parts are often printed in sections.',
@@ -235,9 +246,9 @@ var T = {
     sending: 'Pošiljam…', sentTag: 'Poslano', sentTitle: 'Hvala — vaš projekt je na moji mizi.', sentBody: 'V 48 urah odgovorim s ponudbo s fiksno ceno ali urno oceno. Spodaj je kopija poslanega.', sendFail: 'Pošiljanje ni uspelo. Kopirajte povzetek spodaj in mi ga pošljite neposredno.', sendLimited: 'Preveč zahtevkov s te povezave. Počakajte nekaj minut ali kopirajte povzetek in mi ga pošljite.',
     with3d: '3D modeli', viewerLabel: '3D model', loading3d: 'Nalagam 3D model…', viewerHint: 'Povlecite za vrtenje · kolešček ali prsta za povečavo · desni klik za premik', viewerFail: '3D modela ni bilo mogoče naložiti.', pCategory: 'Področje', pYear: 'Leto', pMaterials: 'Materiali', pModel: '3D model', interactive: 'Interaktivni predogled', photos: 'Fotografije', openPhoto: 'Odpri fotografijo', lbClose: 'Zapri', lbPrev: 'Prejšnja fotografija', lbNext: 'Naslednja fotografija', allWork: 'Vsi projekti', nextProject: 'Naslednji projekt',
     skip: 'Preskoči na vsebino',
-    tl: { label: 'Orodja · T-01 … T-07', title: 'Najprej preverite sami', lead: 'Sedem brezplačnih orodij — šest na tej strani in Studio dela. Delujejo v vašem brskalniku in lahko namesto vas izpolnijo obrazec za naročilo.',
+    tl: { label: 'Orodja · T-01 … T-09', title: 'Najprej preverite sami', lead: 'Devet brezplačnih orodij — osem na tej strani in Studio dela. Delujejo v vašem brskalniku in lahko namesto vas izpolnijo obrazec za naročilo.',
       plan: 'Tri vprašanja → storitve, ki jih potrebujete', fit: 'Velikost dela glede na delovni prostor X2D', file: 'Velikost, prostornina in ustreznost vaše datoteke STL / 3MF / OBJ', material: 'Kaj mora del zdržati → material', prep: 'Kaj pripraviti, preden mi pišete',
-      plate: 'Kosov na mizo in miz za celotno serijo',
+      plate: 'Kosov na mizo in miz za celotno serijo', prices: 'Objavljene urne postavke in cene 3D tiska', quote: 'Ure ali teža → okvirna cena',
       back: 'Vsa orodja', home: 'Najprej preverite sami' },
     prep: { label: 'Seznam · S-01 … S-04', title: 'Kaj pripraviti', lead: 'Izberite storitve, ki jih potrebujete. Seznam združi, kaj vsaka od njih potrebuje od vas, da ima že prvo sporočilo vse.',
       pick: 'Storitve', none: 'Izberite vsaj eno storitev in prikaže se seznam.', count: 'Pripravljeno: {n} od {t}', all: 'Vse je pripravljeno — začnite projekt.', go: 'Začni projekt s temi storitvami', copy: 'Kopiraj seznam', copied: 'Seznam je kopiran.', copyFail: 'Kopiranje ni uspelo — označite seznam in ga kopirajte ročno.', head: 'Kaj pripraviti' },
@@ -249,6 +260,17 @@ var T = {
       cta: 'Začni projekt s to velikostjo', brief: 'Velikost dela' },
     // Načrtovalnik projekta na #services (plBox v app.js).
     // Serija na mizi na #services (pbBox v app.js, 2026-10-30).
+    // Paket cen (2026-11-02): cenik, kalkulator ponudbe, akcija. Številke so v src/data/settings.json (admin › Settings).
+    pc: { label: 'Cenik · NK-C', title: 'Koliko stane?', lead: 'Objavljene postavke, da veste, kje ste, še preden pišete. Vsako naročilo vseeno dobi fiksno ponudbo po pregledu vaših datotek.',
+      hourly: 'Urne postavke', perHour: '{n} / h', minHours: 'Najmanj {n} h', build: 'Celoten izdelek po meri', printing: '3D tisk', material: 'Material', perGram: '{n} / g', density: 'gostota {d} g/cm³',
+      machine: 'Čas stroja', setup: 'Priprava datoteke', perOrder: 'na naročilo', minPart: 'Najmanj na kos', minOrder: 'Najmanjše naročilo', rush: 'Nujno (do 48 h)', post: 'Obdelava po tisku', printHow: 'Cena kosa = material (teža × cena na gram) + čas stroja + priprava datoteke na naročilo, nikoli pod najmanjšimi zneski.',
+      calc: 'Ocenite svoje naročilo', promoRow: 'Akcija' },
+    qc: { label: 'Ocena ponudbe · NK-Q', title: 'Ocenite svoje naročilo', lead: 'Označite, kaj potrebujete, vpišite ure ali težo in dobite okvirno ceno po objavljenem ceniku. Prava ponudba se lahko razlikuje — to je izhodišče, ne ponudba.',
+      services: 'Storitve', hours: 'Ure', weight: 'Teža na kos', grams: 'g', printHours: 'Čas tiska na kos', h: 'h', qty: 'Količina', postHours: 'Obdelava po tisku', rush: 'Nujno — do 48 h (+{n} %)', first: 'Moje prvo naročilo (akcija −{n} %)',
+      empty: 'Označite storitev in vpišite ure ali težo. Ocena se prikaže tukaj.', rows: 'Razčlenitev', total: 'Okvirni znesek', withPromo: 'z akcijo', minApplied: 'upoštevano najmanjše naročilo', minPartApplied: 'upoštevan najmanjši znesek na kos',
+      weightHint: 'Iz Studia dela ali vašega rezalnika. Ne veste? Pustite prazno — dopolnimo v ponudbi.', go: 'Začni projekt s to oceno', copy: 'Kopiraj oceno', copied: 'Ocena je kopirana.', copyFail: 'Kopiranje ni uspelo — označite besedilo in ga kopirajte ročno.',
+      brief: 'Ocena', note: 'Samo okvirno: končna cena je odvisna od dela, materiala in obdelave in jo potrdimo v ponudbi. {vat}', fromStudio: 'Teža in čas tiska iz Studia dela' },
+    promo: { label: 'Akcija', until: 'do {d}', cta: 'Začni projekt', code: 'Omenite jo v povzetku.' },
     pb: { label: 'Serija na mizi · Bambu Lab X2D', title: 'Koliko kosov gre na eno mizo?', lead: 'Vpišite tloris svojega dela in koliko kosov potrebujete. Deli se razporedijo po mizi X2D (256 × 256 mm) — kot so vpisani, zasukani za 90° ali mešano — in preštejejo se mize za celotno serijo.',
       x: 'Tloris X', y: 'Tloris Y', z: 'Višina', qty: 'Količina', gap: 'Razmik med deli', empty: 'Vpišite tloris, X in Y, v milimetrih. Razmik in količino določite sami.',
       noFit: 'Prevelik za mizo', tooBig: 'Tloris presega mizo 256 mm za {d} mm tudi zasukan. Preverite pokončno lego v preverjanju velikosti ali del opišite v povpraševanju — velike dele pogosto tiskam po kosih.',

@@ -10,6 +10,7 @@ import content from './content.js?raw';
 import app from './app.js?raw';
 import projects from '../data/projects.json';
 import news from '../data/news.json';
+import settings from '../data/settings.json'; // pricing, print parameters, promo, gift cards, FAQ — edited in /admin/ › Settings (2026-11-02)
 import { createHash } from 'node:crypto';
 
 // Landing pages (2026-11-01): the same site rendered once more per published project (/portfolio/<slug>/, /sl/portfolio/
@@ -30,7 +31,7 @@ const altSl = landing ? 'https://nacekepa.work/sl' + landing.replace(/^\/sl/, ''
 const landingOf = (kind: 'p' | 'n', slug: string, sl = SL) => 'https://nacekepa.work' + (sl ? '/sl' : '') + (kind === 'p' ? '/portfolio/' : '/news/') + slug + '/';
 const endpoint = (import.meta.env.PUBLIC_ORDER_ENDPOINT || '').trim();
 const contactEmail = 'kepanace@gmail.com';
-const projectsJs = 'window.NK_PROJECTS = ' + JSON.stringify(projects).replace(/</g, '\\u003c') + ';\nwindow.NK_NEWS = ' + JSON.stringify(news).replace(/</g, '\\u003c') + ';';
+const projectsJs = 'window.NK_PROJECTS = ' + JSON.stringify(projects).replace(/</g, '\\u003c') + ';\nwindow.NK_NEWS = ' + JSON.stringify(news).replace(/</g, '\\u003c') + ';\nwindow.NK_SETTINGS = ' + JSON.stringify(settings).replace(/</g, '\\u003c') + ';';
 // Refuse to run inside another site's frame (clickjacking); GitHub Pages can't send X-Frame-Options.
 const frameGuard = 'if (window.top !== window.self) { document.documentElement.style.display = "none"; try { window.top.location.replace(window.self.location.href); } catch (e) {} }';
 let script = [frameGuard, drawings, content, projectsJs, app.split('__ORDER_ENDPOINT__').join(endpoint || '__ORDER_ENDPOINT__').split('__CONTACT_EMAIL__').join(contactEmail)].join('\n');

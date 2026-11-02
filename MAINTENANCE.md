@@ -20,6 +20,44 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-11-02 (big update — Nace asked for "everything except content": prices, studio 2.0, admin dashboard, blog, SEO, my corner, promotion, gift cards)
+
+Shipped in parts, each built, tested in Playwright and pushed on its own. Nace confirmed every number below live in the chat
+(price list proposed from 3dstudio.si / 3dnaklik.si / 2026 rate guides, then "+20 %"; print parameters; the −15 % first-order
+promotion until 31 Dec 2026; gift-card amounts 30 / 50 / 100 € + custom). The Cloudflare Worker was NOT touched (his choice:
+no file upload with the brief).
+
+### Part 1 — settings.json + admin "Settings" tab + price list, quote estimate, promotion banner
+
+- `src/data/settings.json` (new, inlined as `window.NK_SETTINGS` by `Site.astro`): `pricing` (hourly cad 42 / iot 48 / build 48 /
+  post 36 €, minHours 1, print: machineHour 3.6, setup 6, minPart 6, minOrder 18, rushPct 25, materials PLA 0.036 · PETG 0.036 ·
+  TPU 95A 0.06 · ABS 0.048 · ASA 0.048 · PA 0.084 · PA-CF 0.132 · PC 0.096 €/g with densities), `printing` (layer 0.2 mm, infill
+  15 %, walls 3, rateCm3h 12), `promo` (−15 %, scope first, until 2026-12-31, EN/SL title + text), `gift` (30/50/100, min 20,
+  12 months), `faq` (empty), `links.gbp` (empty).
+- Admin › **Settings** tab (`admin.js`: `SETTINGS_PATH`, `stNormal()` … `stAct()`, `.st-*` in `admin.css`): every number and
+  text above as a form (materials table with add/remove, FAQ list with add/remove/move, gift amounts), published with the
+  same commit as projects/news (`settings` in the commit summary); the head-check also compares the settings sha.
+  `stClean()` writes numbers as numbers and drops empty values, so an empty field hides the feature on the site.
+- Site (`app.js` "Pricing package", `pc:` / `qc:` / `promo:` in `content.js`, "Pricing package" rules in `page.css`):
+  - **Price list** `#services?tool=prices` (T-07, `pcList()`): hourly rates, "Minimum 1 h", the promotion row, 3D printing
+    per gram + density, machine time, file preparation, minimums, post-processing, rush, the formula line, VAT note.
+  - **Quote estimate** `#services?tool=quote` (T-08, `qcBox()` / `qcCalc()`): tick services, hours per service (minHours
+    applied), 3D printing: material, weight, print time, quantity, post-processing hours, rush; "My first order" applies the
+    promotion; breakdown + indicative total (+ "was → −discount with the promotion"), minimum-per-part / minimum-order notes;
+    "Copy estimate"; "Start a project with this estimate" ticks the services, sets quantity + material and puts one
+    "Estimate: …" line into the brief. `qcSet()` is the hand-off the Part studio uses (part 2).
+  - **Promotion banner** (`promoBand()`): on the home page under the hero, in the price list, in the estimate; the brief's
+    "Indicative turnaround" box gets a "Promotion" row. Disappears by itself after `promo.until`.
+  - Tools index is now T-01 … T-09 (the two new tools only exist when `settings.json` has prices — `pcOn()`).
+- Tested: price list + estimate in EN/SL, 1280/390, light/dark (3 h CAD + 3 × PETG 120 g / 4 h rush → 202.20 €, −15 % →
+  171.87 €; copy; hand-off to the order form with services, qty 3, material PETG and the brief line); the admin Settings tab
+  against a mocked GitHub API (sign-in, edit, add FAQ + material + gift amount, Publish → `settings.json` in the commit tree
+  with numbers as numbers, FAQ saved, nav counts); full audit of every page: no errors, no horizontal scroll.
+*To remove part 1:* delete `src/data/settings.json` and its import/inline in `Site.astro`, the "Pricing package" block +
+TL_TOOLS entries + `promoBand()` calls + `data-qc-*` handler lines in `app.js`, `pc:` / `qc:` / `promo:` + the `prices` /
+`quote` tool lines (and T-01 … T-09 → T-07) in `content.js`, the "Pricing package" CSS, and the Settings tab in `admin.js` /
+`admin.css` (see the comment above `isSet`).
+
 ## 2026-11-01
 
 **Checked:** build, home, #services (all tools incl. `?tool=index` / `?tool=plate`), #work, #work?view=list, #p-famfive,

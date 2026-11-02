@@ -10,6 +10,7 @@ const REPO = 'nace-kepa-site';
 const BRANCH = 'main';
 const DATA_PATH = 'src/data/projects.json';
 const NEWS_PATH = 'src/data/news.json';
+const SETTINGS_PATH = 'src/data/settings.json'; // pricing, print parameters, promotion, gift cards, FAQ, links (Settings tab, 2026-11-02)
 const PUBLIC_DIR = 'public/';
 const MAX_MODEL = 50 * 1024 * 1024;
 const MAX_PHOTO_EDGE = 2000;
@@ -26,6 +27,7 @@ const S = {
   headSha: null, dataSha: null,
   projects: [], savedJson: '',
   news: [], savedNews: '[]\n', newsSha: null, selNews: null,
+  settings: null, savedSettings: '', settingsSha: null,
   tab: 'projects',
   sel: null, query: '',
   uploads: new Map(),   // repoPath -> File|Blob
@@ -47,8 +49,9 @@ const isTodo = () => S.tab === 'todo';
 const cur = () => isNews() ? (S.news.find((n) => n.slug === S.selNews) || null) : (S.projects.find((p) => p.slug === S.sel) || null);
 const projectsChanged = () => JSON.stringify(S.projects, null, 2) + '\n' !== S.savedJson;
 const newsChanged = () => JSON.stringify(S.news, null, 2) + '\n' !== S.savedNews;
-const dirty = () => projectsChanged() || newsChanged() || S.uploads.size > 0 || S.deletes.size > 0;
-const changeCount = () => S.uploads.size + S.deletes.size + (projectsChanged() ? 1 : 0) + (newsChanged() ? 1 : 0);
+const settingsChanged = () => !!S.settings && JSON.stringify(S.settings, null, 2) + '\n' !== S.savedSettings;
+const dirty = () => projectsChanged() || newsChanged() || settingsChanged() || S.uploads.size > 0 || S.deletes.size > 0;
+const changeCount = () => S.uploads.size + S.deletes.size + (projectsChanged() ? 1 : 0) + (newsChanged() ? 1 : 0) + (settingsChanged() ? 1 : 0);
 const today = () => new Date().toISOString().slice(0, 10);
 const sortNews = (list) => list.slice().sort((x, y) => (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0) || String(y.date).localeCompare(String(x.date)));
 
@@ -257,14 +260,21 @@ async function getNews(ref) {
   try { return await gh(repo(`/contents/${NEWS_PATH}?ref=${ref}`)); }
   catch (e) { if (e.status === 404) return null; throw e; }
 }
+async function getSettings(ref) {
+  try { return await gh(repo(`/contents/${SETTINGS_PATH}?ref=${ref}`)); }
+  catch (e) { if (e.status === 404) return null; throw e; }
+}
 
 async function load() {
   S.busy = 'Loading projects and news…'; render();
   const ref = await gh(repo(`/git/ref/heads/${BRANCH}`));
-  const [file, news] = await Promise.all([gh(repo(`/contents/${DATA_PATH}?ref=${ref.object.sha}`)), getNews(ref.object.sha)]);
+  const [file, news, sf] = await Promise.all([gh(repo(`/contents/${DATA_PATH}?ref=${ref.object.sha}`)), getNews(ref.object.sha), getSettings(ref.object.sha)]);
   S.headSha = ref.object.sha;
   S.dataSha = file.sha;
   S.newsSha = news ? news.sha : null;
+  S.settingsSha = sf ? sf.sha : null;
+  S.settings = stNormal(sf ? JSON.parse(b64ToUtf8(sf.content)) : {});
+  S.savedSettings = sf ? JSON.stringify(S.settings, null, 2) + '\n' : '';
   S.projects = JSON.parse(b64ToUtf8(file.content));
   S.savedJson = JSON.stringify(S.projects, null, 2) + '\n';
   S.news = news ? JSON.parse(b64ToUtf8(news.content)) : [];
@@ -306,8 +316,8 @@ async function publish() {
     const ref = await gh(repo(`/git/ref/heads/${BRANCH}`));
     const head = ref.object.sha;
     if (head !== S.headSha) {
-      const [f, nf] = await Promise.all([gh(repo(`/contents/${DATA_PATH}?ref=${head}`)), getNews(head)]);
-      if (f.sha !== S.dataSha || (nf ? nf.sha : null) !== S.newsSha) throw new Error('Projects or news were changed somewhere else since you opened the dashboard. Copy anything you need, then press “Reload”.');
+      const [f, nf, sf2] = await Promise.all([gh(repo(`/contents/${DATA_PATH}?ref=${head}`)), getNews(head), getSettings(head)]);
+      if (f.sha !== S.dataSha || (nf ? nf.sha : null) !== S.newsSha || (sf2 ? sf2.sha : null) !== S.settingsSha) throw new Error('Projects, news or settings were changed somewhere else since you opened the dashboard. Copy anything you need, then press “Reload”.');
     }
     const base = await gh(repo(`/git/commits/${head}`));
     const clean = S.projects.map(({ _new, _slugTouched, ...p }) => (p.model ? { ...p, model: { file: p.model.file, format: p.model.format, size: p.model.size, triangles: p.model.triangles } } : p));
@@ -317,6 +327,8 @@ async function publish() {
     const tree = [];
     if (projectsChanged()) tree.push({ path: DATA_PATH, mode: '100644', type: 'blob', content: json });
     if (newsChanged()) tree.push({ path: NEWS_PATH, mode: '100644', type: 'blob', content: newsJson });
+    const settingsJson = S.settings ? JSON.stringify(stClean(S.settings), null, 2) + '\n' : '';
+    if (settingsChanged()) tree.push({ path: SETTINGS_PATH, mode: '100644', type: 'blob', content: settingsJson });
 
     let i = 0;
     for (const [path, file] of S.uploads) {
@@ -338,9 +350,11 @@ async function publish() {
     S.news = cleanNews;
     S.savedNews = newsJson;
     S.headSha = commit.sha;
-    const [df, nf] = await Promise.all([gh(repo(`/contents/${DATA_PATH}?ref=${commit.sha}`)), getNews(commit.sha)]);
+    if (S.settings) { S.settings = stNormal(stClean(S.settings)); S.savedSettings = JSON.stringify(S.settings, null, 2) + '\n'; }
+    const [df, nf, sf3] = await Promise.all([gh(repo(`/contents/${DATA_PATH}?ref=${commit.sha}`)), getNews(commit.sha), getSettings(commit.sha)]);
     S.dataSha = df.sha;
     S.newsSha = nf ? nf.sha : null;
+    S.settingsSha = sf3 ? sf3.sha : null;
     S.uploads.forEach((f) => f._url && URL.revokeObjectURL(f._url));
     S.uploads.clear(); S.deletes.clear();
     S.busy = '';
@@ -372,6 +386,7 @@ function summarize() {
   const addedNews = S.news.filter((n) => !nb.has(n.slug)).map((n) => n.title.en || n.slug);
   if (addedNews.length) parts.push('news: ' + addedNews.join(', '));
   else if (newsChanged()) parts.push('update news');
+  if (settingsChanged()) parts.push('settings');
   const models = [...S.uploads.keys()].filter((p) => p.endsWith('.nkm')).length;
   const photos = S.uploads.size - models;
   if (models) parts.push(models + ' model' + (models > 1 ? 's' : ''));
@@ -395,6 +410,148 @@ async function watchDeploy(sha) {
       if (e.status === 403 || e.status === 404) { S.deploy = { sha, status: 'unknown' }; render(); return; }
     }
   }
+}
+
+
+// ---------- Settings tab (2026-11-02): src/data/settings.json — prices, print parameters, promotion, gift cards, FAQ, links ----------
+// The site reads this file at build time (window.NK_SETTINGS): the price list and quote estimate on #services, the promo
+// banner, the gift cards page, the FAQ and the Part studio's time / material / price estimate. Empty numbers hide the
+// matching feature on the site. Self-contained: remove SETTINGS_PATH, the settings fields in S, settingsChanged(), the
+// getSettings() calls in load() / publish(), stNormal() … stAct(), the Settings tab button, the isSet() lines in
+// listView() / editorView() and the data-set* lines in the input / change / click handlers, plus the .st-* rules in admin.css.
+const isSet = () => S.tab === 'settings';
+const ST_SECTIONS = [['pricing', 'Prices'], ['printing', 'Print parameters'], ['promo', 'Promotion'], ['gift', 'Gift cards'], ['faq', 'FAQ'], ['links', 'Links']];
+const ST_MAT_KEYS = ['pla', 'petg', 'tpu', 'abs', 'asa', 'pa', 'pacf', 'pc']; // = MP_MATS ids in app.js (the order form's material list)
+function stNormal(o) { // fills in every branch the form shows, so inputs always have something to bind to
+  o = o && typeof o === 'object' ? o : {};
+  const txt = (v) => ({ en: (v && v.en) || '', sl: (v && v.sl) || '' });
+  const pr = o.pricing || {}, pp = pr.print || {};
+  o.pricing = { currency: 'EUR', vatNote: txt(pr.vatNote), hourly: Object.assign({ cad: '', iot: '', build: '', post: '' }, pr.hourly || {}), minHours: pr.minHours ?? '', buildNote: txt(pr.buildNote),
+    print: { machineHour: pp.machineHour ?? '', setup: pp.setup ?? '', minPart: pp.minPart ?? '', minOrder: pp.minOrder ?? '', rushPct: pp.rushPct ?? '', materials: Array.isArray(pp.materials) ? pp.materials.map((m) => ({ key: m.key || '', name: m.name || '', perGram: m.perGram ?? '', density: m.density ?? '' })) : [] } };
+  const pt = o.printing || {};
+  o.printing = { layer: pt.layer ?? '', infill: pt.infill ?? '', walls: pt.walls ?? '', rateCm3h: pt.rateCm3h ?? '' };
+  const pm = o.promo || {};
+  o.promo = { title: txt(pm.title), text: txt(pm.text), pct: pm.pct ?? '', scope: pm.scope || 'first', until: pm.until || '', code: pm.code || '' };
+  const g = o.gift || {};
+  o.gift = { amounts: Array.isArray(g.amounts) ? g.amounts : [], min: g.min ?? '', validMonths: g.validMonths ?? '', note: txt(g.note) };
+  o.faq = Array.isArray(o.faq) ? o.faq.map((f) => ({ q: txt(f.q), a: txt(f.a) })) : [];
+  o.links = { gbp: (o.links && o.links.gbp) || '' };
+  return o;
+}
+function stClean(o) { // what gets written: numbers as numbers, empty strings dropped, empty rows dropped
+  const num = (v) => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : undefined; };
+  const txt = (v) => (v.en || v.sl ? { en: v.en, sl: v.sl } : undefined);
+  const pr = o.pricing, pp = pr.print;
+  const out = {
+    pricing: { currency: 'EUR', vatNote: txt(pr.vatNote), hourly: { cad: num(pr.hourly.cad), iot: num(pr.hourly.iot), build: num(pr.hourly.build), post: num(pr.hourly.post) }, minHours: num(pr.minHours), buildNote: txt(pr.buildNote),
+      print: { machineHour: num(pp.machineHour), setup: num(pp.setup), minPart: num(pp.minPart), minOrder: num(pp.minOrder), rushPct: num(pp.rushPct),
+        materials: pp.materials.filter((m) => m.name.trim() && num(m.perGram) > 0).map((m) => ({ key: m.key || m.name.toLowerCase().replace(/[^a-z0-9]+/g, ''), name: m.name.trim(), perGram: num(m.perGram), density: num(m.density) })) } },
+    printing: { layer: num(o.printing.layer), infill: num(o.printing.infill), walls: num(o.printing.walls), rateCm3h: num(o.printing.rateCm3h) },
+    promo: { title: txt(o.promo.title), text: txt(o.promo.text), pct: num(o.promo.pct), scope: o.promo.scope, until: o.promo.until || undefined, code: o.promo.code || undefined },
+    gift: { amounts: o.gift.amounts.map(num).filter((n) => n > 0), min: num(o.gift.min), validMonths: num(o.gift.validMonths), note: txt(o.gift.note) },
+    faq: o.faq.filter((f) => f.q.en.trim() || f.q.sl.trim()).map((f) => ({ q: { en: f.q.en.trim(), sl: f.q.sl.trim() }, a: { en: f.a.en.trim(), sl: f.a.sl.trim() } })),
+    links: { gbp: o.links.gbp.trim() }
+  };
+  return JSON.parse(JSON.stringify(out)); // drops the undefined keys
+}
+function stGet(path) { return path.split('.').reduce((a, k) => (a == null ? a : a[k]), S.settings); }
+function stSetVal(path, v) { const ks = path.split('.'), last = ks.pop(); const o = ks.reduce((a, k) => (a[k] ??= /^\d+$/.test(k) ? [] : {}), S.settings); o[last] = v; }
+function stNum(path, label, hint, attrs = 'step="any" min="0"') { return fld('set-' + path.replace(/\./g, '-'), label, `<input class="nk-input" id="set-${path.replace(/\./g, '-')}" data-set="${path}" data-set-t="num" type="number" inputmode="decimal" ${attrs} value="${esc(stGet(path) ?? '')}">`, hint); }
+function stTxt(path, label, hint, attrs = '') { return fld('set-' + path.replace(/\./g, '-'), label, `<input class="nk-input" id="set-${path.replace(/\./g, '-')}" data-set="${path}" ${attrs} value="${esc(stGet(path) ?? '')}">`, hint); }
+function stArea(path, label, hint) { return fld('set-' + path.replace(/\./g, '-'), label, `<textarea class="nk-input" id="set-${path.replace(/\./g, '-')}" data-set="${path}" rows="2">${esc(stGet(path) ?? '')}</textarea>`, hint, true); }
+function stListView() {
+  return `<div class="ad-list">${tabsView()}
+    <p class="ad-small st-intro">Numbers and texts the site reads at build time. Empty = that feature stays hidden on the site. Press <b>Publish</b> when done.</p>
+    <ol class="ad-items st-nav">${ST_SECTIONS.map(([id, label]) => `<li class="ad-item"><a class="ad-item__main st-nav__a" href="#st-${id}"><span class="ad-item__t">${label}</span><span class="ad-item__m">${stSummary(id)}</span></a></li>`).join('')}</ol>
+  </div>`;
+}
+function stSummary(id) {
+  const o = S.settings; if (!o) return '';
+  if (id === 'pricing') { const h = o.pricing.hourly; const n = ['cad', 'iot', 'build'].filter((k) => +h[k] > 0).length; return `${n} hourly rate${n === 1 ? '' : 's'} · ${o.pricing.print.materials.filter((m) => +m.perGram > 0).length} materials`; }
+  if (id === 'printing') return +o.printing.rateCm3h > 0 ? `${o.printing.layer || '?'} mm · ${o.printing.infill || '?'} % · ${o.printing.rateCm3h} cm³/h` : 'not set — no time estimate';
+  if (id === 'promo') return +o.promo.pct > 0 && (o.promo.title.en || o.promo.title.sl) ? `−${o.promo.pct} %${o.promo.until ? ' until ' + o.promo.until : ''}` : 'none';
+  if (id === 'gift') return o.gift.amounts.length ? o.gift.amounts.join(' / ') + ' €' : 'off';
+  if (id === 'faq') return o.faq.length ? `${o.faq.length} question${o.faq.length === 1 ? '' : 's'}` : 'none';
+  if (id === 'links') return o.links.gbp ? 'Google Business Profile set' : 'no links';
+  return '';
+}
+function stMatRow(m, i) {
+  const b = `pricing.print.materials.${i}.`;
+  return `<tr><td><select class="nk-input" data-set="${b}key" aria-label="Order-form material">${ST_MAT_KEYS.map((k) => `<option value="${k}"${m.key === k ? ' selected' : ''}>${k.toUpperCase()}</option>`).join('')}</select></td>
+    <td><input class="nk-input" data-set="${b}name" value="${esc(m.name)}" aria-label="Material name"></td>
+    <td><input class="nk-input" data-set="${b}perGram" data-set-t="num" type="number" step="0.001" min="0" value="${esc(m.perGram)}" aria-label="Price per gram"></td>
+    <td><input class="nk-input" data-set="${b}density" data-set-t="num" type="number" step="0.01" min="0" value="${esc(m.density)}" aria-label="Density g/cm³"></td>
+    <td><button type="button" class="tb-copy" data-set-act="mat-rm" data-set-i="${i}" aria-label="Remove ${esc(m.name || 'material')}">Remove</button></td></tr>`;
+}
+function stFaqRow(f, i) {
+  const b = `faq.${i}.`;
+  return `<li class="st-faq"><div class="form">
+    ${fld(`set-faq-${i}-q-en`, `Question ${i + 1} · EN`, `<input class="nk-input" id="set-faq-${i}-q-en" data-set="${b}q.en" value="${esc(f.q.en)}">`)}
+    ${fld(`set-faq-${i}-q-sl`, 'Vprašanje · SL', `<input class="nk-input" id="set-faq-${i}-q-sl" data-set="${b}q.sl" value="${esc(f.q.sl)}">`)}
+    ${fld(`set-faq-${i}-a-en`, 'Answer · EN', `<textarea class="nk-input" id="set-faq-${i}-a-en" data-set="${b}a.en" rows="3">${esc(f.a.en)}</textarea>`)}
+    ${fld(`set-faq-${i}-a-sl`, 'Odgovor · SL', `<textarea class="nk-input" id="set-faq-${i}-a-sl" data-set="${b}a.sl" rows="3">${esc(f.a.sl)}</textarea>`)}
+    </div><p class="st-faq__act"><button type="button" class="tb-copy" data-set-act="faq-up" data-set-i="${i}" ${i === 0 ? 'disabled' : ''}>↑ Up</button><button type="button" class="tb-copy" data-set-act="faq-down" data-set-i="${i}" ${i === S.settings.faq.length - 1 ? 'disabled' : ''}>↓ Down</button><button type="button" class="tb-copy" data-set-act="faq-rm" data-set-i="${i}">Remove</button></p></li>`;
+}
+function stView() {
+  const o = S.settings;
+  if (!o) return `<div class="ad-empty"><p class="lead">Settings not loaded.</p></div>`;
+  return `<div class="ad-editor st">
+    <div class="ad-editor__head"><div><p class="nk-label">Settings · src/data/settings.json</p><h2 class="sub">Prices, parameters, promotion, gift cards, FAQ</h2></div></div>
+    <fieldset class="ad-sec" id="st-pricing"><legend class="nk-label">Prices · price list + quote estimate (#services?tool=prices / quote)</legend>
+      <div class="form form-3">
+        ${stNum('pricing.hourly.cad', 'CAD / design · € per hour')}${stNum('pricing.hourly.iot', 'Embedded / firmware · € per hour')}${stNum('pricing.hourly.build', 'Full custom builds · € per hour')}
+        ${stNum('pricing.hourly.post', 'Post-processing · € per hour')}${stNum('pricing.minHours', 'Minimum hours per job', 'e.g. 1')}${stNum('pricing.print.machineHour', 'Printer machine time · € per hour')}
+        ${stNum('pricing.print.setup', 'File preparation · € per order')}${stNum('pricing.print.minPart', 'Minimum · € per printed part')}${stNum('pricing.print.minOrder', 'Minimum · € per order')}
+        ${stNum('pricing.print.rushPct', 'Rush surcharge · % (within 48 h)')}
+      </div>
+      <div class="form">${stArea('pricing.vatNote.en', 'VAT / quote note · EN')}${stArea('pricing.vatNote.sl', 'Opomba o DDV / ponudbi · SL')}${stTxt('pricing.buildNote.en', 'Full builds note · EN', 'e.g. "Parts and materials at cost."')}${stTxt('pricing.buildNote.sl', 'Opomba za celotne izdelke · SL')}</div>
+      <p class="nk-label st-sub">Printing materials · € per gram (density only for the weight estimate in the Part studio)</p>
+      <table class="st-table"><thead><tr><th>Order form</th><th>Name</th><th>€ / g</th><th>g/cm³</th><th></th></tr></thead><tbody>${o.pricing.print.materials.map(stMatRow).join('')}</tbody></table>
+      <p><button type="button" class="nk-btn nk-btn--sm" data-set-act="mat-add">+ Material</button></p>
+    </fieldset>
+    <fieldset class="ad-sec" id="st-printing"><legend class="nk-label">Print parameters · time and material estimate in the Part studio (#studio)</legend>
+      <div class="form form-3">${stNum('printing.layer', 'Layer height · mm')}${stNum('printing.infill', 'Infill · %')}${stNum('printing.walls', 'Wall loops')}${stNum('printing.rateCm3h', 'Deposition rate · cm³ per hour', 'What the X2D lays down per hour on average; an empty value hides the time estimate.')}</div>
+    </fieldset>
+    <fieldset class="ad-sec" id="st-promo"><legend class="nk-label">Promotion · banner on the home page, price list, quote estimate and the brief</legend>
+      <div class="form">${stTxt('promo.title.en', 'Title · EN')}${stTxt('promo.title.sl', 'Naslov · SL')}${stArea('promo.text.en', 'Text · EN')}${stArea('promo.text.sl', 'Besedilo · SL')}
+        ${stNum('promo.pct', 'Discount · %', 'Empty or 0 = no promotion', 'step="1" min="0" max="100"')}
+        ${fld('set-promo-scope', 'Applies to', `<select class="nk-input" id="set-promo-scope" data-set="promo.scope">${[['first', 'First order (any service)'], ['print', '3D printing only'], ['all', 'Every order']].map(([v, l]) => `<option value="${v}"${o.promo.scope === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`)}
+        ${stTxt('promo.until', 'Last day', 'The banner disappears after this date.', 'type="date"')}${stTxt('promo.code', 'Code (optional)', 'Shown in the banner, e.g. FIRST15')}</div>
+    </fieldset>
+    <fieldset class="ad-sec" id="st-gift"><legend class="nk-label">Gift cards · #gift (requests arrive by e-mail like a brief; no payments on the site)</legend>
+      <div class="form form-3">${fld('set-gift-amounts', 'Quick amounts · €', `<input class="nk-input" id="set-gift-amounts" data-set="gift.amounts" data-set-t="list" value="${esc(o.gift.amounts.join(', '))}">`, 'Comma-separated, e.g. 30, 50, 100. Empty = gift cards off.')}${stNum('gift.min', 'Minimum custom amount · €')}${stNum('gift.validMonths', 'Valid for · months')}</div>
+      <div class="form">${stArea('gift.note.en', 'How it works · EN')}${stArea('gift.note.sl', 'Kako deluje · SL')}</div>
+    </fieldset>
+    <fieldset class="ad-sec" id="st-faq"><legend class="nk-label">FAQ · shown on #services and sent to search engines as FAQPage</legend>
+      ${o.faq.length ? `<ol class="st-faqs">${o.faq.map(stFaqRow).join('')}</ol>` : '<p class="ad-small">No questions yet. Good ones: turnaround, file formats, materials, minimum order, how to pay, where you deliver.</p>'}
+      <p><button type="button" class="nk-btn nk-btn--sm" data-set-act="faq-add">+ Question</button></p>
+    </fieldset>
+    <fieldset class="ad-sec" id="st-links"><legend class="nk-label">Links</legend>
+      <div class="form">${stTxt('links.gbp', 'Google Business Profile URL', 'Shown on #about and #contact and in the structured data (sameAs) once set.', 'type="url" placeholder="https://g.page/…"')}</div>
+    </fieldset>
+  </div>`;
+}
+function stInput(el) {
+  const path = el.dataset.set, kind = el.dataset.setT;
+  let v = el.value;
+  if (kind === 'num') v = v === '' ? '' : v;
+  else if (kind === 'list') v = v.split(/[,; ]+/).filter(Boolean);
+  stSetVal(path, v);
+  S.notice = '';
+  const nav = root.querySelector('.st-nav'); if (nav) nav.outerHTML = stListView().match(/<ol class="ad-items st-nav">[\s\S]*<\/ol>/)[0];
+  updatePublish();
+}
+function stAct(b) {
+  const o = S.settings, act = b.dataset.setAct, i = +b.dataset.setI;
+  if (act === 'mat-add') o.pricing.print.materials.push({ key: 'pla', name: '', perGram: '', density: '' });
+  if (act === 'mat-rm') o.pricing.print.materials.splice(i, 1);
+  if (act === 'faq-add') o.faq.push({ q: { en: '', sl: '' }, a: { en: '', sl: '' } });
+  if (act === 'faq-rm') o.faq.splice(i, 1);
+  if (act === 'faq-up' && i > 0) [o.faq[i - 1], o.faq[i]] = [o.faq[i], o.faq[i - 1]];
+  if (act === 'faq-down' && i < o.faq.length - 1) [o.faq[i + 1], o.faq[i]] = [o.faq[i], o.faq[i + 1]];
+  S.notice = ''; render();
+  if (act === 'faq-add') document.getElementById(`set-faq-${o.faq.length - 1}-q-en`)?.focus();
+  if (act === 'mat-add') root.querySelector('.st-table tbody tr:last-child input')?.focus();
 }
 
 // ---------- views ----------
@@ -466,6 +623,7 @@ function tabsView() {
     <button type="button" role="tab" data-tab="arrange" aria-selected="${isArr()}">Arrange</button>
     <button type="button" role="tab" data-tab="translate" aria-selected="${isTr()}">EN ⇄ SL <span>${trCount()}</span></button>
     <button type="button" role="tab" data-tab="table" aria-selected="${isTb()}">Table <span>${S.projects.length}</span></button>
+    <button type="button" role="tab" data-tab="settings" aria-selected="${isSet()}">Settings</button>
   </div>`;
 }
 
@@ -490,6 +648,7 @@ function newsListView() {
 }
 
 function listView() {
+  if (isSet()) return stListView();
   if (isTodo()) return todoListView();
   if (isArr()) return arListView();
   if (isTr()) return trListView();
@@ -1493,6 +1652,7 @@ function newsEditorView() {
 }
 
 function editorView() {
+  if (isSet()) return stView();
   if (isTodo()) return todoView();
   if (isArr()) return arView();
   if (isTr()) return trView();
@@ -1627,6 +1787,7 @@ root.addEventListener('submit', (e) => {
 root.addEventListener('input', (e) => {
   const k = e.target.dataset.k, p = cur();
   if (e.target.id === 'q') { S.query = e.target.value; render(); return; }
+  if (e.target.dataset.set != null && e.target.tagName !== 'SELECT') { stInput(e.target); return; }
   if (e.target.dataset.tr != null) { trInput(e.target); return; }
   if (e.target.dataset.tb != null && e.target.type !== 'checkbox') { tbInput(e.target); return; }
   if (e.target.dataset.tbB != null) { TB.bulk[e.target.dataset.tbB] = e.target.value; return; }
@@ -1674,6 +1835,7 @@ root.addEventListener('input', (e) => {
 
 root.addEventListener('change', async (e) => {
   const k = e.target.dataset.k, p = cur();
+  if (e.target.dataset.set != null && e.target.tagName === 'SELECT') { stInput(e.target); return; }
   if (e.target.dataset.arPos != null) { arPos(e.target); return; }
   if (e.target.dataset.tb != null) { if (e.target.type === 'checkbox' || e.target.tagName === 'SELECT') tbInput(e.target); return; }
   if (e.target.dataset.tbB != null) { TB.bulk[e.target.dataset.tbB] = e.target.value; return; }
@@ -1733,6 +1895,7 @@ root.addEventListener('click', (e) => {
   const act = b.dataset.act;
   if (b.dataset.tab) { S.tab = b.dataset.tab; S.query = ''; S.confirmDelete = false; render(); return; }
   if (b.dataset.todoF != null) { S.todoF = b.dataset.todoF; render(); return; }
+  if (b.dataset.setAct) { stAct(b); return; }
   if (b.dataset.todoGo != null) { todoGo(b.dataset.todoGo); return; }
   if (b.dataset.ar != null) { arAct(b); return; }
   if (isTr() && Object.keys(b.dataset).some((k) => /^tr[A-Z]/.test(k))) { trAct(b); return; }

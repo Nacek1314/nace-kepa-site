@@ -1,0 +1,42 @@
+{
+  "pricing": {
+    "currency": "EUR",
+    "vatNote": { "en": "All prices exclude VAT. Final quote after a look at your files.", "sl": "Vse cene so brez DDV. Končna ponudba po pregledu vaših datotek." },
+    "hourly": { "cad": 42, "iot": 48, "build": 48, "post": 36 },
+    "minHours": 1,
+    "buildNote": { "en": "Parts, boards and materials at cost.", "sl": "Deli, tiskanine in material po nabavni ceni." },
+    "print": {
+      "machineHour": 3.6,
+      "setup": 6,
+      "minPart": 6,
+      "minOrder": 18,
+      "rushPct": 25,
+      "materials": [
+        { "key": "pla", "name": "PLA", "perGram": 0.036, "density": 1.24 },
+        { "key": "petg", "name": "PETG", "perGram": 0.036, "density": 1.27 },
+        { "key": "tpu", "name": "TPU 95A", "perGram": 0.06, "density": 1.21 },
+        { "key": "abs", "name": "ABS", "perGram": 0.048, "density": 1.04 },
+        { "key": "asa", "name": "ASA", "perGram": 0.048, "density": 1.07 },
+        { "key": "pa", "name": "PA", "perGram": 0.084, "density": 1.14 },
+        { "key": "pacf", "name": "PA-CF", "perGram": 0.132, "density": 1.2 },
+        { "key": "pc", "name": "PC", "perGram": 0.096, "density": 1.2 }
+      ]
+    }
+  },
+  "printing": { "layer": 0.2, "infill": 15, "walls": 3, "rateCm3h": 12 },
+  "promo": {
+    "title": { "en": "−15 % on your first order", "sl": "−15 % na prvo naročilo" },
+    "text": { "en": "New clients get 15 % off the first job — any service. Mention it in the brief.", "sl": "Nove stranke dobijo 15 % popusta na prvo naročilo — katera koli storitev. Omenite ga v povzetku." },
+    "pct": 15,
+    "scope": "first",
+    "until": "2026-12-31"
+  },
+  "gift": {
+    "amounts": [30, 50, 100],
+    "min": 20,
+    "validMonths": 12,
+    "note": { "en": "Paid by bank transfer after you receive the invoice; the voucher code arrives by e-mail.", "sl": "Plačilo po predračunu z nakazilom; kodo bona prejmete po e-pošti." }
+  },
+  "faq": [],
+  "links": { "gbp": "" }
+}
