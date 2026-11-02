@@ -108,6 +108,25 @@ snapshot in `Site.astro`; the Google row line in `ctCard()`.
   full audit of every page incl. #gift: no errors, no horizontal scroll.
 *To remove part 3:* see the comment above `WT_MAX` in `app.js`; `lineWidth` in `settings.json` / admin.
 
+### Part 4 — admin Overview dashboard + services editable from the admin
+
+- **Overview** tab (`ovView()` … `ovCopy()` in `admin.js`, `.ov-*` in `admin.css`), now the tab the dashboard opens on:
+  *Content health* (projects published, with photos / 3D / materials / details / SL description, featured, posts, posts
+  with a photo — bars, red when something is missing, "N missing →" jumps to the To do filter); *What the site shows* (price
+  list + estimate, studio estimate, promotion, gift cards, FAQ, Google link — on/off with the values from Settings and
+  "open ↗"); *Pages & search* (home + every landing page: description length 50–160 ch, SL text, photo preview, "EN ↗ /
+  SL ↗ / Copy link", sitemap count). Unpublished edits are included.
+- **Services from the admin**: Settings › *Services* — per service the turnaround (EN/SL) and the "What I need" / "What
+  you get" lists (one item per line, EN/SL) stored as `settings.json › services.<key>`; a filled value replaces the text
+  built into `content.js` on the site (`app.js` right after `SET`), in the JSON-LD / snapshot (`Site.astro`) and in the
+  order form's turnaround rows; empty keeps the built-in text (an SL list falls back to the EN one). Nothing set today.
+- Project / news editors: "View on site" became "Open page ↗" to the landing page.
+- Tested against the mocked GitHub API (1280/390): stats, features, 31 page rows, Copy link, "missing →" jump, services
+  override written as arrays, project editor button; a build with a temporary override shows "1–3 weeks / 1–3 tedne" and
+  the new need list on #services (then restored); Settings tab regression; full audit of every page.
+*To remove part 4:* see the comment above `isOv` in `admin.js`; the `services` branch in `stNormal()` / `stClean()` and
+the Services fieldset; the override blocks after `SET` in `app.js` and after `services` in `Site.astro`.
+
 ## 2026-11-01
 
 **Checked:** build, home, #services (all tools incl. `?tool=index` / `?tool=plate`), #work, #work?view=list, #p-famfive,

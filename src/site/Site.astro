@@ -88,6 +88,10 @@ const ogImage = item && (item.photos || []).length ? photoUrl(item.photos[0]) : 
 const at = (h: string) => (SL ? '/sl/' : '/') + h;
 // Service names and descriptions come from SERVICES in content.js (same text as on #services), read at build time.
 const services: any[] = new Function(content + '\nreturn SERVICES;')();
+// Services overrides from settings.json (admin › Settings › Services), same rule as in app.js: a filled value replaces the built-in text.
+(() => { const ov: any = (settings as any).services || {}; services.forEach((s: any) => { const o = ov[s.key]; if (!o) return;
+  if (o.time && (o.time.en || o.time.sl)) s.time = { en: o.time.en || o.time.sl, sl: o.time.sl || o.time.en };
+  ['need', 'get'].forEach((k) => { if (o[k]) ['en', 'sl'].forEach((l) => { const alt = l === 'en' ? 'sl' : 'en'; if (Array.isArray(o[k][l]) && o[k][l].length) s[k][l] = o[k][l]; else if (Array.isArray(o[k][alt]) && o[k][alt].length) s[k][l] = o[k][alt]; }); }); }); })();
 // Structured data for search engines (a data block, not executed, so the CSP script hash doesn't apply).
 // Only facts already on the page: name, place, contact, services, LinkedIn.
 const jsonLd = JSON.stringify({

@@ -69,9 +69,14 @@ stored in the repo. If a device is lost, revoke the token on GitHub.
 materials, featured on home); attach a 3D model (STL, 3MF, OBJ, GLB/GLTF up to 50 MB); add photos (the first
 one is the cover on the project sheet). Visitors open photos in a full-screen gallery and rotate models.
 
+**Overview:** the dashboard opens on the *Overview* tab — content health (photos, models, materials, details, Slovenian text,
+with jumps to the To do list), what the site currently shows from Settings (price list, estimate, promotion, gift cards, FAQ,
+Google link) and one row per page with its description length, Slovenian text and link-preview image, plus "Open ↗" / "Copy link".
+
 **Settings:** the *Settings* tab edits `src/data/settings.json` — hourly rates and 3D-printing prices (the price list and
 the quote estimate on `/#services`), print parameters (time / material estimate in the Part studio), the promotion banner,
-gift-card amounts, the FAQ and links. Empty numbers hide the matching feature on the site.
+gift-card amounts, the FAQ, links and the services' turnaround + "What I need" / "What you get" lists (empty = the text built
+into the site). Empty numbers hide the matching feature on the site.
 
 **Table:** the *Table* tab shows all projects as one spreadsheet (category, year, materials, featured, hidden): edit
 cells directly, tick rows to change them together, or copy the table to Excel and paste it back.

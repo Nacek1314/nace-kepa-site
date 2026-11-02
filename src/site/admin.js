@@ -28,7 +28,7 @@ const S = {
   projects: [], savedJson: '',
   news: [], savedNews: '[]\n', newsSha: null, selNews: null,
   settings: null, savedSettings: '', settingsSha: null,
-  tab: 'projects',
+  tab: 'overview', // the dashboard opens on the Overview tab (2026-11-02)
   sel: null, query: '',
   uploads: new Map(),   // repoPath -> File|Blob
   deletes: new Set(),   // repoPath of committed files to remove
@@ -420,7 +420,8 @@ async function watchDeploy(sha) {
 // getSettings() calls in load() / publish(), stNormal() … stAct(), the Settings tab button, the isSet() lines in
 // listView() / editorView() and the data-set* lines in the input / change / click handlers, plus the .st-* rules in admin.css.
 const isSet = () => S.tab === 'settings';
-const ST_SECTIONS = [['pricing', 'Prices'], ['printing', 'Print parameters'], ['promo', 'Promotion'], ['gift', 'Gift cards'], ['faq', 'FAQ'], ['links', 'Links']];
+const ST_SECTIONS = [['pricing', 'Prices'], ['printing', 'Print parameters'], ['services', 'Services'], ['promo', 'Promotion'], ['gift', 'Gift cards'], ['faq', 'FAQ'], ['links', 'Links']];
+const ST_SVC = [['cad', 'S-01 · 3D design & CAD'], ['print', 'S-02 · 3D printing & prototyping'], ['iot', 'S-03 · Embedded systems & IoT'], ['build', 'S-04 · Full custom builds']]; // = SERVICES[].key in content.js
 const ST_MAT_KEYS = ['pla', 'petg', 'tpu', 'abs', 'asa', 'pa', 'pacf', 'pc']; // = MP_MATS ids in app.js (the order form's material list)
 function stNormal(o) { // fills in every branch the form shows, so inputs always have something to bind to
   o = o && typeof o === 'object' ? o : {};
@@ -436,6 +437,9 @@ function stNormal(o) { // fills in every branch the form shows, so inputs always
   o.gift = { amounts: Array.isArray(g.amounts) ? g.amounts : [], min: g.min ?? '', validMonths: g.validMonths ?? '', note: txt(g.note) };
   o.faq = Array.isArray(o.faq) ? o.faq.map((f) => ({ q: txt(f.q), a: txt(f.a) })) : [];
   o.links = { gbp: (o.links && o.links.gbp) || '' };
+  const lines = (v) => (Array.isArray(v) ? v.join('\n') : typeof v === 'string' ? v : '');
+  const sv = o.services && typeof o.services === 'object' ? o.services : {};
+  o.services = {}; ST_SVC.forEach(([k]) => { const x = sv[k] || {}; o.services[k] = { time: txt(x.time), need: { en: lines(x.need && x.need.en), sl: lines(x.need && x.need.sl) }, get: { en: lines(x.get && x.get.en), sl: lines(x.get && x.get.sl) } }; });
   return o;
 }
 function stClean(o) { // what gets written: numbers as numbers, empty strings dropped, empty rows dropped
@@ -450,8 +454,12 @@ function stClean(o) { // what gets written: numbers as numbers, empty strings dr
     promo: { title: txt(o.promo.title), text: txt(o.promo.text), pct: num(o.promo.pct), scope: o.promo.scope, until: o.promo.until || undefined, code: o.promo.code || undefined },
     gift: { amounts: o.gift.amounts.map(num).filter((n) => n > 0), min: num(o.gift.min), validMonths: num(o.gift.validMonths), note: txt(o.gift.note) },
     faq: o.faq.filter((f) => f.q.en.trim() || f.q.sl.trim()).map((f) => ({ q: { en: f.q.en.trim(), sl: f.q.sl.trim() }, a: { en: f.a.en.trim(), sl: f.a.sl.trim() } })),
-    links: { gbp: o.links.gbp.trim() }
+    links: { gbp: o.links.gbp.trim() },
+    services: {}
   };
+  const list = (v) => { const a = String(v || '').split('\n').map((l) => l.trim()).filter(Boolean); return a.length ? a : undefined; };
+  ST_SVC.forEach(([k]) => { const x = o.services[k]; const e = { time: txt(x.time), need: list(x.need.en) || list(x.need.sl) ? { en: list(x.need.en), sl: list(x.need.sl) } : undefined, get: list(x.get.en) || list(x.get.sl) ? { en: list(x.get.en), sl: list(x.get.sl) } : undefined }; if (e.time || e.need || e.get) out.services[k] = e; });
+  if (!Object.keys(out.services).length) delete out.services;
   return JSON.parse(JSON.stringify(out)); // drops the undefined keys
 }
 function stGet(path) { return path.split('.').reduce((a, k) => (a == null ? a : a[k]), S.settings); }
@@ -473,6 +481,7 @@ function stSummary(id) {
   if (id === 'gift') return o.gift.amounts.length ? o.gift.amounts.join(' / ') + ' €' : 'off';
   if (id === 'faq') return o.faq.length ? `${o.faq.length} question${o.faq.length === 1 ? '' : 's'}` : 'none';
   if (id === 'links') return o.links.gbp ? 'Google Business Profile set' : 'no links';
+  if (id === 'services') { const n = ST_SVC.filter(([k]) => { const x = o.services[k]; return x.time.en || x.time.sl || x.need.en || x.need.sl || x.get.en || x.get.sl; }).length; return n ? `${n} of 4 overridden` : 'site defaults'; }
   return '';
 }
 function stMatRow(m, i) {
@@ -511,6 +520,9 @@ function stView() {
     </fieldset>
     <fieldset class="ad-sec" id="st-printing"><legend class="nk-label">Print parameters · time and material estimate in the Part studio (#studio)</legend>
       <div class="form form-3">${stNum('printing.layer', 'Layer height · mm')}${stNum('printing.infill', 'Infill · %')}${stNum('printing.walls', 'Wall loops')}${stNum('printing.lineWidth', 'Line width · mm', 'Nozzle line width, e.g. 0.4 — walls × line width = wall thickness in the estimate.')}${stNum('printing.rateCm3h', 'Deposition rate · cm³ per hour', 'What the X2D lays down per hour on average; an empty value hides the time estimate.')}</div>
+    </fieldset>
+    <fieldset class="ad-sec" id="st-services"><legend class="nk-label">Services · turnaround and the two lists on #services (empty = the text built into the site)</legend>
+      ${ST_SVC.map(([k, label]) => `<p class="nk-label st-sub">${label}</p><div class="form">${stTxt(`services.${k}.time.en`, 'Turnaround · EN', k === 'iot' ? 'e.g. "1–3 weeks"; empty = "Quote on request"' : 'e.g. "2–5 days"')}${stTxt(`services.${k}.time.sl`, 'Rok · SL')}${stArea(`services.${k}.need.en`, 'What I need from you · EN', 'One item per line.')}${stArea(`services.${k}.need.sl`, 'Kaj potrebujem · SL')}${stArea(`services.${k}.get.en`, 'What you get · EN', 'One item per line.')}${stArea(`services.${k}.get.sl`, 'Kaj dobite · SL')}</div>`).join('')}
     </fieldset>
     <fieldset class="ad-sec" id="st-promo"><legend class="nk-label">Promotion · banner on the home page, price list, quote estimate and the brief</legend>
       <div class="form">${stTxt('promo.title.en', 'Title · EN')}${stTxt('promo.title.sl', 'Naslov · SL')}${stArea('promo.text.en', 'Text · EN')}${stArea('promo.text.sl', 'Besedilo · SL')}
@@ -552,6 +564,77 @@ function stAct(b) {
   S.notice = ''; render();
   if (act === 'faq-add') document.getElementById(`set-faq-${o.faq.length - 1}-q-en`)?.focus();
   if (act === 'mat-add') root.querySelector('.st-table tbody tr:last-child input')?.focus();
+}
+
+
+// ---------- Overview tab (2026-11-02, big update part 4): content health, what the site shows, SEO per page ----------
+// Read-only summary built from what is loaded (projects, news, settings, unpublished edits included): counts and gaps
+// (jumping to the To do filters), the public features that depend on settings (price list, estimate, promotion, gift
+// cards, FAQ, Google link), and one row per page (home pages + every landing page) with its description length, SL text,
+// link-preview image and "Open ↗" / "Copy link". Self-contained: remove ovView() … ovCopy(), the Overview tab button,
+// the isOv() lines in listView() / editorView() and the data-ov-* lines in the click handler, plus .ov-* in admin.css.
+const isOv = () => S.tab === 'overview';
+const SITE_URL = 'https://nacekepa.work';
+function ovLanding(kind, slug, sl) { return SITE_URL + (sl ? '/sl' : '') + (kind === 'n' ? '/news/' : '/portfolio/') + slug + '/'; }
+function ovStat(label, n, total, filter, warn) {
+  const pct = total ? Math.round(n / total * 100) : 0;
+  return `<li class="ov-stat${warn && n < total ? ' is-warn' : ''}"><span class="ov-stat__n">${n}<small> / ${total}</small></span><span class="ov-stat__l">${label}</span><i class="ov-stat__bar" style="--w:${pct}%"></i>${filter && n < total ? `<button type="button" class="td-miss" data-ov-todo="${filter}">${total - n} missing →</button>` : ''}</li>`;
+}
+function ovListView() {
+  return `<div class="ad-list">${tabsView()}
+    <p class="ad-small st-intro">What the site has, what it shows and how each page looks to search engines — including your unpublished edits.</p>
+    <ol class="ad-items st-nav">${[['content', 'Content health'], ['features', 'What the site shows'], ['pages', 'Pages & search']].map(([id, label]) => `<li class="ad-item"><a class="ad-item__main st-nav__a" href="#ov-${id}"><span class="ad-item__t">${label}</span></a></li>`).join('')}</ol>
+  </div>`;
+}
+function ovView() {
+  const P = S.projects, N = S.news, o = S.settings;
+  const shown = P.filter((p) => !p.hidden), posts = N.filter((n) => !n.hidden);
+  const has = (f) => P.filter(f).length;
+  const content = `<ul class="ov-stats">
+    ${ovStat('Projects published', shown.length, P.length)}
+    ${ovStat('With photos', has((p) => p.photos.length), P.length, 'photo', true)}
+    ${ovStat('With a 3D model', has((p) => p.model), P.length, 'model', true)}
+    ${ovStat('With materials', has((p) => !blank(p.materials)), P.length, 'mat', true)}
+    ${ovStat('With details (EN)', has((p) => !blank(p.details?.en)), P.length, 'x-en', true)}
+    ${ovStat('Slovenian description', has((p) => !blank(p.description?.sl)), P.length, 'sl', true)}
+    ${ovStat('Featured on the home page', has((p) => p.featured && !p.hidden), 4)}
+    ${ovStat('News posts published', posts.length, N.length)}
+    ${ovStat('Posts with a photo', N.filter((n) => n.photos.length).length, N.length, 'news', true)}
+  </ul>`;
+  const pr = o && o.pricing, promoOn = o && +o.promo.pct > 0 && (o.promo.title.en || o.promo.title.sl) && (!o.promo.until || o.promo.until >= new Date().toISOString().slice(0, 10));
+  const feat = (ok, label, detail, go) => `<li class="ov-feat"><span class="nk-tag${ok ? ' nk-tag--ok' : ''}">${ok ? 'on' : 'off'}</span><b>${label}</b><span>${detail}</span>${go ? `<a href="${go}" target="_blank" rel="noopener">open ↗</a>` : ''}</li>`;
+  const features = `<ul class="ov-feats">
+    ${feat(pr && (+pr.hourly.cad > 0 || +pr.print.machineHour > 0), 'Price list + quote estimate', pr ? `${['cad', 'iot', 'build'].filter((k) => +pr.hourly[k] > 0).length} hourly rates · ${pr.print.materials.filter((m) => +m.perGram > 0).length} materials` : 'no settings', '/#services?tool=prices')}
+    ${feat(o && +o.printing.rateCm3h > 0, 'Studio time / material estimate', o && +o.printing.rateCm3h > 0 ? `${o.printing.rateCm3h} cm³/h · ${o.printing.infill} % infill · ${o.printing.walls} walls` : 'deposition rate not set', '/#studio')}
+    ${feat(promoOn, 'Promotion', promoOn ? `−${o.promo.pct} %${o.promo.until ? ' until ' + o.promo.until : ''}` : 'none running', '/')}
+    ${feat(o && o.gift.amounts.length, 'Gift cards', o && o.gift.amounts.length ? o.gift.amounts.join(' / ') + ' € + custom' : 'off', '/#gift')}
+    ${feat(o && o.faq.length, 'FAQ', o ? `${o.faq.length} question${o.faq.length === 1 ? '' : 's'}` : '', '/#services')}
+    ${feat(o && o.links.gbp, 'Google Business Profile', o && o.links.gbp ? o.links.gbp : 'no link', o && o.links.gbp ? o.links.gbp : '')}
+  </ul><p class="ad-small">Everything here is edited in the <button type="button" class="pl-link" data-tab="settings">Settings</button> tab.</p>`;
+  const descLen = (t) => (t || '').trim().length;
+  const row = (kind, x) => {
+    const title = kind === 'n' ? x.title : x.title, desc = kind === 'n' ? x.summary : x.description;
+    const en = descLen(desc?.en), sl = descLen(desc?.sl);
+    const checks = [[en >= 50 && en <= 160, en ? `EN ${en} ch` : 'no EN description'], [sl > 0, sl ? `SL ${sl} ch` : 'no SL text'], [x.photos.length > 0, x.photos.length ? 'photo preview' : 'generic preview image']];
+    return `<tr class="${x.hidden ? 'is-hidden' : ''}"><td><b>${esc(title.en || x.slug)}</b><br><span class="ov-url">${esc(ovLanding(kind, x.slug).replace('https://', ''))}</span>${x.hidden ? '<br><span class="nk-label">hidden · no page</span>' : ''}${x._new ? '<br><span class="nk-label">not published yet</span>' : ''}</td>
+      <td>${checks.map(([ok, l]) => `<span class="ov-chk${ok ? ' is-ok' : ''}">${ok ? '✓' : '·'} ${esc(l)}</span>`).join('<br>')}</td>
+      <td class="ov-act">${x.hidden || x._new ? '' : `<a class="tb-copy" href="${esc(ovLanding(kind, x.slug))}" target="_blank" rel="noopener">EN ↗</a> <a class="tb-copy" href="${esc(ovLanding(kind, x.slug, true))}" target="_blank" rel="noopener">SL ↗</a> <button type="button" class="tb-copy" data-ov-copy="${esc(ovLanding(kind, x.slug))}">Copy link</button>`}</td></tr>`;
+  };
+  const pages = `<p class="ad-small">Each published project and post has its own page (title, description, link preview, structured data). A good description is 50–160 characters in both languages; a photo becomes the link-preview image. Sitemap: ${2 + shown.length * 2 + posts.length * 2} addresses.</p>
+    <table class="ov-table"><thead><tr><th>Page</th><th>Search / preview</th><th></th></tr></thead><tbody>
+      <tr><td><b>Home</b><br><span class="ov-url">nacekepa.work/ · /sl/</span></td><td><span class="ov-chk is-ok">✓ studio description, services, FAQ, projects, posts</span></td><td class="ov-act"><a class="tb-copy" href="/" target="_blank" rel="noopener">EN ↗</a> <a class="tb-copy" href="/sl/" target="_blank" rel="noopener">SL ↗</a></td></tr>
+      ${sortNews(N).map((n) => row('n', n)).join('')}${P.map((p) => row('p', p)).join('')}</tbody></table>
+    <p class="ov-msg" id="ov-msg" role="status" aria-live="polite"></p>`;
+  return `<div class="ad-editor ov">
+    <div class="ad-editor__head"><div><p class="nk-label">Overview · ${P.length} projects · ${N.length} posts</p><h2 class="sub">How the site is doing</h2></div></div>
+    <fieldset class="ad-sec" id="ov-content"><legend class="nk-label">Content health</legend>${content}</fieldset>
+    <fieldset class="ad-sec" id="ov-features"><legend class="nk-label">What the site shows (from Settings)</legend>${features}</fieldset>
+    <fieldset class="ad-sec" id="ov-pages"><legend class="nk-label">Pages & search</legend>${pages}</fieldset>
+  </div>`;
+}
+async function ovCopy(url) {
+  const m = document.getElementById('ov-msg');
+  try { await navigator.clipboard.writeText(url); if (m) m.textContent = 'Copied: ' + url; } catch { if (m) m.textContent = 'Copy failed — ' + url; }
 }
 
 // ---------- views ----------
@@ -617,6 +700,7 @@ function deployPill() {
 
 function tabsView() {
   return `<div class="ad-tabs" role="tablist" aria-label="Content">
+    <button type="button" role="tab" data-tab="overview" aria-selected="${isOv()}">Overview</button>
     <button type="button" role="tab" data-tab="projects" aria-selected="${S.tab === 'projects'}">Projects <span>${S.projects.length}</span></button>
     <button type="button" role="tab" data-tab="news" aria-selected="${isNews()}">News <span>${S.news.length}</span></button>
     <button type="button" role="tab" data-tab="todo" aria-selected="${isTodo()}">To do <span>${todoItems().length}</span></button>
@@ -648,6 +732,7 @@ function newsListView() {
 }
 
 function listView() {
+  if (isOv()) return ovListView();
   if (isSet()) return stListView();
   if (isTodo()) return todoListView();
   if (isArr()) return arListView();
@@ -1623,7 +1708,7 @@ function newsEditorView() {
   return `<div class="ad-editor">
     <div class="ad-editor__head">
       <div><p class="nk-label">${committed ? 'News · ' + esc(n.date) : 'New post · not published yet'}</p><h2 class="sub">${esc(n.title.en || 'Untitled')}</h2></div>
-      ${committed && !n.hidden ? `<a class="nk-btn nk-btn--sm nk-btn--ghost" href="/#n-${esc(n.slug)}" target="_blank" rel="noopener">View on site ↗</a>` : ''}
+      ${committed && !n.hidden ? `<a class="nk-btn nk-btn--sm nk-btn--ghost" href="/news/${esc(n.slug)}/" target="_blank" rel="noopener">Open page ↗</a>` : ''}
     </div>
     <fieldset class="ad-sec"><legend class="nk-label">Post</legend><div class="form">
       ${fld('n-t-en', 'Headline · English', inp('n-t-en', n.title.en, 'required'))}
@@ -1652,6 +1737,7 @@ function newsEditorView() {
 }
 
 function editorView() {
+  if (isOv()) return ovView();
   if (isSet()) return stView();
   if (isTodo()) return todoView();
   if (isArr()) return arView();
@@ -1665,7 +1751,7 @@ function editorView() {
   return `<div class="ad-editor">
     <div class="ad-editor__head">
       <div><p class="nk-label">${committed ? 'Project · ' + esc(p.slug) : 'New project · not published yet'}</p><h2 class="sub">${esc(p.title.en || 'Untitled')}</h2></div>
-      ${committed ? `<a class="nk-btn nk-btn--sm nk-btn--ghost" href="/#p-${esc(p.slug)}" target="_blank" rel="noopener">View on site ↗</a>` : ''}
+      ${committed ? `<a class="nk-btn nk-btn--sm nk-btn--ghost" href="/portfolio/${esc(p.slug)}/" target="_blank" rel="noopener">Open page ↗</a>` : ''}
     </div>
 
     <fieldset class="ad-sec"><legend class="nk-label">Text</legend><div class="form">
@@ -1896,6 +1982,8 @@ root.addEventListener('click', (e) => {
   if (b.dataset.tab) { S.tab = b.dataset.tab; S.query = ''; S.confirmDelete = false; render(); return; }
   if (b.dataset.todoF != null) { S.todoF = b.dataset.todoF; render(); return; }
   if (b.dataset.setAct) { stAct(b); return; }
+  if (b.dataset.ovTodo != null) { S.tab = 'todo'; S.todoF = b.dataset.ovTodo; render(); return; }
+  if (b.dataset.ovCopy != null) { ovCopy(b.dataset.ovCopy); return; }
   if (b.dataset.todoGo != null) { todoGo(b.dataset.todoGo); return; }
   if (b.dataset.ar != null) { arAct(b); return; }
   if (isTr() && Object.keys(b.dataset).some((k) => /^tr[A-Z]/.test(k))) { trAct(b); return; }

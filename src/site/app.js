@@ -2303,6 +2303,11 @@
   // data-qc-* lines in the click / input / change handlers, pc: / qc: / promo: in both languages in content.js and the
   // "Pricing package" rules at the end of page.css.
   var SET = window.NK_SETTINGS || {};
+  // Services overrides (2026-11-02): turnaround and the "What I need" / "What you get" lists can be edited in admin › Settings ›
+  // Services; a filled value replaces the text in content.js, an empty one keeps it.
+  (function () { var ov = SET.services || {}; SERVICES.forEach(function (s) { var o = ov[s.key]; if (!o) return;
+    if (o.time && (o.time.en || o.time.sl)) s.time = { en: o.time.en || o.time.sl, sl: o.time.sl || o.time.en };
+    ['need', 'get'].forEach(function (k) { if (o[k]) ['en', 'sl'].forEach(function (l) { if (Array.isArray(o[k][l]) && o[k][l].length) s[k][l] = o[k][l]; else if (Array.isArray(o[k][l === 'en' ? 'sl' : 'en']) && o[k][l === 'en' ? 'sl' : 'en'].length) s[k][l] = o[k][l === 'en' ? 'sl' : 'en']; }); }); }); })();
   var PRICE = SET.pricing && SET.pricing.hourly && SET.pricing.print ? SET.pricing : null;
   function pcOn() { return !!(PRICE && (PRICE.hourly.cad || PRICE.hourly.iot || PRICE.print.machineHour || (PRICE.print.materials || []).length)); }
   function pcMats() { return PRICE ? (PRICE.print.materials || []).filter(function (m) { return m && m.name && +m.perGram > 0; }) : []; }
