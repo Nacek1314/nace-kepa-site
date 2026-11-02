@@ -46,7 +46,7 @@ var T = {
         table: 'Support by orientation', colSize: 'X × Y × Z mm', colSup: 'Support', colBase: 'On the plate', colUse: 'Orientation', use: 'Use', cur: 'current', best: 'least support', fits: 'fits', noFit: 'too big',
         rowSup: 'Support ({d}°)', rowBase: 'First layer', rowNone: 'none',
         note: 'Rule of thumb: faces leaning more than {d}° past vertical usually need support; bridges and small details are not counted. The final orientation and supports are set when the job is prepared.',
-        box: 'A typed size is a plain box — no overhangs in any orientation. Drop the real file to check it.' }, tlLine: 'File or size → 3D on the plate → turn, measure, material, deadline → spec sheet → order form' },
+        box: 'A typed size is a plain box — no overhangs in any orientation. Drop the real file to check it.' }, tlLine: 'File or size → 3D on the plate → turn, measure, material, deadline → spec sheet + A4 drawing → order form' },
     // Contact package (ctCard / ctAlt in app.js, 2026-10-29)
     ct: { title: 'Contact', lead: 'Write in Slovenian or English — a short description of the part or the problem is enough to start.', email: 'E-mail', linkedin: 'Nace Kepa on LinkedIn', where: 'Studio', write: 'Write an e-mail', or: 'or write an e-mail', subject: 'Project enquiry — nacekepa.work' },
     timelines: [['Small CAD jobs', '2–5 days'], ['3D prints', '1–4 days + post-processing'], ['Full custom builds', '2–6 weeks']],
@@ -70,7 +70,8 @@ var T = {
     tl: { label: 'Tools · T-01 … T-09', title: 'Check it yourself first', lead: 'Nine free tools — eight on this page and the Part studio. They work in your browser and can fill in the order form for you.',
       plan: 'Three questions → the services you need', fit: 'Part size against the X2D build volume', file: 'Size, volume and fit of your STL / 3MF / OBJ', material: 'What the part must handle → a material', prep: 'What to have ready before you write',
       plate: 'Parts per plate and plates for the whole batch', prices: 'Published hourly rates and 3D printing prices', quote: 'Hours or weight → an indicative price',
-      back: 'All tools', home: 'Check it yourself first', copy: 'Copy link to this tool', copied: 'Link copied.', copyFail: 'Copying is blocked here — the address is in the bar above.' },
+      back: 'All tools', home: 'Check it yourself first', copy: 'Copy link to this tool', copied: 'Link copied.', copyFail: 'Copying is blocked here — the address is in the bar above.',
+      print: 'Print this tool', printed: 'Printed from', printPrices: 'Print the price list', printQuote: 'Print the estimate' }, // Print package (2026-11-02, evening run)
     // What to prepare on #services (prepBox in app.js): combines the SERVICES[].need lists.
     prep: { label: 'Checklist · S-01 … S-04', title: 'What to prepare', lead: 'Pick the services you need. The list puts together what each of them needs from you, so the first message already has everything.',
       pick: 'Services', none: 'Pick at least one service to see the list.', count: '{n} of {t} ready', all: 'All ready — start the project.', go: 'Start a project with these services', copy: 'Copy checklist', copied: 'Checklist copied.', copyFail: 'Copy failed — select the list and copy it by hand.', head: 'What to prepare' },
@@ -85,6 +86,13 @@ var T = {
     // Project planner on #services (plBox in app.js): three questions → services, turnaround, fit, brief handed to #order.
     // Batch on the plate on #services (pbBox in app.js, 2026-10-30): copies of one footprint on the 256 × 256 mm X2D plate.
     // Gift cards + FAQ (2026-11-02, big update part 2). Amounts, validity and the FAQ come from settings.json.
+    // Drawing sheet (2026-11-02, evening run): dwBox() in app.js — an A4 first-angle drawing of the Part studio part.
+    dw: { label: 'Drawing sheet · NK-D', title: 'A drawing of your part.', lead: 'Three views in first-angle projection at a standard scale, with the overall dimensions and a title block, on an A4 sheet — drawn in your browser from the file or the size in step 01. Print it, save it as PDF or download the SVG and attach it to your enquiry.',
+      empty: 'The drawing sheet appears once a part is loaded in step 01.', busy: 'Drawing…', print: 'Print the drawing (A4)', svg: 'Download SVG', saved: 'SVG saved.', saveFail: 'Download is blocked here — print the sheet instead.',
+      views: { front: 'Front', side: 'Left side', top: 'Top' }, box: 'typed size (box)', file: 'client file, read in the browser',
+      tb: { title: 'Title', src: 'Source', size: 'Overall size', mat: 'Material', qty: 'Qty', scale: 'Scale', units: 'Units', date: 'Date', sheet: 'Sheet', proj: 'Projection', printer: 'X2D', drawn: 'Drawn', by: 'Part studio · nacekepa.work', fits: 'fits', noFit: 'does not fit in one piece', matNone: '—', unnamed: 'Unnamed part' },
+      alt: 'Drawing of {n}: front, left side and top view, {s} mm, scale {sc}',
+      note: 'Silhouettes of the part with the overall sizes only — an indicative sketch for the enquiry, not a production drawing. Nothing is uploaded; the sheet is drawn in your browser.' },
     mn: { label: 'My corner · NK-M', title: 'Everything you saved here.', lead: 'Your shortlist, your unfinished brief, saved comparisons, Part studio sheets and price estimates — kept only in this browser, never sent anywhere. Print it, download it, or forget it all.',
       link: 'My corner', linkN: 'My corner · {n} saved', empty: 'Nothing saved yet. Star a project sheet, start a brief, compare sheets, analyse a part in the Part studio or run a price estimate — it all lands here.',
       slT: 'Shortlist', slEmpty: 'No starred sheets.', slCompare: 'Compare the first {n}', slStart: 'Start a project with these', slRemove: 'Remove',
@@ -256,7 +264,7 @@ var T = {
         table: 'Podpore po legah', colSize: 'X × Y × Z mm', colSup: 'Podpore', colBase: 'Na mizi', colUse: 'Lega', use: 'Uporabi', cur: 'trenutna', best: 'najmanj podpor', fits: 'gre', noFit: 'prevelik',
         rowSup: 'Podpore ({d}°)', rowBase: 'Prvi sloj', rowNone: 'brez',
         note: 'Groba ocena: ploskve, nagnjene več kot {d}° od navpičnice, običajno potrebujejo podpore; mostovi in drobni detajli niso šteti. Končno lego in podpore določim pri pripravi tiska.',
-        box: 'Vpisane mere so navaden kvader — brez previsov v nobeni legi. Za preverjanje spustite pravo datoteko.' }, tlLine: 'Datoteka ali mere → 3D na mizi → lega, merjenje, material, rok → specifikacijski list → obrazec za naročilo' },
+        box: 'Vpisane mere so navaden kvader — brez previsov v nobeni legi. Za preverjanje spustite pravo datoteko.' }, tlLine: 'Datoteka ali mere → 3D na mizi → lega, merjenje, material, rok → specifikacijski list + risba A4 → obrazec za naročilo' },
     // Kontakt (ctCard / ctAlt v app.js, 2026-10-29)
     ct: { title: 'Kontakt', lead: 'Pišite v slovenščini ali angleščini — za začetek je dovolj kratek opis dela ali težave.', email: 'E-pošta', linkedin: 'Nace Kepa na LinkedInu', where: 'Studio', write: 'Pišite mi e-pošto', or: 'ali mi pišite e-pošto', subject: 'Povpraševanje — nacekepa.work' },
     timelines: [['Manjša CAD dela', '2–5 dni'], ['3D tisk', '1–4 dni + obdelava'], ['Celoten izdelek', '2–6 tednov']],
@@ -280,7 +288,8 @@ var T = {
     tl: { label: 'Orodja · T-01 … T-09', title: 'Najprej preverite sami', lead: 'Devet brezplačnih orodij — osem na tej strani in Studio dela. Delujejo v vašem brskalniku in lahko namesto vas izpolnijo obrazec za naročilo.',
       plan: 'Tri vprašanja → storitve, ki jih potrebujete', fit: 'Velikost dela glede na delovni prostor X2D', file: 'Velikost, prostornina in ustreznost vaše datoteke STL / 3MF / OBJ', material: 'Kaj mora del zdržati → material', prep: 'Kaj pripraviti, preden mi pišete',
       plate: 'Kosov na mizo in miz za celotno serijo', prices: 'Objavljene urne postavke in cene 3D tiska', quote: 'Ure ali teža → okvirna cena',
-      back: 'Vsa orodja', home: 'Najprej preverite sami', copy: 'Kopiraj povezavo do orodja', copied: 'Povezava kopirana.', copyFail: 'Kopiranje tu ni dovoljeno — naslov je v vrstici zgoraj.' },
+      back: 'Vsa orodja', home: 'Najprej preverite sami', copy: 'Kopiraj povezavo do orodja', copied: 'Povezava kopirana.', copyFail: 'Kopiranje tu ni dovoljeno — naslov je v vrstici zgoraj.',
+      print: 'Natisni to orodje', printed: 'Natisnjeno s', printPrices: 'Natisni cenik', printQuote: 'Natisni oceno' },
     prep: { label: 'Seznam · S-01 … S-04', title: 'Kaj pripraviti', lead: 'Izberite storitve, ki jih potrebujete. Seznam združi, kaj vsaka od njih potrebuje od vas, da ima že prvo sporočilo vse.',
       pick: 'Storitve', none: 'Izberite vsaj eno storitev in prikaže se seznam.', count: 'Pripravljeno: {n} od {t}', all: 'Vse je pripravljeno — začnite projekt.', go: 'Začni projekt s temi storitvami', copy: 'Kopiraj seznam', copied: 'Seznam je kopiran.', copyFail: 'Kopiranje ni uspelo — označite seznam in ga kopirajte ročno.', head: 'Kaj pripraviti' },
     fit: { label: 'Preverjanje velikosti · Bambu Lab X2D', title: 'Ali gre v tiskalnik?', lead: 'Vpišite zunanje mere dela. Preverijo se glede na delovni prostor X2D, 256 × 256 × 260 mm, v vseh legah.',
@@ -292,6 +301,13 @@ var T = {
     // Načrtovalnik projekta na #services (plBox v app.js).
     // Serija na mizi na #services (pbBox v app.js, 2026-10-30).
     // Darilni boni + FAQ (2026-11-02, velika posodobitev, del 2). Zneski, veljavnost in FAQ so v settings.json.
+    // Risba (2026-11-02, večerni tek): dwBox() v app.js — risba A4 dela iz Studia dela v evropski projekciji.
+    dw: { label: 'Risba · NK-D', title: 'Risba vašega dela.', lead: 'Trije pogledi v evropski projekciji v standardnem merilu, z gabaritnimi merami in glavo risbe, na listu A4 — narisano v vašem brskalniku iz datoteke ali mer iz koraka 01. Natisnite jo, shranite kot PDF ali prenesite SVG in ga priložite povpraševanju.',
+      empty: 'Risba se pokaže, ko v koraku 01 naložite del.', busy: 'Rišem …', print: 'Natisni risbo (A4)', svg: 'Prenesi SVG', saved: 'SVG shranjen.', saveFail: 'Prenos tu ni dovoljen — natisnite list.',
+      views: { front: 'Naris', side: 'Stranski ris (z leve)', top: 'Tloris' }, box: 'vpisane mere (kvader)', file: 'datoteka stranke, prebrana v brskalniku',
+      tb: { title: 'Naziv', src: 'Vir', size: 'Gabaritne mere', mat: 'Material', qty: 'Kol.', scale: 'Merilo', units: 'Enote', date: 'Datum', sheet: 'List', proj: 'Projekcija', printer: 'X2D', drawn: 'Risal', by: 'Studio dela · nacekepa.work', fits: 'gre v tiskalnik', noFit: 'ne gre v enem kosu', matNone: '—', unnamed: 'Neimenovan del' },
+      alt: 'Risba dela {n}: naris, stranski ris in tloris, {s} mm, merilo {sc}',
+      note: 'Samo obrisi dela z gabaritnimi merami — okvirna skica za povpraševanje, ne delavniška risba. Nič se ne naloži; list se nariše v vašem brskalniku.' },
     mn: { label: 'Moj kotiček · NK-M', title: 'Vse, kar ste tu shranili.', lead: 'Vaš izbor, nedokončano povpraševanje, shranjene primerjave, listi iz Studia dela in ocene cen — shranjeno samo v tem brskalniku, nikamor poslano. Natisnite, prenesite ali vse pozabite.',
       link: 'Moj kotiček', linkN: 'Moj kotiček · shranjeno: {n}', empty: 'Še nič shranjenega. Označite projektni list z zvezdico, začnite povpraševanje, primerjajte liste, analizirajte del v Studiu dela ali izračunajte okvirno ceno — vse pristane tukaj.',
       slT: 'Izbor', slEmpty: 'Ni označenih listov.', slCompare: 'Primerjaj prve {n}', slStart: 'Začni projekt s temi', slRemove: 'Odstrani',

@@ -20,6 +20,66 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-11-02 (evening run)
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=prices` / `?tool=quote` / `?tool=plate`), #work, #work?view=list, #p-famfive,
+#p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about, #contact, #compare, #studio, #gift, #mine, #order (all 4 steps on the
+local build in EN + SL, validation, nothing sent), /admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no
+failed requests (Google Fonts blocked in the cloud, as always), no horizontal scroll, no CSP violations, no broken images; axe-core
+(WCAG 2.1 AA + best practice) over 18 views × 2: 0 violations; EN ↔ SL key comparison of `content.js`: complete (the only
+differences are the intended Slovenian dual/plural forms). Live site from the laptop: `/`, `/sl/`, `/admin/`, two landing pages,
+`/news/`, a post, the feeds, sitemap, two `/og/` cards, robots, manifest all 200, an unknown address 404; the live inline-script
+hash equals the CSP hash; "SolidWorks" present, no "Fusion" — the live page is the f2f94ae build. Last Actions run (f2f94ae)
+succeeded. **No bugs found.**
+
+**Improvement — print package (tools print as one clean sheet):**
+- Printing from a tool's address (`#services?tool=prices` …, Ctrl+P / share → print on a phone) now prints **only that tool**:
+  `tlMark()` puts `data-tool` on `<html>` and `tl-on` on the section, the "Print package" rules in `page.css` hide the header,
+  footer, CTA band, zones and every other block, flatten the section head and add a print-only footer line
+  "Printed from https://nacekepa.work/#services?tool=prices · 2026-11-02" (`.tl-print`, EN/SL). Before, Ctrl+P on the price
+  list printed the whole Services page — five pages of forms.
+- Every tool's "↑ All tools · Copy link" row has **"Print this tool"** (`tlPrint(k)`: marks that tool, prints, restores the mark
+  from the address on `afterprint` or the next click/key), the price list has a **"Print the price list"** button and the quote
+  estimate a **"Print the estimate"** button (disabled until there is an estimate, like Copy).
+- The price list prints as one column (every row on one line) on **one A4 page**; `break-inside: avoid` on the spec rows, the
+  estimate breakdown and the tool results.
+- Tested in Playwright (PDF page counts + print-media screenshots): price list EN 1 page, drawing 1 page landscape; the mark
+  follows the address (`#services` without a tool and `#work` carry no `data-tool`); "Print this tool" on the fit check while
+  the address says prices → prints the fit check, then the price list is marked again.
+*To remove:* see the comment above `tlMark()` in `app.js`.
+
+**Innovation — Drawing sheet NK-D / "Risba" (`#studio`, section under the spec sheet; `dwBox()` … `dwDownload()` in `app.js`,
+`dw:` in `content.js`, "Drawing sheet" rules in `page.css`):** an **A4 landscape technical drawing of the visitor's part**, drawn
+in the browser from the file (STL / 3MF / OBJ) or the typed size in step 01 — three views in **first-angle projection** (front,
+view from the left placed on the right, plan below; ISO "E" symbol in the title block), at the **largest standard scale that fits**
+(10:1 … 1:100; the L-bracket test part gets 1:1, a 71 mm sphere 1:2), the three **overall dimensions** with extension lines,
+arrowheads and values in mm (blue `--dimension`), a light grid, view labels, and a **title block** (title = part name, overall size,
+scale, units, date, sheet NK-D, projection symbol; source file · format, material from the picker, quantity, X2D fits / does not
+fit in one piece, "Part studio · nacekepa.work"). The views are the file check's silhouettes (`fcMask`) stored as white-with-alpha
+PNGs and used as SVG masks over a rect filled with `var(--ink)` — the same markup follows light / dark on screen, prints black on
+white and is cached per part / orientation / scale (an 80 000-triangle mesh draws in ~0.3 s; renaming the part costs ~1 ms).
+Buttons: **"Print the drawing (A4)"** (`dwPrint()`: `html.dw-print` + an injected `@page { size: A4 landscape; margin: 0 }`,
+allowed by the CSP's `style-src 'unsafe-inline'`; the print rules show the sheet alone, exactly one page; cleaned up on
+`afterprint` / next click) and **"Download SVG"** (`NK-D-<name>-<date>.svg`, standalone with its own `<style>` and embedded
+view images — opens in a browser or Inkscape; blob URL on an `<a download>` like My corner). The orientation picker turns the
+drawing too (dimensions follow). On a phone the sheet scrolls sideways inside its frame (focusable, `role="group"`); the SVG has
+an `aria-label` with the views, size and scale. Empty state until a part is loaded. Only the visitor's own numbers and the
+published X2D volume; nothing uploaded; the note says it is an indicative sketch, not a production drawing. Studio line in the
+tools index now says "… spec sheet + A4 drawing → order form".
+- Tested in Playwright (EN 1280 light, SL 390 dark): empty state; typed 50 × 30 × 4 box → 3 views, dims 50 / 4 / 30, scale 2:1,
+  title block cells; L-bracket STL 60 × 40 × 30 (asymmetric — the plan shows the L the right way up for first angle) → 1:1, title,
+  qty 4, "fits"; orientation 2 → dims 60 / 40 / 30; SVG download (19 kB, xmlns, style, 3 images, "SVG saved."), rendered
+  standalone from `file://`; print → class + page style, cleaned on afterprint; PDF of the print = 1 page; 390 px: no page
+  overflow, the figure scrolls (640 px inside 322 px); 80k-triangle sphere; full audit of every page: no errors, no scroll.
+*To remove:* see the comment above `DW_SCALES` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: NK-D — hidden lines / inner contours (edges where the mask has holes), a section view from the Part studio's cut plane,
+  and the two-point measurement as an extra dimension on the drawing.
+- Public: NK-D — PNG export (draw the SVG on a canvas) for people who cannot open SVG; attach the drawing to "Print or save as
+  PDF" of the NK-S spec sheet as page 2.
+- Admin: a "print preview" for a project sheet — the A4 print layout shown in the editor before publishing.
+
 ## 2026-11-02 (afternoon — Nace: "izbriši modeliranje v Fusion 360")
 
 Removed every Fusion 360 mention from the site (`content.js`): the CAD service body now reads "SolidWorks design for
@@ -1703,6 +1763,11 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: "Download sheet card (PNG)" on project pages + a card gallery on #work (the `/og/…` cards exist already).
 - Public: My corner — "Send me my corner by e-mail" (text export as a mailto: body, no server).
 - Admin: preview-card thumbnail in the editor head; FAQ starter template (questions only).
+- (Built 2026-11-02, evening run: Drawing sheet NK-D on #studio — A4 first-angle drawing with overall dimensions, title block,
+  print + SVG download; print package as the improvement — a tool prints alone from its address / "Print this tool".)
+- Public: NK-D — hidden lines / inner contours, a section view from the cut plane, the measured distance as a dimension.
+- Public: NK-D — PNG export; the drawing as page 2 of the printed NK-S spec sheet.
+- Admin: print preview of a project sheet in the editor.
 
 ## 2026-10-03 (second run)
 

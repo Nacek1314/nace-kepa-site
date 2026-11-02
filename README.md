@@ -32,6 +32,10 @@ are the addresses the "Share this sheet" box, the admin and the feed hand out. E
 photos, a card drawn at build time from the sheet (`/og/portfolio/<slug>.png`, `/og/news/<slug>.png`, `/og/sl/…`) — see
 `src/og/card.ts`; the admin Overview links to every card ("Card ↗").
 
+`#studio` ("Part studio") ends with a drawing sheet **NK-D**: an A4 first-angle drawing of the visitor's part (three views, overall
+dimensions, title block) that prints on its own or downloads as SVG — `dwBox()` in `src/site/app.js`. Every tool on `#services` prints
+alone from its address (`#services?tool=prices`) or its "Print this tool" button.
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,

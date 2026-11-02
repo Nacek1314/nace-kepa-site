@@ -1118,3 +1118,54 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 .mn-ask { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: 14px; line-height: 20px; }
 @media (max-width: 600px) { .mn-list li, .mn-card summary { display: grid; } }
 @media print { .mine-link, .mine-foot, .mn-tools, .mn-list .tb-copy, .mn-card .cta-row, .mn-empty { display: none !important; } .mn-card, .mn-list li { break-inside: avoid; } .mn-card summary::before { display: none; } }
+/* Print package (2026-11-02, evening run; tlMark() / tlPrint() in app.js): a tool prints on its own — from its address
+   (#services?tool=<name>) or its "Print this tool" button — with its address and the date as a footer line. */
+.tl-print { display: none; }
+@media print {
+  html[data-tool] .top, html[data-tool] .foot, html[data-tool] .cta-band, html[data-tool] .zones, html[data-tool] main > .block:not(.tl-on), html[data-tool] .tl-on .tl-back, html[data-tool] .tl-on .pl-open, html[data-tool] .tl-on .st-open, html[data-tool] .tl-on .mp-open, html[data-tool] .tl-on .pc-act { display: none !important; }
+  html[data-tool] .frame { border: 0; padding: 0; }
+  html[data-tool] .tl-on { padding: 0; border-bottom: 0; gap: var(--space-6); }
+  html[data-tool] .tl-on .sec-head { display: block; }
+  html[data-tool] .tl-on .sec-head .lead { margin-top: var(--space-3); }
+  html[data-tool] .tl-print { display: block; }
+  html[data-tool] .pc-grid { display: block; } /* the price list as one column: every row on one line, one page */
+  html[data-tool] .pc-col + .pc-col { margin-top: var(--space-4); }
+  html[data-tool] .pc-col { padding: var(--space-3) var(--space-4); }
+  html[data-tool] .pc-col .nk-specs dt, html[data-tool] .pc-col .nk-specs dd { padding-block: 3px; line-height: 18px; }
+  .pc-col > div, .qc-rows > div, .qc-out, .fit-out { break-inside: avoid; }
+}
+/* Drawing sheet NK-D (2026-11-02, evening run; dwBox() in app.js, #studio): an A4 first-angle drawing of the Part studio part. */
+.dw { gap: var(--space-6); }
+.dw-sheet { margin: 0; border: 1.5px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sheet); }
+.dw-svg { display: block; width: 100%; height: auto; }
+.dw-svg .dw-frame { fill: none; stroke: var(--ink); stroke-width: .5; }
+.dw-svg .dw-grid { fill: url(#dw-g); }
+.dw-svg .dw-part { fill: var(--ink); }
+.dw-svg .dw-dim path { fill: none; stroke: var(--dimension); stroke-width: .25; }
+.dw-svg .dw-dim .dw-arr { fill: var(--dimension); stroke: none; }
+.dw-svg .dw-dim text { font: 3.2px var(--font-mono); fill: var(--dimension); }
+.dw-svg .dw-vl { font: 2.6px var(--font-mono); fill: var(--ink-muted); letter-spacing: .08em; }
+.dw-svg .dw-cell { fill: none; stroke: var(--ink); stroke-width: .35; }
+.dw-svg .dw-k { font: 2.1px var(--font-mono); fill: var(--ink-muted); letter-spacing: .1em; }
+.dw-svg .dw-v { font: 3.1px var(--font-mono); fill: var(--ink); }
+.dw-svg .dw-title { font: 800 5px var(--font-sans); fill: var(--ink); }
+.dw-svg .dw-sym { fill: none; stroke: var(--ink); stroke-width: .35; }
+.dw-act { align-items: center; }
+.dw-empty { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-8) var(--space-4); border: 1px dashed var(--line-strong); text-align: center; }
+.dw-empty svg { width: 120px; height: auto; }
+.dw-empty path { fill: none; stroke: var(--ink-muted); stroke-width: 1; stroke-dasharray: 4 3; }
+.dw-empty p { margin: 0; }
+.dw-note { margin: 0; }
+@media (max-width: 480px) { .dw-act .nk-btn { flex: 1 1 100%; justify-content: center; } }
+@media (max-width: 640px) { .dw-sheet { overflow-x: auto; -webkit-overflow-scrolling: touch; } .dw-svg { min-width: 640px; } } /* readable on a phone: the sheet scrolls sideways inside its frame */
+.dw-sheet:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+@media print {
+  .dw { display: none !important; } /* the NK-S spec sheet prints on its own; the drawing has its own print button */
+  html.dw-print body { padding: 0; }
+  html.dw-print .frame { border: 0; padding: 0; max-width: none; background: none; }
+  html.dw-print .frame::before { display: none; }
+  html.dw-print .frame > :not(main), html.dw-print main > :not(.st), html.dw-print .st > :not(.dw), html.dw-print .dw > :not(.dw-sheet) { display: none !important; }
+  html.dw-print .st, html.dw-print .dw { display: block !important; padding: 0; border: 0; }
+  html.dw-print .dw-sheet { border: 0; box-shadow: none; width: 297mm; height: 209mm; overflow: hidden; }
+  html.dw-print .dw-svg { width: 297mm; height: 210mm; }
+}

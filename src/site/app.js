@@ -1863,7 +1863,7 @@
     var f = t().st, src = stSrc();
     return '<section class="block first st" id="studio">' + head(f.label, f.title, f.lead, true) +
       '<div class="st-grid"><div class="st-stage" id="st-stage">' + stStage(src) + '</div><div class="st-side" id="st-side">' + stForm() + '</div>' +
-      '<div class="pl-sheet st-sheet" id="st-sheet">' + stSheet() + '</div></div></section>' + ctaBand();
+      '<div class="pl-sheet st-sheet" id="st-sheet">' + stSheet() + '</div></div>' + dwBox() + '</section>' + ctaBand(); // dwBox(): drawing sheet NK-D (2026-11-02, evening run)
   }
   function stDispose() { st3dTok++; if (st3d) { st3d.dispose(); st3d = null; } }
   function stMount() {
@@ -1881,7 +1881,7 @@
     };
     if (window.NKViewer) go(); else { window.addEventListener('nkviewer:ready', go, { once: true }); if (window.NKViewerLoad) window.NKViewerLoad(); }
   }
-  function stSheetShow() { var el = document.getElementById('st-sheet'); if (el) el.innerHTML = stSheet(); }
+  function stSheetShow() { var el = document.getElementById('st-sheet'); if (el) el.innerHTML = stSheet(); dwShow(); } // dwShow(): the drawing sheet follows every change (2026-11-02, evening run)
   function stMeasShow() {
     var o = document.getElementById('st-meas'); if (o) o.textContent = stMeasText();
     var c = document.querySelector('[data-st-mclear]'), tools = document.querySelector('.st-measure');
@@ -2166,6 +2166,124 @@
     return '<p class="fit-note st-est">' + esc(f.note.replace('{infill}', pr.infill).replace('{walls}', pr.walls).replace('{rate}', pr.rateCm3h)) + (pcOn() ? ' <a href="#services?tool=quote" data-st-qc>' + esc(f.link) + ' →</a>' : '') + '</p>';
   }
 
+  // ---------- Drawing sheet NK-D (#studio; 2026-11-02, evening run) ----------
+  // An A4 landscape drawing of the Part studio part: front, left-side and top view in first-angle projection (ISO "E" —
+  // the view from the left sits on the right, the plan below the front), at the largest standard scale that fits the
+  // sheet, with the three overall dimensions (dimension lines, arrowheads, values in mm), a light grid and a title block
+  // (name, source, size, material, quantity, scale, units, date, sheet, projection symbol, X2D fit). The views are the
+  // same silhouettes as the file check (fcMask: every triangle rasterised into a mask), stored as white-with-alpha PNGs
+  // and used as SVG masks over a rect filled with var(--ink) — so the drawing follows light / dark on screen, prints black
+  // on white (print tokens) and the downloaded SVG carries fixed colours in its own <style>. Only the visitor's own
+  // numbers and the published X2D volume; nothing is uploaded. Self-contained: remove DW_SCALES … dwDownload(), the
+  // dwBox() call in stView(), the dwShow() line in stSheetShow(), the data-dw-* lines in the click handler, dw: in both
+  // languages in content.js and the "Drawing sheet" rules at the end of page.css.
+  var DW_SCALES = [[10, 1], [5, 1], [2, 1], [1, 1], [1, 2], [1, 5], [1, 10], [1, 20], [1, 50], [1, 100]];
+  var DW_W = 297, DW_H = 210, DW_M = 10, DW_TB = 30, DW_GAP = 14, DW_DIM = 15; // sheet, margin, title-block height, view gap, room for a dimension (paper mm)
+  var dwCache = { key: '', imgs: null }, dwPrintOn = false;
+  function dwScale(src) { // paper mm per part mm: the largest standard scale that fits the three views + dimensions in the drawing area
+    var d = stDims(src), aw = DW_W - 2 * DW_M - DW_DIM - DW_GAP - 6, ah = DW_H - 2 * DW_M - DW_TB - DW_DIM - DW_GAP - DW_DIM;
+    for (var i = 0; i < DW_SCALES.length; i++) { var s = DW_SCALES[i][0] / DW_SCALES[i][1]; if ((d[0] + d[1]) * s <= aw && (d[2] + d[1]) * s <= ah) return { s: s, txt: DW_SCALES[i][0] + ':' + DW_SCALES[i][1] }; }
+    var l = DW_SCALES[DW_SCALES.length - 1]; return { s: l[0] / l[1], txt: l[0] + ':' + l[1] };
+  }
+  function dwMask(pos, n, a, b, mn, s, PW, PH, flipX, r) { // white PNG whose alpha is the silhouette: outline 255 (r px wide), inside 46
+    var m = fcMask(pos, n, a, b, mn, s, 1, PH - 1, PW, PH), cv = document.createElement('canvas'); cv.width = PW; cv.height = PH;
+    var g = cv.getContext('2d'); if (!g) return '';
+    var img = g.createImageData(PW, PH), d = img.data, y, x, k;
+    var e = new Uint8Array(PW * PH); // outline = inside pixels next to an outside one, grown to `r` px (≈ 0.3 mm on paper)
+    for (y = 0; y < PH; y++) for (x = 0; x < PW; x++) { k = y * PW + x; if (m[k] && (x === 0 || y === 0 || x === PW - 1 || y === PH - 1 || !m[k - 1] || !m[k + 1] || !m[k - PW] || !m[k + PW])) e[k] = 1; }
+    for (var i = 1; i < r; i++) { var e2 = new Uint8Array(e); for (y = 1; y < PH - 1; y++) for (x = 1; x < PW - 1; x++) { k = y * PW + x; if (m[k] && !e[k] && (e[k - 1] || e[k + 1] || e[k - PW] || e[k + PW])) e2[k] = 1; } e = e2; }
+    for (y = 0; y < PH; y++) for (x = 0; x < PW; x++) {
+      var sx = flipX ? PW - 1 - x : x; k = y * PW + sx; if (!m[k]) continue;
+      var o = (y * PW + x) * 4; d[o] = 255; d[o + 1] = 255; d[o + 2] = 255; d[o + 3] = e[k] ? 255 : 46;
+    }
+    g.putImageData(img, 0, 0);
+    try { return cv.toDataURL('image/png'); } catch (e) { return ''; }
+  }
+  function dwImgs(src, sc) { // the three view PNGs for this part / orientation / scale (cached — the title block changes far more often)
+    var key = (src.kind === 'file' ? state.fc.res.name + '|' + src.pos.length : 'box|' + src.size.join('x')) + '|' + state.st.axes + '|' + sc.s + '|' + src.scale;
+    if (dwCache.key === key && dwCache.imgs) return dwCache.imgs;
+    var p = stPerm(), d = stDims(src), pos = src.pos, n = Math.floor(pos.length / 9), mn = [Infinity, Infinity, Infinity], i, k;
+    for (i = 0; i < n * 9; i++) { k = i % 3; if (pos[i] < mn[k]) mn[k] = pos[i]; }
+    var big = Math.max(d[0], d[1], d[2]) * sc.s || 1, kpx = Math.min(8, 1000 / big), s = kpx * sc.s * src.scale; // px per paper mm, px per file unit
+    var r = Math.max(1, Math.round(kpx * 0.3)); // outline width in px (≈ 0.3 mm on paper)
+    var view = function (a, b, flipX) { var PW = Math.max(2, Math.ceil(d[a] * sc.s * kpx) + 2), PH = Math.max(2, Math.ceil(d[b] * sc.s * kpx) + 2); return { url: dwMask(pos, n, p[a], p[b], mn, s, PW, PH, flipX, r), w: PW / kpx, h: PH / kpx }; };
+    dwCache = { key: key, imgs: { front: view(0, 2, false), side: view(1, 2, true), top: view(0, 1, false) } };
+    return dwCache.imgs;
+  }
+  function dwN(v) { return fitFmt(fcR1(v)); }
+  function dwFit(txt, mm, fs) { var max = Math.floor(mm / (fs * 0.62)); return txt.length > max ? txt.slice(0, Math.max(1, max - 1)) + '…' : txt; } // crude ellipsis for the title block cells
+  function dwSvg(src, standalone) {
+    var f = t().dw, x = t(), s = state.st, sc = dwScale(src), im = dwImgs(src, sc), d = stDims(src), r = state.fc.res, mono = "'JetBrains Mono', ui-monospace, Menlo, monospace", sans = "'Schibsted Grotesk', 'Helvetica Neue', Arial, sans-serif";
+    var fw = d[0] * sc.s, fh = d[2] * sc.s, sw = d[1] * sc.s, th = d[1] * sc.s; // front w/h, side w, top h (paper mm)
+    var gw = DW_DIM + fw + DW_GAP + sw, gh = DW_DIM + fh + DW_GAP + th + DW_DIM, aw = DW_W - 2 * DW_M, ah = DW_H - 2 * DW_M - DW_TB;
+    var gx = DW_M + Math.max(0, (aw - gw) / 2), gy = DW_M + Math.max(0, (ah - gh) / 2), x0 = gx + DW_DIM, y0 = gy + DW_DIM, sx = x0 + fw + DW_GAP, ty = y0 + fh + DW_GAP;
+    var n2 = function (v) { return Math.round(v * 100) / 100; };
+    var mask = function (id, v, ox, oy, w, h) { var iw = v.w, ih = v.h, ix = ox + (w - iw) / 2, iy = oy + (h - ih) / 2; return '<mask id="' + id + '" maskUnits="userSpaceOnUse" x="' + n2(ix) + '" y="' + n2(iy) + '" width="' + n2(iw) + '" height="' + n2(ih) + '"><image href="' + v.url + '" x="' + n2(ix) + '" y="' + n2(iy) + '" width="' + n2(iw) + '" height="' + n2(ih) + '" preserveAspectRatio="none"/></mask><rect class="dw-part" x="' + n2(ix) + '" y="' + n2(iy) + '" width="' + n2(iw) + '" height="' + n2(ih) + '" mask="url(#' + id + ')"/>'; };
+    var arrow = function (x, y, dir) { var l = 2.6, w = 0.9; return dir === 'l' ? 'M' + n2(x) + ' ' + n2(y) + 'l' + l + ' -' + w + 'v' + 2 * w + 'z' : dir === 'r' ? 'M' + n2(x) + ' ' + n2(y) + 'l-' + l + ' -' + w + 'v' + 2 * w + 'z' : dir === 'u' ? 'M' + n2(x) + ' ' + n2(y) + 'l-' + w + ' ' + l + 'h' + 2 * w + 'z' : 'M' + n2(x) + ' ' + n2(y) + 'l-' + w + ' -' + l + 'h' + 2 * w + 'z'; };
+    var dimH = function (xa, xb, yv, yl, txt) { // horizontal dimension: extension lines from yv to the dimension line at yl, value above the line
+      var up = yl < yv, e1 = up ? yv - 1 : yv + 1, e2 = up ? yl - 2 : yl + 2;
+      return '<g class="dw-dim"><path d="M' + n2(xa) + ' ' + n2(e1) + 'V' + n2(e2) + 'M' + n2(xb) + ' ' + n2(e1) + 'V' + n2(e2) + 'M' + n2(xa) + ' ' + n2(yl) + 'H' + n2(xb) + '"/><path class="dw-arr" d="' + arrow(xa, yl, 'l') + arrow(xb, yl, 'r') + '"/><text x="' + n2((xa + xb) / 2) + '" y="' + n2(yl - 1.2) + '" text-anchor="middle">' + esc(txt) + '</text></g>';
+    };
+    var dimV = function (ya, yb, xv, xl, txt) { // vertical dimension on the left of a view, value reads bottom-to-top
+      return '<g class="dw-dim"><path d="M' + n2(xv - 1) + ' ' + n2(ya) + 'H' + n2(xl - 2) + 'M' + n2(xv - 1) + ' ' + n2(yb) + 'H' + n2(xl - 2) + 'M' + n2(xl) + ' ' + n2(ya) + 'V' + n2(yb) + '"/><path class="dw-arr" d="' + arrow(xl, ya, 'u') + arrow(xl, yb, 'd') + '"/><text transform="translate(' + n2(xl - 1.2) + ' ' + n2((ya + yb) / 2) + ') rotate(-90)" text-anchor="middle">' + esc(txt) + '</text></g>';
+    };
+    var label = function (cx, y, txt) { return '<text class="dw-vl" x="' + n2(cx) + '" y="' + n2(y) + '" text-anchor="middle">' + esc(txt) + '</text>'; };
+    // title block: two rows of cells (label above value), like the footer of the site
+    var fitR = stFit(src), tb = f.tb, ch = mpChosen(), today = new Date().toISOString().slice(0, 10);
+    var name = s.name.trim() || tb.unnamed, srcTxt = src.kind === 'file' ? r.name + ' · ' + r.fmt + ' · ' + f.file : f.box;
+    var cells = [
+      [[tb.title, name, 86, true], [tb.size, fitDims(d) + ' mm', 56], [tb.scale, sc.txt, 24], [tb.units, 'mm', 20], [tb.date, today, 32], [tb.sheet, 'NK-D', 24], [tb.proj, '', 35]],
+      [[tb.src, srcTxt, 86], [tb.mat, ch ? ch.name : tb.matNone, 56], [tb.qty, String(Math.max(1, Math.round(+s.qty || 1))), 24], [tb.printer, fitR ? (fitR.fits ? tb.fits : tb.noFit) : '—', 52], [tb.drawn, tb.by, 59]]
+    ];
+    var tbY = DW_H - DW_M - DW_TB, tbH = DW_TB / 2, out = '';
+    cells.forEach(function (row, ri) {
+      var cx = DW_M, cy = tbY + ri * tbH;
+      row.forEach(function (c) {
+        out += '<rect class="dw-cell" x="' + n2(cx) + '" y="' + n2(cy) + '" width="' + c[2] + '" height="' + tbH + '"/><text class="dw-k" x="' + n2(cx + 2) + '" y="' + n2(cy + 4) + '">' + esc(String(c[0]).toUpperCase()) + '</text>';
+        if (c[0] === tb.proj) { // first-angle symbol: the frustum (narrow end left) and its end view (two circles) on the right, like the views on this sheet
+          var px = cx + 2, py = cy + 6.5; out += '<g class="dw-sym"><path d="M' + n2(px) + ' ' + n2(py + 2.2) + 'l9 -2.2v8.8l-9 -2.2z"/><circle cx="' + n2(px + 17) + '" cy="' + n2(py + 4.4) + '" r="4.4"/><circle cx="' + n2(px + 17) + '" cy="' + n2(py + 4.4) + '" r="2.2"/></g><text class="dw-v" x="' + n2(px + 24) + '" y="' + n2(cy + 11.6) + '">E</text>';
+        } else out += '<text class="dw-v' + (c[3] ? ' dw-title' : '') + '" x="' + n2(cx + 2) + '" y="' + n2(cy + (c[3] ? 12.2 : 11.6)) + '">' + esc(dwFit(c[1], c[2] - 3, c[3] ? 5 : 3.1)) + '</text>';
+        cx += c[2];
+      });
+    });
+    var style = standalone ? '<style>svg{--paper:#fff;--ink:#1a1c1e;--ink-muted:#53585e;--grid:#dde3ea;--line-strong:#767c83;--dimension:#2559a8}.dw-frame{fill:none;stroke:var(--ink);stroke-width:.5}.dw-grid{fill:url(#dw-g)}.dw-part{fill:var(--ink)}.dw-dim path{fill:none;stroke:var(--dimension);stroke-width:.25}.dw-dim .dw-arr{fill:var(--dimension);stroke:none}.dw-dim text{font:3.2px ' + mono + ';fill:var(--dimension)}.dw-vl{font:2.6px ' + mono + ';fill:var(--ink-muted);letter-spacing:.08em}.dw-cell{fill:none;stroke:var(--ink);stroke-width:.35}.dw-k{font:2.1px ' + mono + ';fill:var(--ink-muted);letter-spacing:.1em}.dw-v{font:3.1px ' + mono + ';fill:var(--ink)}.dw-title{font:800 5px ' + sans + ';fill:var(--ink)}.dw-sym{fill:none;stroke:var(--ink);stroke-width:.35}</style>' : '';
+    var alt = f.alt.replace('{n}', name).replace('{s}', fitDims(d)).replace('{sc}', sc.txt);
+    return '<svg' + (standalone ? ' xmlns="http://www.w3.org/2000/svg" width="297mm" height="210mm"' : ' class="dw-svg" role="img" aria-label="' + esc(alt) + '"') + ' viewBox="0 0 297 210">' + style +
+      '<defs><pattern id="dw-g" width="5" height="5" patternUnits="userSpaceOnUse"><path d="M5 0H0V5" fill="none" stroke="var(--grid)" stroke-width=".15"/></pattern></defs>' +
+      '<rect width="297" height="210" style="fill:var(--paper)"/><rect class="dw-grid" x="' + DW_M + '" y="' + DW_M + '" width="' + (DW_W - 2 * DW_M) + '" height="' + (DW_H - 2 * DW_M) + '"/><rect class="dw-frame" x="' + DW_M + '" y="' + DW_M + '" width="' + (DW_W - 2 * DW_M) + '" height="' + (DW_H - 2 * DW_M) + '"/>' +
+      mask('dw-m1', im.front, x0, y0, fw, fh) + mask('dw-m2', im.side, sx, y0, sw, fh) + mask('dw-m3', im.top, x0, ty, fw, th) +
+      dimH(x0, x0 + fw, y0, y0 - 7, dwN(d[0])) + dimV(y0, y0 + fh, x0, x0 - 7, dwN(d[2])) + dimH(sx, sx + sw, y0 + fh, y0 + fh + 8, dwN(d[1])) +
+      label(x0 + fw / 2, ty - 5, f.views.front) + label(sx + sw / 2, y0 + fh + 11.5, f.views.side) + label(x0 + fw / 2, ty + th + 4.5, f.views.top) +
+      out + '</svg>';
+  }
+  function dwBox() {
+    var f = t().dw, src = stSrc();
+    return '<section class="block dw" id="st-dw" aria-labelledby="dw-h">' + head(f.label, f.title, f.lead).replace('class="sec-title"', 'class="sec-title" id="dw-h"') +
+      (src ? '<figure class="dw-sheet" id="dw-sheet" tabindex="0" role="group" aria-label="' + esc(f.label) + '">' + dwSvg(src, false) + '</figure><div class="cta-row dw-act"><button type="button" class="nk-btn nk-btn--primary" data-dw-print>' + psIco() + ' ' + esc(f.print) + '</button><button type="button" class="nk-btn" data-dw-svg>' + esc(f.svg) + '</button><span class="copy-msg" id="dw-msg" role="status" aria-live="polite"></span></div>' :
+        '<div class="dw-empty"><svg viewBox="0 0 120 90" aria-hidden="true" focusable="false"><path class="hid" d="M20 20h50v30H20zM80 20h20v30H80zM20 60h50v20H20z"/></svg><p class="hint">' + esc(f.empty) + '</p></div>') +
+      '<p class="fit-note dw-note">' + esc(f.note) + '</p></section>';
+  }
+  function dwShow() { var el = document.getElementById('st-dw'); if (el) el.outerHTML = dwBox(); }
+  function dwPrintOff() { if (!dwPrintOn) return; dwPrintOn = false; document.documentElement.classList.remove('dw-print'); var st = document.getElementById('dw-page'); if (st) st.remove(); }
+  function dwPrint() { // only the sheet, A4 landscape; the inline <style> is allowed by the CSP (style-src 'unsafe-inline')
+    if (!document.getElementById('dw-sheet')) return;
+    dwPrintOn = true; document.documentElement.classList.add('dw-print');
+    var st = document.createElement('style'); st.id = 'dw-page'; st.textContent = '@page { size: A4 landscape; margin: 0; }'; document.head.appendChild(st);
+    window.addEventListener('afterprint', dwPrintOff, { once: true });
+    try { window.print(); } catch (e) { dwPrintOff(); }
+    setTimeout(function () { document.addEventListener('click', dwPrintOff, { once: true }); document.addEventListener('keydown', dwPrintOff, { once: true }); }, 0);
+  }
+  function dwDownload() {
+    var src = stSrc(), f = t().dw, msg = document.getElementById('dw-msg'); if (!src) return;
+    try {
+      var svg = '<?xml version="1.0" encoding="UTF-8"?>\n' + dwSvg(src, true), blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), url = URL.createObjectURL(blob), a = document.createElement('a');
+      var base = (state.st.name.trim() || (state.fc.res ? state.fc.res.name.replace(/\.[a-z0-9]+$/i, '') : 'part')).replace(/[^\w\-]+/g, '-').replace(/^-+|-+$/g, '') || 'part';
+      a.href = url; a.download = 'NK-D-' + base + '-' + new Date().toISOString().slice(0, 10) + '.svg'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      if (msg) msg.textContent = f.saved;
+    } catch (e) { if (msg) msg.textContent = f.saveFail; }
+  }
+
   // ---------- Batch on the plate (#services?tool=plate): how many copies of a part fit on one X2D plate, plates per batch ----------
   // Added 2026-10-30. Rectangular nesting of one footprint (as entered, turned 90°, or a grid plus a strip of turned parts) on
   // the published 256 × 256 mm plate (BED), with the gap the visitor sets. No prices, no print times — only counts and a
@@ -2347,6 +2465,7 @@
     return '<section class="block pc">' + head(x.label, x.title, x.lead) + '<div class="pc-grid">' +
       '<div class="pc-col"><p class="nk-label">' + esc(x.hourly) + '</p>' + specs(rows) + (+P.minHours > 0 ? '<p class="pc-how">' + esc(x.minHours.replace('{n}', P.minHours)) + '</p>' : '') + (pm ? '<p class="pc-promo"><span class="nk-tag nk-tag--rev">' + esc(x.promoRow) + '</span> ' + esc(L(pm.title)) + (pm.until ? ' · ' + esc(t().promo.until.replace('{d}', pcDate(pm.until))) : '') + '</p>' : '') + '</div>' +
       '<div class="pc-col"><p class="nk-label">' + esc(x.printing) + '</p>' + specs(pros) + '<p class="pc-how">' + esc(x.printHow) + '</p></div></div>' +
+      '<div class="cta-row pc-act"><button type="button" class="nk-btn" data-tl-print="prices">' + psIco() + ' ' + esc(t().tl.printPrices) + '</button></div>' + // Print package (2026-11-02, evening run)
       '<p class="fit-note">' + esc(L(P.vatNote) || '') + '</p><p class="pl-open"><a href="#services?tool=quote">' + esc(x.calc) + ' →</a>' + (giftOn() ? '<span aria-hidden="true"> · </span><a href="#gift">' + esc(t().gift.link) + ' →</a>' : '') + '</p></section>';
   }
   // Quote estimate: state.qc holds what the visitor typed; qcCalc() applies the published rates and minimums.
@@ -2401,14 +2520,14 @@
     });
     return '<section class="block qc">' + head(x.label, x.title, x.lead) + '<div class="fit-grid"><div class="fit-form"><p class="nk-label">' + esc(x.services) + '</p><div class="qc-svcs">' + svcs + '</div>' +
       (pm ? '<label class="ad-check qc-check qc-first"><input type="checkbox" data-qc-k="first"' + (q.first ? ' checked' : '') + '> ' + esc(x.first.replace('{n}', pm.pct)) + '</label>' : '') +
-      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-qc-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-qc-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-mn-qc' + (c ? '' : ' disabled') + '>' + esc(t().mn.qcSave) + '</button><span class="copy-msg" id="qc-msg" role="status"></span></div>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-qc-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-qc-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><button type="button" class="nk-btn" data-tl-print="quote"' + (c ? '' : ' disabled') + '>' + psIco() + ' ' + esc(t().tl.printQuote) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-mn-qc' + (c ? '' : ' disabled') + '>' + esc(t().mn.qcSave) + '</button><span class="copy-msg" id="qc-msg" role="status"></span></div>' +
       '<p class="fit-note">' + esc(x.note.replace('{vat}', L(P.vatNote) || '')) + '</p></div>' +
       '<div class="fit-out qc-out" id="qc-out" role="status" aria-live="polite">' + qcOut(c) + '</div></div></section>';
   }
   function qcUpdate(full) {
     if (full) { var sec = document.querySelector('.qc'); if (sec) { var f = document.activeElement && document.activeElement.id; sec.outerHTML = qcBox(); if (f) { var el = document.getElementById(f); if (el) el.focus(); } } return; }
     var c = qcCalc(), o = document.getElementById('qc-out'); if (o) o.innerHTML = qcOut(c);
-    ['data-qc-go', 'data-qc-copy', 'data-mn-qc'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
+    ['data-qc-go', 'data-qc-copy', 'data-mn-qc', 'data-tl-print="quote"'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
   }
   function qcSet(o) { // the Part studio hands over material, weight, print time and quantity before the link opens the tool
     var q = state.qc; q.print = 1; if (o.mat) q.mat = o.mat; if (o.g) q.g = String(Math.round(o.g)); if (o.h) q.h = String(Math.round(o.h * 10) / 10); if (o.qty) q.qty = String(o.qty); q.src = 'studio';
@@ -2549,15 +2668,34 @@
   }
   function tlWrap(k, html) { // gives the tool section its id + a T-0N tag and ends it with "↑ All tools"
     var d = TL_TOOLS.filter(function (v) { return v[0] === k; })[0], n = TL_TOOLS.indexOf(d) + 1;
-    html = html.replace(/^<section class="block ([a-z-]+)"(?: id="[^"]*")?/, '<section class="block $1 tl-tool" id="' + d[2] + '" data-tl="T-0' + n + '"');
+    html = html.replace(/^<section class="block ([a-z-]+)"(?: id="[^"]*")?/, '<section class="block $1 tl-tool' + (state.tool === k ? ' tl-on' : '') + '" id="' + d[2] + '" data-tl="T-0' + n + '"'); // tl-on: the tool the address names — the one that prints alone (Print package, 2026-11-02, evening run)
     // SEO package (2026-11-02): every tool has a shareable address (https://nacekepa.work/#services?tool=<name>); the footer copies it.
-    return html.replace(/<\/section>$/, '<p class="tl-back"><a href="#services?tool=index">↑ ' + esc(t().tl.back) + '</a><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-copy="' + esc(tlUrl(k)) + '">' + esc(t().tl.copy) + '</button><span class="tl-msg" role="status" aria-live="polite"></span></p></section>');
+    return html.replace(/<\/section>$/, '<p class="tl-back"><a href="#services?tool=index">↑ ' + esc(t().tl.back) + '</a><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-copy="' + esc(tlUrl(k)) + '">' + esc(t().tl.copy) + '</button><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-print="' + k + '">' + esc(t().tl.print) + '</button><span class="tl-msg" role="status" aria-live="polite"></span></p>' +
+      '<p class="print-only print-url tl-print"><span>' + esc(t().tl.printed) + '</span> ' + esc(tlUrl(k)) + ' · ' + esc(new Date().toISOString().slice(0, 10)) + '</p></section>'); // print-only footer line of a tool printed alone (Print package)
   }
   function tlUrl(k) { return 'https://nacekepa.work/' + (lang === 'sl' ? 'sl/' : '') + tlHash(k); }
   function tlCopy(btn) {
     var url = btn.getAttribute('data-tl-copy'), msg = btn.nextElementSibling, x = t().tl;
     var fail = function () { if (msg) msg.textContent = x.copyFail; };
     try { navigator.clipboard.writeText(url).then(function () { if (msg) msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+  }
+  // Print package (2026-11-02, evening run): a tool prints on its own — from its address (#services?tool=<name>, Ctrl+P) or
+  // its "Print this tool" button — with the tool's address and the date as a footer line (`.tl-print`, print only). tlMark(k)
+  // puts data-tool on <html> and `tl-on` on that section; the "Print package" rules in page.css hide everything else.
+  // To remove: tlMark() / tlPrint(), the tlMark() line in render(), the tl-on / tl-print parts of tlWrap(), the data-tl-print
+  // buttons (price list, quote tool), the data-tl-print handler line, tl.print… in content.js and the CSS rules.
+  function tlMark(k) {
+    var on = k && k !== 'index' ? k : '';
+    if (on) document.documentElement.setAttribute('data-tool', on); else document.documentElement.removeAttribute('data-tool');
+    var d = TL_TOOLS.filter(function (v) { return v[0] === on; })[0];
+    Array.prototype.forEach.call(document.querySelectorAll('.tl-tool'), function (sec) { sec.classList.toggle('tl-on', !!d && sec.id === d[2]); });
+  }
+  function tlPrint(k) {
+    tlMark(k);
+    var back = function () { tlMark(page() === 'services' ? state.tool : ''); };
+    window.addEventListener('afterprint', back, { once: true });
+    printSheet();
+    setTimeout(function () { document.addEventListener('click', back, { once: true }); document.addEventListener('keydown', back, { once: true }); }, 0);
   }
   function tlHome() {
     var x = t().tl;
@@ -2884,6 +3022,7 @@
     if (p === 'order') drSave();
     if (p === 'services' && state.fc.res) { fcDraw(); fc3dMount(); } // File check views + 3D preview
     if (p === 'studio') stMount();
+    tlMark(p === 'services' ? state.tool : ''); // Print package (2026-11-02, evening run)
     if (p === 'services' && state.tool && location.hash !== state.tlAt) { state.tlAt = location.hash; tlGo(state.tool); } else if (p !== 'services') state.tlAt = '';
     if (p === 'services' && state.mpFocus) { state.mpFocus = false; var mb = document.getElementById('material'); if (mb) { mb.scrollIntoView({ block: 'start' }); var mi = mb.querySelector('input'); if (mi) mi.focus({ preventScroll: true }); } }
     if (p === 'services' && state.plFocus) { state.plFocus = false; var pb = document.getElementById('plan'); if (pb) { pb.scrollIntoView({ block: 'start' }); var pr = pb.querySelector('input'); if (pr) pr.focus({ preventScroll: true }); } }
@@ -2937,6 +3076,9 @@
     if (el.hasAttribute('data-st-go')) { stToOrder(); return; }
     if (el.hasAttribute('data-st-copy')) { stCopy(); return; }
     if (el.hasAttribute('data-st-print')) { printSheet(); return; }
+    if (el.hasAttribute('data-tl-print')) { tlPrint(el.getAttribute('data-tl-print')); return; } // Print package (2026-11-02, evening run)
+    if (el.hasAttribute('data-dw-print')) { dwPrint(); return; } // Drawing sheet NK-D (2026-11-02, evening run)
+    if (el.hasAttribute('data-dw-svg')) { dwDownload(); return; }
     if (el.hasAttribute('data-st-fit')) { var sfp = stFitPerm(stSrc()); if (sfp >= 0) stAxes(sfp); return; }
     if (el.hasAttribute('data-st-measure')) { stMeasure(); return; }
     if (el.hasAttribute('data-st-mclear')) { if (st3d) st3d.clearMeasure(); state.st.meas = null; stMeasShow(); return; }
