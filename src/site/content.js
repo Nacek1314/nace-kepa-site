@@ -37,6 +37,11 @@ var T = {
       note: 'Only your own numbers and the published X2D build volume, materials and turnarounds — no prices. Nothing is uploaded until you send the brief.',
       hint3d: 'Drag to rotate · scroll or pinch to zoom · right-drag to pan · dashed box = X2D build volume 256 × 256 × 260 mm', open: 'Open this file in the Part studio',
       // Support check (spBox in app.js, 2026-10-31)
+      // Part studio 2.0 (2026-11-02): wall-thickness check + time / material / price estimate (settings.json printing + pricing).
+      wt: { label: 'Wall thickness', toggle: 'Show thin walls', limit: 'Warn under', busy: 'Measuring walls…', thin: 'Thinnest wall ≈ {mm} mm', typical: 'typical {mm} mm', under: 'Under {l} mm: {a} cm² · {p} % of the surface', underNone: 'Nothing under {l} mm.',
+        rowThin: 'Thinnest wall', rowUnder: 'Under {l} mm', box: 'A typed size is a plain box — the thinnest wall is its smallest side. Drop the real file to measure the walls.',
+        note: 'Local thickness measured from every face straight inwards (sampled on large meshes). Rule of thumb only: a slicer with your nozzle decides what prints; the limit is yours to set.', hist: 'Surface by wall thickness', mm: 'mm' },
+      est: { label: 'Estimate', rowMat: 'Material', rowTime: 'Print time', rowPrice: 'Price', mat: '≈ {g} g {m}', matNo: 'pick a material above', time: '≈ {h} h per part', price: '≈ {p} per part · {q} for {n} pcs', priceOne: '≈ {p}', link: 'Estimate in detail', note: 'From the part volume, {infill} % infill, {walls} wall loops and {rate} cm³/h — indicative, the quote decides.' },
       sp: { label: 'Support check', toggle: 'Show overhangs', deg: 'Overhang limit', none: 'No faces over {d}° — prints without support in this orientation.', sup: 'Needs support: {a} cm² · {p} % of the surface', base: 'On the plate (first layer): {a} cm²',
         table: 'Support by orientation', colSize: 'X × Y × Z mm', colSup: 'Support', colBase: 'On the plate', colUse: 'Orientation', use: 'Use', cur: 'current', best: 'least support', fits: 'fits', noFit: 'too big',
         rowSup: 'Support ({d}°)', rowBase: 'First layer', rowNone: 'none',
@@ -231,6 +236,11 @@ var T = {
       note: 'Samo vaše številke in objavljeni delovni prostor X2D, materiali in roki — brez cen. Nič se ne naloži, dokler ne pošljete povzetka.',
       hint3d: 'Z vlečenjem vrtite · kolešček ali prsta za povečavo · desni gumb za premik · črtkan okvir = delovni prostor X2D 256 × 256 × 260 mm', open: 'Odpri to datoteko v Studiu dela',
       // Preverjanje podpor (spBox v app.js, 2026-10-31)
+      // Studio dela 2.0 (2026-11-02): preverjanje debeline sten + ocena časa / materiala / cene (settings.json printing + pricing).
+      wt: { label: 'Debelina sten', toggle: 'Pokaži tanke stene', limit: 'Opozori pod', busy: 'Merim stene …', thin: 'Najtanjša stena ≈ {mm} mm', typical: 'tipično {mm} mm', under: 'Pod {l} mm: {a} cm² · {p} % površine', underNone: 'Nič pod {l} mm.',
+        rowThin: 'Najtanjša stena', rowUnder: 'Pod {l} mm', box: 'Vpisane mere so navaden kvader — najtanjša stena je njegova najmanjša stranica. Spustite pravo datoteko, da izmerim stene.',
+        note: 'Lokalna debelina, izmerjena z vsake ploskve naravnost navznoter (pri velikih mrežah vzorčeno). Samo pravilo palca: kaj se natisne, določi rezalnik z vašo šobo; mejo postavite sami.', hist: 'Površina po debelini sten', mm: 'mm' },
+      est: { label: 'Ocena', rowMat: 'Material', rowTime: 'Čas tiska', rowPrice: 'Cena', mat: '≈ {g} g {m}', matNo: 'zgoraj izberite material', time: '≈ {h} h na kos', price: '≈ {p} na kos · {q} za {n} kos.', priceOne: '≈ {p}', link: 'Podrobna ocena', note: 'Iz prostornine dela, {infill} % polnila, {walls} obodov in {rate} cm³/h — okvirno, odloča ponudba.' },
       sp: { label: 'Preverjanje podpor', toggle: 'Pokaži previse', deg: 'Meja previsa', none: 'Brez ploskev čez {d}° — v tej legi se tiska brez podpor.', sup: 'Potrebuje podpore: {a} cm² · {p} % površine', base: 'Na mizi (prvi sloj): {a} cm²',
         table: 'Podpore po legah', colSize: 'X × Y × Z mm', colSup: 'Podpore', colBase: 'Na mizi', colUse: 'Lega', use: 'Uporabi', cur: 'trenutna', best: 'najmanj podpor', fits: 'gre', noFit: 'prevelik',
         rowSup: 'Podpore ({d}°)', rowBase: 'Prvi sloj', rowNone: 'brez',

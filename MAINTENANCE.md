@@ -83,6 +83,31 @@ TL_TOOLS entries + `promoBand()` calls + `data-qc-*` handler lines in `app.js`, 
 *To remove part 2:* see the comment above `GIFT` in `app.js`; the `faqLd` / `faqs` lines and the FAQ block in the
 snapshot in `Site.astro`; the Google row line in `ctCard()`.
 
+### Part 3 — Part studio 2.0: wall-thickness check + time / material / price estimate
+
+- **Wall thickness** block under the support check on `#studio` (`WT_MAX` … `wtToggle()` in `app.js`, `st.wt` in
+  `content.js`, "Part studio 2.0" rules in `page.css`): every triangle's local thickness = distance from its centroid
+  straight inwards to the first other triangle (ray through a uniform grid, Möller–Trumbore; the signed volume tells the
+  winding; ≤ 40 000 triangles sampled on big meshes). Output: "Thinnest wall ≈ X mm · typical Y mm" (2nd percentile and
+  median by area), a histogram of the surface by thickness (< 0.8 / 0.8–1.2 / 1.2–2 / 2–4 / ≥ 4 mm), an optional limit
+  "Warn under … mm" (empty by default — no nozzle width is published, so the visitor sets it) with the area + % under it,
+  rows "Thinnest wall" / "Under L mm" on the NK-S sheet (copy, print, brief), and "Show thin walls" that paints the thin
+  triangles in the 3D view (same overlay slot as "Show overhangs" — switching one on switches the other off). A typed size
+  is a box: thinnest wall = smallest side, with a note to drop the real file.
+- **Estimate** rows on the NK-S sheet (`stEst()` / `stEstRows()`): material ≈ (surface × wall loops × line width, capped
+  at the volume) + infill of the rest, mass from the chosen material's density (settings materials), print time =
+  material volume / deposition rate, price = mass × €/g + time × machine hour with the per-part / per-order minimums and
+  the file preparation (same rates as the quote estimate); a note with the parameters and "Estimate in detail →" that
+  pre-fills the quote tool (`qcSet()`: material, grams, hours, quantity). Only with `settings.json › printing.rateCm3h`
+  and a closed mesh (or a typed box); the price row only with a material picked and prices in settings. New setting
+  `printing.lineWidth` (0.4 mm, from Nace's "3 walls ≈ 1.2 mm") in the admin Settings tab.
+- Tested in Playwright (SwiftShader) with generated STLs: closed hollow box 60 × 40 × 30 with 2 mm walls → "≈ 2 mm", 100 %
+  in 1.2–2, nothing under 1.5 mm, ASA ≈ 21 g, 1.6 h, 6.88 € / 26.64 € for 3; 0.8 mm shell → 100 % under 1 mm (tag), 9 g,
+  0.7 h; 40 × 40 × 1 plate → 95 % at ~1 mm + 5 % sides; typed 50 × 30 × 4 box → 4 mm; overlay toggles exclusive; hand-off
+  to the quote tool (material, 21 g, 1.6 h, qty 3 → breakdown); EN/SL, 1280/390, light/dark; ~2 s for the test meshes;
+  full audit of every page incl. #gift: no errors, no horizontal scroll.
+*To remove part 3:* see the comment above `WT_MAX` in `app.js`; `lineWidth` in `settings.json` / admin.
+
 ## 2026-11-01
 
 **Checked:** build, home, #services (all tools incl. `?tool=index` / `?tool=plate`), #work, #work?view=list, #p-famfive,

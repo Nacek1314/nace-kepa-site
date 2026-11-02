@@ -429,7 +429,7 @@ function stNormal(o) { // fills in every branch the form shows, so inputs always
   o.pricing = { currency: 'EUR', vatNote: txt(pr.vatNote), hourly: Object.assign({ cad: '', iot: '', build: '', post: '' }, pr.hourly || {}), minHours: pr.minHours ?? '', buildNote: txt(pr.buildNote),
     print: { machineHour: pp.machineHour ?? '', setup: pp.setup ?? '', minPart: pp.minPart ?? '', minOrder: pp.minOrder ?? '', rushPct: pp.rushPct ?? '', materials: Array.isArray(pp.materials) ? pp.materials.map((m) => ({ key: m.key || '', name: m.name || '', perGram: m.perGram ?? '', density: m.density ?? '' })) : [] } };
   const pt = o.printing || {};
-  o.printing = { layer: pt.layer ?? '', infill: pt.infill ?? '', walls: pt.walls ?? '', rateCm3h: pt.rateCm3h ?? '' };
+  o.printing = { layer: pt.layer ?? '', infill: pt.infill ?? '', walls: pt.walls ?? '', lineWidth: pt.lineWidth ?? '', rateCm3h: pt.rateCm3h ?? '' };
   const pm = o.promo || {};
   o.promo = { title: txt(pm.title), text: txt(pm.text), pct: pm.pct ?? '', scope: pm.scope || 'first', until: pm.until || '', code: pm.code || '' };
   const g = o.gift || {};
@@ -446,7 +446,7 @@ function stClean(o) { // what gets written: numbers as numbers, empty strings dr
     pricing: { currency: 'EUR', vatNote: txt(pr.vatNote), hourly: { cad: num(pr.hourly.cad), iot: num(pr.hourly.iot), build: num(pr.hourly.build), post: num(pr.hourly.post) }, minHours: num(pr.minHours), buildNote: txt(pr.buildNote),
       print: { machineHour: num(pp.machineHour), setup: num(pp.setup), minPart: num(pp.minPart), minOrder: num(pp.minOrder), rushPct: num(pp.rushPct),
         materials: pp.materials.filter((m) => m.name.trim() && num(m.perGram) > 0).map((m) => ({ key: m.key || m.name.toLowerCase().replace(/[^a-z0-9]+/g, ''), name: m.name.trim(), perGram: num(m.perGram), density: num(m.density) })) } },
-    printing: { layer: num(o.printing.layer), infill: num(o.printing.infill), walls: num(o.printing.walls), rateCm3h: num(o.printing.rateCm3h) },
+    printing: { layer: num(o.printing.layer), infill: num(o.printing.infill), walls: num(o.printing.walls), lineWidth: num(o.printing.lineWidth), rateCm3h: num(o.printing.rateCm3h) },
     promo: { title: txt(o.promo.title), text: txt(o.promo.text), pct: num(o.promo.pct), scope: o.promo.scope, until: o.promo.until || undefined, code: o.promo.code || undefined },
     gift: { amounts: o.gift.amounts.map(num).filter((n) => n > 0), min: num(o.gift.min), validMonths: num(o.gift.validMonths), note: txt(o.gift.note) },
     faq: o.faq.filter((f) => f.q.en.trim() || f.q.sl.trim()).map((f) => ({ q: { en: f.q.en.trim(), sl: f.q.sl.trim() }, a: { en: f.a.en.trim(), sl: f.a.sl.trim() } })),
@@ -510,7 +510,7 @@ function stView() {
       <p><button type="button" class="nk-btn nk-btn--sm" data-set-act="mat-add">+ Material</button></p>
     </fieldset>
     <fieldset class="ad-sec" id="st-printing"><legend class="nk-label">Print parameters · time and material estimate in the Part studio (#studio)</legend>
-      <div class="form form-3">${stNum('printing.layer', 'Layer height · mm')}${stNum('printing.infill', 'Infill · %')}${stNum('printing.walls', 'Wall loops')}${stNum('printing.rateCm3h', 'Deposition rate · cm³ per hour', 'What the X2D lays down per hour on average; an empty value hides the time estimate.')}</div>
+      <div class="form form-3">${stNum('printing.layer', 'Layer height · mm')}${stNum('printing.infill', 'Infill · %')}${stNum('printing.walls', 'Wall loops')}${stNum('printing.lineWidth', 'Line width · mm', 'Nozzle line width, e.g. 0.4 — walls × line width = wall thickness in the estimate.')}${stNum('printing.rateCm3h', 'Deposition rate · cm³ per hour', 'What the X2D lays down per hour on average; an empty value hides the time estimate.')}</div>
     </fieldset>
     <fieldset class="ad-sec" id="st-promo"><legend class="nk-label">Promotion · banner on the home page, price list, quote estimate and the brief</legend>
       <div class="form">${stTxt('promo.title.en', 'Title · EN')}${stTxt('promo.title.sl', 'Naslov · SL')}${stArea('promo.text.en', 'Text · EN')}${stArea('promo.text.sl', 'Besedilo · SL')}

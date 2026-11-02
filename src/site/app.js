@@ -1802,6 +1802,7 @@
     rows.push([f.rows.orient, s.axes ? f.turned + ' (' + ['X', 'Y', 'Z'].map(function (a, i) { return 'XYZ'[stPerm()[i]] + '→' + a; }).join(' ') + ')' : f.asFile]);
     var fl = stFitLine(src); rows.push([f.rows.fit, fl[1], fl[0]]);
     rows.push.apply(rows, spRows(src)); // support check (2026-10-31)
+    rows.push.apply(rows, wtRows(src)); // wall thickness (2026-11-02)
     if (src.kind === 'file') {
       rows.push([f.rows.closed, r.st.open === null ? fc.closedSkip : r.st.open === 0 ? fc.closedY : fc.closedN + ' · ' + fc.openEdges.replace('{n}', fcNum(r.st.open, 0))]);
       if (r.st.open === 0) rows.push([f.rows.vol, fcNum(r.st.vol * k * k * k / 1000) + ' cm³']);
@@ -1814,6 +1815,7 @@
     var svc = SERVICES.filter(function (v) { return v.key === 'print'; })[0];
     rows.push([f.rows.due, s.deadline ? fmtDate(s.deadline) : '—', 'due']);
     if (svc) rows.push([f.rows.time, svc.code + ' · ' + L(svc.time)]);
+    rows.push.apply(rows, stEstRows(src)); // time / material / price estimate (2026-11-02)
     if (s.meas) rows.push([f.rows.meas, stMeasText()]);
     if (s.fn.trim()) rows.push([f.rows.fn, s.fn.trim()]);
     return rows;
@@ -1827,7 +1829,7 @@
       }).join('') + '</dl>' +
       (src ? '<div class="cta-row st-act"><button type="button" class="nk-btn nk-btn--primary" data-st-go>' + esc(f.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
         '<button type="button" class="nk-btn" data-st-print>' + psIco() + ' ' + esc(f.print) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-st-copy>' + esc(f.copy) + '</button></div>' : '<p class="hint st-hint">' + esc(f.emptyD) + '</p>') +
-      '<p class="share-msg" id="st-msg" role="status" aria-live="polite"></p><p class="fit-note st-note">' + esc(f.note) + '</p>';
+      '<p class="share-msg" id="st-msg" role="status" aria-live="polite"></p>' + (src ? stEstBox(src) : '') + '<p class="fit-note st-note">' + esc(f.note) + '</p>';
   }
   function stTools(src) {
     var f = t().st, s = state.st, fp = src ? stFitPerm(src) : -1;
@@ -1840,7 +1842,7 @@
   function stStage(src) {
     var f = t().st, x = t();
     if (!src) return '<div class="nk-sheet__art st-empty"><svg viewBox="0 0 120 90" aria-hidden="true" focusable="false"><path class="hid" d="M30 70 L30 30 L60 15 L90 30 L90 70 L60 85 Z M30 30 L60 45 L90 30 M60 45 V85"/></svg><p class="nk-label">' + esc(f.emptyT) + '</p><p class="hint">' + esc(f.emptyD) + '</p></div>';
-    return '<div class="nk-viewer st-3d" id="st-3d" role="img" aria-label="' + esc(f.label + ': ' + (src.name || f.srcBox)) + '"><div class="nk-viewer__msg" id="st-3d-msg">' + esc(x.loading3d) + '</div></div>' + v3Bar('st') + stTools(src) + spBox(src) + '<p class="viewer-hint">' + esc(f.hint3d) + '</p>';
+    return '<div class="nk-viewer st-3d" id="st-3d" role="img" aria-label="' + esc(f.label + ': ' + (src.name || f.srcBox)) + '"><div class="nk-viewer__msg" id="st-3d-msg">' + esc(x.loading3d) + '</div></div>' + v3Bar('st') + stTools(src) + spBox(src) + wtBox(src) + '<p class="viewer-hint">' + esc(f.hint3d) + '</p>';
   }
   function stForm() {
     var f = t().st, x = t(), s = state.st, r = state.fc.res, fs = state.fc, mp = t().mp;
@@ -1872,7 +1874,7 @@
         st3d = v; var m = document.getElementById('st-3d-msg'); if (m) m.remove();
         if (state.st.axes) v.setAxes(stPerm());
         v.setMeasure(!!state.st.mon);
-        v3Sync('st'); stMeasShow(); spApply();
+        v3Sync('st'); stMeasShow(); spApply(); wtApply();
       }, function () { var m = document.getElementById('st-3d-msg'); if (m) m.textContent = t().viewerFail; });
     };
     if (window.NKViewer) go(); else { window.addEventListener('nkviewer:ready', go, { once: true }); if (window.NKViewerLoad) window.NKViewerLoad(); }
@@ -2018,8 +2020,148 @@
   }
   function spToggle() {
     state.sp.on = !state.sp.on;
+    if (state.sp.on && state.wt.on) { state.wt.on = false; var wb = document.querySelector('[data-st-wt]'); if (wb) wb.setAttribute('aria-pressed', 'false'); } // one overlay slot (2026-11-02)
     var b = document.querySelector('[data-st-sp]'); if (b) { b.setAttribute('aria-pressed', String(state.sp.on)); b.focus({ preventScroll: true }); }
     spApply();
+  }
+
+
+  // ---------- Part studio 2.0 (2026-11-02, big update part 3): wall-thickness check + time / material / price estimate ----------
+  // wtCalc(): every triangle's local thickness = distance from its centroid straight inwards to the first other triangle
+  // (ray → uniform grid, Möller–Trumbore), sampled to ≤ WT_MAX triangles on big meshes; a typed size is a box (smallest
+  // side). Output: thinnest wall (2nd percentile by area, so one sliver does not decide), a histogram by thickness, the
+  // area under a limit the visitor types (empty = none) and a red overlay of the thin triangles (shares the viewer's one
+  // overlay slot with the support check — switching one on switches the other off).
+  // stEst(): material ≈ shell (surface × walls × line width) + infill of the rest, mass from the material's density,
+  // time = material volume / deposition rate, price through the same rates as the quote estimate — every number from
+  // settings.json (printing + pricing); a missing one hides that row.
+  // Self-contained: remove WT_MAX … stEstRows(), wtBox(src) in stStage(), the wtRows / stEstRows lines in stRows(), the
+  // wtApply() line in stMount() / stAxes(), the data-st-wt* lines in the click / input handlers, the sp↔wt exclusivity line
+  // in spToggle(), st.wt + st.est in both languages in content.js and the "Part studio 2.0" rules at the end of page.css.
+  var WT_MAX = 40000, WT_BINS = [0.8, 1.2, 2, 4], wtCache = null;
+  state.wt = { on: false, limit: '' };
+  function wtLimit() { var v = parseFloat(String(state.wt.limit).replace(',', '.')); return v > 0 && v < 1000 ? v : 0; }
+  function wtCalc(src) { // { th: Float32Array(n) mm (-1 = no hit), area: Float32Array(n) mm², total, p2, median, bins[], sampled }
+    var key = src.pos.length + ':' + src.scale + ':' + (src.kind === 'file' && state.fc.res ? state.fc.res.name : 'box');
+    if (wtCache && wtCache.key === key && wtCache.pos === src.pos) return wtCache;
+    var pos = src.pos, n = Math.floor(pos.length / 9), k = src.scale > 0 ? src.scale : 1, i, j;
+    var mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+    for (i = 0; i < n * 9; i++) { j = i % 3; if (pos[i] < mn[j]) mn[j] = pos[i]; if (pos[i] > mx[j]) mx[j] = pos[i]; }
+    var ext = [mx[0] - mn[0] || 1, mx[1] - mn[1] || 1, mx[2] - mn[2] || 1], diag = Math.sqrt(ext[0] * ext[0] + ext[1] * ext[1] + ext[2] * ext[2]);
+    // normals, centroids, areas; signed volume tells whether the file's winding points outwards
+    var nx = new Float32Array(n), ny = new Float32Array(n), nz = new Float32Array(n), cx = new Float32Array(n), cy = new Float32Array(n), cz = new Float32Array(n), ar = new Float32Array(n), vol6 = 0;
+    for (i = 0; i < n; i++) {
+      var o = i * 9, ax = pos[o], ay = pos[o + 1], az = pos[o + 2], bx = pos[o + 3], by = pos[o + 4], bz = pos[o + 5], qx = pos[o + 6], qy = pos[o + 7], qz = pos[o + 8];
+      var ux = bx - ax, uy = by - ay, uz = bz - az, wx = qx - ax, wy = qy - ay, wz = qz - az;
+      var x = uy * wz - uz * wy, y = uz * wx - ux * wz, z = ux * wy - uy * wx, len = Math.sqrt(x * x + y * y + z * z);
+      if (len > 0 && isFinite(len)) { nx[i] = x / len; ny[i] = y / len; nz[i] = z / len; ar[i] = len / 2; }
+      cx[i] = (ax + bx + qx) / 3; cy[i] = (ay + by + qy) / 3; cz[i] = (az + bz + qz) / 3;
+      vol6 += ax * (by * qz - bz * qy) - ay * (bx * qz - bz * qx) + az * (bx * qy - by * qx);
+    }
+    var sgn = vol6 < 0 ? 1 : -1; // ray direction = -normal (inwards) when the winding is outward
+    // uniform grid over the bounding box
+    var G = Math.max(4, Math.min(40, Math.round(Math.cbrt(n / 4)))), cs = [ext[0] / G, ext[1] / G, ext[2] / G], cells = new Array(G * G * G), ci = function (a, b, c) { return (a * G + b) * G + c; };
+    var cl = function (v, d) { var q = Math.floor((v - mn[d]) / cs[d]); return q < 0 ? 0 : q >= G ? G - 1 : q; };
+    for (i = 0; i < n; i++) {
+      var o2 = i * 9, x0 = cl(Math.min(pos[o2], pos[o2 + 3], pos[o2 + 6]), 0), x1 = cl(Math.max(pos[o2], pos[o2 + 3], pos[o2 + 6]), 0), y0 = cl(Math.min(pos[o2 + 1], pos[o2 + 4], pos[o2 + 7]), 1), y1 = cl(Math.max(pos[o2 + 1], pos[o2 + 4], pos[o2 + 7]), 1), z0 = cl(Math.min(pos[o2 + 2], pos[o2 + 5], pos[o2 + 8]), 2), z1 = cl(Math.max(pos[o2 + 2], pos[o2 + 5], pos[o2 + 8]), 2);
+      for (var a = x0; a <= x1; a++) for (var b = y0; b <= y1; b++) for (var c = z0; c <= z1; c++) { var id = ci(a, b, c); (cells[id] || (cells[id] = [])).push(i); }
+    }
+    var hit = function (ti, ox, oy, oz, dx, dy, dz, tmax) { // Möller–Trumbore: distance along the ray or -1
+      var o3 = ti * 9, ax = pos[o3], ay = pos[o3 + 1], az = pos[o3 + 2], e1x = pos[o3 + 3] - ax, e1y = pos[o3 + 4] - ay, e1z = pos[o3 + 5] - az, e2x = pos[o3 + 6] - ax, e2y = pos[o3 + 7] - ay, e2z = pos[o3 + 8] - az;
+      var px = dy * e2z - dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y - dy * e2x, det = e1x * px + e1y * py + e1z * pz;
+      if (det > -1e-12 && det < 1e-12) return -1;
+      var inv = 1 / det, tx = ox - ax, ty = oy - ay, tz = oz - az, u = (tx * px + ty * py + tz * pz) * inv; if (u < -1e-6 || u > 1 + 1e-6) return -1;
+      var qx2 = ty * e1z - tz * e1y, qy2 = tz * e1x - tx * e1z, qz2 = tx * e1y - ty * e1x, v = (dx * qx2 + dy * qy2 + dz * qz2) * inv; if (v < -1e-6 || u + v > 1 + 1e-6) return -1;
+      var tt = (e2x * qx2 + e2y * qy2 + e2z * qz2) * inv; return tt > 0 && tt <= tmax ? tt : -1;
+    };
+    var stride = n > WT_MAX ? Math.ceil(n / WT_MAX) : 1, th = new Float32Array(n).fill(-1), eps = diag * 1e-5;
+    for (i = 0; i < n; i += stride) {
+      if (!(ar[i] > 0)) continue;
+      var dx = sgn * nx[i], dy = sgn * ny[i], dz = sgn * nz[i], ox = cx[i] + dx * eps, oy = cy[i] + dy * eps, oz = cz[i] + dz * eps, best = diag;
+      // 3D DDA through the grid
+      var gx = cl(ox, 0), gy = cl(oy, 1), gz = cl(oz, 2), sx = dx > 0 ? 1 : -1, sy = dy > 0 ? 1 : -1, sz = dz > 0 ? 1 : -1;
+      var tmx = dx !== 0 ? ((mn[0] + (gx + (dx > 0 ? 1 : 0)) * cs[0]) - ox) / dx : Infinity, tmy = dy !== 0 ? ((mn[1] + (gy + (dy > 0 ? 1 : 0)) * cs[1]) - oy) / dy : Infinity, tmz = dz !== 0 ? ((mn[2] + (gz + (dz > 0 ? 1 : 0)) * cs[2]) - oz) / dz : Infinity;
+      var tdx = dx !== 0 ? Math.abs(cs[0] / dx) : Infinity, tdy = dy !== 0 ? Math.abs(cs[1] / dy) : Infinity, tdz = dz !== 0 ? Math.abs(cs[2] / dz) : Infinity, tcur = 0, guard = 0;
+      while (guard++ < 3 * G + 3) {
+        var list = cells[ci(gx, gy, gz)];
+        if (list) for (j = 0; j < list.length; j++) { var ti = list[j]; if (ti === i) continue; var tt = hit(ti, ox, oy, oz, dx, dy, dz, best); if (tt > 0 && tt < best) best = tt; }
+        if (tmx < tmy && tmx < tmz) { tcur = tmx; tmx += tdx; gx += sx; } else if (tmy < tmz) { tcur = tmy; tmy += tdy; gy += sy; } else { tcur = tmz; tmz += tdz; gz += sz; }
+        if (tcur > best || gx < 0 || gy < 0 || gz < 0 || gx >= G || gy >= G || gz >= G) break;
+      }
+      th[i] = best < diag ? best * k : -1;
+    }
+    // area-weighted statistics in mm (file units × scale)
+    var kk = k * k, items = [], total = 0;
+    for (i = 0; i < n; i++) if (th[i] >= 0) { items.push([th[i], ar[i] * kk * stride]); total += ar[i] * kk * stride; }
+    items.sort(function (a, b) { return a[0] - b[0]; });
+    var acc = 0, p2 = 0, median = 0;
+    for (i = 0; i < items.length; i++) { acc += items[i][1]; if (!p2 && acc >= total * 0.02) p2 = items[i][0]; if (!median && acc >= total * 0.5) { median = items[i][0]; break; } }
+    var bins = WT_BINS.concat([Infinity]).map(function () { return 0; });
+    items.forEach(function (it) { for (j = 0; j < WT_BINS.length; j++) if (it[0] < WT_BINS[j]) break; bins[j] += it[1]; });
+    wtCache = { key: key, pos: pos, th: th, area: ar, kk: kk, stride: stride, total: total, p2: p2, median: median, bins: bins, sampled: stride > 1 };
+    return wtCache;
+  }
+  function wtUnder(r, lim) { var a = 0, i; for (i = 0; i < r.th.length; i++) if (r.th[i] >= 0 && r.th[i] < lim) a += r.area[i] * r.kk * r.stride; return a; }
+  function wtTris(src, lim) { var r = wtCalc(src), pos = src.pos, out = [], i, q; for (i = 0; i < r.th.length; i++) if (r.th[i] >= 0 && r.th[i] < lim) for (q = 0; q < 9; q++) out.push(pos[i * 9 + q]); return new Float32Array(out); }
+  function wtApply() { if (st3d && st3d.setOverlay) { var src = stSrc(), lim = wtLimit(); if (state.wt.on) st3d.setOverlay(src && src.kind === 'file' && lim ? wtTris(src, lim) : null); } }
+  function wtOut(src) {
+    var f = t().st.wt;
+    if (src.kind === 'box') { var m = Math.min.apply(null, src.size); return '<p class="st-sup__res">' + esc(f.thin.replace('{mm}', fitFmt(fcR1(m)))) + '</p><p class="fit-note st-sup__note">' + esc(f.box) + '</p>'; }
+    var r = wtCalc(src), lim = wtLimit(), under = lim ? wtUnder(r, lim) : 0;
+    var hist = '<div class="st-wt__hist" role="img" aria-label="' + esc(f.hist) + '">' + r.bins.map(function (a, i) { var lo = i ? WT_BINS[i - 1] : 0, hi = WT_BINS[i], lbl = hi === undefined ? '≥ ' + lo : (i ? lo + '–' + hi : '< ' + hi), pct = r.total > 0 ? a / r.total * 100 : 0; return '<div class="st-wt__bar"><span class="nk-label">' + esc(lbl + ' ' + f.mm) + '</span><i style="--w:' + Math.max(1, Math.round(pct)) + '%"></i><b>' + esc(fcNum(pct, 0) + ' %') + '</b></div>'; }).join('') + '</div>';
+    return '<p class="st-sup__res" role="status" aria-live="polite">' + esc(f.thin.replace('{mm}', fitFmt(fcR1(r.p2)))) + (r.median ? ' · ' + esc(f.typical.replace('{mm}', fitFmt(fcR1(r.median)))) : '') +
+      (lim ? '<br>' + (under > 0 ? '<span class="nk-tag nk-tag--rev">' + esc(f.under.replace('{l}', fitFmt(lim)).replace('{a}', fcNum(under / 100)).replace('{p}', fcNum(r.total > 0 ? under / r.total * 100 : 0, 0))) + '</span>' : '<span class="nk-tag nk-tag--ok">' + esc(f.underNone.replace('{l}', fitFmt(lim))) + '</span>') : '') + '</p>' + hist +
+      '<p class="fit-note st-sup__note">' + esc(f.note) + '</p>';
+  }
+  function wtBox(src) {
+    var f = t().st.wt; if (!src) return '';
+    return '<div class="st-sup st-wt" id="st-wt"><div class="st-sup__head"><span class="nk-label">' + esc(f.label) + '</span>' +
+      (src.kind === 'file' ? '<button type="button" class="chip" data-st-wt aria-pressed="' + !!state.wt.on + '"><span aria-hidden="true">▣ </span>' + esc(f.toggle) + '</button>' +
+      '<label class="st-sup__deg"><span class="nk-field__label">' + esc(f.limit) + '</span><input class="nk-input" id="st-wt-lim" type="number" inputmode="decimal" min="0.1" max="50" step="0.1" value="' + esc(state.wt.limit) + '" data-st-wt-lim placeholder="—"><span aria-hidden="true">mm</span></label>' : '') + '</div>' +
+      '<div id="st-wt-out">' + wtOut(src) + '</div></div>';
+  }
+  function wtRows(src) {
+    var f = t().st.wt, rows = [];
+    if (src.kind === 'box') { rows.push([f.rowThin, fitFmt(fcR1(Math.min.apply(null, src.size))) + ' mm']); return rows; }
+    var r = wtCalc(src), lim = wtLimit();
+    rows.push([f.rowThin, '≈ ' + fitFmt(fcR1(r.p2)) + ' mm']);
+    if (lim) { var u = wtUnder(r, lim); rows.push([f.rowUnder.replace('{l}', fitFmt(lim)), u > 0 ? fcNum(u / 100) + ' cm² · ' + fcNum(r.total > 0 ? u / r.total * 100 : 0, 0) + ' %' : f.underNone.replace('{l}', fitFmt(lim)), u > 0 ? 'rev' : 'ok']); }
+    return rows;
+  }
+  function wtUpdate() { var src = stSrc(), o = document.getElementById('st-wt-out'); if (!src || !o) return; o.innerHTML = wtOut(src); stSheetShow(); wtApply(); }
+  function wtToggle() {
+    state.wt.on = !state.wt.on;
+    if (state.wt.on && state.sp.on) { state.sp.on = false; var sb = document.querySelector('[data-st-sp]'); if (sb) sb.setAttribute('aria-pressed', 'false'); }
+    var b = document.querySelector('[data-st-wt]'); if (b) { b.setAttribute('aria-pressed', String(state.wt.on)); b.focus({ preventScroll: true }); }
+    if (state.wt.on) wtApply(); else if (st3d && st3d.setOverlay) st3d.setOverlay(null);
+  }
+  // Estimate rows (material, print time, price) for the NK-S sheet, the clipboard and the brief.
+  function stEst(src) { // { vcm3, g, h, mat, cost } or null when settings give no rate
+    var pr = SET.printing || {}, rate = +pr.rateCm3h; if (!(rate > 0) || !src) return null;
+    var vmm3, amm2;
+    if (src.kind === 'box') { vmm3 = src.size[0] * src.size[1] * src.size[2]; amm2 = 2 * (src.size[0] * src.size[1] + src.size[1] * src.size[2] + src.size[0] * src.size[2]); }
+    else { var r = state.fc.res, k = fcK(); if (!r || r.st.open !== 0) return null; vmm3 = r.st.vol * k * k * k; amm2 = r.st.area * k * k; }
+    var walls = +pr.walls > 0 ? +pr.walls : 3, lw = +pr.lineWidth > 0 ? +pr.lineWidth : 0.4, infill = +pr.infill >= 0 ? Math.min(100, +pr.infill) : 15;
+    var shell = Math.min(vmm3, amm2 * walls * lw), inner = Math.max(0, vmm3 - shell), vmat = (shell + inner * infill / 100) / 1000; // cm³ — every surface gets its wall loops; the rest is infill
+    var ch = mpChosen(), m = ch ? pcMat(ch.id) : null, g = m && +m.density > 0 ? vmat * +m.density : 0, h = vmat / rate;
+    var qty = Math.max(1, Math.round(+state.st.qty || 1)), cost = null;
+    if (PRICE && m && g && (+PRICE.print.machineHour > 0 || +m.perGram > 0)) {
+      var part = g * +m.perGram + h * (+PRICE.print.machineHour || 0); if (+PRICE.print.minPart > 0 && part < +PRICE.print.minPart) part = +PRICE.print.minPart;
+      var order = part * qty + (+PRICE.print.setup || 0); if (+PRICE.print.minOrder > 0 && order < +PRICE.print.minOrder) order = +PRICE.print.minOrder;
+      cost = { part: part, order: order };
+    }
+    return { vcm3: vmm3 / 1000, g: g, h: h, mat: m, qty: qty, cost: cost };
+  }
+  function stEstRows(src) {
+    var f = t().st.est, e = stEst(src), rows = []; if (!e) return rows;
+    rows.push([f.rowMat, e.g ? f.mat.replace('{g}', fcNum(e.g, 0)).replace('{m}', e.mat.name) : f.matNo]);
+    rows.push([f.rowTime, f.time.replace('{h}', fcNum(e.h, 1))]);
+    if (e.cost) rows.push([f.rowPrice, e.qty > 1 ? f.price.replace('{p}', pcMoney(e.cost.part, 2)).replace('{q}', pcMoney(e.cost.order, 2)).replace('{n}', e.qty) : f.priceOne.replace('{p}', pcMoney(e.cost.order, 2))]);
+    return rows;
+  }
+  function stEstBox(src) {
+    var f = t().st.est, e = stEst(src), pr = SET.printing || {}; if (!e) return '';
+    return '<p class="fit-note st-est">' + esc(f.note.replace('{infill}', pr.infill).replace('{walls}', pr.walls).replace('{rate}', pr.rateCm3h)) + (pcOn() ? ' <a href="#services?tool=quote" data-st-qc>' + esc(f.link) + ' →</a>' : '') + '</p>';
   }
 
   // ---------- Batch on the plate (#services?tool=plate): how many copies of a part fit on one X2D plate, plates per batch ----------
@@ -2262,7 +2404,7 @@
     ['data-qc-go', 'data-qc-copy'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
   }
   function qcSet(o) { // the Part studio hands over material, weight, print time and quantity before the link opens the tool
-    var q = state.qc; q.print = 1; if (o.mat) q.mat = o.mat; if (o.g) q.g = String(Math.round(o.g)); if (o.h) q.h = String(Math.round(o.h * 4) / 4); if (o.qty) q.qty = String(o.qty); q.src = 'studio';
+    var q = state.qc; q.print = 1; if (o.mat) q.mat = o.mat; if (o.g) q.g = String(Math.round(o.g)); if (o.h) q.h = String(Math.round(o.h * 10) / 10); if (o.qty) q.qty = String(o.qty); q.src = 'studio';
   }
   function qcCopy() {
     var c = qcCalc(), msg = document.getElementById('qc-msg'), x = t().qc; if (!c || !msg) return;
@@ -2653,6 +2795,8 @@
     if (el.hasAttribute('data-st-measure')) { stMeasure(); return; }
     if (el.hasAttribute('data-st-mclear')) { if (st3d) st3d.clearMeasure(); state.st.meas = null; stMeasShow(); return; }
     if (el.hasAttribute('data-st-sp')) { spToggle(); return; }
+    if (el.hasAttribute('data-st-wt')) { wtToggle(); return; } // Part studio 2.0 (2026-11-02)
+    if (el.hasAttribute('data-st-qc')) { var se = stEst(stSrc()); if (se) qcSet({ mat: se.mat ? se.mat.key : '', g: se.g, h: se.h, qty: se.qty }); } // the link itself opens the estimate
     if (el.hasAttribute('data-st-sp-use')) { stAxes(el.getAttribute('data-st-sp-use')); var su = document.querySelector('[data-st-sp-use], .st-sup__t .is-cur .nk-label'); if (su) su.focus({ preventScroll: true }); return; }
     if (el.hasAttribute('data-st-fclear')) { state.fc = { busy: false, err: '', res: null, unit: state.fc.unit }; fcRefresh(); return; }
     if (el.hasAttribute('data-v3-view')) { v3Set(el.dataset.v3For, 'view', el.dataset.v3View); return; }
@@ -2744,6 +2888,7 @@
   app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.qcF; if (k && ev.target.tagName !== 'SELECT') { state.qc[k] = ev.target.value; state.qc.src = ''; qcUpdate(); } }); // Quote estimate (2026-11-02)
   app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.qcK) { state.qc[d.qcK] = ev.target.checked ? 1 : 0; qcUpdate(true); } else if (d.qcF === 'mat') { state.qc.mat = ev.target.value; qcUpdate(); } });
   app.addEventListener('input', function (ev) { if (ev.target.hasAttribute('data-st-sp-deg')) { state.sp.deg = ev.target.value; spUpdate(); } }); // Support check (2026-10-31)
+  app.addEventListener('input', function (ev) { if (ev.target.hasAttribute('data-st-wt-lim')) { state.wt.limit = ev.target.value; wtUpdate(); } }); // Wall thickness (2026-11-02)
   // File check: drop a file on the box; the views follow the light/dark theme.
   app.addEventListener('dragover', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop'); if (!d) return; ev.preventDefault(); d.classList.add('is-over'); });
   app.addEventListener('dragleave', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop'); if (d) d.classList.remove('is-over'); });

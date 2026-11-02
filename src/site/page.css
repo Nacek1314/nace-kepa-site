@@ -1071,3 +1071,12 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 .faq-item summary:focus-visible { outline: 2px solid var(--redline); outline-offset: -2px; }
 .faq-a { padding: 0 var(--space-5) var(--space-4); color: var(--ink-muted); font-size: 15px; line-height: 22px; }
 .faq-a p { margin: 0 0 var(--space-2); }
+
+/* Part studio 2.0 (2026-11-02): wall-thickness block (wtBox, reuses .st-sup) + estimate note */
+.st-wt__hist { display: grid; gap: 4px; }
+.st-wt__bar { display: grid; grid-template-columns: 96px 1fr 44px; align-items: center; gap: var(--space-2); font-size: 12px; }
+.st-wt__bar .nk-label { margin: 0; }
+.st-wt__bar i { display: block; height: 10px; width: var(--w, 1%); background: var(--ink); min-width: 2px; }
+.st-wt__bar b { font-family: var(--font-mono); font-weight: 500; text-align: right; }
+.st-est { margin: var(--space-3) 0 0; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .st-wt__bar i { background: var(--ink); } }
