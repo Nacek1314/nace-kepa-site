@@ -20,6 +20,13 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-11-02 (afternoon — Nace: "izbriši modeliranje v Fusion 360")
+
+Removed every Fusion 360 mention from the site (`content.js`): the CAD service body now reads "SolidWorks design for
+parts, assemblies and prototypes …" / "Modeliranje v SolidWorksu …", and the "Fusion 360 · Secondary CAD" line is gone
+from Skills › Design & CAD. Nothing else named it (checked src/, README, public/). Built and checked #services + #skills
+in EN and SL — no "Fusion" left in either page, no JS errors.
+
 ## 2026-11-02 (big update — Nace asked for "everything except content": prices, studio 2.0, admin dashboard, blog, SEO, my corner, promotion, gift cards)
 
 Shipped in parts, each built, tested in Playwright and pushed on its own. Nace confirmed every number below live in the chat
