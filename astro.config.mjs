@@ -7,9 +7,9 @@ import { readFileSync } from 'node:fs';
 // published news post at /news/<slug>/ and /sl/news/<slug>/ (src/pages/portfolio/[slug].astro, src/pages/news/[slug].astro
 // and the /sl/ twins). They go into the sitemap; the old-slug redirects below now point at them.
 const data = (f) => JSON.parse(readFileSync(new URL('./src/data/' + f, import.meta.url), 'utf8'));
-const landingPaths = new Set([].concat(
+const landingPaths = new Set(['/news/', '/sl/news/'].concat(
   ...data('projects.json').filter((p) => !p.hidden).map((p) => ['/portfolio/' + p.slug + '/', '/sl/portfolio/' + p.slug + '/']),
-  ...data('news.json').filter((n) => !n.hidden && !n.draft).map((n) => ['/news/' + n.slug + '/', '/sl/news/' + n.slug + '/'])));
+  ...data('news.json').filter((n) => !n.hidden && !n.draft && !(n.date && n.date > new Date().toISOString().slice(0, 10))).map((n) => ['/news/' + n.slug + '/', '/sl/news/' + n.slug + '/'])));
 
 // Deployed at https://nacekepa.work/ via GitHub Pages with a custom domain (public/CNAME).
 // The site is one page (src/pages/index.astro) with in-page sections; old URLs redirect into it

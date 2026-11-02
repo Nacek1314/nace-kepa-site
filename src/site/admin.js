@@ -637,6 +637,50 @@ async function ovCopy(url) {
   try { await navigator.clipboard.writeText(url); if (m) m.textContent = 'Copied: ' + url; } catch { if (m) m.textContent = 'Copy failed — ' + url; }
 }
 
+
+// ---------- Blog package in the admin (2026-11-02, big update part 5): post templates, article toolbar, scheduling ----------
+// Templates give a new post a skeleton in EN + SL — headings and bracketed prompts to replace, never facts. The toolbar
+// inserts a link, a list, a numbered list or the landing-page link of a project at the cursor of the article field.
+// A post dated after today is "scheduled": kept out of the site, the feed and the sitemap until a build on or after that
+// day (the daily maintenance run builds every day). Self-contained: remove NT_TEMPLATES … ntInsert(), the template row in
+// newsListView(), ntBar() in the news editor, the scheduled label and the data-nt-* lines in the click handler.
+const NT_TEMPLATES = [
+  { id: 'machine', label: 'New machine or tool', en: { t: 'New in the workshop: [machine]', s: '[What it is] now runs next to the [other machine], so [what it changes for your parts].', b: 'The [machine] is now set up in the workshop. Here is what it changes for your parts:\n\n- [Capability 1]\n- [Capability 2]\n- [Capability 3]\n\n[Which jobs it suits best.] Start a project and I will suggest the right process.' },
+    sl: { t: 'Novo v delavnici: [stroj]', s: '[Kaj je] zdaj deluje ob [drugem stroju], zato [kaj to spremeni za vaše dele].', b: '[Stroj] je zdaj postavljen v delavnici. Kaj to spremeni za vaše dele:\n\n- [Zmožnost 1]\n- [Zmožnost 2]\n- [Zmožnost 3]\n\n[Katerim nalogam najbolj ustreza.] Začnite projekt in predlagam pravi postopek.' } },
+  { id: 'project', label: 'Finished project', en: { t: '[Project name]: [one-line result]', s: '[Who needed what] — [what was delivered], in [time].', b: 'The brief\n\n[What the client needed and the constraints.]\n\nThe build\n\n1. [Step one — CAD, electronics, printing …]\n2. [Step two]\n3. [Step three]\n\nThe result\n\n[What works now, materials and numbers you can stand behind.] The full sheet: https://nacekepa.work/portfolio/[slug]/' },
+    sl: { t: '[Ime projekta]: [rezultat v enem stavku]', s: '[Kdo je potreboval kaj] — [kaj je bilo narejeno], v [času].', b: 'Naloga\n\n[Kaj je stranka potrebovala in omejitve.]\n\nIzdelava\n\n1. [Korak ena — CAD, elektronika, tisk …]\n2. [Korak dva]\n3. [Korak tri]\n\nRezultat\n\n[Kaj zdaj deluje, materiali in številke, za katerimi stojite.] Celoten list: https://nacekepa.work/sl/portfolio/[slug]/' } },
+  { id: 'material', label: 'Material in practice', en: { t: '[Material] in practice: [what it is good for]', s: 'Where [material] earns its place — and where it does not.', b: 'When to pick it\n\n- [Use case 1]\n- [Use case 2]\n\nWhat to watch\n\n- [Limitation 1]\n- [Limitation 2]\n\n[A part printed in it, with the setting that mattered.] Not sure which material your part needs? Try the material picker: https://nacekepa.work/#services?tool=material' },
+    sl: { t: '[Material] v praksi: [za kaj je dober]', s: 'Kje si [material] zasluži mesto — in kje ne.', b: 'Kdaj ga izbrati\n\n- [Primer uporabe 1]\n- [Primer uporabe 2]\n\nNa kaj paziti\n\n- [Omejitev 1]\n- [Omejitev 2]\n\n[Del, natisnjen iz njega, z nastavitvijo, ki je bila pomembna.] Ne veste, kateri material potrebuje vaš del? Preizkusite izbiro materiala: https://nacekepa.work/sl/#services?tool=material' } },
+];
+function ntNew(tplId) {
+  const nn = blankNews(), tpl = NT_TEMPLATES.find((t) => t.id === tplId);
+  if (tpl) { nn.title = { en: tpl.en.t, sl: tpl.sl.t }; nn.summary = { en: tpl.en.s, sl: tpl.sl.s }; nn.body = { en: tpl.en.b, sl: tpl.sl.b }; nn.hidden = true; nn.slug = slugify(tpl.label) + '-' + today(); }
+  S.news.unshift(nn); S.selNews = nn.slug; S.query = ''; render(); document.getElementById('n-t-en')?.focus();
+}
+function ntBar(field) {
+  const sl = field.endsWith('-sl');
+  return `<div class="nt-bar" role="toolbar" aria-label="Insert into the ${sl ? 'Slovenian' : 'English'} article">
+    <button type="button" class="tb-copy" data-nt-ins="link" data-nt-f="${field}">Link</button>
+    <button type="button" class="tb-copy" data-nt-ins="list" data-nt-f="${field}">• List</button>
+    <button type="button" class="tb-copy" data-nt-ins="olist" data-nt-f="${field}">1. List</button>
+    <select class="nk-input nt-proj" data-nt-proj="${field}" aria-label="Insert a project's page link"><option value="">+ Project link…</option>${S.projects.filter((p) => !p.hidden).map((p) => `<option value="${esc(p.slug)}">${esc(p.title.en || p.slug)}</option>`).join('')}</select>
+  </div>`;
+}
+function ntInsert(field, kind, slug) {
+  const el = document.getElementById(field); if (!el) return;
+  const sl = field.endsWith('-sl'), v = el.value, a = el.selectionStart ?? v.length, b = el.selectionEnd ?? a, sel = v.slice(a, b);
+  const nl = a === 0 || v[a - 1] === '\n' ? '' : '\n';
+  let ins = '';
+  if (kind === 'link') ins = sel && /^https?:\/\//.test(sel) ? sel : 'https://';
+  else if (kind === 'list') ins = nl + (sel ? sel.split('\n').map((l) => '- ' + l).join('\n') : '- ');
+  else if (kind === 'olist') ins = nl + (sel ? sel.split('\n').map((l, i) => (i + 1) + '. ' + l).join('\n') : '1. ');
+  else if (kind === 'proj' && slug) ins = 'https://nacekepa.work/' + (sl ? 'sl/' : '') + 'portfolio/' + slug + '/';
+  if (!ins) return;
+  el.value = v.slice(0, a) + ins + v.slice(b);
+  const pos = a + ins.length; el.focus(); el.setSelectionRange(pos, pos);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 // ---------- views ----------
 function logo() {
   return '<svg class="nk-mark" viewBox="0 0 64 64" aria-hidden="true"><rect class="nk-mark__frame" x="3" y="3" width="58" height="58"/><path class="nk-mark__ln" d="M14 48 V16 L30 48 V16"/><path class="nk-mark__ln" d="M38 16 V48 M38 32 L52 16 M38 32 L52 48"/><rect class="nk-mark__dot" x="53" y="40" width="6" height="6"/></svg>';
@@ -720,11 +764,12 @@ function newsListView() {
       <input class="nk-input" id="q" type="search" placeholder="Search ${S.news.length} posts" value="${esc(S.query)}" aria-label="Search news">
       <button class="nk-btn nk-btn--sm" type="button" data-act="new">+ New</button>
     </div>
+    <p class="nt-tpl"><span class="nk-label">Start from a template</span>${NT_TEMPLATES.map((t) => `<button type="button" class="tb-copy" data-nt-new="${t.id}">${t.label}</button>`).join('')}</p>
     <ol class="ad-items">${items.length ? items.map((n) => `
       <li class="ad-item${n.slug === S.selNews ? ' is-sel' : ''}${n.hidden ? ' is-hidden' : ''}">
         <button type="button" class="ad-item__main" data-sel="${esc(n.slug)}">
           <span class="ad-item__t">${esc(n.title.en || 'Untitled')}</span>
-          <span class="ad-item__m">${esc(n.date)}${n.pinned ? ' · ★ pinned' : ''}${n.photos.length ? ` · ${n.photos.length} ph` : ''}${n.hidden ? ' · draft' : ''}</span>
+          <span class="ad-item__m">${esc(n.date)}${n.pinned ? ' · ★ pinned' : ''}${n.photos.length ? ` · ${n.photos.length} ph` : ''}${n.hidden ? ' · draft' : n.date > today() ? ' · scheduled' : ''}</span>
         </button>
       </li>`).join('') : '<li class="ad-item"><span class="ad-item__main"><span class="ad-item__m">No posts yet. Press “+ New”.</span></span></li>'}
     </ol>
@@ -1707,7 +1752,7 @@ function newsEditorView() {
   const committed = !n._new;
   return `<div class="ad-editor">
     <div class="ad-editor__head">
-      <div><p class="nk-label">${committed ? 'News · ' + esc(n.date) : 'New post · not published yet'}</p><h2 class="sub">${esc(n.title.en || 'Untitled')}</h2></div>
+      <div><p class="nk-label">${committed ? 'News · ' + esc(n.date) : 'New post · not published yet'}${n.date > today() ? ' · <b>scheduled</b> — goes live with the first site build on ' + esc(n.date) : ''}</p><h2 class="sub">${esc(n.title.en || 'Untitled')}</h2></div>
       ${committed && !n.hidden ? `<a class="nk-btn nk-btn--sm nk-btn--ghost" href="/news/${esc(n.slug)}/" target="_blank" rel="noopener">Open page ↗</a>` : ''}
     </div>
     <fieldset class="ad-sec"><legend class="nk-label">Post</legend><div class="form">
@@ -1715,11 +1760,11 @@ function newsEditorView() {
       ${fld('n-t-sl', 'Headline · Slovenian', inp('n-t-sl', n.title.sl))}
       ${fld('n-s-en', 'Summary · EN', area('n-s-en', n.summary.en, 2), 'One or two sentences, shown in lists and on the home page.')}
       ${fld('n-s-sl', 'Summary · SL', area('n-s-sl', n.summary.sl, 2))}
-      ${fld('n-b-en', 'Article · EN', area('n-b-en', n.body.en, 9), 'Blank line = new paragraph. A line starting with “- ” becomes a list item.')}
-      ${fld('n-b-sl', 'Article · SL', area('n-b-sl', n.body.sl, 9))}
+      ${fld('n-b-en', 'Article · EN', ntBar('n-b-en') + area('n-b-en', n.body.en, 9), 'Blank line = new paragraph. “- ” = list, “1. ” = numbered list; https:// links and e-mails become links.')}
+      ${fld('n-b-sl', 'Article · SL', ntBar('n-b-sl') + area('n-b-sl', n.body.sl, 9))}
     </div></fieldset>
     <fieldset class="ad-sec"><legend class="nk-label">Settings</legend><div class="form form-3">
-      ${fld('n-date', 'Date', inp('n-date', n.date, 'type="date"'))}
+      ${fld('n-date', 'Date', inp('n-date', n.date, 'type="date"'), 'A future date schedules the post: it appears with the first site build on that day.')}
       ${fld('n-slug', 'URL name', inp('n-slug', n.slug, committed ? 'readonly' : ''), committed ? 'nacekepa.work/news/' + esc(n.slug) + '/' : 'Lowercase, numbers, dashes.')}
       <div class="nk-field"><span class="nk-field__label">Visibility</span>
         <label class="ad-check"><input type="checkbox" data-k="n-pin" ${n.pinned ? 'checked' : ''}> Pinned to the top</label>
@@ -1886,7 +1931,7 @@ root.addEventListener('input', (e) => {
     else if (k === 'n-s-sl') p.summary.sl = v;
     else if (k === 'n-b-en') p.body.en = v;
     else if (k === 'n-b-sl') p.body.sl = v;
-    else if (k === 'n-date') p.date = v;
+    else if (k === 'n-date') { p.date = v; S.notice = ''; render(); return; } // the "scheduled" label and the list follow the date (blog package, 2026-11-02)
     else if (k === 'n-slug' && p._new) { p.slug = slugify(v); p._slugTouched = true; S.selNews = p.slug; }
     else return;
     S.notice = '';
@@ -1922,6 +1967,7 @@ root.addEventListener('input', (e) => {
 root.addEventListener('change', async (e) => {
   const k = e.target.dataset.k, p = cur();
   if (e.target.dataset.set != null && e.target.tagName === 'SELECT') { stInput(e.target); return; }
+  if (e.target.dataset.ntProj != null) { const f = e.target.dataset.ntProj, v = e.target.value; e.target.value = ''; if (v) ntInsert(f, 'proj', v); return; }
   if (e.target.dataset.arPos != null) { arPos(e.target); return; }
   if (e.target.dataset.tb != null) { if (e.target.type === 'checkbox' || e.target.tagName === 'SELECT') tbInput(e.target); return; }
   if (e.target.dataset.tbB != null) { TB.bulk[e.target.dataset.tbB] = e.target.value; return; }
@@ -1982,6 +2028,8 @@ root.addEventListener('click', (e) => {
   if (b.dataset.tab) { S.tab = b.dataset.tab; S.query = ''; S.confirmDelete = false; render(); return; }
   if (b.dataset.todoF != null) { S.todoF = b.dataset.todoF; render(); return; }
   if (b.dataset.setAct) { stAct(b); return; }
+  if (b.dataset.ntNew) { ntNew(b.dataset.ntNew); return; }
+  if (b.dataset.ntIns) { ntInsert(b.dataset.ntF, b.dataset.ntIns); return; }
   if (b.dataset.ovTodo != null) { S.tab = 'todo'; S.todoF = b.dataset.ovTodo; render(); return; }
   if (b.dataset.ovCopy != null) { ovCopy(b.dataset.ovCopy); return; }
   if (b.dataset.todoGo != null) { todoGo(b.dataset.todoGo); return; }

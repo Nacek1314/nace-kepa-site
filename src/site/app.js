@@ -12,7 +12,7 @@
   // Landing pages (2026-11-01): /portfolio/<slug>/ and /news/<slug>/ (+ /sl/…) are the same site with <meta name="nk-start">
   // naming the sheet / post to open when there is no hash. The first in-app navigation moves the address back to / or /sl/
   // (see the hashchange listener at the end), so every other view keeps its usual address.
-  function landingView() { var m = /^\/(?:sl\/)?(portfolio|news)\/([a-z0-9-]+)\/?$/.exec(location.pathname); return m ? (m[1] === 'news' ? 'n-' : 'p-') + m[2] : ''; }
+  function landingView() { var m = /^\/(?:sl\/)?(portfolio|news)\/([a-z0-9-]+)\/?$/.exec(location.pathname); if (m) return (m[1] === 'news' ? 'n-' : 'p-') + m[2]; return /^\/(?:sl\/)?news\/?$/.test(location.pathname) ? 'news' : ''; } // /news/ index (blog package, 2026-11-02)
   var START_VIEW = (function () { var m = document.querySelector('meta[name="nk-start"]'); return m ? String(m.getAttribute('content') || '') : landingView(); })();
   var LANDING = !!START_VIEW;
   // EN/SL on a landing page: keep the address on the right language (/portfolio/… ↔ /sl/portfolio/…).
@@ -23,7 +23,8 @@
   // Projects come from src/data/projects.json, inlined at build time (the admin dashboard edits that file).
   var PROJECTS = (window.NK_PROJECTS || []).filter(function (p) { return !p.hidden; });
   // News comes from src/data/news.json (also edited in the admin): pinned first, then newest.
-  var NEWS = (window.NK_NEWS || []).filter(function (n) { return !n.hidden; }).sort(function (x, y) { return (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0) || String(y.date).localeCompare(String(x.date)); });
+  var TODAY = new Date().toISOString().slice(0, 10);
+  var NEWS = (window.NK_NEWS || []).filter(function (n) { return !n.hidden && !(n.date && n.date > TODAY); }) // a post dated in the future is scheduled (blog package, 2026-11-02).sort(function (x, y) { return (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0) || String(y.date).localeCompare(String(x.date)); });
   var PAGES = ['home', 'services', 'work', 'news', 'skills', 'about', 'studio', 'order', 'gift'];
   var viewer = null;
 
@@ -160,7 +161,7 @@
     news: function () {
       var x = t();
       return '<section class="block first">' + head(x.newsLabel + ' · ' + NEWS.length, x.newsPageTitle, x.newsLead, true) +
-        (NEWS.length ? '<div class="news-list">' + NEWS.map(newsCard).join('') + '</div>' + feedBox() : '<p class="lead">' + esc(x.newsEmpty) + '</p>') + '</section>' + ctaBand();
+        (NEWS.length ? blogYears() + '<div class="news-list" id="blog-list">' + blogList().map(newsCard).join('') + '</div>' + feedBox() : '<p class="lead">' + esc(x.newsEmpty) + '</p>') + '</section>' + ctaBand();
     },
     post: postView,
     compare: function () { return cmpView(); },
@@ -241,7 +242,7 @@
       '<div class="post-body">' + richText(P(n, 'body')) + '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', null, true) + askLink(n, 'n') + '</div>' + shareBox('n', n) + printBox('n', n) + '</div></div>' +
       (photos.length > 1 ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, k) { return '<button type="button" data-lb="' + k + '" aria-label="' + esc(x.openPhoto + ' ' + (k + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="' + esc(P(n, 'title') + ' · ' + (k + 1)) + '" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       rdNav(n) +
-      '</section>' + ctaBand();
+      '</section>' + blogMentions(n) + ctaBand();
   }
 
   function projectView() {
@@ -2428,6 +2429,33 @@
   }
 
 
+
+  // ---------- Blog package (2026-11-02, big update part 5) ----------
+  // blogYears(): a year strip on #news (chips, keyboard, aria-pressed) once there is more than one year or six posts;
+  // blogMentions(n): projects whose title (EN or SL) appears in a post → sheet cards under the article; posts dated after the
+  // build day are scheduled (NEWS skips them — the site rebuilds at least daily). Self-contained: remove blogYears() …
+  // blogMentions(), the two calls in views.news / postView(), the data-blog-year line in the click handler, blog: in both
+  // languages in content.js and the "Blog package" rules at the end of page.css.
+  state.blogYear = '';
+  function blogYearOf(n) { return String(n.date || '').slice(0, 4); }
+  function blogYears() {
+    var x = t().blog, years = [], counts = {};
+    NEWS.forEach(function (n) { var y = blogYearOf(n); if (!counts[y]) { counts[y] = 0; years.push(y); } counts[y]++; });
+    if (years.length < 2 && NEWS.length < 6) return '';
+    years.sort().reverse();
+    return '<div class="filters blog-years" role="group" aria-label="' + esc(x.years) + '"><button type="button" class="chip" data-blog-year="" aria-pressed="' + (!state.blogYear) + '">' + esc(x.all) + ' <span>' + NEWS.length + '</span></button>' +
+      years.map(function (y) { return '<button type="button" class="chip" data-blog-year="' + y + '" aria-pressed="' + (state.blogYear === y) + '">' + y + ' <span>' + counts[y] + '</span></button>'; }).join('') + '</div>';
+  }
+  function blogList() { return state.blogYear ? NEWS.filter(function (n) { return blogYearOf(n) === state.blogYear; }) : NEWS; }
+  function blogMentions(n) {
+    var text = (' ' + [P(n, 'title'), P(n, 'summary'), P(n, 'body'), n.title && n.title.en, n.title && n.title.sl, n.body && n.body.en, n.body && n.body.sl].filter(Boolean).join(' ') + ' ').toLowerCase();
+    var hits = PROJECTS.filter(function (p) {
+      return ['en', 'sl'].some(function (l) { var tt = p.title && p.title[l] ? String(p.title[l]).trim().toLowerCase() : ''; if (tt.length < 4) return false; var i = text.indexOf(tt); if (i < 0) return false; var b = text[i - 1], a = text[i + tt.length]; return !/[a-z0-9čšž]/i.test(b || ' ') && !/[a-z0-9čšž]/i.test(a || ' '); });
+    }).slice(0, 3);
+    if (!hits.length) return '';
+    return '<section class="block blog-mentions" aria-labelledby="blog-m"><h2 class="sub" id="blog-m">' + esc(t().blog.mentioned) + '</h2><div class="grid-4 sheets">' + hits.map(sheetH2).join('') + '</div></section>';
+  }
+
   // ---------- Gift cards (#gift) + FAQ (2026-11-02, big update part 2) ----------
   // A gift card is a request, not a sale: the visitor picks an amount (settings.json gift.amounts / gift.min), names the
   // recipient and sends the request through the same Worker endpoint as a brief; Nace invoices by e-mail and issues the
@@ -2779,6 +2807,7 @@
     if (el.hasAttribute('data-qc-go')) { qcToOrder(); return; } // Pricing package (2026-11-02)
     if (el.dataset.giftAmt) { state.gift.amt = el.dataset.giftAmt; state.gift.errors = {}; render(true); var gc = document.getElementById('gift-custom'); if (gc) gc.focus(); else { var ga = document.querySelector('[data-gift-amt="' + el.dataset.giftAmt + '"]'); if (ga) ga.focus(); } return; } // Gift cards (2026-11-02)
     if (el.hasAttribute('data-gift-send')) { giftSend(); return; }
+    if (el.dataset.blogYear != null) { state.blogYear = el.dataset.blogYear; var bl = document.getElementById('blog-list'), bs = document.querySelector('.blog-years'); if (bl) bl.innerHTML = blogList().map(newsCard).join(''); if (bs) bs.outerHTML = blogYears(); var bb = document.querySelector('[data-blog-year="' + state.blogYear + '"]'); if (bb) bb.focus(); return; } // Blog package (2026-11-02)
     if (el.hasAttribute('data-gift-copy')) { giftCopy(); return; }
     if (el.hasAttribute('data-gift-print')) { printSheet(); return; }
     if (el.hasAttribute('data-gift-reset')) { state.gift = { amt: '', custom: '', to: '', from: '', msg: '', name: state.gift.name, email: state.gift.email, website: '', send: 'idle', errors: {} }; render(false); return; }

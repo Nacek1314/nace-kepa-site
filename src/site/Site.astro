@@ -20,11 +20,12 @@ import { createHash } from 'node:crypto';
 // app.js to open that sheet; the app then carries on as usual (its links move the address back to / or /sl/).
 // To remove: delete those four page files, this block and the `landing`-conditional parts below, the START_VIEW lines in
 // app.js and the landing entries in astro.config.mjs (sitemap filter + redirects).
-const { lang = 'en', project = null, post = null } = Astro.props as { lang?: 'en' | 'sl'; project?: any; post?: any };
+const { lang = 'en', project = null, post = null, view = '' } = Astro.props as { lang?: 'en' | 'sl'; project?: any; post?: any; view?: string }; // view: 'news' = the /news/ index page (blog package, 2026-11-02)
 const SL = lang === 'sl';
 const home = SL ? 'https://nacekepa.work/sl/' : 'https://nacekepa.work/';
 const item: any = project || post;
-const landing = item ? (SL ? '/sl' : '') + (project ? '/portfolio/' : '/news/') + item.slug + '/' : '';
+const landing = item ? (SL ? '/sl' : '') + (project ? '/portfolio/' : '/news/') + item.slug + '/' : view === 'news' ? (SL ? '/sl' : '') + '/news/' : '';
+const startView = project ? 'p-' + project.slug : post ? 'n-' + post.slug : view;
 const pageUrl = landing ? 'https://nacekepa.work' + landing : home; // canonical address of this page
 const altEn = landing ? 'https://nacekepa.work' + landing.replace(/^\/sl/, '') : 'https://nacekepa.work/';
 const altSl = landing ? 'https://nacekepa.work/sl' + landing.replace(/^\/sl/, '') : 'https://nacekepa.work/sl/';
@@ -78,10 +79,10 @@ const catName = (p: any) => (CATS[p.category] ? CATS[p.category][lang] : p.categ
 const shown = (projects as any[]).filter((p) => !p.hidden);
 const sheetNo = (p: any) => 'NK-' + String(p.year).slice(2) + '-' + String(shown.indexOf(p) + 1).padStart(2, '0'); // same as sheetNo() in app.js
 // A landing page is titled and described by its sheet / post (same title as app.js gives the tab); the home pages keep the studio text.
-const title = item ? tl(item.title) + ' · Nace Kepa' : siteTitle;
+const title = item ? tl(item.title) + ' · Nace Kepa' : view === 'news' ? (SL ? 'Novice' : 'News') + ' · Nace Kepa' : siteTitle;
 const description = project
   ? [tl(project.description), (SL ? 'List ' : 'Sheet ') + sheetNo(project) + ' · ' + catName(project) + ' · ' + project.year + (project.materials ? ' · ' + project.materials : '') + ' — Nace Kepa, ' + (SL ? 'inženirski studio, Škofja Loka.' : 'engineering studio, Škofja Loka.')].filter(Boolean).join(' ')
-  : post ? (tl(post.summary) || siteDescription) : siteDescription;
+  : post ? (tl(post.summary) || siteDescription) : view === 'news' ? (SL ? 'Novice iz delavnice Naceta Kepe: novi stroji, materiali in zaključeni projekti.' : 'News from Nace Kepa\'s workshop: new machines, materials and finished jobs.') : siteDescription;
 const photoUrl = (ph: string) => 'https://nacekepa.work/' + String(ph).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/');
 const ogImage = item && (item.photos || []).length ? photoUrl(item.photos[0]) : 'https://nacekepa.work/og.png';
 // Links inside the snapshot and structured data point at this page (/ or /sl/) so each language stays on its own URL.
@@ -148,7 +149,8 @@ const projectLd = (p: any) => ({
   inLanguage: lang,
   creator: { '@type': 'Person', name: 'Nace Kepa', url: 'https://nacekepa.work/' }
 });
-const posts = (news as any[]).filter((n) => !n.hidden);
+const TODAY = new Date().toISOString().slice(0, 10); // a post dated after the build day is scheduled (blog package, 2026-11-02)
+const posts = (news as any[]).filter((n) => !n.hidden && !(n.date && n.date > TODAY));
 // Home pages: all posts and the project list. Landing pages: the one item plus a breadcrumb (Home › Work / News › item).
 const newsLd = !item && posts.length ? JSON.stringify({ '@context': 'https://schema.org', '@graph': posts.map(postLd) }).replace(/</g, '\\u003c') : '';
 const projectsLd = !item && shown.length ? JSON.stringify({
@@ -203,9 +205,13 @@ const snapshot = (() => {
     const photos = (n.photos || []).map((ph: string, i: number) => `<img src="${ex('/' + String(ph).replace(/^\/+/, ''))}" alt="${ex(tl(n.title) + ' · ' + (i + 1))}" loading="lazy" decoding="async">`).join('');
     return header + `<main><p><a href="${at('#news')}">← ${ex(x.nav.news)}</a></p><h1>${ex(tl(n.title))}</h1><p><time datetime="${ex(n.date)}">${ex(n.date)}</time></p><p>${ex(tl(n.summary))}</p>${rich(tl(n.body))}${photos}` + foot;
   }
+  if (view === 'news') {
+    const list = posts.filter((n) => !n.draft).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return header + `<main><h1>${ex(x.newsPageTitle)}</h1><p>${ex(x.newsLead)}</p><ul>${list.map((n) => `<li><a href="${ex(landingOf('n', n.slug))}">${ex(tl(n.title))}</a> (<time datetime="${ex(n.date)}">${ex(n.date)}</time>) — ${ex(tl(n.summary))}</li>`).join('')}</ul>` + foot;
+  }
   const svc = services.map((s: any) => `<li><h3>${ex(s.code)} · ${ex(tl(s.title))}</h3><p>${ex(tl(s.body))}</p><p>${ex(x.turnaround)}: ${ex(s.time ? tl(s.time) : x.onRequest)}</p></li>`).join('');
   const work = shown.map((p) => `<li><a href="${ex(landingOf('p', p.slug))}">${ex(tl(p.title))}</a> — ${ex(catName(p))}, ${ex(p.year)}. ${ex(tl(p.description))}</li>`).join('');
-  const posts2 = (news as any[]).filter((n) => !n.hidden && !n.draft).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const posts2 = posts.filter((n) => !n.draft).sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const newsHtml = posts2.length ? `<h2>${ex(x.newsPageTitle)}</h2><ul>${posts2.map((n) => `<li><a href="${ex(landingOf('n', n.slug))}">${ex(tl(n.title))}</a> (<time datetime="${ex(n.date)}">${ex(n.date)}</time>) — ${ex(tl(n.summary))}</li>`).join('')}</ul>` : '';
   return header +
     `<main><h1>${ex(x.heroA)} ${ex(x.heroB)}${ex(x.heroEm)}</h1><p>${ex(x.heroLead)}</p>` +
@@ -230,7 +236,7 @@ const ogAlt = item && (item.photos || []).length ? tl(item.title) + ' — naceke
     <link rel="alternate" hreflang="en" href={altEn} />
     <link rel="alternate" hreflang="sl" href={altSl} />
     <link rel="alternate" hreflang="x-default" href={altEn} />
-    {landing && <meta name="nk-start" content={(project ? 'p-' : 'n-') + item.slug} />}
+    {landing && <meta name="nk-start" content={startView} />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />

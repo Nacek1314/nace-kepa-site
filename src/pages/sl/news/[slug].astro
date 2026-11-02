@@ -3,7 +3,7 @@
 import Site from '../../../site/Site.astro';
 import news from '../../../data/news.json';
 export function getStaticPaths() {
-  return (news as any[]).filter((n) => !n.hidden && !n.draft && /^[a-z0-9-]+$/.test(String(n.slug))).map((n) => ({ params: { slug: n.slug }, props: { post: n } }));
+  return (news as any[]).filter((n) => !n.hidden && !n.draft && !(n.date && n.date > new Date().toISOString().slice(0, 10)) && /^[a-z0-9-]+$/.test(String(n.slug))).map((n) => ({ params: { slug: n.slug }, props: { post: n } }));
 }
 const { post } = Astro.props;
 ---

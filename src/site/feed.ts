@@ -20,7 +20,8 @@ const rich = (s: string) => String(s || '').split(/\n{2,}/).filter((b) => b.trim
 
 export function atom(lang: 'en' | 'sl'): Response {
   const L = (v: any) => (v && typeof v === 'object' ? v[lang] || v.en || '' : v || '');
-  const posts = (news as any[]).filter((n) => !n.hidden).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const today = new Date().toISOString().slice(0, 10);
+  const posts = (news as any[]).filter((n) => !n.hidden && !(n.date && n.date > today)).sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const self = SITE + (lang === 'sl' ? '/news-sl.xml' : '/news.xml');
   const base = lang === 'sl' ? SITE + '/sl/#' : SITE + '/#en-'; // the Slovenian feed links to the Slovenian page /sl/
   const home = base + 'news';

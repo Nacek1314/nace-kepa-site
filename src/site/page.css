@@ -1080,3 +1080,8 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 .st-wt__bar b { font-family: var(--font-mono); font-weight: 500; text-align: right; }
 .st-est { margin: var(--space-3) 0 0; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .st-wt__bar i { background: var(--ink); } }
+
+/* Blog package (2026-11-02): year strip on #news (reuses .filters / .chip), mentioned projects under a post */
+.blog-years { margin-bottom: var(--space-5); }
+.blog-mentions { padding-top: var(--space-6); border-top: 1px solid var(--line-strong); }
+.blog-mentions .sub { margin: 0 0 var(--space-4); }

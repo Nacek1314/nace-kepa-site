@@ -127,6 +127,28 @@ snapshot in `Site.astro`; the Google row line in `ctCard()`.
 *To remove part 4:* see the comment above `isOv` in `admin.js`; the `services` branch in `stNormal()` / `stClean()` and
 the Services fieldset; the override blocks after `SET` in `app.js` and after `services` in `Site.astro`.
 
+### Part 5 — news as a blog
+
+- Site (`blogYears()` … `blogMentions()` in `app.js`, `blog:` in `content.js`, "Blog package" CSS): a **year strip** on
+  `#news` (chips, `aria-pressed`, keyboard) once there is more than one year of posts or six posts; **"Mentioned in this
+  post"** — up to three project sheets whose title (EN or SL, whole words) appears in a post, under the article; a post
+  dated after the build day is **scheduled** — left out of `NEWS`, the JSON-LD, the snapshot, the landing pages, the feed
+  and the sitemap until a build on or after that day (the maintenance run builds daily); a real **`/news/` index page**
+  (+ `/sl/news/`, `view="news"` in `Site.astro`, `src/pages/news/index.astro`) with its own title / description / snapshot
+  list, in the sitemap, opening the #news view (the folder used to 404).
+- Admin (`NT_TEMPLATES` … `ntInsert()` in `admin.js`): "Start from a template" row in the News list — *New machine or
+  tool*, *Finished project*, *Material in practice* — a skeleton in EN + SL with bracketed prompts (no facts), saved as a
+  draft; a **toolbar** above each article field (Link, • List, 1. List, "+ Project link…" with the project's landing page,
+  inserted at the cursor); **scheduling**: a future date shows "scheduled — goes live with the first site build on …" in
+  the editor head and "scheduled" in the list; the date hint explains it.
+- Tested with two temporary posts (2025 + one dated 2099, then restored): `/news/` title + h1 + 2 cards + year strip
+  "All years 2 / 2026 1 / 2025 1", the 2025 filter, the scheduled post absent from the page, the feed and the sitemap, the
+  mentioned FamFive sheet under the SL post; admin: template → draft with skeleton + slug, toolbar list + project link at
+  the cursor, scheduled label after a date change; full audit of every page.
+*To remove part 5:* see the comments above `state.blogYear` in `app.js` and `NT_TEMPLATES` in `admin.js`; the `TODAY`
+filters in `Site.astro`, both `news/[slug].astro`, `feed.ts` and `astro.config.mjs`; the two `news/index.astro` files
+and `view` in `Site.astro`.
+
 ## 2026-11-01
 
 **Checked:** build, home, #services (all tools incl. `?tool=index` / `?tool=plate`), #work, #work?view=list, #p-famfive,

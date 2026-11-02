@@ -83,7 +83,11 @@ cells directly, tick rows to change them together, or copy the table to Excel an
 
 **News:** the *News* tab adds posts with an EN + SL headline, summary and article (blank line =
 new paragraph, lines starting with `- ` become a list), a date, photos, *pinned* and *draft*. The newest
-three appear on the home page; all are at `/#news`, each at `/news/<url-name>/` (also `/#n-<url-name>`).
+three appear on the home page; all are at `/news/` (and `/#news`), each at `/news/<url-name>/` (also `/#n-<url-name>`).
+Three templates (new machine, finished project, material in practice) give a new post a skeleton to fill in; the toolbar
+above the article inserts links, lists and a project's page link; a post dated in the future is *scheduled* and goes live
+with the first site build on that day. On the site, #news gets a year strip once there is more than one year of posts, and a
+post that names a project shows that project's sheet underneath.
 
 ## Protection
 
