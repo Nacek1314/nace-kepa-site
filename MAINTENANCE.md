@@ -200,6 +200,27 @@ fallbacks in `Site.astro`, the enclosure line in `feed.ts`, `tlUrl` / `tlCopy` +
   #mine; studio regression.
 *To remove part 7:* see the comment above `MN_KEY` in `app.js`.
 
+### Wrap-up
+
+**Commits (all on main, each deployed by Actions and checked live from the laptop):** 46919fc (morning run: landing pages +
+share & link package), dcee0ae (1/6 settings + prices + promo), e299af5 (2/6 gift cards + FAQ + GBP), 9439136 (3/6 studio
+2.0), 574bc80 (4/6 admin Overview + services), 675d9eb (5/6 blog), 008aca1 (6/6 SEO cards — the one new dependency,
+`@resvg/resvg-js`; the Actions build with it succeeded), 467dc42 (7/7 My corner). Idea 1 of the proposal (content sprint:
+photos, materials, details) was left out at Nace's request.
+
+**What only Nace can provide now (nothing invented in the meantime):** FAQ questions (admin › Settings › FAQ — the section
+and the FAQPage data appear once there is one); the Google Business Profile URL (Settings › Links — the "Find me on Google"
+row and `sameAs` appear once set); services text overrides (Settings › Services) if the built-in text is out of date; the
+promo and gift-card flows end in his e-mail (he writes the invoice / card). Photos, materials and details per project stay
+the biggest gap (Overview shows 0 / 29 for all three).
+
+**Ideas for next time** (added to the list below)
+- Public: the drawn link-preview card as a "Download sheet card (PNG)" button on each project page, and a small gallery
+  of all cards on #work (they exist already at `/og/…`).
+- Public: My corner — "Send me my corner by e-mail" (the text export as the body of a mailto:, no server).
+- Admin: a "Preview card" thumbnail in the project / post editor head (the `/og/…png` of the committed version).
+- Admin: a FAQ starter set as a template (questions only, answers left blank for Nace) once he wants a FAQ.
+
 ## 2026-11-01
 
 **Checked:** build, home, #services (all tools incl. `?tool=index` / `?tool=plate`), #work, #work?view=list, #p-famfive,
@@ -1668,6 +1689,13 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: Part studio — wall-thickness check from ray casts along face normals (limit typed by the visitor; nozzle width only if Nace publishes it).
 - Public: news archive by year/month + a `/news/` index landing page (once there are more posts).
 - Admin: "Open landing page" button per project / post and a URL-safe slug check before publishing.
+- (Built 2026-11-02, big update: price list + quote estimate + promotion; gift cards + FAQ + GBP link; Part studio
+  wall-thickness check + time / material / price estimate; admin Overview + Settings (prices, print, promo, gift, FAQ,
+  links, services); news as a blog (year strip, mentioned projects, scheduled posts, `/news/` index, admin templates /
+  toolbar); drawn link-preview cards per project / post + tool links; My corner `#mine`.)
+- Public: "Download sheet card (PNG)" on project pages + a card gallery on #work (the `/og/…` cards exist already).
+- Public: My corner — "Send me my corner by e-mail" (text export as a mailto: body, no server).
+- Admin: preview-card thumbnail in the editor head; FAQ starter template (questions only).
 
 ## 2026-10-03 (second run)
 
