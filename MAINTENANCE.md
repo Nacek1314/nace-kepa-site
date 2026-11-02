@@ -149,6 +149,36 @@ the Services fieldset; the override blocks after `SET` in `app.js` and after `se
 filters in `Site.astro`, both `news/[slug].astro`, `feed.ts` and `astro.config.mjs`; the two `news/index.astro` files
 and `view` in `Site.astro`.
 
+### Part 6 — SEO: drawn link-preview cards, tool links, feed enclosures
+
+- **Link-preview cards** (`src/og/card.ts`, `src/pages/og/[...path].png.ts`): every published project and news post gets its
+  own 1200×630 PNG in both languages — `/og/portfolio/<slug>.png`, `/og/sl/portfolio/<slug>.png`, `/og/news/<slug>.png`,
+  `/og/sl/news/<slug>.png` — plus `/og/news.png` and `/og/sl/news.png` for the two `/news/` index pages. Drawn at build time
+  like a drawing sheet: frame, grid, the project's line drawing from `drawings.js` (CSS classes turned into attributes),
+  sheet number · category · year, title (wrapped, ≤ 3 lines, ellipsis), description, a title block with category / year /
+  materials / sheet (posts: published / author / section). Rendered with **`@resvg/resvg-js`** — the one new dependency
+  Nace allowed (`package.json` + lockfile, all platform binaries are optional deps, so `npm ci` on Actions and on Windows
+  both work). Fonts are the site's own, bundled in `src/og/fonts/` (Schibsted Grotesk ExtraBold + Medium, JetBrains Mono
+  Medium — the static OFL TTFs from the two upstream GitHub repos, URLs + sha256 in `SOURCES.txt`, OFL texts next to them;
+  the laptop downloaded them straight from GitHub because binary files don't travel well through the patch) so the build
+  needs no network and no system fonts; `metrics.json` holds the glyph widths used for wrapping. `Site.astro`:
+  `og:image` / `twitter:image` of a landing page is the card unless the item has a photo (a real part still wins), with
+  `og:image:width/height/type`; the CreativeWork / BlogPosting `image` in the JSON-LD falls back to the card too. Scheduled
+  posts get no card (same `TODAY` rule).
+- **Tool links** (`tlUrl()` / `tlCopy()` in `app.js`, `tl.copy…` in `content.js`): every tool on #services ends with
+  "↑ All tools · Copy link to this tool" — the address `https://nacekepa.work/#services?tool=<name>` (`/sl/` on the
+  Slovenian page) goes to the clipboard, with a fallback message when copying is blocked.
+- **Feed**: a post without photos gets `<link rel="enclosure" type="image/png">` pointing at its card. **Admin › Overview**:
+  the page table says "drawn preview card" instead of "generic preview image" and has a "Card ↗" link per page.
+- Tested: 64 cards built (29 + 29 projects, 1 + 1 post, 2 index) and looked at (FamFive EN, Wi-Fi fridge thermometer SL —
+  longest title, Bambu post SL, news index), a temporary photo-less post with a 20-word title (3 lines + ellipsis, feed
+  enclosure present) and a 2099 post (no card, not in the feed — then restored); the copy button on `?tool=plate` EN + SL
+  (clipboard content, message); admin overview row + card link with the mocked GitHub API; full audit of every page.
+*To remove part 6:* delete `src/og/` and `src/pages/og/`, the `ogCard` / `ogSized` lines and the two `/og` image
+fallbacks in `Site.astro`, the enclosure line in `feed.ts`, `tlUrl` / `tlCopy` + the `data-tl-copy` handler in `app.js`,
+`tl.copy…` in `content.js`, `.tl-back .tb-copy / .tl-msg` in `page.css`, `ovCard()` in `admin.js`, and
+`@resvg/resvg-js` from `package.json` (`npm uninstall @resvg/resvg-js`).
+
 ## 2026-11-01
 
 **Checked:** build, home, #services (all tools incl. `?tool=index` / `?tool=plate`), #work, #work?view=list, #p-famfive,

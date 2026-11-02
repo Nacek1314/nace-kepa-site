@@ -2549,7 +2549,14 @@
   function tlWrap(k, html) { // gives the tool section its id + a T-0N tag and ends it with "↑ All tools"
     var d = TL_TOOLS.filter(function (v) { return v[0] === k; })[0], n = TL_TOOLS.indexOf(d) + 1;
     html = html.replace(/^<section class="block ([a-z-]+)"(?: id="[^"]*")?/, '<section class="block $1 tl-tool" id="' + d[2] + '" data-tl="T-0' + n + '"');
-    return html.replace(/<\/section>$/, '<p class="tl-back"><a href="#services?tool=index">↑ ' + esc(t().tl.back) + '</a></p></section>');
+    // SEO package (2026-11-02): every tool has a shareable address (https://nacekepa.work/#services?tool=<name>); the footer copies it.
+    return html.replace(/<\/section>$/, '<p class="tl-back"><a href="#services?tool=index">↑ ' + esc(t().tl.back) + '</a><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-copy="' + esc(tlUrl(k)) + '">' + esc(t().tl.copy) + '</button><span class="tl-msg" role="status" aria-live="polite"></span></p></section>');
+  }
+  function tlUrl(k) { return 'https://nacekepa.work/' + (lang === 'sl' ? 'sl/' : '') + tlHash(k); }
+  function tlCopy(btn) {
+    var url = btn.getAttribute('data-tl-copy'), msg = btn.nextElementSibling, x = t().tl;
+    var fail = function () { if (msg) msg.textContent = x.copyFail; };
+    try { navigator.clipboard.writeText(url).then(function () { if (msg) msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
   }
   function tlHome() {
     var x = t().tl;
@@ -2873,6 +2880,7 @@
     if (el.hasAttribute('data-rel-go')) { relToOrder(); return; }
     if (el.hasAttribute('data-share-copy')) { shareCopy(); return; }
     if (el.hasAttribute('data-share-no')) { shareCopy(true); return; } // Share & link package (2026-11-01): copy the sheet number
+    if (el.hasAttribute('data-tl-copy')) { tlCopy(el); return; } // SEO package (2026-11-02): copy a tool's address
     if (el.hasAttribute('data-find-copy')) { findShareCopy(); return; }
     if (el.hasAttribute('data-rg-view')) { rgView(el.getAttribute('data-rg-view')); return; }
     if (el.hasAttribute('data-rg-sort')) { rgSort(el.getAttribute('data-rg-sort')); return; }

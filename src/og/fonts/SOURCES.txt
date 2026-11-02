@@ -1,0 +1,10 @@
+Fonts used only at build time to draw the link-preview cards (src/og/card.ts). SIL Open Font License 1.1 (OFL-*.txt).
+
+SchibstedGrotesk-ExtraBold.ttf  https://raw.githubusercontent.com/schibsted/schibsted-grotesk/main/fonts/ttf/SchibstedGrotesk-ExtraBold.ttf
+  sha256 2a00896fe6bf6507323f4028e157858c7ba3cb82b9ba009bbc058d5b10230b96
+SchibstedGrotesk-Medium.ttf     https://raw.githubusercontent.com/schibsted/schibsted-grotesk/main/fonts/ttf/SchibstedGrotesk-Medium.ttf
+  sha256 b93b0fb5b1adaa67fb323a1cc7e8609a1fbf7c42736f65bd9d0e83508fa52498
+JetBrainsMono-Medium.ttf        https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/ttf/JetBrainsMono-Medium.ttf
+  sha256 d16e6dc99672734698d629705f617c79f6eb6040f5113efe3a145204dc988109
+
+metrics.json (one folder up) holds the advance widths of these exact files; regenerate it if a font file changes.

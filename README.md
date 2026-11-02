@@ -28,7 +28,9 @@ The site is a single page: `src/site/Site.astro` inlines the plain HTML/CSS/JS i
 Every published project also has its own page at `/portfolio/<slug>/` (Slovenian: `/sl/portfolio/<slug>/`) and every news
 post at `/news/<slug>/` (`/sl/news/<slug>/`) — `src/pages/portfolio/[slug].astro`, `src/pages/news/[slug].astro` and their `/sl/`
 twins render the same site with that sheet's own title, description, link preview and structured data, and open it. These
-are the addresses the "Share this sheet" box, the admin and the feed hand out. Old URLs (`/services`, `/portfolio/<old-slug>`,
+are the addresses the "Share this sheet" box, the admin and the feed hand out. Each page's link preview is its first photo or, without
+photos, a card drawn at build time from the sheet (`/og/portfolio/<slug>.png`, `/og/news/<slug>.png`, `/og/sl/…`) — see
+`src/og/card.ts`; the admin Overview links to every card ("Card ↗"). Old URLs (`/services`, `/portfolio/<old-slug>`,
 `/sl/...`) redirect to the matching section or landing page (see `astro.config.mjs`).
 
 ## How orders work
@@ -121,6 +123,7 @@ src/data/news.json      news posts, edited by the dashboard
 src/data/settings.json  prices, print parameters, promotion, gift cards, FAQ, links — edited by the dashboard
 src/site/viewer.js      3D model viewer (three.js), loaded only on project pages
 src/site/nkm.js         protected preview-mesh format (simplify, encode, decode)
+src/pages/og/           link-preview cards /og/…png, drawn at build from src/og/card.ts (+ bundled fonts)
 src/pages/404.astro     not-found page
 src/site/               content, app script, styles, drawings
 public/                 CNAME, favicons, og.png, robots.txt, models/ (uploaded 3D models + photos)

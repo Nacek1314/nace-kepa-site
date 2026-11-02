@@ -865,6 +865,9 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 .tl-tool .sec-title:focus { outline: none; } .tl-tool .sec-title:focus-visible { outline: 2px solid var(--redline); outline-offset: 4px; }
 .tl-back { margin: 0; font: 12px/20px var(--font-mono); }
 .tl-back a { color: var(--ink-muted); display: inline-block; padding-block: 2px; }
+.tl-back .tb-copy { font: inherit; color: var(--ink-muted); } /* SEO package (2026-11-02): copy the tool's address */
+.tl-back .tl-msg { margin-left: var(--space-2); color: var(--ink); }
+.tl-back .tl-msg:empty { display: none; }
 .tl-back a:hover, .tl-back a:focus-visible { color: var(--redline); }
 .tl-home { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); font-size: 14px; line-height: 24px; }
 .tl-home .nk-label { margin-right: var(--space-2); }

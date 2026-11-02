@@ -576,6 +576,7 @@ function stAct(b) {
 const isOv = () => S.tab === 'overview';
 const SITE_URL = 'https://nacekepa.work';
 function ovLanding(kind, slug, sl) { return SITE_URL + (sl ? '/sl' : '') + (kind === 'n' ? '/news/' : '/portfolio/') + slug + '/'; }
+function ovCard(kind, slug, sl) { return SITE_URL + '/og' + (sl ? '/sl' : '') + (kind === 'n' ? '/news/' : '/portfolio/') + slug + '.png'; } // the drawn link-preview card (SEO package, 2026-11-02; src/og/card.ts)
 function ovStat(label, n, total, filter, warn) {
   const pct = total ? Math.round(n / total * 100) : 0;
   return `<li class="ov-stat${warn && n < total ? ' is-warn' : ''}"><span class="ov-stat__n">${n}<small> / ${total}</small></span><span class="ov-stat__l">${label}</span><i class="ov-stat__bar" style="--w:${pct}%"></i>${filter && n < total ? `<button type="button" class="td-miss" data-ov-todo="${filter}">${total - n} missing →</button>` : ''}</li>`;
@@ -615,12 +616,12 @@ function ovView() {
   const row = (kind, x) => {
     const title = kind === 'n' ? x.title : x.title, desc = kind === 'n' ? x.summary : x.description;
     const en = descLen(desc?.en), sl = descLen(desc?.sl);
-    const checks = [[en >= 50 && en <= 160, en ? `EN ${en} ch` : 'no EN description'], [sl > 0, sl ? `SL ${sl} ch` : 'no SL text'], [x.photos.length > 0, x.photos.length ? 'photo preview' : 'generic preview image']];
+    const checks = [[en >= 50 && en <= 160, en ? `EN ${en} ch` : 'no EN description'], [sl > 0, sl ? `SL ${sl} ch` : 'no SL text'], [true, x.photos.length ? 'photo preview' : 'drawn preview card']];
     return `<tr class="${x.hidden ? 'is-hidden' : ''}"><td><b>${esc(title.en || x.slug)}</b><br><span class="ov-url">${esc(ovLanding(kind, x.slug).replace('https://', ''))}</span>${x.hidden ? '<br><span class="nk-label">hidden · no page</span>' : ''}${x._new ? '<br><span class="nk-label">not published yet</span>' : ''}</td>
       <td>${checks.map(([ok, l]) => `<span class="ov-chk${ok ? ' is-ok' : ''}">${ok ? '✓' : '·'} ${esc(l)}</span>`).join('<br>')}</td>
-      <td class="ov-act">${x.hidden || x._new ? '' : `<a class="tb-copy" href="${esc(ovLanding(kind, x.slug))}" target="_blank" rel="noopener">EN ↗</a> <a class="tb-copy" href="${esc(ovLanding(kind, x.slug, true))}" target="_blank" rel="noopener">SL ↗</a> <button type="button" class="tb-copy" data-ov-copy="${esc(ovLanding(kind, x.slug))}">Copy link</button>`}</td></tr>`;
+      <td class="ov-act">${x.hidden || x._new ? '' : `<a class="tb-copy" href="${esc(ovLanding(kind, x.slug))}" target="_blank" rel="noopener">EN ↗</a> <a class="tb-copy" href="${esc(ovLanding(kind, x.slug, true))}" target="_blank" rel="noopener">SL ↗</a> <button type="button" class="tb-copy" data-ov-copy="${esc(ovLanding(kind, x.slug))}">Copy link</button>${x.photos.length ? '' : ` <a class="tb-copy" href="${esc(ovCard(kind, x.slug))}" target="_blank" rel="noopener">Card ↗</a>`}`}</td></tr>`;
   };
-  const pages = `<p class="ad-small">Each published project and post has its own page (title, description, link preview, structured data). A good description is 50–160 characters in both languages; a photo becomes the link-preview image. Sitemap: ${2 + shown.length * 2 + posts.length * 2} addresses.</p>
+  const pages = `<p class="ad-small">Each published project and post has its own page (title, description, link preview, structured data). A good description is 50–160 characters in both languages. The link preview is the first photo, or — without photos — a card drawn from the sheet (title, drawing, category, year, materials) at build time; open it with “Card ↗”. Sitemap: ${2 + shown.length * 2 + posts.length * 2} addresses.</p>
     <table class="ov-table"><thead><tr><th>Page</th><th>Search / preview</th><th></th></tr></thead><tbody>
       <tr><td><b>Home</b><br><span class="ov-url">nacekepa.work/ · /sl/</span></td><td><span class="ov-chk is-ok">✓ studio description, services, FAQ, projects, posts</span></td><td class="ov-act"><a class="tb-copy" href="/" target="_blank" rel="noopener">EN ↗</a> <a class="tb-copy" href="/sl/" target="_blank" rel="noopener">SL ↗</a></td></tr>
       ${sortNews(N).map((n) => row('n', n)).join('')}${P.map((p) => row('p', p)).join('')}</tbody></table>

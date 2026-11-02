@@ -84,7 +84,11 @@ const description = project
   ? [tl(project.description), (SL ? 'List ' : 'Sheet ') + sheetNo(project) + ' · ' + catName(project) + ' · ' + project.year + (project.materials ? ' · ' + project.materials : '') + ' — Nace Kepa, ' + (SL ? 'inženirski studio, Škofja Loka.' : 'engineering studio, Škofja Loka.')].filter(Boolean).join(' ')
   : post ? (tl(post.summary) || siteDescription) : view === 'news' ? (SL ? 'Novice iz delavnice Naceta Kepe: novi stroji, materiali in zaključeni projekti.' : 'News from Nace Kepa\'s workshop: new machines, materials and finished jobs.') : siteDescription;
 const photoUrl = (ph: string) => 'https://nacekepa.work/' + String(ph).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/');
-const ogImage = item && (item.photos || []).length ? photoUrl(item.photos[0]) : 'https://nacekepa.work/og.png';
+// Link-preview image (SEO package, 2026-11-02): a landing page gets its own drawn card from /og/… (src/og/card.ts, built per
+// language); the home pages keep /og.png. A sheet with photos still shows its first photo (a real part beats a drawing).
+const ogCard = landing ? 'https://nacekepa.work/og' + landing.replace(/\/$/, '') + '.png' : '';
+const ogImage = item && (item.photos || []).length ? photoUrl(item.photos[0]) : ogCard || 'https://nacekepa.work/og.png';
+const ogSized = ogImage.endsWith('/og.png') || ogImage === ogCard; // 1200×630 for /og.png and every drawn card
 // Links inside the snapshot and structured data point at this page (/ or /sl/) so each language stays on its own URL.
 const at = (h: string) => (SL ? '/sl/' : '/') + h;
 // Service names and descriptions come from SERVICES in content.js (same text as on #services), read at build time.
@@ -132,7 +136,7 @@ const postLd = (n: any) => ({
   url: landingOf('n', n.slug),
   mainEntityOfPage: landingOf('n', n.slug),
   inLanguage: lang,
-  image: (n.photos || []).length ? n.photos.map(photoUrl) : 'https://nacekepa.work/og.png',
+  image: (n.photos || []).length ? n.photos.map(photoUrl) : 'https://nacekepa.work/og' + (SL ? '/sl' : '') + '/news/' + n.slug + '.png', // the drawn card (src/og/card.ts)
   author: { '@type': 'Person', name: 'Nace Kepa', url: 'https://nacekepa.work/' },
   publisher: { '@type': 'Organization', name: 'Nace Kepa · Engineering Studio', logo: { '@type': 'ImageObject', url: 'https://nacekepa.work/apple-touch-icon.png' } }
 });
@@ -145,7 +149,7 @@ const projectLd = (p: any) => ({
   dateCreated: p.year ? String(p.year) : undefined,
   genre: p.category || undefined,
   keywords: p.materials || undefined,
-  image: (p.photos || []).length ? p.photos.map(photoUrl) : undefined,
+  image: (p.photos || []).length ? p.photos.map(photoUrl) : 'https://nacekepa.work/og' + (SL ? '/sl' : '') + '/portfolio/' + p.slug + '.png', // the drawn card (src/og/card.ts)
   inLanguage: lang,
   creator: { '@type': 'Person', name: 'Nace Kepa', url: 'https://nacekepa.work/' }
 });
@@ -221,7 +225,7 @@ const snapshot = (() => {
     `<h2>${ex(x.nav.about)}</h2><p>${ex(x.aboutBody)}</p>` + foot;
 })();
 // Alt text of the link-preview image: the sheet / post title on a landing page with a photo, else the hero line.
-const ogAlt = item && (item.photos || []).length ? tl(item.title) + ' — nacekepa.work' : 'nacekepa.work — ' + T[lang].heroA + ' ' + T[lang].heroB + T[lang].heroEm;
+const ogAlt = item ? tl(item.title) + ' — nacekepa.work' : view === 'news' ? title : 'nacekepa.work — ' + T[lang].heroA + ' ' + T[lang].heroB + T[lang].heroEm;
 ---
 <!doctype html>
 <html lang={lang}>
@@ -254,8 +258,9 @@ const ogAlt = item && (item.photos || []).length ? tl(item.title) + ' — naceke
     <meta property="og:url" content={pageUrl} />
     {post && <meta property="article:published_time" content={post.date} />}
     <meta property="og:image" content={ogImage} />
-    {ogImage.endsWith('/og.png') && <meta property="og:image:width" content="1200" />}
-    {ogImage.endsWith('/og.png') && <meta property="og:image:height" content="630" />}
+    {ogSized && <meta property="og:image:width" content="1200" />}
+    {ogSized && <meta property="og:image:height" content="630" />}
+    {ogSized && <meta property="og:image:type" content="image/png" />}
     <meta property="og:image:alt" content={ogAlt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />

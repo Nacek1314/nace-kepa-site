@@ -34,6 +34,7 @@ export function atom(lang: 'en' | 'sl'): Response {
       '    <id>tag:nacekepa.work,2026:news/' + x(n.slug) + '</id>\n' +
       '    <title>' + x(L(n.title)) + '</title>\n' +
       '    <link rel="alternate" type="text/html" href="' + x(url) + '"/>\n' +
+      ((n.photos || []).length ? '' : '    <link rel="enclosure" type="image/png" href="' + x(SITE + '/og' + (lang === 'sl' ? '/sl' : '') + '/news/' + n.slug + '.png') + '"/>\n') + // the drawn preview card (SEO package, 2026-11-02)
       '    <published>' + stamp(n.date) + '</published>\n' +
       '    <updated>' + stamp(n.date) + '</updated>\n' +
       '    <summary>' + x(L(n.summary)) + '</summary>\n' +

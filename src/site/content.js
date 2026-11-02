@@ -70,7 +70,7 @@ var T = {
     tl: { label: 'Tools · T-01 … T-09', title: 'Check it yourself first', lead: 'Nine free tools — eight on this page and the Part studio. They work in your browser and can fill in the order form for you.',
       plan: 'Three questions → the services you need', fit: 'Part size against the X2D build volume', file: 'Size, volume and fit of your STL / 3MF / OBJ', material: 'What the part must handle → a material', prep: 'What to have ready before you write',
       plate: 'Parts per plate and plates for the whole batch', prices: 'Published hourly rates and 3D printing prices', quote: 'Hours or weight → an indicative price',
-      back: 'All tools', home: 'Check it yourself first' },
+      back: 'All tools', home: 'Check it yourself first', copy: 'Copy link to this tool', copied: 'Link copied.', copyFail: 'Copying is blocked here — the address is in the bar above.' },
     // What to prepare on #services (prepBox in app.js): combines the SERVICES[].need lists.
     prep: { label: 'Checklist · S-01 … S-04', title: 'What to prepare', lead: 'Pick the services you need. The list puts together what each of them needs from you, so the first message already has everything.',
       pick: 'Services', none: 'Pick at least one service to see the list.', count: '{n} of {t} ready', all: 'All ready — start the project.', go: 'Start a project with these services', copy: 'Copy checklist', copied: 'Checklist copied.', copyFail: 'Copy failed — select the list and copy it by hand.', head: 'What to prepare' },
@@ -271,7 +271,7 @@ var T = {
     tl: { label: 'Orodja · T-01 … T-09', title: 'Najprej preverite sami', lead: 'Devet brezplačnih orodij — osem na tej strani in Studio dela. Delujejo v vašem brskalniku in lahko namesto vas izpolnijo obrazec za naročilo.',
       plan: 'Tri vprašanja → storitve, ki jih potrebujete', fit: 'Velikost dela glede na delovni prostor X2D', file: 'Velikost, prostornina in ustreznost vaše datoteke STL / 3MF / OBJ', material: 'Kaj mora del zdržati → material', prep: 'Kaj pripraviti, preden mi pišete',
       plate: 'Kosov na mizo in miz za celotno serijo', prices: 'Objavljene urne postavke in cene 3D tiska', quote: 'Ure ali teža → okvirna cena',
-      back: 'Vsa orodja', home: 'Najprej preverite sami' },
+      back: 'Vsa orodja', home: 'Najprej preverite sami', copy: 'Kopiraj povezavo do orodja', copied: 'Povezava kopirana.', copyFail: 'Kopiranje tu ni dovoljeno — naslov je v vrstici zgoraj.' },
     prep: { label: 'Seznam · S-01 … S-04', title: 'Kaj pripraviti', lead: 'Izberite storitve, ki jih potrebujete. Seznam združi, kaj vsaka od njih potrebuje od vas, da ima že prvo sporočilo vse.',
       pick: 'Storitve', none: 'Izberite vsaj eno storitev in prikaže se seznam.', count: 'Pripravljeno: {n} od {t}', all: 'Vse je pripravljeno — začnite projekt.', go: 'Začni projekt s temi storitvami', copy: 'Kopiraj seznam', copied: 'Seznam je kopiran.', copyFail: 'Kopiranje ni uspelo — označite seznam in ga kopirajte ročno.', head: 'Kaj pripraviti' },
     fit: { label: 'Preverjanje velikosti · Bambu Lab X2D', title: 'Ali gre v tiskalnik?', lead: 'Vpišite zunanje mere dela. Preverijo se glede na delovni prostor X2D, 256 × 256 × 260 mm, v vseh legah.',
