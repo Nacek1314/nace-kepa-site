@@ -193,6 +193,9 @@ var T = {
     bp: { btn: 'Print or save as PDF', note: 'A4 brief · for your records or to get the project approved', label: 'Project brief', code: 'Tracking code' },
     ask: { btn: 'Ask about this project', btnPost: 'Ask about this post', subjectPost: 'Question about the post', subject: 'Question about' },
     print: { btn: 'Print this sheet', note: 'A4 · photos and the 3D model are left out.', link: 'Online:' },
+    // QR package (2026-11-03): "Scan to open" codes on sheets, posts, printed tools and the contact card (qrBox() in app.js)
+    qr: { scan: 'Scan to open on your phone', scanPrint: 'Scan to open this sheet online', scanTool: 'Scan to open this tool online', label: 'QR code: {u}', svg: 'Download QR (SVG)', svgSaved: 'QR code saved as SVG.', svgFail: 'Could not save the file.',
+      ctTitle: 'Save my contact', ctLead: 'Point your phone camera at the code or download the card — it adds the e-mail, website and LinkedIn to your contacts.', ctLabel: 'QR code: contact card for Nace Kepa', ctDl: 'Download contact (.vcf)', ctSaved: 'Contact card saved — open it to add the contact.', ctOrg: 'Nace Kepa · Engineering Studio' },
     a11y: { steps: 'Order steps' },
     of: { typo: 'Did you mean {e}?', fix: 'Use it', back: 'Back to step {n}: {s}' },
     ps: { label: 'Portfolio set · A4', title: 'Print a portfolio set', lead: 'The project sheets as A4 pages with a cover and an index — print them, or save them as a PDF to send to a colleague.',
@@ -402,6 +405,8 @@ var T = {
     bp: { btn: 'Natisni ali shrani kot PDF', note: 'Povzetek na A4 · za vašo evidenco ali odobritev projekta', label: 'Povzetek projekta', code: 'Sledilna koda' },
     ask: { btn: 'Vprašajte o projektu', btnPost: 'Vprašajte o objavi', subjectPost: 'Vprašanje o objavi', subject: 'Vprašanje o' },
     print: { btn: 'Natisni ta list', note: 'A4 · brez fotografij in 3D modela.', link: 'Na spletu:' },
+    qr: { scan: 'Skenirajte in odprite na telefonu', scanPrint: 'Skenirajte in odprite ta list na spletu', scanTool: 'Skenirajte in odprite to orodje na spletu', label: 'Koda QR: {u}', svg: 'Prenesi QR (SVG)', svgSaved: 'Koda QR je shranjena kot SVG.', svgFail: 'Datoteke ni bilo mogoče shraniti.',
+      ctTitle: 'Shranite moj kontakt', ctLead: 'Usmerite kamero telefona v kodo ali prenesite vizitko — v stike doda e-pošto, spletno stran in LinkedIn.', ctLabel: 'Koda QR: vizitka Nace Kepa', ctDl: 'Prenesi vizitko (.vcf)', ctSaved: 'Vizitka je shranjena — odprite jo in dodajte stik.', ctOrg: 'Nace Kepa · Engineering Studio' },
     a11y: { steps: 'Koraki naročila' },
     of: { typo: 'Ste mislili {e}?', fix: 'Uporabi', back: 'Nazaj na korak {n}: {s}' },
     ps: { label: 'Mapa listov · A4', title: 'Natisnite mapo projektov', lead: 'Projektni listi kot strani A4 z naslovnico in kazalom — natisnite jih ali shranite kot PDF in pošljite sodelavcu.',

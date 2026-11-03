@@ -24,6 +24,7 @@ The site is a single page: `src/site/Site.astro` inlines the plain HTML/CSS/JS i
 | `src/site/page.css` | Layout and colour tokens (light + dark) |
 | `src/site/components.css` | Component styles — same as the nacekepa.work design system |
 | `src/site/drawings.js` | The line drawings on project sheets |
+| `src/site/qr.js` | QR-code encoder (no dependency) — "Scan to open" codes on sheets, posts, printed tools, the portfolio set and the vCard contact card; QR downloads in the admin |
 
 Every published project also has its own page at `/portfolio/<slug>/` (Slovenian: `/sl/portfolio/<slug>/`) and every news
 post at `/news/<slug>/` (`/sl/news/<slug>/`) — `src/pages/portfolio/[slug].astro`, `src/pages/news/[slug].astro` and their `/sl/`
@@ -133,7 +134,7 @@ src/site/viewer.js      3D model viewer (three.js), loaded only on project pages
 src/site/nkm.js         protected preview-mesh format (simplify, encode, decode)
 src/pages/og/           link-preview cards /og/…png, drawn at build from src/og/card.ts (+ bundled fonts)
 src/pages/404.astro     not-found page
-src/site/               content, app script, styles, drawings
+src/site/               content, app script, styles, drawings, qr.js (QR encoder)
 public/                 CNAME, favicons, og.png, robots.txt, models/ (uploaded 3D models + photos)
 cloudflare-worker/      order relay (email + Telegram); setup in its README
 .github/workflows/      GitHub Pages deploy

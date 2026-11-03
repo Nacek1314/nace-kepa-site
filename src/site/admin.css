@@ -287,3 +287,25 @@ div.pv-fb { display: grid; gap: var(--space-4); }
 .nt-tpl .nk-label { margin: 0; }
 .nt-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-2); }
 .nt-proj { width: auto; max-width: 220px; height: 32px; padding-block: 2px; font-size: 13px; }
+/* QR package (2026-11-03) — Overview › QR codes */
+.ov-qrs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-3); }
+.ov-qr { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3); border: 1px solid var(--line-strong); background: var(--paper-raised); }
+.ov-qr .qr { flex: none; color: #000; background: #fff; border: 1px solid var(--line-strong); }
+.ov-qr > div { display: grid; gap: 4px; min-width: 0; }
+.ov-qr__act { font: 12px/16px var(--font-mono); }
+/* Publishing safety package (2026-11-03) — "Before you publish" + row badges */
+.pf { margin: 0 0 var(--space-3); border: 1px solid var(--line-strong); background: var(--paper-raised); }
+.pf--warn { border-color: var(--redline); }
+.pf > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-3); padding: var(--space-2) var(--space-4); cursor: pointer; list-style: none; }
+.pf > summary::-webkit-details-marker { display: none; }
+.pf > summary::before { content: '▸'; font-family: var(--font-mono); color: var(--ink-muted); }
+.pf[open] > summary::before { content: '▾'; }
+.pf > summary .nk-label { margin: 0; }
+.pf > summary:focus-visible { outline: 2px solid var(--redline); outline-offset: -2px; }
+.pf__hint { margin-left: auto; font: 11px/16px var(--font-mono); color: var(--ink-muted); }
+.pf__list { list-style: none; margin: 0; padding: 0 var(--space-4) var(--space-3); display: grid; gap: 6px; }
+.pf__item { display: grid; grid-template-columns: 10px 1fr auto; gap: var(--space-2); align-items: baseline; font-size: 13px; }
+.pf__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); position: relative; top: 1px; }
+.pf__item.is-warn .pf__dot { background: var(--redline); }
+.pf__ok { padding: 0 var(--space-4) var(--space-3); margin: 0; }
+.pf-badge { color: var(--redline); }

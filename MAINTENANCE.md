@@ -20,6 +20,61 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-11-03
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news,
+#n-bambu-lab-x2d, #skills, #about, #contact, #compare, #studio, #gift, #mine, #order (all 4 steps on the local build in EN + SL,
+validation, nothing sent), /admin/ sign-in, the landing pages `/portfolio/famfive/`, `/news/bambu-lab-x2d/` (+ `/sl/`), `/news/`, the
+404 page — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in the cloud, as always),
+no horizontal scroll, no CSP violations, no broken images. Live site from the laptop: `/`, `/sl/`, `/admin/`, `/news/`, two landing
+pages, the feeds, sitemap, an `/og/` card, robots, manifest all 200, an unknown address 404 (`/news.xml` answered 503 once and 200 on
+every retry — GitHub Pages hiccup, not the site); the live inline-script hash equals the CSP hash; "NK-D" present, no "Fusion" — the
+live page is the 004558f build. Last Actions run (004558f) succeeded. **No bugs found.** axe-core (WCAG 2.1 AA + best practice) on the
+changed views (sheet, post, contact; EN light + SL dark): 0 violations.
+
+**Improvement — publishing safety package (admin; `pfItems()` … `pfKey()` in `admin.js`, "Publishing safety" rules in `admin.css`):**
+- **"Before you publish"** panel under the header whenever there is something to publish: it looks only at what changed since the
+  last save (new / edited projects and posts, settings) and lists what a visitor would notice — no English description (empty search
+  snippet / card), description over 160 characters, missing Slovenian title / description / headline / summary, details or article
+  English only, duplicate titles, featured-but-hidden, hidden / draft / scheduled items, more than four featured, a new sheet without
+  photos or a model. Warnings (red dot) vs notes; every line has "open →" that jumps to the field (`todoGo()`); folds with the keyboard
+  and remembers the fold; re-drawn on every edit (`pfRefresh()` from `updatePublish()`). Nothing blocks the publish — `validate()`
+  still does the hard checks.
+- **Ctrl+S / Cmd+S publishes** from anywhere in the dashboard (`pfKey()`, document-level); with nothing to publish it says so; the
+  Publish button carries the shortcut as its title.
+- **"N to do" badge** on every row of the Projects and News lists (`pfBadge()`, the same `TODO_CHECKS` as the To do tab).
+- Tested with a mocked GitHub API (1280 + 390 px): panel hidden without changes; Ctrl+S with nothing → notice; 29 project rows with
+  badges; editing FamFive (SL title cleared, 170-char description, hidden) → "2 warnings · 1 note" with the right lines, "open →" focuses
+  `#t-sl`; a template post → notes (draft, no photo), clearing its SL headline → warning; fold/unfold with Enter; Ctrl+S → the three
+  publish calls (trees, commits, refs) → "Published."
+*To remove:* see the comment above `PF` in `admin.js`.
+
+**Innovation — QR package / "Skenirajte in odprite" (`src/site/qr.js` + `qrOn()` … `qrDl()` in `app.js`, `qr:` in `content.js`, "QR
+package" rules in `page.css`; admin: `ovQr()` … `ovQrDl()`, "QR codes" fieldset in the Overview):** a **QR-code encoder written for the
+site** (ISO 18004 byte mode, versions 1–40, levels L/M/Q/H, Reed–Solomon, automatic mask by the standard penalty; ~170 lines, no
+dependency, inlined like `drawings.js` on both pages, CSP untouched) draws codes as one SVG path, black on white (inverted codes do not
+scan on every phone), with a 4-module quiet zone and an `aria-label`. Where they appear:
+- **Project sheets and news posts:** the "Share this sheet" box gets the code of the landing page ("Scan to open on your phone") and
+  **"Download QR (SVG)"**; the **printed sheet** ("Print this sheet" / Ctrl+P) carries the code next to "Online: …", so a printout handed
+  to a client leads back to the live sheet with its 3D model.
+- **Every tool printed alone** (`#services?tool=prices` …, Print package) gets the code of its address in the footer line.
+- **Printable portfolio set:** every page footer (cover, index, sheets) has an 11 mm code — the cover to `#work`, each sheet to its page.
+- **Contact card (#about / #contact): "Save my contact"** — a vCard code (name, e-mail, nacekepa.work, LinkedIn, Škofja Loka; kept
+  short so it stays at version 10) and **"Download contact (.vcf)"** — on a phone the file opens straight into Contacts.
+- **Admin › Overview › "QR codes":** home page (EN / SL), price list (EN / SL) and the contact card as SVG downloads for stickers on
+  delivered parts, business cards or the printed price list, plus **"QR ↓"** on every page row of the Pages table.
+- Verified: the encoder's matrices equal the python `qrcode` reference for 44 text × level combinations (same version, level and mask →
+  identical); OpenCV decodes screenshots of the rendered codes (sheet EN/SL, contact card) and the downloaded SVGs back to the exact
+  text; Playwright (EN 1280 light, SL 390 dark): share box + download + message, print footer visible only in print, tool footer, contact
+  card + `.vcf` by keyboard (Tab + Enter), portfolio set = 32 pages with 32 codes, admin downloads by click and keyboard; no overflow at
+  390 px; full audit of every view: no errors.
+*To remove:* see the comment above `qrOn()` in `app.js` and the header of `qr.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: QR on the NK-S spec sheet / NK-D drawing title block pointing at `#studio`, and in the printed brief (step 4) to `#order`.
+- Public: "Save my contact" also as a button in the footer title block (every page), and a vCard with a phone number once Nace publishes one.
+- Admin: a printable sticker sheet (A4 grid of the home / price-list QR with the wordmark) for delivered parts.
+
 ## 2026-11-02 (evening run)
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=prices` / `?tool=quote` / `?tool=plate`), #work, #work?view=list, #p-famfive,
@@ -1768,6 +1823,11 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: NK-D — hidden lines / inner contours, a section view from the cut plane, the measured distance as a dimension.
 - Public: NK-D — PNG export; the drawing as page 2 of the printed NK-S spec sheet.
 - Admin: print preview of a project sheet in the editor.
+- (Built 2026-11-03: QR package — own QR encoder `qr.js`; codes on sheets / posts (share box + print), printed tools, the portfolio
+  set, a vCard "Save my contact" card + .vcf, admin QR downloads; publishing safety package in the admin as the improvement.)
+- Public: QR on the NK-S / NK-D sheets (→ `#studio`) and the printed brief (→ `#order`).
+- Public: "Save my contact" in the footer title block on every page; phone number in the vCard once published.
+- Admin: printable A4 sticker sheet of the home / price-list QR with the wordmark.
 
 ## 2026-10-03 (second run)
 

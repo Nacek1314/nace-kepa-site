@@ -6,6 +6,7 @@
 import pageCss from './page.css?raw';
 import componentsCss from './components.css?raw';
 import drawings from './drawings.js?raw';
+import qr from './qr.js?raw'; // QR package (2026-11-03): window.NK_QR — codes on sheets, posts, tools and the contact card
 import content from './content.js?raw';
 import app from './app.js?raw';
 import projects from '../data/projects.json';
@@ -35,7 +36,7 @@ const contactEmail = 'kepanace@gmail.com';
 const projectsJs = 'window.NK_PROJECTS = ' + JSON.stringify(projects).replace(/</g, '\\u003c') + ';\nwindow.NK_NEWS = ' + JSON.stringify(news).replace(/</g, '\\u003c') + ';\nwindow.NK_SETTINGS = ' + JSON.stringify(settings).replace(/</g, '\\u003c') + ';';
 // Refuse to run inside another site's frame (clickjacking); GitHub Pages can't send X-Frame-Options.
 const frameGuard = 'if (window.top !== window.self) { document.documentElement.style.display = "none"; try { window.top.location.replace(window.self.location.href); } catch (e) {} }';
-let script = [frameGuard, drawings, content, projectsJs, app.split('__ORDER_ENDPOINT__').join(endpoint || '__ORDER_ENDPOINT__').split('__CONTACT_EMAIL__').join(contactEmail)].join('\n');
+let script = [frameGuard, drawings, qr, content, projectsJs, app.split('__ORDER_ENDPOINT__').join(endpoint || '__ORDER_ENDPOINT__').split('__CONTACT_EMAIL__').join(contactEmail)].join('\n');
 let css = pageCss + '\n' + componentsCss;
 // Performance (2026-10-23): the inline script and styles are minified at build with esbuild, which Astro already ships
 // (no new dependency). Only whitespace, comments and local names change — top-level names stay, so the app works the

@@ -619,11 +619,11 @@ function ovView() {
     const checks = [[en >= 50 && en <= 160, en ? `EN ${en} ch` : 'no EN description'], [sl > 0, sl ? `SL ${sl} ch` : 'no SL text'], [true, x.photos.length ? 'photo preview' : 'drawn preview card']];
     return `<tr class="${x.hidden ? 'is-hidden' : ''}"><td><b>${esc(title.en || x.slug)}</b><br><span class="ov-url">${esc(ovLanding(kind, x.slug).replace('https://', ''))}</span>${x.hidden ? '<br><span class="nk-label">hidden · no page</span>' : ''}${x._new ? '<br><span class="nk-label">not published yet</span>' : ''}</td>
       <td>${checks.map(([ok, l]) => `<span class="ov-chk${ok ? ' is-ok' : ''}">${ok ? '✓' : '·'} ${esc(l)}</span>`).join('<br>')}</td>
-      <td class="ov-act">${x.hidden || x._new ? '' : `<a class="tb-copy" href="${esc(ovLanding(kind, x.slug))}" target="_blank" rel="noopener">EN ↗</a> <a class="tb-copy" href="${esc(ovLanding(kind, x.slug, true))}" target="_blank" rel="noopener">SL ↗</a> <button type="button" class="tb-copy" data-ov-copy="${esc(ovLanding(kind, x.slug))}">Copy link</button>${x.photos.length ? '' : ` <a class="tb-copy" href="${esc(ovCard(kind, x.slug))}" target="_blank" rel="noopener">Card ↗</a>`}`}</td></tr>`;
+      <td class="ov-act">${x.hidden || x._new ? '' : `<a class="tb-copy" href="${esc(ovLanding(kind, x.slug))}" target="_blank" rel="noopener">EN ↗</a> <a class="tb-copy" href="${esc(ovLanding(kind, x.slug, true))}" target="_blank" rel="noopener">SL ↗</a> <button type="button" class="tb-copy" data-ov-copy="${esc(ovLanding(kind, x.slug))}">Copy link</button> <button type="button" class="tb-copy" data-ov-qr="${esc(ovLanding(kind, x.slug))}" data-ov-qr-name="${esc(x.slug)}" title="Download the QR code of this page (SVG)">QR ↓</button>${x.photos.length ? '' : ` <a class="tb-copy" href="${esc(ovCard(kind, x.slug))}" target="_blank" rel="noopener">Card ↗</a>`}`}</td></tr>`;
   };
   const pages = `<p class="ad-small">Each published project and post has its own page (title, description, link preview, structured data). A good description is 50–160 characters in both languages. The link preview is the first photo, or — without photos — a card drawn from the sheet (title, drawing, category, year, materials) at build time; open it with “Card ↗”. Sitemap: ${2 + shown.length * 2 + posts.length * 2} addresses.</p>
     <table class="ov-table"><thead><tr><th>Page</th><th>Search / preview</th><th></th></tr></thead><tbody>
-      <tr><td><b>Home</b><br><span class="ov-url">nacekepa.work/ · /sl/</span></td><td><span class="ov-chk is-ok">✓ studio description, services, FAQ, projects, posts</span></td><td class="ov-act"><a class="tb-copy" href="/" target="_blank" rel="noopener">EN ↗</a> <a class="tb-copy" href="/sl/" target="_blank" rel="noopener">SL ↗</a></td></tr>
+      <tr><td><b>Home</b><br><span class="ov-url">nacekepa.work/ · /sl/</span></td><td><span class="ov-chk is-ok">✓ studio description, services, FAQ, projects, posts</span></td><td class="ov-act"><a class="tb-copy" href="/" target="_blank" rel="noopener">EN ↗</a> <a class="tb-copy" href="/sl/" target="_blank" rel="noopener">SL ↗</a> <button type="button" class="tb-copy" data-ov-qr="https://nacekepa.work/" data-ov-qr-name="nacekepa-work" title="Download the QR code of the home page (SVG)">QR ↓</button></td></tr>
       ${sortNews(N).map((n) => row('n', n)).join('')}${P.map((p) => row('p', p)).join('')}</tbody></table>
     <p class="ov-msg" id="ov-msg" role="status" aria-live="polite"></p>`;
   return `<div class="ad-editor ov">
@@ -631,7 +631,36 @@ function ovView() {
     <fieldset class="ad-sec" id="ov-content"><legend class="nk-label">Content health</legend>${content}</fieldset>
     <fieldset class="ad-sec" id="ov-features"><legend class="nk-label">What the site shows (from Settings)</legend>${features}</fieldset>
     <fieldset class="ad-sec" id="ov-pages"><legend class="nk-label">Pages & search</legend>${pages}</fieldset>
+    <fieldset class="ad-sec" id="ov-qr"><legend class="nk-label">QR codes</legend>${ovQr()}</fieldset>
   </div>`;
+}
+// QR package (2026-11-03): window.NK_QR (src/site/qr.js, inlined in admin.astro) draws the codes the site shows — here for
+// download as SVG (black on white, scales to any size: stickers on delivered parts, business cards, a printed price list).
+// "QR ↓" on every page row + the home page; the contact card is the same vCard the site offers on /#contact.
+// To remove: ovQrOn() … ovQrDl(), the data-ov-qr buttons, the handler line and the qr import in admin.astro.
+function ovQrOn() { return !!(window.NK_QR && window.NK_QR.svg); }
+function ovVcard() { return window.NK_QR.vcard({ first: 'Nace', last: 'Kepa', org: 'Nace Kepa · Engineering Studio', email: 'kepanace@gmail.com', urls: [SITE_URL, 'https://www.linkedin.com/in/nace-kepa-82735038a'], city: 'Škofja Loka', country: 'Slovenia' }); }
+function ovQr() {
+  if (!ovQrOn()) return '<p class="ad-small">QR codes are not available (qr.js missing).</p>';
+  const tile = (svg, label, note, btns) => `<li class="ov-qr">${svg}<div><b>${label}</b><span class="ad-small">${note}</span><span class="ov-qr__act">${btns}</span></div></li>`;
+  return `<p class="ad-small">The same codes the site prints on sheets, tools and the contact card. SVG, black on white — put one on a sticker for delivered parts, a business card or the printed price list; “QR ↓” in the table above saves the code of any page.</p>
+  <ul class="ov-qrs">
+    ${tile(window.NK_QR.svg(SITE_URL + '/', { px: 96, label: 'QR code: nacekepa.work' }), 'Home page', 'nacekepa.work/ (opens in English; visitors switch with EN / SL)', `<button type="button" class="tb-copy" data-ov-qr="${SITE_URL}/" data-ov-qr-name="nacekepa-work">EN ↓</button> <button type="button" class="tb-copy" data-ov-qr="${SITE_URL}/sl/" data-ov-qr-name="nacekepa-work-sl">SL ↓</button>`)}
+    ${tile(window.NK_QR.svg(SITE_URL + '/#services?tool=prices', { px: 96, label: 'QR code: price list' }), 'Price list', 'nacekepa.work/#services?tool=prices — the tool prints alone from this address', `<button type="button" class="tb-copy" data-ov-qr="${SITE_URL}/#services?tool=prices" data-ov-qr-name="price-list">EN ↓</button> <button type="button" class="tb-copy" data-ov-qr="${SITE_URL}/sl/#services?tool=prices" data-ov-qr-name="cenik">SL ↓</button>`)}
+    ${tile(window.NK_QR.svg(ovVcard(), { px: 96, ecl: 'L', label: 'QR code: contact card' }), 'Contact card (vCard)', 'name, e-mail, nacekepa.work, LinkedIn, Škofja Loka — scanning adds you to the phone’s contacts', `<button type="button" class="tb-copy" data-ov-qr="vcard" data-ov-qr-name="nace-kepa-contact">QR ↓</button> <button type="button" class="tb-copy" data-ov-vcf>.vcf ↓</button>`)}
+  </ul>`;
+}
+function ovQrDl(b) {
+  const m = document.getElementById('ov-msg');
+  try {
+    let text, name, type;
+    if (b.dataset.ovVcf != null) { text = ovVcard(); name = 'nace-kepa.vcf'; type = 'text/vcard;charset=utf-8'; }
+    else { text = window.NK_QR.file(b.dataset.ovQr === 'vcard' ? ovVcard() : b.dataset.ovQr, b.dataset.ovQr === 'vcard' ? { ecl: 'L' } : {}); name = 'qr-' + (b.dataset.ovQrName || 'page') + '.svg'; type = 'image/svg+xml;charset=utf-8'; }
+    const url = URL.createObjectURL(new Blob([text], { type })), a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    if (m) m.textContent = 'Saved ' + name;
+  } catch (e) { if (m) m.textContent = 'Could not save the file: ' + e.message; }
 }
 async function ovCopy(url) {
   const m = document.getElementById('ov-msg');
@@ -770,7 +799,7 @@ function newsListView() {
       <li class="ad-item${n.slug === S.selNews ? ' is-sel' : ''}${n.hidden ? ' is-hidden' : ''}">
         <button type="button" class="ad-item__main" data-sel="${esc(n.slug)}">
           <span class="ad-item__t">${esc(n.title.en || 'Untitled')}</span>
-          <span class="ad-item__m">${esc(n.date)}${n.pinned ? ' · ★ pinned' : ''}${n.photos.length ? ` · ${n.photos.length} ph` : ''}${n.hidden ? ' · draft' : n.date > today() ? ' · scheduled' : ''}</span>
+          <span class="ad-item__m">${esc(n.date)}${n.pinned ? ' · ★ pinned' : ''}${n.photos.length ? ` · ${n.photos.length} ph` : ''}${n.hidden ? ' · draft' : n.date > today() ? ' · scheduled' : ''}${pfBadge('n', n)}</span>
         </button>
       </li>`).join('') : '<li class="ad-item"><span class="ad-item__main"><span class="ad-item__m">No posts yet. Press “+ New”.</span></span></li>'}
     </ol>
@@ -797,7 +826,7 @@ function listView() {
       <li class="ad-item${p.slug === S.sel ? ' is-sel' : ''}${p.hidden ? ' is-hidden' : ''}">
         <button type="button" class="ad-item__main" data-sel="${esc(p.slug)}">
           <span class="ad-item__t">${esc(p.title.en || 'Untitled')}</span>
-          <span class="ad-item__m">${esc(p.category)} · ${esc(p.year)}${p.model ? ' · <b>3D</b>' : ''}${p.photos.length ? ` · ${p.photos.length} ph` : ''}${p.featured ? ' · ★' : ''}${p.hidden ? ' · hidden' : ''}</span>
+          <span class="ad-item__m">${esc(p.category)} · ${esc(p.year)}${p.model ? ' · <b>3D</b>' : ''}${p.photos.length ? ` · ${p.photos.length} ph` : ''}${p.featured ? ' · ★' : ''}${p.hidden ? ' · hidden' : ''}${pfBadge('p', p)}</span>
         </button>
         <span class="ad-item__ord">
           <button type="button" data-up="${i}" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>↑</button>
@@ -912,6 +941,81 @@ function todoGo(spec) {
     if (!el.hidden) el.focus({ preventScroll: true });
     else { const fs = target.closest('fieldset') || target; fs.classList.add('td-flash'); setTimeout(() => fs.classList.remove('td-flash'), 1600); target.setAttribute('tabindex', '-1'); target.focus({ preventScroll: true }); }
   }
+}
+
+
+// ---------- Publishing safety package (2026-11-03) ----------
+// Before a publish, pfItems() looks only at what changed since the last save (new or edited projects and posts, settings)
+// and lists what a visitor would notice: missing Slovenian text, an empty or over-long English description, duplicate
+// titles, hidden / scheduled / draft items, "featured but hidden", more than four featured. Nothing blocks the publish
+// (validate() still does the hard checks) — pfView() shows the list under the header with a jump to the field, Ctrl+S /
+// Cmd+S publishes from anywhere, and every row in the Projects / News lists carries its "N to do" count from the To do
+// checks. Remove: this block, pfView() in dashView(), the Ctrl+S lines in the keydown handler, the pfBadge() calls in
+// listView() / newsListView() and the "Publishing safety" rules at the end of admin.css.
+const PF = { open: null }; // null = open when there is a warning
+function pfSaved(kind) { try { return JSON.parse((kind === 'n' ? S.savedNews : S.savedJson) || '[]'); } catch { return []; } }
+function pfChanged(kind) { // [{ x, was }] — items that differ from the saved file
+  const saved = new Map(pfSaved(kind).map((x) => [x.slug, x]));
+  return (kind === 'n' ? S.news : S.projects).map((x) => ({ x, was: saved.get(x.slug) || null }))
+    .filter(({ x, was }) => !was || JSON.stringify(stripFlags(x)) !== JSON.stringify(was));
+}
+function stripFlags(x) { const { _new, _slugTouched, ...rest } = x; return rest; }
+function pfItems() {
+  const out = [], add = (level, kind, x, text, field) => out.push({ level, kind, x, text, field });
+  const titles = (list, skip) => list.filter((y) => y !== skip).map((y) => [String(y.title?.en || '').trim().toLowerCase(), String(y.title?.sl || '').trim().toLowerCase()]);
+  const dupe = (x, list) => { const en = String(x.title?.en || '').trim().toLowerCase(), sl = String(x.title?.sl || '').trim().toLowerCase(); return titles(list, x).some(([e, l]) => (en && e === en) || (sl && l === sl)); };
+  pfChanged('p').forEach(({ x, was }) => {
+    const name = x.title.en || x.slug, what = was ? 'edited' : 'new';
+    if (blank(x.description?.en)) add('warn', 'p', x, `${name}: no English description — the search snippet, the card and the preview image will be empty.`, 'd-en');
+    else if (String(x.description.en).trim().length > 160) add('info', 'p', x, `${name}: the English description is ${String(x.description.en).trim().length} characters — search engines cut it at about 160.`, 'd-en');
+    if (blank(x.title?.sl)) add('warn', 'p', x, `${name}: no Slovenian title — /sl/ shows the English one.`, 't-sl');
+    if (blank(x.description?.sl)) add('warn', 'p', x, `${name}: no Slovenian description.`, 'd-sl');
+    if (!blank(x.details?.en) && blank(x.details?.sl)) add('info', 'p', x, `${name}: details are English only.`, 'x-sl');
+    if (dupe(x, S.projects)) add('warn', 'p', x, `${name}: another project has the same title.`, 't-en');
+    if (x.featured && x.hidden) add('warn', 'p', x, `${name}: featured but hidden — it will not show on the home page.`, 'feat');
+    else if (x.hidden) add('info', 'p', x, `${name} (${what}): hidden — not on the site, no page, not in the sitemap.`, 'hid');
+    if (!was && !x.photos.length && !x.model) add('info', 'p', x, `${name}: new sheet without photos or a 3D model — the site shows the category drawing.`, 'photo-in');
+  });
+  const feat = S.projects.filter((q) => q.featured && !q.hidden).length;
+  if (feat > 4 && pfChanged('p').some(({ x, was }) => x.featured && (!was || !was.featured))) add('info', 'p', null, `${feat} projects are featured — the home page shows the first four in sheet order (Arrange tab).`, '');
+  pfChanged('n').forEach(({ x, was }) => {
+    const name = x.title.en || x.slug;
+    if (blank(x.summary?.en)) add('warn', 'n', x, `${name}: no English summary — the card on #news and the search snippet will be empty.`, 'n-s-en');
+    if (blank(x.body?.en)) add('warn', 'n', x, `${name}: no English article.`, 'n-b-en');
+    if (blank(x.title?.sl)) add('warn', 'n', x, `${name}: no Slovenian headline.`, 'n-t-sl');
+    if (blank(x.summary?.sl)) add('warn', 'n', x, `${name}: no Slovenian summary.`, 'n-s-sl');
+    if (!blank(x.body?.en) && blank(x.body?.sl)) add('info', 'n', x, `${name}: the article is English only.`, 'n-b-sl');
+    if (dupe(x, S.news)) add('warn', 'n', x, `${name}: another post has the same headline.`, 'n-t-en');
+    if (x.hidden) add('info', 'n', x, `${name}: draft — stays off the site and out of the feed.`, 'n-hid');
+    else if (x.date > today()) add('info', 'n', x, `${name}: scheduled — goes live with the first site build on ${x.date}.`, 'n-date');
+    if (!was && !x.photos.length) add('info', 'n', x, `${name}: no photo — the link preview is a drawn card.`, 'photo-in');
+  });
+  if (settingsChanged()) add('info', 's', null, 'Settings changed — the price list, estimate, promotion, gift cards, FAQ or links on the site follow this publish.', '');
+  return out;
+}
+function pfView() {
+  if (!S.user || !changeCount()) return '';
+  const items = pfItems(), warns = items.filter((i) => i.level === 'warn').length;
+  const open = PF.open == null ? warns > 0 : PF.open;
+  const sum = items.length ? `${warns ? `${warns} warning${warns === 1 ? '' : 's'}` : ''}${warns && items.length - warns ? ' · ' : ''}${items.length - warns ? `${items.length - warns} note${items.length - warns === 1 ? '' : 's'}` : ''}` : 'nothing to flag';
+  return `<details class="pf${warns ? ' pf--warn' : ''}" id="pf"${open ? ' open' : ''}><summary><span class="nk-label">Before you publish</span><b>${sum}</b><span class="pf__hint">Ctrl+S publishes · nothing here blocks the publish</span></summary>
+    ${items.length ? `<ul class="pf__list">${items.map((i) => `<li class="pf__item is-${i.level}"><span class="pf__dot" aria-hidden="true"></span><span>${esc(i.text)}</span>${i.x ? `<button type="button" class="td-miss" data-todo-go="${i.kind}|${esc(i.x.slug)}|${i.field}">open →</button>` : ''}</li>`).join('')}</ul>` : '<p class="ad-small pf__ok">The changed sheets have both languages, a description and no duplicate titles.</p>'}
+  </details>`;
+}
+function pfRefresh() { // re-draw the panel in place (edits do not re-render the whole dashboard)
+  const old = document.getElementById('pf'), html = S.user ? pfView() : '';
+  if (old) { if (html) { PF.open = old.open; old.outerHTML = html; } else old.remove(); }
+  else if (html) { const bar = root.querySelector('.ad-main'); if (bar) bar.insertAdjacentHTML('beforebegin', html); }
+}
+function pfBadge(kind, x) { const n = TODO_CHECKS.filter((c) => c.kind === kind && c.test(x)).length; return n ? ` · <span class="pf-badge" title="Open To do for the list">${n} to do</span>` : ''; }
+function pfKey(e) { // Ctrl+S / Cmd+S = publish
+  if (!(e.ctrlKey || e.metaKey) || e.altKey || String(e.key).toLowerCase() !== 's') return false;
+  e.preventDefault();
+  if (!S.user) return true;
+  if (S.busy) return true;
+  if (!changeCount()) { S.notice = 'Nothing to publish — no changes since the last save.'; S.error = ''; render(); return true; }
+  publish();
+  return true;
 }
 
 // ---------- Translate (tab "EN ⇄ SL": every English/Slovenian text pair side by side, with checks) ----------
@@ -1250,6 +1354,8 @@ function arPos(input) {
   if (Number.isFinite(to) && arMove(i, to)) { render(); arFocus('ar-p-' + p.slug); document.getElementById('ar-p-' + p.slug)?.select(); }
   else { input.value = i + 1; delete input.dataset.done; }
 }
+document.addEventListener('keydown', (e) => { pfKey(e); }); // Publishing safety package (2026-11-03): Ctrl+S / Cmd+S anywhere
+root.addEventListener('toggle', (e) => { if (e.target && e.target.id === 'pf') PF.open = e.target.open; }, true); // remember whether the list is folded
 root.addEventListener('keydown', (e) => {
   if (isTb() && tbKey(e)) return;
   if (!isArr()) return;
@@ -1769,7 +1875,7 @@ function newsEditorView() {
       ${fld('n-slug', 'URL name', inp('n-slug', n.slug, committed ? 'readonly' : ''), committed ? 'nacekepa.work/news/' + esc(n.slug) + '/' : 'Lowercase, numbers, dashes.')}
       <div class="nk-field"><span class="nk-field__label">Visibility</span>
         <label class="ad-check"><input type="checkbox" data-k="n-pin" ${n.pinned ? 'checked' : ''}> Pinned to the top</label>
-        <label class="ad-check"><input type="checkbox" data-k="n-hid" ${n.hidden ? 'checked' : ''}> Draft (not on the site)</label>
+        <label class="ad-check"><input type="checkbox" id="n-hid" data-k="n-hid" ${n.hidden ? 'checked' : ''}> Draft (not on the site)</label>
       </div>
     </div></fieldset>
     ${photosSection(n)}
@@ -1816,8 +1922,8 @@ function editorView() {
       ${fld('slug', 'URL name', inp('slug', p.slug, committed ? 'readonly' : ''), committed ? 'nacekepa.work/portfolio/' + esc(p.slug) + '/ · fixed after publishing' : 'Lowercase, numbers, dashes.')}
       ${fld('drw', 'Drawing (when no photo)', `<select class="nk-input" id="drw" data-k="drw"><option value="">By category</option>${DRAWINGS.map((d) => `<option${d === p.drawing ? ' selected' : ''}>${d}</option>`).join('')}</select>`)}
       <div class="nk-field"><span class="nk-field__label">Visibility</span>
-        <label class="ad-check"><input type="checkbox" data-k="feat" ${p.featured ? 'checked' : ''}> Featured on home page</label>
-        <label class="ad-check"><input type="checkbox" data-k="hid" ${p.hidden ? 'checked' : ''}> Hidden from the site</label>
+        <label class="ad-check"><input type="checkbox" id="feat" data-k="feat" ${p.featured ? 'checked' : ''}> Featured on home page</label>
+        <label class="ad-check"><input type="checkbox" id="hid" data-k="hid" ${p.hidden ? 'checked' : ''}> Hidden from the site</label>
       </div>
     </div></fieldset>
 
@@ -1854,11 +1960,12 @@ function dashView() {
       <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="reload" ${S.busy ? 'disabled' : ''}>Reload</button>
       ${vault() ? '<button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="lock">Lock</button>' : ''}
       <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="logout" title="Signs out and erases the saved token on this device">Sign out</button>
-      <button type="button" class="nk-btn nk-btn--primary" data-act="publish" ${!n || S.busy ? 'disabled' : ''}>Publish${n ? ` ${n} change${n > 1 ? 's' : ''}` : ''}<span class="nk-btn__arrow" aria-hidden="true">→</span></button>
+      <button type="button" class="nk-btn nk-btn--primary" data-act="publish" title="Ctrl+S" ${!n || S.busy ? 'disabled' : ''}>Publish${n ? ` ${n} change${n > 1 ? 's' : ''}` : ''}<span class="nk-btn__arrow" aria-hidden="true">→</span></button>
     </header>
     ${S.busy ? `<p class="ad-bar" role="status"><span class="nk-label">${esc(S.busy)}</span></p>` : ''}
     ${S.error ? `<p class="ad-bar err" role="alert">${esc(S.error)}</p>` : ''}
     ${S.notice && !S.busy && !S.error ? `<p class="ad-bar ok" role="status">${esc(S.notice)}</p>` : ''}
+    ${pfView()}
     <div class="ad-main">${listView()}${editorView()}</div>
   </div>`;
 }
@@ -2033,6 +2140,7 @@ root.addEventListener('click', (e) => {
   if (b.dataset.ntIns) { ntInsert(b.dataset.ntF, b.dataset.ntIns); return; }
   if (b.dataset.ovTodo != null) { S.tab = 'todo'; S.todoF = b.dataset.ovTodo; render(); return; }
   if (b.dataset.ovCopy != null) { ovCopy(b.dataset.ovCopy); return; }
+  if (b.dataset.ovQr != null || b.dataset.ovVcf != null) { ovQrDl(b); return; } // QR package (2026-11-03)
   if (b.dataset.todoGo != null) { todoGo(b.dataset.todoGo); return; }
   if (b.dataset.ar != null) { arAct(b); return; }
   if (isTr() && Object.keys(b.dataset).some((k) => /^tr[A-Z]/.test(k))) { trAct(b); return; }
@@ -2078,6 +2186,7 @@ root.addEventListener('click', (e) => {
 });
 
 function updatePublish() {
+  pfRefresh(); // Publishing safety package (2026-11-03): the "Before you publish" list follows every edit
   const btn = root.querySelector('[data-act="publish"]');
   if (!btn) return;
   const n = changeCount();

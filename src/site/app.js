@@ -294,6 +294,7 @@
     rows.push('<div><dt>' + esc(c.where) + '</dt><dd>' + esc(lang === 'sl' ? 'Škofja Loka, Slovenija' : 'Škofja Loka, Slovenia') + '</dd></div>');
     x.heroSpecs.slice(2).forEach(function (r) { rows.push('<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'); });
     return '<section class="ct" id="contact" tabindex="-1" aria-labelledby="ct-title"><p class="nk-label" id="ct-title">' + esc(c.title) + '</p><p class="ct-lead">' + esc(c.lead) + '</p><dl class="nk-specs ct-specs">' + rows.join('') + '</dl>' +
+      qrContact() + // QR package (2026-11-03): vCard code + .vcf download
       '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', null, true) + (CONTACT_EMAIL ? '<a class="nk-btn" href="' + ctMail(c.subject) + '">' + esc(c.write) + '</a>' : '') + '</div></section>';
   }
   function ctAlt() { return CONTACT_EMAIL ? '<a class="cta-band__alt" href="' + ctMail(t().ct.subject) + '">' + esc(t().ct.or) + ' →</a>' : ''; }
@@ -316,6 +317,7 @@
       '<div class="share-row"><input class="share-url" id="share-url" type="text" readonly value="' + esc(url) + '" aria-labelledby="share-l" spellcheck="false">' +
       '<button type="button" class="nk-btn nk-btn--sm" data-share-copy>' + esc(x.copy) + '</button></div>' +
       (kind === 'p' ? '<p class="share-no"><span class="nk-label">' + esc(x.no) + '</span> <code id="share-no">' + esc(sheetNo(item)) + '</code> <button type="button" class="tb-copy" data-share-no>' + esc(x.noCopy) + '</button></p>' : '') +
+      qrBox(url, t().qr.scan, { dl: item.slug, cls: 'share-qr' }) + // QR package (2026-11-03)
       '<div class="share-act"><a class="share-link" href="' + esc(mail) + '">' + esc(x.mail) + ' →</a>' +
       (navigator.share ? '<button type="button" class="share-link" data-share-more>' + esc(x.more) + '</button>' : '') +
       '<span class="share-note">' + esc(x.note) + '</span></div>' +
@@ -326,6 +328,46 @@
     var fail = function () { if (no) { var r = document.createRange(); r.selectNodeContents(f); var g = getSelection(); g.removeAllRanges(); g.addRange(r); } else { f.focus(); f.select(); } msg.textContent = no ? x.noCopyFail : x.copyFail; };
     try { navigator.clipboard.writeText(no ? f.textContent : f.value).then(function () { msg.textContent = no ? x.noCopied : x.copied; }, fail); } catch (e) { fail(); }
   }
+  // ---------- QR package (2026-11-03): "Scan to open" codes ----------
+  // window.NK_QR (src/site/qr.js, inlined before this script) encodes any text as a QR code drawn as one SVG path in
+  // currentColor — it follows light / dark and prints black. qrBox() puts one on: the "Share this sheet" box of project
+  // sheets and news posts (+ "Download QR (SVG)"), the print-only footer of a printed sheet / post / tool (so a printout
+  // leads back to the live page), every page footer of the printable portfolio set, and the contact card on #about as a
+  // vCard ("Save my contact": scan with the phone camera, or download the .vcf). Only addresses and facts already on the
+  // site: name, e-mail, nacekepa.work, LinkedIn, Škofja Loka. Self-contained: remove qrOn() … qrDl(), the qrBox() calls in
+  // shareBox() / printBox() / tlWrap() / psDoc() / ctCard(), the data-qr-* lines in the click handler, qr: in both
+  // languages in content.js, the qr import in Site.astro + admin.astro, src/site/qr.js and the "QR package" rules in page.css.
+  function qrOn() { return !!(window.NK_QR && window.NK_QR.svg); }
+  function qrSvg(text, px, label, ecl) { try { return window.NK_QR.svg(text, { px: px, ecl: ecl || 'M', label: label }); } catch (e) { return ''; } }
+  function qrBox(url, cap, o) { // o: { px, cls, dl: file base name for the download button, print: true = no button }
+    if (!qrOn()) return '';
+    o = o || {}; var x = t().qr, svg = qrSvg(url, o.px || 112, x.label.replace('{u}', url)); if (!svg) return '';
+    return '<div class="qr-box' + (o.cls ? ' ' + o.cls : '') + '">' + svg + '<div class="qr-side"><p class="qr-cap">' + esc(cap) + '</p>' +
+      (o.dl ? '<button type="button" class="tb-copy" data-qr-svg="' + esc(url) + '" data-qr-name="' + esc(o.dl) + '">' + esc(x.svg) + '</button><span class="tb-msg qr-msg" role="status" aria-live="polite"></span>' : '') + '</div></div>';
+  }
+  function qrVcard() {
+    var x = t().qr;
+    // kept short on purpose (no note / job title) so the code stays at version 10 — easy to scan from a screen
+    return window.NK_QR.vcard({ first: 'Nace', last: 'Kepa', org: x.ctOrg, email: CONTACT_EMAIL || '', urls: ['https://nacekepa.work', LINKEDIN], city: 'Škofja Loka', country: lang === 'sl' ? 'Slovenija' : 'Slovenia' });
+  }
+  function qrContact() { // "Save my contact" on the contact card
+    if (!qrOn()) return '';
+    var x = t().qr, v = qrVcard(), svg = qrSvg(v, 168, x.ctLabel, 'L'); if (!svg) return '';
+    return '<div class="ct-qr"><p class="nk-label">' + esc(x.ctTitle) + '</p><div class="qr-box qr-box--ct">' + svg + '<div class="qr-side"><p class="qr-cap">' + esc(x.ctLead) + '</p>' +
+      '<button type="button" class="nk-btn nk-btn--sm" data-qr-vcf>' + esc(x.ctDl) + '</button><span class="tb-msg qr-msg" role="status" aria-live="polite"></span></div></div></div>';
+  }
+  function qrDl(el, kind) { // kind: 'svg' (QR of el's address) | 'vcf' (the contact card)
+    var x = t().qr, msg = el.parentNode.querySelector('.qr-msg');
+    try {
+      var text, name, type;
+      if (kind === 'vcf') { text = qrVcard(); name = 'nace-kepa.vcf'; type = 'text/vcard;charset=utf-8'; }
+      else { text = window.NK_QR.file(el.getAttribute('data-qr-svg')); name = 'qr-' + (el.getAttribute('data-qr-name') || 'nacekepa-work') + '.svg'; type = 'image/svg+xml;charset=utf-8'; }
+      var blob = new Blob([text], { type: type }), url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      if (msg) msg.textContent = kind === 'vcf' ? x.ctSaved : x.svgSaved;
+    } catch (e) { if (msg) msg.textContent = x.svgFail; }
+  }
   // ---------- Print this sheet (project + news pages) ----------
   // Self-contained: remove printBox()…printSheet(), the two printBox() calls in projectView() / postView(), the data-print
   // line in the click handler, print: in both languages in content.js and the "Print this sheet" rules at the end of page.css.
@@ -335,7 +377,7 @@
     return '<div class="print-act"><button type="button" class="nk-btn nk-btn--sm" data-print>' +
       '<svg class="print-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>' + esc(x.btn) + '</button>' +
       '<span class="print-note">' + esc(x.note) + '</span></div>' +
-      '<p class="print-only print-url"><span>' + esc(x.link) + '</span> ' + esc(url) + '</p>';
+      '<div class="print-only print-url"><span>' + esc(x.link) + '</span> ' + esc(url) + qrBox(url, t().qr.scanPrint, { px: 72, cls: 'print-qr' }) + '</div>'; // QR package (2026-11-03): the printout leads back to the live sheet
   }
   function printSheet() { try { window.print(); } catch (e) {} }
   // ---------- Printable brief (order form, step 4): "Print or save as PDF" gives a clean A4 brief sheet ----------
@@ -419,7 +461,8 @@
     var foot = function (no, url) {
       pg++;
       return '<footer class="ps-tb"><span class="ps-tb__brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span><span><i>' + esc(ps.sheet) + '</i>' + esc(no) + '</span>' +
-        '<span><i>' + esc(ps.page) + '</i>' + pg + ' / ' + total + '</span><span><i>' + esc(x.tb.date) + '</i>' + esc(date) + '</span><span class="ps-tb__url"><i>' + esc(ps.online) + '</i>' + esc(url) + '</span></footer>';
+        '<span><i>' + esc(ps.page) + '</i>' + pg + ' / ' + total + '</span><span><i>' + esc(x.tb.date) + '</i>' + esc(date) + '</span><span class="ps-tb__url"><i>' + esc(ps.online) + '</i>' + esc(url) + '</span>' +
+        (qrOn() ? '<span class="ps-tb__qr">' + qrSvg('https://' + url, 40, t().qr.label.replace('{u}', 'https://' + url)) + '</span>' : '') + '</footer>'; // QR package (2026-11-03)
     };
     var home = 'nacekepa.work/#' + lang + '-work';
     if (state.ps.cover) {
@@ -2671,7 +2714,7 @@
     html = html.replace(/^<section class="block ([a-z-]+)"(?: id="[^"]*")?/, '<section class="block $1 tl-tool' + (state.tool === k ? ' tl-on' : '') + '" id="' + d[2] + '" data-tl="T-0' + n + '"'); // tl-on: the tool the address names — the one that prints alone (Print package, 2026-11-02, evening run)
     // SEO package (2026-11-02): every tool has a shareable address (https://nacekepa.work/#services?tool=<name>); the footer copies it.
     return html.replace(/<\/section>$/, '<p class="tl-back"><a href="#services?tool=index">↑ ' + esc(t().tl.back) + '</a><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-copy="' + esc(tlUrl(k)) + '">' + esc(t().tl.copy) + '</button><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-print="' + k + '">' + esc(t().tl.print) + '</button><span class="tl-msg" role="status" aria-live="polite"></span></p>' +
-      '<p class="print-only print-url tl-print"><span>' + esc(t().tl.printed) + '</span> ' + esc(tlUrl(k)) + ' · ' + esc(new Date().toISOString().slice(0, 10)) + '</p></section>'); // print-only footer line of a tool printed alone (Print package)
+      '<div class="print-only print-url tl-print"><span>' + esc(t().tl.printed) + '</span> ' + esc(tlUrl(k)) + ' · ' + esc(new Date().toISOString().slice(0, 10)) + qrBox(tlUrl(k), t().qr.scanTool, { px: 72, cls: 'print-qr' }) + '</div></section>'); // print-only footer line of a tool printed alone (Print package)
   }
   function tlUrl(k) { return 'https://nacekepa.work/' + (lang === 'sl' ? 'sl/' : '') + tlHash(k); }
   function tlCopy(btn) {
@@ -3144,6 +3187,8 @@
     if (el.hasAttribute('data-rg-sl')) { rgStar(el.getAttribute('data-rg-sl')); return; }
     if (el.hasAttribute('data-rg-copy')) { rgCopy(); return; }
     if (el.hasAttribute('data-feed-copy')) { feedCopy(); return; }
+    if (el.hasAttribute('data-qr-svg')) { qrDl(el, 'svg'); return; } // QR package (2026-11-03)
+    if (el.hasAttribute('data-qr-vcf')) { qrDl(el, 'vcf'); return; }
     if (el.hasAttribute('data-print')) { printSheet(); return; }
     if (el.hasAttribute('data-bp-print')) { printSheet(); return; }
     if (el.hasAttribute('data-ps-print')) { psPrint(); return; }

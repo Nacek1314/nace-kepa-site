@@ -4,9 +4,10 @@ import pageCss from '../site/page.css?raw';
 import componentsCss from '../site/components.css?raw';
 import adminCss from '../site/admin.css?raw';
 import drawings from '../site/drawings.js?raw';
+import qr from '../site/qr.js?raw'; // QR package (2026-11-03): QR downloads in the Overview
 import { createHash } from 'node:crypto';
 const css = pageCss + '\n' + componentsCss + '\n' + adminCss;
-const inline = 'if (window.top !== window.self) { document.documentElement.style.display = "none"; try { window.top.location.replace(window.self.location.href); } catch (e) {} }\n' + drawings;
+const inline = 'if (window.top !== window.self) { document.documentElement.style.display = "none"; try { window.top.location.replace(window.self.location.href); } catch (e) {} }\n' + drawings + '\n' + qr;
 const hash = "'sha256-" + createHash('sha256').update(inline, 'utf8').digest('base64') + "'";
 const csp = [
   "default-src 'self'",
