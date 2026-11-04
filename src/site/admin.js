@@ -782,6 +782,7 @@ function tabsView() {
     <button type="button" role="tab" data-tab="translate" aria-selected="${isTr()}">EN ⇄ SL <span>${trCount()}</span></button>
     <button type="button" role="tab" data-tab="table" aria-selected="${isTb()}">Table <span>${S.projects.length}</span></button>
     <button type="button" role="tab" data-tab="settings" aria-selected="${isSet()}">Settings</button>
+    <button type="button" role="tab" data-tab="quote" aria-selected="${isQt()}">Quote</button>
   </div>`;
 }
 
@@ -809,6 +810,7 @@ function newsListView() {
 function listView() {
   if (isOv()) return ovListView();
   if (isSet()) return stListView();
+  if (isQt()) return qtListView(); // Quote tab (2026-11-04)
   if (isTodo()) return todoListView();
   if (isArr()) return arListView();
   if (isTr()) return trListView();
@@ -1891,6 +1893,7 @@ function newsEditorView() {
 function editorView() {
   if (isOv()) return ovView();
   if (isSet()) return stView();
+  if (isQt()) return qtView(); // Quote tab (2026-11-04)
   if (isTodo()) return todoView();
   if (isArr()) return arView();
   if (isTr()) return trView();
@@ -2027,6 +2030,7 @@ root.addEventListener('input', (e) => {
   const k = e.target.dataset.k, p = cur();
   if (e.target.id === 'q') { S.query = e.target.value; render(); return; }
   if (e.target.dataset.set != null && e.target.tagName !== 'SELECT') { stInput(e.target); return; }
+  if (e.target.dataset.qt != null || e.target.dataset.qtL != null) { qtInput(e.target); return; } // Quote tab (2026-11-04)
   if (e.target.dataset.tr != null) { trInput(e.target); return; }
   if (e.target.dataset.tb != null && e.target.type !== 'checkbox') { tbInput(e.target); return; }
   if (e.target.dataset.tbB != null) { TB.bulk[e.target.dataset.tbB] = e.target.value; return; }
@@ -2136,6 +2140,7 @@ root.addEventListener('click', (e) => {
   if (b.dataset.tab) { S.tab = b.dataset.tab; S.query = ''; S.confirmDelete = false; render(); return; }
   if (b.dataset.todoF != null) { S.todoF = b.dataset.todoF; render(); return; }
   if (b.dataset.setAct) { stAct(b); return; }
+  if (b.dataset.qtAct) { qtAct(b); return; } // Quote tab (2026-11-04)
   if (b.dataset.ntNew) { ntNew(b.dataset.ntNew); return; }
   if (b.dataset.ntIns) { ntInsert(b.dataset.ntF, b.dataset.ntIns); return; }
   if (b.dataset.ovTodo != null) { S.tab = 'todo'; S.todoF = b.dataset.ovTodo; render(); return; }
@@ -2195,6 +2200,198 @@ function updatePublish() {
 }
 
 window.addEventListener('beforeunload', (e) => { if (S.user && dirty()) { e.preventDefault(); e.returnValue = ''; } });
+
+// ---------- Quote tab (2026-11-04): quote composer NK-O — a written quote from the published price list ----------
+// Nace gets a brief by e-mail or Telegram and answers it with a quote. This tab builds that quote from the prices in
+// Settings (hourly rates, printing per gram / machine hour, file preparation, minimums, rush surcharge, the running
+// promotion): lines of hours, printed parts or custom amounts → totals with the same rules as the public estimate on
+// #services?tool=quote → an A4 quote sheet NK-O in the drawing-sheet look (EN or SL) that prints / saves as PDF, copies
+// as text for an e-mail, or opens in the mail app addressed to the client. Quotes are kept in this browser only
+// (localStorage "nk-admin-quotes", newest first, QT_MAX) and never in the repository or on the site. Self-contained:
+// remove QT_KEY … qtAct(), the "Quote" tab button in tabsView(), the isQt() lines in listView() / editorView(), the
+// data-qt lines in the input / change / click handlers and the .qt-* rules (+ the qt-print block) in admin.css.
+const QT_KEY = 'nk-admin-quotes', QT_MAX = 30;
+const isQt = () => S.tab === 'quote';
+const QT_SVC = { cad: { en: '3D design & CAD', sl: '3D modeliranje in CAD' }, iot: { en: 'Embedded systems & IoT', sl: 'Vgrajeni sistemi in IoT' }, build: { en: 'Full custom builds', sl: 'Celoten izdelek po meri' }, post: { en: 'Post-processing', sl: 'Dodelava' } }; // = SERVICES[].title in content.js
+const QT_T = {
+  en: { title: 'QUOTE', label: 'Quote · NK-O', no: 'Quote no.', date: 'Date', valid: 'Valid until', client: 'Client', ref: 'Reference', item: 'Item', qty: 'Qty', unit: 'Unit', amount: 'Amount', subtotal: 'Subtotal', rush: 'Rush surcharge', disc: 'Discount', total: 'Total · excl. VAT', setup: 'File preparation', print: '3D printing', h: 'h', g: 'g', notes: 'Notes', prepared: 'Prepared by', studio: 'Nace Kepa · Engineering Studio', loc: 'Škofja Loka, Slovenia', sheet: 'Sheet', minPart: 'Printed parts are charged at least the minimum per part.', minOrder: 'The minimum order amount applies.', minHours: 'Hourly work is charged for at least {n} h.', subject: 'Quote {no} — Nace Kepa' },
+  sl: { title: 'PONUDBA', label: 'Ponudba · NK-O', no: 'Št. ponudbe', date: 'Datum', valid: 'Velja do', client: 'Naročnik', ref: 'Sklic', item: 'Postavka', qty: 'Kol.', unit: 'Enota', amount: 'Znesek', subtotal: 'Vmesni seštevek', rush: 'Doplačilo za hitro izvedbo', disc: 'Popust', total: 'Skupaj · brez DDV', setup: 'Priprava datotek', print: '3D tisk', h: 'h', g: 'g', notes: 'Opombe', prepared: 'Pripravil', studio: 'Nace Kepa · Inženirski studio', loc: 'Škofja Loka, Slovenija', sheet: 'List', minPart: 'Tiskani deli se obračunajo najmanj po najnižjem znesku na del.', minOrder: 'Upošteva se najnižji znesek naročila.', minHours: 'Urno delo se obračuna za najmanj {n} h.', subject: 'Ponudba {no} — Nace Kepa' }
+};
+const QT = { q: null, saved: [], msg: '', confirm: null };
+function qtBlank() { return { no: '', date: today(), valid: '', lang: 'sl', client: '', email: '', ref: '', lines: [], setup: true, rush: false, promo: false, promoPct: '', note: '' }; }
+function qtLoad() { // saved quotes from this browser; the draft being edited is kept in memory only
+  if (QT.q) return;
+  try { const a = JSON.parse(localStorage.getItem(QT_KEY) || '[]'); QT.saved = Array.isArray(a) ? a.filter((x) => x && x.q && x.q.no) : []; } catch { QT.saved = []; }
+  QT.q = qtBlank(); QT.q.no = qtNextNo(QT.q.date);
+}
+function qtStore() { try { localStorage.setItem(QT_KEY, JSON.stringify(QT.saved.slice(0, QT_MAX))); return true; } catch { return false; } }
+function qtNextNo(date) { // NK-O-YYMMDD-NN, NN = one more than the quotes already saved for that day
+  const d = String(date || today()).replace(/-/g, '').slice(2), pre = 'NK-O-' + d + '-';
+  let n = 0; QT.saved.forEach((s) => { const m = new RegExp('^' + pre + '(\\d+)$').exec(s.q.no); if (m) n = Math.max(n, +m[1]); });
+  return pre + String(n + 1).padStart(2, '0');
+}
+function qtNum(v) { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) && n > 0 ? n : 0; }
+function qtMoney(n, l) { const s = (Math.round(n * 100) / 100).toFixed(2); return (l === 'sl' ? s.replace('.', ',') : s) + ' €'; }
+function qtDate(d, l) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ''); return m ? (l === 'sl' ? `${+m[3]}. ${+m[2]}. ${m[1]}` : `${m[3]}/${m[2]}/${m[1]}`) : (d || '—'); }
+function qtMats() { return S.settings ? S.settings.pricing.print.materials.filter((m) => m.name && +m.perGram > 0) : []; }
+function qtMat(key) { const ms = qtMats(); return ms.find((m) => m.key === key) || ms[0] || null; }
+function qtPromo() { // the promotion as the site shows it: pct > 0 and not past its last day
+  const p = S.settings && S.settings.promo; if (!p || !(+p.pct > 0)) return null;
+  if (p.until && p.until < today()) return null;
+  return { pct: +p.pct, scope: p.scope, title: p.title.en || p.title.sl };
+}
+function qtCalc(q) { // same rules as qcCalc() on the site: minimum hours, minimum per printed part, setup once, rush, minimum order, promotion
+  const P = S.settings ? S.settings.pricing : null, l = q.lang, x = QT_T[l], rows = [], notes = [];
+  if (!P) return { rows, notes, sub: 0, rush: 0, disc: 0, total: 0 };
+  let sub = 0, anyPrint = false, minH = false;
+  q.lines.forEach((ln) => {
+    if (ln.t === 'hours') {
+      let h = qtNum(ln.h); const rate = +P.hourly[ln.svc] || 0; if (!h || !rate) return;
+      if (+P.minHours > 0 && h < +P.minHours) { h = +P.minHours; minH = true; }
+      const a = h * rate; rows.push({ d: QT_SVC[ln.svc][l] + (ln.desc ? ' — ' + ln.desc : ''), qty: h + ' ' + x.h, unit: qtMoney(rate, l) + '/' + x.h, a }); sub += a;
+    } else if (ln.t === 'print') {
+      const m = qtMat(ln.mat), g = qtNum(ln.g), h = qtNum(ln.h), qty = Math.max(1, Math.round(qtNum(ln.qty) || 1)); if (!g && !h) return;
+      let part = g * (m ? +m.perGram : 0) + h * (+P.print.machineHour || 0);
+      if (+P.print.minPart > 0 && part < +P.print.minPart) { part = +P.print.minPart; notes.push(x.minPart); }
+      const a = part * qty; anyPrint = true;
+      rows.push({ d: x.print + (ln.desc ? ' — ' + ln.desc : '') + ' · ' + (m ? m.name : '') + (g ? ' · ' + g + ' ' + x.g : '') + (h ? ' · ' + h + ' ' + x.h : ''), qty: String(qty), unit: qtMoney(part, l), a }); sub += a;
+    } else if (ln.t === 'custom') {
+      const u = qtNum(ln.amt), qty = Math.max(1, Math.round(qtNum(ln.qty) || 1)); if (!u || !ln.desc.trim()) return;
+      const a = u * qty; rows.push({ d: ln.desc.trim(), qty: String(qty), unit: qtMoney(u, l), a }); sub += a;
+    }
+  });
+  if (minH) notes.push(x.minHours.replace('{n}', P.minHours));
+  if (anyPrint && q.setup && +P.print.setup > 0) { rows.push({ d: x.setup, qty: '1', unit: qtMoney(+P.print.setup, l), a: +P.print.setup }); sub += +P.print.setup; }
+  let rush = 0; if (q.rush && +P.print.rushPct > 0 && anyPrint) rush = Math.round(sub * +P.print.rushPct) / 100;
+  let total = sub + rush;
+  if (+P.print.minOrder > 0 && rows.length && total < +P.print.minOrder) { total = +P.print.minOrder; notes.push(x.minOrder); }
+  const pct = q.promo ? (qtNum(q.promoPct) || (qtPromo() ? qtPromo().pct : 0)) : 0;
+  const disc = pct ? Math.round(total * pct) / 100 : 0;
+  return { rows, notes, sub, rush, rushPct: +P.print.rushPct || 0, disc, pct, total: Math.round((total - disc) * 100) / 100, minTotal: total };
+}
+function qtSheet(q, c) { // the A4 quote sheet NK-O (also what prints)
+  const l = q.lang, x = QT_T[l], P = S.settings ? S.settings.pricing : null, note = P ? (P.vatNote[l] || P.vatNote.en || P.vatNote.sl) : '', bn = P && q.lines.some((ln) => ln.t === 'hours' && ln.svc === 'build') ? (P.buildNote[l] || P.buildNote.en) : '';
+  const cell = (k, v, cls) => `<div class="nk-tb__cell${cls ? ' nk-tb__cell--' + cls : ''}"><span class="nk-tb__k">${esc(k)}</span><span class="nk-tb__v">${v}</span></div>`;
+  return `<article class="qt-sheet" id="qt-sheet" aria-label="${esc(x.label)}">
+    <header class="qt-head"><span class="tb-brand">${logo()}<span>${esc(x.studio)}</span></span><span class="qt-head__r"><span class="nk-label">${esc(x.label)}</span><strong class="qt-title">${esc(x.title)}</strong></span></header>
+    <div class="nk-tb qt-tb" style="--tb-cols:4">
+      ${cell(x.no, esc(q.no || '—'))}${cell(x.date, esc(qtDate(q.date, l)))}${cell(x.valid, esc(q.valid ? qtDate(q.valid, l) : '—'))}${cell(x.sheet, 'NK-O · 1 / 1')}
+      ${cell(x.client, esc(q.client || '—') + (q.email ? '<br>' + esc(q.email) : ''), 'wide')}${cell(x.ref, esc(q.ref || '—'), 'wide')}
+    </div>
+    <table class="qt-table"><thead><tr><th>${esc(x.item)}</th><th class="qt-n">${esc(x.qty)}</th><th class="qt-n">${esc(x.unit)}</th><th class="qt-n">${esc(x.amount)}</th></tr></thead>
+      <tbody>${c.rows.length ? c.rows.map((r) => `<tr><td>${esc(r.d)}</td><td class="qt-n">${esc(r.qty)}</td><td class="qt-n">${esc(r.unit)}</td><td class="qt-n">${esc(qtMoney(r.a, l))}</td></tr>`).join('') : `<tr><td colspan="4" class="qt-empty">—</td></tr>`}</tbody>
+      <tfoot>${c.rush ? `<tr><td colspan="3">${esc(x.subtotal)}</td><td class="qt-n">${esc(qtMoney(c.sub, l))}</td></tr><tr><td colspan="3">${esc(x.rush)} · +${c.rushPct} %</td><td class="qt-n">${esc(qtMoney(c.rush, l))}</td></tr>` : ''}
+        ${c.disc ? `${c.rush ? '' : `<tr><td colspan="3">${esc(x.subtotal)}</td><td class="qt-n">${esc(qtMoney(c.minTotal, l))}</td></tr>`}<tr><td colspan="3">${esc(x.disc)} · −${c.pct} %</td><td class="qt-n">−${esc(qtMoney(c.disc, l))}</td></tr>` : ''}
+        <tr class="qt-total"><td colspan="3">${esc(x.total)}</td><td class="qt-n">${esc(qtMoney(c.total, l))}</td></tr></tfoot></table>
+    ${c.notes.length || q.note.trim() || bn ? `<p class="nk-label">${esc(x.notes)}</p><ul class="qt-notes">${[...new Set(c.notes)].map((n) => `<li>${esc(n)}</li>`).join('')}${bn ? `<li>${esc(bn)}</li>` : ''}${q.note.trim() ? q.note.trim().split('\n').map((n) => `<li>${esc(n)}</li>`).join('') : ''}</ul>` : ''}
+    ${note ? `<p class="qt-vat">${esc(note)}</p>` : ''}
+    <footer class="qt-foot"><span>${esc(x.prepared)}: N. Kepa · ${esc(x.loc)}</span><span>nacekepa.work · kepanace@gmail.com</span></footer>
+  </article>`;
+}
+function qtText(q, c) { // the quote as plain text for an e-mail
+  const l = q.lang, x = QT_T[l], P = S.settings ? S.settings.pricing : null, out = [x.title + ' ' + q.no + ' — ' + x.studio, x.date + ': ' + qtDate(q.date, l) + (q.valid ? ' · ' + x.valid + ': ' + qtDate(q.valid, l) : ''), x.client + ': ' + (q.client || '—') + (q.email ? ' · ' + q.email : ''), q.ref ? x.ref + ': ' + q.ref : '', ''];
+  c.rows.forEach((r) => out.push('- ' + r.d + ' · ' + r.qty + ' × ' + r.unit + ' = ' + qtMoney(r.a, l)));
+  if (c.rush) out.push('', x.subtotal + ': ' + qtMoney(c.sub, l), x.rush + ' +' + c.rushPct + ' %: ' + qtMoney(c.rush, l));
+  if (c.disc) out.push(x.disc + ' −' + c.pct + ' %: −' + qtMoney(c.disc, l));
+  out.push('', x.total + ': ' + qtMoney(c.total, l));
+  const notes = [...new Set(c.notes)]; if (P && q.lines.some((ln) => ln.t === 'hours' && ln.svc === 'build') && (P.buildNote[l] || P.buildNote.en)) notes.push(P.buildNote[l] || P.buildNote.en);
+  if (q.note.trim()) notes.push(...q.note.trim().split('\n'));
+  if (notes.length) out.push('', x.notes + ':', ...notes.map((n) => '- ' + n));
+  if (P && (P.vatNote[l] || P.vatNote.en)) out.push('', P.vatNote[l] || P.vatNote.en);
+  out.push('', 'N. Kepa · ' + x.loc + ' · nacekepa.work · kepanace@gmail.com');
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+function qtLineRow(ln, i) {
+  const id = (f) => `qt-l-${i}-${f}`, inp = (f, label, attrs) => `<input class="nk-input" id="${id(f)}" data-qt-l="${i}" data-qt-f="${f}" aria-label="${label}" ${attrs} value="${esc(ln[f] ?? '')}">`;
+  let body;
+  if (ln.t === 'hours') body = `<select class="nk-input" id="${id('svc')}" data-qt-l="${i}" data-qt-f="svc" aria-label="Service">${Object.keys(QT_SVC).map((k) => `<option value="${k}"${ln.svc === k ? ' selected' : ''}>${QT_SVC[k].en}${S.settings && +S.settings.pricing.hourly[k] > 0 ? ` · ${S.settings.pricing.hourly[k]} €/h` : ' · no rate'}</option>`).join('')}</select>${inp('h', 'Hours', 'type="number" inputmode="decimal" min="0" step="0.25" placeholder="h"')}${inp('desc', 'Description (optional)', 'placeholder="what the hours cover (optional)"')}`;
+  else if (ln.t === 'print') body = `<select class="nk-input" id="${id('mat')}" data-qt-l="${i}" data-qt-f="mat" aria-label="Material">${qtMats().map((m) => `<option value="${esc(m.key)}"${ln.mat === m.key ? ' selected' : ''}>${esc(m.name)} · ${m.perGram} €/g</option>`).join('') || '<option value="">no materials in Settings</option>'}</select>${inp('g', 'Weight in grams', 'type="number" inputmode="decimal" min="0" step="1" placeholder="g"')}${inp('h', 'Machine hours', 'type="number" inputmode="decimal" min="0" step="0.25" placeholder="h"')}${inp('qty', 'Copies', 'type="number" inputmode="numeric" min="1" step="1" placeholder="×"')}${inp('desc', 'Part name (optional)', 'placeholder="part name (optional)"')}`;
+  else body = `${inp('desc', 'Description', 'placeholder="e.g. parts and materials at cost"')}${inp('amt', 'Unit price in €', 'type="number" inputmode="decimal" min="0" step="0.01" placeholder="€"')}${inp('qty', 'Quantity', 'type="number" inputmode="numeric" min="1" step="1" placeholder="×"')}`;
+  return `<li class="qt-line qt-line--${ln.t}"><span class="nk-label qt-line__k">${ln.t === 'hours' ? 'Hours' : ln.t === 'print' ? 'Printed part' : 'Custom'}</span>${body}<button type="button" class="tb-copy" data-qt-act="rm" data-qt-i="${i}" aria-label="Remove line ${i + 1}">Remove</button></li>`;
+}
+function qtListView() {
+  qtLoad();
+  return `<div class="ad-list">${tabsView()}
+    <p class="ad-small st-intro">A written quote from the prices in Settings. Quotes stay in this browser — nothing goes to the repository or the site.</p>
+    <ol class="ad-items">${QT.saved.length ? QT.saved.map((s, i) => `<li class="ad-item${QT.q && QT.q.no === s.q.no ? ' is-sel' : ''}"><button type="button" class="ad-item__main" data-qt-act="load" data-qt-i="${i}"><span class="ad-item__t">${esc(s.q.no)} · ${esc(s.q.client || '—')}</span><span class="ad-item__m">${esc(s.q.date)} · ${esc(qtMoney(s.total, s.q.lang))} · ${s.q.lang.toUpperCase()}</span></button></li>`).join('') : '<li class="ad-item"><span class="ad-item__main"><span class="ad-item__m">No saved quotes yet. Fill the form and press “Save in this browser”.</span></span></li>'}</ol>
+  </div>`;
+}
+function qtView() {
+  qtLoad();
+  const q = QT.q, c = qtCalc(q), P = S.settings ? S.settings.pricing : null, pm = qtPromo();
+  const projects = S.projects.map((p, i) => `<option value="${esc(`NK-${String(p.year).slice(2)}-${String(i + 1).padStart(2, '0')} · ${p.title.en || p.slug}`)}"></option>`).join('');
+  const mail = q.email ? `mailto:${encodeURIComponent(q.email)}?subject=${encodeURIComponent(QT_T[q.lang].subject.replace('{no}', q.no))}&body=${encodeURIComponent(qtText(q, c))}` : '';
+  return `<div class="ad-editor qt">
+    <div class="ad-editor__head"><div><p class="nk-label">Quote · NK-O</p><h2 class="sub">Quote composer</h2></div><div class="qt-headact"><button type="button" class="nk-btn nk-btn--sm" data-qt-act="new">+ New quote</button></div></div>
+    ${!P || !(+P.hourly.cad > 0 || +P.hourly.iot > 0 || +P.hourly.build > 0 || +P.print.machineHour > 0 || qtMats().length) ? '<p class="ad-bar err" role="alert">No prices in Settings yet — fill in Settings › Prices first; custom lines still work.</p>' : ''}
+    <fieldset class="ad-sec qt-form"><legend class="nk-label">Quote</legend><div class="form form-3">
+      ${fld('qt-no', 'Quote no.', `<input class="nk-input" id="qt-no" data-qt="no" value="${esc(q.no)}">`)}
+      ${fld('qt-date', 'Date', `<input class="nk-input" id="qt-date" data-qt="date" type="date" value="${esc(q.date)}">`)}
+      ${fld('qt-valid', 'Valid until', `<input class="nk-input" id="qt-valid" data-qt="valid" type="date" value="${esc(q.valid)}">`, 'Optional')}
+      ${fld('qt-client', 'Client', `<input class="nk-input" id="qt-client" data-qt="client" autocomplete="off" value="${esc(q.client)}">`)}
+      ${fld('qt-email', 'Client e-mail', `<input class="nk-input" id="qt-email" data-qt="email" type="email" autocomplete="off" spellcheck="false" value="${esc(q.email)}">`, 'Optional — enables “Open in e-mail”')}
+      ${fld('qt-lang', 'Language of the quote', `<select class="nk-input" id="qt-lang" data-qt="lang"><option value="sl"${q.lang === 'sl' ? ' selected' : ''}>Slovenščina</option><option value="en"${q.lang === 'en' ? ' selected' : ''}>English</option></select>`)}
+      ${fld('qt-ref', 'Reference', `<input class="nk-input" id="qt-ref" data-qt="ref" list="qt-refs" autocomplete="off" value="${esc(q.ref)}"><datalist id="qt-refs">${projects}</datalist>`, 'The client’s brief, part or a sheet number — pick a project sheet from the list or type')}
+    </div></fieldset>
+    <fieldset class="ad-sec qt-form"><legend class="nk-label">Lines</legend>
+      ${q.lines.length ? `<ol class="qt-lines">${q.lines.map(qtLineRow).join('')}</ol>` : '<p class="ad-small">No lines yet. Add hours of a service, a printed part or a custom amount.</p>'}
+      <p class="qt-add"><button type="button" class="nk-btn nk-btn--sm" data-qt-act="add-hours">+ Hours</button><button type="button" class="nk-btn nk-btn--sm" data-qt-act="add-print">+ Printed part</button><button type="button" class="nk-btn nk-btn--sm" data-qt-act="add-custom">+ Custom line</button></p>
+      <div class="qt-opts">
+        ${P && +P.print.setup > 0 ? `<label class="ad-check"><input type="checkbox" id="qt-setup" data-qt="setup"${q.setup ? ' checked' : ''}> File preparation ${P.print.setup} € once per order with printed parts</label>` : ''}
+        ${P && +P.print.rushPct > 0 ? `<label class="ad-check"><input type="checkbox" id="qt-rush" data-qt="rush"${q.rush ? ' checked' : ''}> Rush +${P.print.rushPct} % on printed parts</label>` : ''}
+        <label class="ad-check"><input type="checkbox" id="qt-promo" data-qt="promo"${q.promo ? ' checked' : ''}> Discount${pm ? ` — promotion “${esc(pm.title)}” −${pm.pct} % is running` : ''}</label>
+        ${q.promo ? fld('qt-promoPct', 'Discount · %', `<input class="nk-input" id="qt-promoPct" data-qt="promoPct" type="number" inputmode="decimal" min="0" max="100" step="1" placeholder="${pm ? pm.pct : ''}" value="${esc(q.promoPct)}">`, pm ? `Empty = the promotion’s ${pm.pct} %` : 'No promotion is running — type the percentage') : ''}
+      </div>
+      <div class="form">${fld('qt-note', 'Notes on the quote', `<textarea class="nk-input" id="qt-note" data-qt="note" rows="2">${esc(q.note)}</textarea>`, 'One note per line — delivery, what is included, how to accept. The VAT note from Settings is added automatically.', true)}</div>
+    </fieldset>
+    <div class="qt-act cta-row">
+      <button type="button" class="nk-btn nk-btn--primary" data-qt-act="print"${c.rows.length ? '' : ' disabled'}>Print / save as PDF</button>
+      <button type="button" class="nk-btn" data-qt-act="copy"${c.rows.length ? '' : ' disabled'}>Copy as text</button>
+      ${mail && c.rows.length ? `<a class="nk-btn" href="${esc(mail)}" id="qt-mail">Open in e-mail</a>` : ''}
+      <button type="button" class="nk-btn" data-qt-act="save"${c.rows.length ? '' : ' disabled'}>Save in this browser</button>
+      ${QT.saved.some((s) => s.q.no === q.no) ? (QT.confirm === q.no ? `<span class="qt-confirm">Delete ${esc(q.no)}?<button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-qt-act="del-yes">Delete</button><button type="button" class="nk-btn nk-btn--sm" data-qt-act="del-no">Keep</button></span>` : `<button type="button" class="nk-btn nk-btn--ghost" data-qt-act="del">Delete saved</button>`) : ''}
+      <span class="copy-msg" id="qt-msg" role="status" aria-live="polite">${esc(QT.msg)}</span>
+    </div>
+    ${qtSheet(q, c)}
+  </div>`;
+}
+function qtInput(el) {
+  const q = QT.q; if (!q) return;
+  if (el.dataset.qtL != null) { const ln = q.lines[+el.dataset.qtL]; if (ln) ln[el.dataset.qtF] = el.value; }
+  else if (el.type === 'checkbox') q[el.dataset.qt] = el.checked;
+  else q[el.dataset.qt] = el.value;
+  QT.msg = ''; QT.confirm = null;
+  if (el.type === 'checkbox' || el.tagName === 'SELECT') { render(); return; }
+  const sheet = document.getElementById('qt-sheet'); if (sheet) sheet.outerHTML = qtSheet(q, qtCalc(q)); // keep the caret: only the sheet is redrawn while typing
+  const mail = document.getElementById('qt-mail'), act = root.querySelector('.qt-act'); if (act && ((q.email && !mail) || (!q.email && mail))) render();
+  root.querySelectorAll('.qt-act [data-qt-act]').forEach((b) => { if (!/^del/.test(b.dataset.qtAct) && b.dataset.qtAct !== 'new') b.disabled = !qtCalc(q).rows.length; });
+}
+function qtPrint() {
+  const de = document.documentElement; de.classList.add('qt-print');
+  const off = () => { de.classList.remove('qt-print'); window.removeEventListener('afterprint', off); };
+  window.addEventListener('afterprint', off); setTimeout(off, 60000);
+  try { window.print(); } catch { off(); }
+}
+function qtAct(b) {
+  const q = QT.q, act = b.dataset.qtAct, i = +b.dataset.qtI;
+  QT.msg = '';
+  if (act === 'add-hours') q.lines.push({ t: 'hours', svc: 'cad', h: '', desc: '' });
+  if (act === 'add-print') q.lines.push({ t: 'print', mat: (qtMats()[0] || {}).key || '', g: '', h: '', qty: '1', desc: '' });
+  if (act === 'add-custom') q.lines.push({ t: 'custom', desc: '', amt: '', qty: '1' });
+  if (act === 'rm') q.lines.splice(i, 1);
+  if (act === 'new') { QT.q = qtBlank(); QT.q.no = qtNextNo(QT.q.date); QT.confirm = null; }
+  if (act === 'load' && QT.saved[i]) { QT.q = JSON.parse(JSON.stringify(QT.saved[i].q)); QT.confirm = null; }
+  if (act === 'save') { const c = qtCalc(q), rec = { q: JSON.parse(JSON.stringify(q)), total: c.total, at: new Date().toISOString() }; const j = QT.saved.findIndex((s) => s.q.no === q.no); if (j >= 0) QT.saved[j] = rec; else QT.saved.unshift(rec); QT.saved = QT.saved.slice(0, QT_MAX); QT.msg = qtStore() ? (j >= 0 ? 'Updated.' : 'Saved in this browser.') : 'Could not save — storage is blocked in this browser.'; }
+  if (act === 'del') QT.confirm = q.no;
+  if (act === 'del-no') QT.confirm = null;
+  if (act === 'del-yes') { QT.saved = QT.saved.filter((s) => s.q.no !== q.no); qtStore(); QT.confirm = null; QT.msg = 'Deleted.'; }
+  if (act === 'copy') { const txt = qtText(q, qtCalc(q)); const done = () => { QT.msg = 'Copied.'; render(); }; const fail = () => { QT.msg = 'Copy failed — select the sheet and copy it by hand.'; render(); }; try { navigator.clipboard.writeText(txt).then(done, fail); } catch { fail(); } return; }
+  if (act === 'print') { qtPrint(); return; }
+  render();
+  if (/^add-/.test(act)) root.querySelector('.qt-lines li:last-child input, .qt-lines li:last-child select')?.focus();
+  if (act === 'new') document.getElementById('qt-client')?.focus();
+  if (act === 'rm') root.querySelector('[data-qt-act="add-hours"]')?.focus();
+}
 
 // ---------- start ----------
 render();

@@ -20,6 +20,60 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-11-04
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news,
+#n-bambu-lab-x2d, #skills, #about, #contact, #compare, #studio, #gift, #mine, #order (all 4 steps on the local build in EN + SL,
+validation, nothing sent), /admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google
+Fonts blocked in the cloud, as always), no horizontal scroll, no CSP violations, no broken images; EN ↔ SL key comparison of
+`content.js`: complete (only the intended plural forms differ). Live site from the laptop: `/`, `/sl/`, `/admin/`, `/news/`, two
+landing pages, the feed, sitemap, robots, manifest, an `/og/` card all 200, an unknown address 404; the live inline-script hash
+equals the CSP hash; "NK-D" present, no "Fusion" — the live page is the 00df108 build. Last Actions run (00df108) succeeded.
+**No bugs found.** (Noticed, not changed: the sheet codes NK-C and NK-M are each used by two tools — price list / compare,
+material picker / my corner — harmless, but a renumbering would make the codes unique.)
+
+**Improvement — enquiry package (order form + footer; `eqReply()` … `eqFiles()` in `app.js`, `eq:` in `content.js`):**
+- **Step 3: "Phone (optional)"** (`type="tel"`, autocomplete, Enter = Next) and **"How should I reply?"** (by e-mail / with a
+  phone call). Both go into the brief, the printable brief and the saved draft (`DR_FIELDS` + `reply`); a phone call without
+  a number and a phone number that is not one are validation errors with the usual field messages; the Worker keeps getting
+  the brief as text, so nothing changes on the relay side.
+- **Step 4: "Open in your e-mail app"** next to Copy — a `mailto:` to the studio with the subject and the whole brief as the
+  body, so a visitor whose send failed (or who prefers e-mail) does not have to copy and paste.
+- **Footer title block: "Save contact"** (.vcf, the QR package's vCard) on every page, next to Copy / LinkedIn.
+- **Step 2: ticking "STL / STEP / 3MF file"** in the "What do you already have?" checklist pre-selects "Do you have files? →
+  STL / STEP / 3MF" while it still says "No".
+- Tested in Playwright (EN 1280 light, SL 390 dark): footer download `nace-kepa.vcf` + message; checklist tick → files option 2;
+  step-3 labels; phone-call-without-number → error on `f-reply` (focused); "abc" → error on `f-phone`; Enter in the phone field
+  → step 4; brief + `mailto:` body + printable brief carry "Phone: +386 …" and "How should I reply? With a phone call"; draft
+  survives a reload with phone and reply; no overflow, no errors.
+*To remove:* see the comment above `eqReply()` in `app.js`.
+
+**Innovation — Quote composer NK-O / "Ponudba" (admin tab "Quote"; `QT_KEY` … `qtAct()` in `admin.js`, `.qt-*` rules + the
+`qt-print` block in `admin.css`):** Nace answers briefs with a written quote; this tab builds one **from the prices in
+Settings** so the quote and the public estimate (`#services?tool=quote`) follow the same rules (minimum hours, minimum per
+printed part, file preparation once per order with printed parts, rush surcharge on printed parts, minimum order, the running
+promotion or a typed discount). Lines: **Hours** (service × hours, rate from Settings, optional description), **Printed part**
+(material from Settings × grams + machine hours × copies, part name), **Custom line** (his own description × unit price × qty,
+e.g. parts at cost). Header: quote no. (`NK-O-YYMMDD-NN`, auto-numbered per day, editable), date, valid until (optional — nothing
+invented), client, client e-mail, language of the quote (SL default / EN), reference (free text with a datalist of the project
+sheet numbers + titles). Notes (one per line) and the VAT note / full-builds note from Settings are printed under the table.
+Output: the **A4 quote sheet NK-O** in the drawing-sheet look (NK monogram, title block with no / date / valid until / sheet /
+client / reference, mono amounts, totals, notes, "Prepared by N. Kepa · Škofja Loka"), **"Print / save as PDF"** (`html.qt-print`
++ print rules: the sheet alone, one page), **"Copy as text"** (e-mail-ready), **"Open in e-mail"** (`mailto:` to the client with
+subject + text, once an e-mail is typed), **"Save in this browser"** (localStorage `nk-admin-quotes`, newest first, 30 kept; the
+list on the left loads a saved quote; "Delete saved" asks first). Quotes stay in Nace's browser — nothing goes to the repository
+or the site; the tab says so. Works with the keyboard (every input has an id, focus is kept while typing — only the sheet is
+redrawn), at 390 px (lines wrap, amounts stay on one line), light + dark; CSP untouched (admin.js is a bundled module).
+- Tested with a mocked GitHub API (1280 light, 390 dark): 3 h CAD + 4 × PETG 40 g / 2 h + 8 inserts × 0,50 € + setup, rush,
+  promotion → 126 + 34,56 + 4 + 6 = 170,56 · +25 % = 213,20 · −15 % = **181,22 €** (checked by hand) in SL and EN; copied text;
+  save → list; new → `-02`; load → fields back; Remove by keyboard; delete with confirm; print class on/off, PDF = 1 page.
+*To remove:* see the comment above `QT_KEY` in `admin.js`.
+
+**Ideas for next time** (added to the list below)
+- Admin: "Quote from a brief" — paste the e-mailed brief, the tab pre-fills services, quantity, reference and the client's name.
+- Admin: quote status (sent / accepted / declined) on the saved list and a monthly total — still browser-only.
+- Public: "Request a call" on #contact once Nace publishes a phone number (the brief already carries the client's).
+
 ## 2026-11-03
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news,
@@ -1828,6 +1882,12 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: QR on the NK-S / NK-D sheets (→ `#studio`) and the printed brief (→ `#order`).
 - Public: "Save my contact" in the footer title block on every page; phone number in the vCard once published.
 - Admin: printable A4 sticker sheet of the home / price-list QR with the wordmark.
+- (Built 2026-11-04: Quote composer NK-O in the admin — written quote from the Settings prices, A4 sheet, print / PDF, copy as
+  text, mailto, saved in the browser; enquiry package as the improvement — phone + "How should I reply?" in step 3, "Open in
+  your e-mail app" on step 4, "Save contact" in the footer, checklist → files pre-select.)
+- Admin: "Quote from a brief" — paste the e-mailed brief → services, quantity, reference, client pre-filled in the Quote tab.
+- Admin: quote status (sent / accepted / declined) and a monthly total on the saved quotes, browser-only.
+- Public: "Request a call" on #contact once Nace publishes a phone number.
 
 ## 2026-10-03 (second run)
 

@@ -397,6 +397,7 @@
     var svc = SERVICES.filter(function (s) { return o.services.indexOf(s.key) >= 0; }).map(function (s) { return L(s.title); }).join(', ');
     var d = new Date(), iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     var rows = [[x.steps[0], svc], [x.fWhat, o.what], [x.fQty, o.qty], [x.fDeadline, o.deadline ? fmtDate(o.deadline) : '—'], [x.fFiles, x.fFilesO[o.files]], [x.fMat, x.fMatO[o.mat]], [x.fName, o.name], [x.fEmail, o.email]];
+    if (String(o.phone || '').trim()) rows.push([x.eq.phoneB, o.phone.trim()]); rows.push([x.eq.reply, eqReply()]); // Enquiry package (2026-11-04)
     if (o.note) rows.push([x.fNote, o.note]);
     rows = rows.concat(ocRows());
     return '<div class="print-only bp" aria-hidden="true"><p class="nk-label">' + esc(b.label + ' · ' + fmtDate(iso) + (sent ? ' · ' + b.code + ' ' + CODE : '')) + '</p>' +
@@ -1689,12 +1690,12 @@
   // render() and the input/change handlers, the drBar() call in orderView(), the three data-dr-* lines in the click
   // handler, dr: in both languages in content.js and the "Saved draft" rules at the end of page.css.
   var DR_KEY = 'nk-order-draft', DR_DAYS = 30, dr = { at: 0, restored: false, ask: false, msg: '' };
-  var DR_FIELDS = ['what', 'qty', 'deadline', 'name', 'email', 'note'];
+  var DR_FIELDS = ['what', 'qty', 'deadline', 'name', 'email', 'note', 'phone'];
   function drHas() { var o = state.order; return o.services.length > 0 || DR_FIELDS.some(function (k) { return k !== 'qty' && String(o[k] || '').trim(); }); }
   function drSave() {
     try {
       if (state.send === 'sent' || !drHas()) { if (dr.at) localStorage.removeItem(DR_KEY); dr.at = 0; return; }
-      var o = state.order, d = { v: 1, at: Date.now(), step: Math.min(state.step, 2), services: o.services.slice(), files: +o.files || 0, mat: +o.mat || 0, have: state.prep.have };
+      var o = state.order, d = { v: 1, at: Date.now(), step: Math.min(state.step, 2), services: o.services.slice(), files: +o.files || 0, mat: +o.mat || 0, reply: +o.reply || 0, have: state.prep.have };
       DR_FIELDS.forEach(function (k) { d[k] = String(o[k] || ''); });
       localStorage.setItem(DR_KEY, JSON.stringify(d)); dr.at = d.at;
     } catch (e) {}
@@ -1711,6 +1712,7 @@
     if (!/^\d{4}-\d{2}-\d{2}$/.test(o.deadline)) o.deadline = '';
     o.files = d.files >= 0 && d.files < x.fFilesO.length ? d.files | 0 : 0;
     o.mat = d.mat >= 0 && d.mat < x.fMatO.length ? d.mat | 0 : 0;
+    o.reply = d.reply === 1 ? 1 : 0;
     if (d.have && typeof d.have === 'object') Object.keys(d.have).forEach(function (k) { if (d.have[k] === true) state.prep.have[k] = true; });
     if (!drHas()) return;
     state.step = d.step === 1 || d.step === 2 ? d.step : 0;
@@ -1736,7 +1738,7 @@
   }
   function drClearAll() {
     try { localStorage.removeItem(DR_KEY); } catch (e) {}
-    state.order = { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '' };
+    state.order = { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '', phone: '', reply: 0 };
     state.prep.have = {}; state.prep.svc = null; state.step = 0; state.errors = {}; state.send = 'idle';
     dr.at = 0; dr.restored = false; dr.ask = false; dr.msg = t().dr.cleared;
     render(true); dr.msg = '';
@@ -1763,7 +1765,10 @@
         field('name', x.fName, '<input class="nk-input" id="f-name" data-f="name" autocomplete="name" enterkeyhint="next" value="' + esc(o.name) + '">', e.name ? x.errName : null, e.name) +
         field('email', x.fEmail, '<input class="nk-input" id="f-email" data-f="email" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" enterkeyhint="next" value="' + esc(o.email) + '">', e.email ? x.errEmail : null, e.email) +
         '<div class="hp" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" data-f="website" tabindex="-1" autocomplete="off"></div>' +
-        ofTypoBox() + field('note', x.fNote, '<textarea class="nk-input" id="f-note" data-f="note">' + esc(o.note) + '</textarea>', x.fNoteH, false, true) + '</div>';
+        ofTypoBox() +
+        field('phone', x.eq.phone, '<input class="nk-input" id="f-phone" data-f="phone" type="tel" autocomplete="tel" inputmode="tel" enterkeyhint="next" value="' + esc(o.phone) + '">', e.phone ? x.eq.errPhone : x.eq.phoneH, e.phone) + // Enquiry package (2026-11-04)
+        field('reply', x.eq.reply, select('reply', x.eq.replyO, o.reply), e.reply ? x.eq.errReply : null, e.reply) +
+        field('note', x.fNote, '<textarea class="nk-input" id="f-note" data-f="note">' + esc(o.note) + '</textarea>', x.fNoteH, false, true) + '</div>';
     } else {
       var brief = briefText();
       if (state.send === 'sent') {
@@ -1773,7 +1778,7 @@
       body = (state.send === 'sending' ? '<p class="nk-label" role="status">' + esc(x.sending) + '</p>' : '') + (state.send === 'error' || state.send === 'limited' ? '<p class="err" role="alert">' + esc(state.send === 'limited' ? x.sendLimited : x.sendFail) + '</p>' : '') +
         '<h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.briefTitle) + '</h2><p class="hint">' + esc(x.briefLead) + '</p>' +
         '<div class="brief-grid"><pre class="brief" id="brief" tabindex="0">' + esc(brief) + '</pre><div class="brief-side"><p class="nk-label">' + esc(x.estimate) + '</p>' + estimate() +
-        '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" id="copy">' + esc(x.copy) + '</button><span class="copy-msg" id="copy-msg" role="status"></span></div>' + bpBtn() +
+        '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" id="copy">' + esc(x.copy) + '</button>' + eqMail() + '<span class="copy-msg" id="copy-msg" role="status"></span></div>' + bpBtn() +
         '<p class="nk-label">' + esc(x.sendVia) + '</p>' + (CONTACT_EMAIL ? '<p class="mail" id="mail">' + esc(CONTACT_EMAIL) + '</p><div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mail-copy>' + esc(x.mailCopy) + '</button><span class="copy-msg" id="mail-msg" role="status"></span></div>' : '') +
         '<a class="nk-btn nk-btn--sm" href="' + LINKEDIN + '" target="_blank" rel="noopener">' + esc(x.linkedin) + '<span class="vh"> (' + esc(t().newTab) + ')</span><span class="nk-btn__arrow" aria-hidden="true">↗</span></a></div></div>';
       }
@@ -2900,6 +2905,25 @@
 
   // Hints and errors are tied to their control (aria-describedby / aria-invalid) so screen readers read them with the field.
   var REQUIRED = { what: 1, name: 1, email: 1 };
+  // ---------- Enquiry package (2026-11-04): fewer steps between the brief and a reply ----------
+  // Step 3 gets an optional phone number and "How should I reply?" (e-mail / phone call — a phone call needs the number);
+  // both go into the brief, the printable brief and the saved draft. Step 4 gets "Open in your e-mail app" (the brief as the
+  // body of a mailto: to the studio) next to Copy. The footer title block gets "Save my contact" (.vcf, QR package) on every
+  // page. Ticking "STL / STEP / 3MF file" in the step-2 checklist pre-selects "Do you have files? → STL / STEP / 3MF" while it
+  // is still on "No". Remove: eqReply() / eqMail() / eqPhoneOk(), the phone / reply lines in orderView() step 2, briefText(),
+  // bpSheet(), validate(), drSave() / drLoad() / DR_FIELDS and the two state.order literals, the eqMail() call in step 4,
+  // the data-qr-vcf cell in the footer, the eqFiles() line in the change handler, eq: in both languages in content.js.
+  function eqReply() { return +state.order.reply === 1 ? t().eq.replyO[1] : t().eq.replyO[0]; }
+  function eqPhoneOk(v) { return !String(v || '').trim() || /^[+\d][\d\s().\/-]{5,}$/.test(String(v).trim()); }
+  function eqMail() { // step 4: the brief as an e-mail to the studio
+    if (!CONTACT_EMAIL) return '';
+    var x = t(), subj = (lang === 'sl' ? 'Novo povpraševanje' : 'New project') + ' — ' + state.order.name;
+    return '<a class="nk-btn" id="eq-mail" href="mailto:' + esc(CONTACT_EMAIL) + '?subject=' + esc(encodeURIComponent(subj)) + '&amp;body=' + esc(encodeURIComponent(briefText() + '\n')) + '">' + esc(x.eq.mail) + '</a>';
+  }
+  function eqFiles(el) { // checklist "STL / STEP / 3MF file" ticked → "Do you have files?" jumps to that option while it still says "No"
+    var it = ocItems()[+el.getAttribute('data-oc-have')], sel = document.getElementById('f-files'); if (!it || !el.checked || !sel || +sel.value !== 0) return;
+    if (/STL \/ STEP \/ 3MF/.test(it.id)) { sel.value = '2'; state.order.files = 2; }
+  }
   function field(k, label, ctl, hint, err, full) {
     var attrs = (hint ? ' aria-describedby="f-' + k + '-h"' : '') + (err ? ' aria-invalid="true"' : '') + (REQUIRED[k] ? ' aria-required="true"' : '');
     ctl = ctl.replace('id="f-' + k + '"', 'id="f-' + k + '"' + attrs);
@@ -2916,7 +2940,7 @@
     var o = state.order, x = t();
     var svc = SERVICES.filter(function (s) { return o.services.indexOf(s.key) >= 0; }).map(function (s) { return L(s.title); }).join(', ');
     return [x.orderTitle.toUpperCase() + ' — nacekepa.work', '', x.steps[0] + ': ' + svc, x.fWhat + ' ' + o.what, x.fQty + ': ' + o.qty, x.fDeadline + ': ' + (o.deadline || '—'),
-      x.fFiles + ' ' + x.fFilesO[o.files], x.fMat + ': ' + x.fMatO[o.mat], '', x.fName + ': ' + o.name, x.fEmail + ': ' + o.email, o.note ? x.fNote + ' ' + o.note : ''].concat(ocRows().length ? [''].concat(ocRows().map(function (r) { return r[0] + ' ' + r[1]; })) : []).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+      x.fFiles + ' ' + x.fFilesO[o.files], x.fMat + ': ' + x.fMatO[o.mat], '', x.fName + ': ' + o.name, x.fEmail + ': ' + o.email, String(o.phone || '').trim() ? x.eq.phoneB + ': ' + o.phone.trim() : '', x.eq.reply + ' ' + eqReply(), o.note ? x.fNote + ' ' + o.note : ''].concat(ocRows().length ? [''].concat(ocRows().map(function (r) { return r[0] + ' ' + r[1]; })) : []).join('\n').replace(/\n{3,}/g, '\n\n').trim();
   }
 
 
@@ -2979,7 +3003,7 @@
     mnMem = { v: 1, cmp: [], st: [], qc: [] }; try { localStorage.removeItem(MN_KEY); localStorage.removeItem(SL_KEY); } catch (e) {}
     slMem = []; mnAsk = false;
     try { localStorage.removeItem(DR_KEY); } catch (e) {}
-    state.order = { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '' };
+    state.order = { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '', phone: '', reply: 0 };
     state.prep.have = {}; state.prep.svc = null; state.step = 0; state.errors = {}; state.send = 'idle'; dr.at = 0; dr.restored = false; dr.ask = false;
     mnMsg = t().mn.forgotten; render(true); mnMsg = '';
   }
@@ -3034,7 +3058,7 @@
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
-      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '" id="tb-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-tb-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="tb-msg" role="status" aria-live="polite"></span> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span><span class="vh"> (' + esc(t().newTab) + ')</span></a>', 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(ctaText()) + ' →</a>' + (giftOn() ? ' · <a href="#gift">' + esc(t().gift.tbLink) + '</a>' : ''), 'wide', false, true) +
+      cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '" id="tb-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-tb-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="tb-msg" role="status" aria-live="polite"></span> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span><span class="vh"> (' + esc(t().newTab) + ')</span></a>' + (qrOn() ? ' · <button type="button" class="tb-copy" data-qr-vcf>' + esc(t().eq.vcf) + '</button><span class="tb-msg qr-msg" role="status" aria-live="polite"></span>' : ''), 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(ctaText()) + ' →</a>' + (giftOn() ? ' · <a href="#gift">' + esc(t().gift.tbLink) + '</a>' : ''), 'wide', false, true) +
       cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa' + kbdBtn() + '<a class="mine-foot" href="#mine">' + esc(x.mn.link) + '</a>' + '<button type="button" class="to-top" data-top>' + esc(x.toTop) + ' <span aria-hidden="true">↑</span></button></p></footer>';
     return '<div class="frame"><a class="skip" href="#main" data-skip>' + esc(x.skip) + '</a>' + zones + nav + '<main id="main" tabindex="-1">' + inner + '</main>' + tb + '</div>';
   }
@@ -3086,7 +3110,7 @@
     var o = state.order, e = {};
     if (state.step === 0 && !o.services.length) e.services = 1;
     if (state.step === 1 && o.what.trim().length < 8) e.what = 1;
-    if (state.step === 2) { if (!o.name.trim()) e.name = 1; if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(o.email)) e.email = 1; }
+    if (state.step === 2) { if (!o.name.trim()) e.name = 1; if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(o.email)) e.email = 1; if (!eqPhoneOk(o.phone)) e.phone = 1; if (+o.reply === 1 && !String(o.phone).trim()) e.reply = 1; } // Enquiry package: phone optional but sane, a phone call needs a number
     state.errors = e; return !Object.keys(e).length;
   }
 
@@ -3220,7 +3244,7 @@
     if (ev.target.dataset.plF === 'mat') { state.pl.mat = +ev.target.value || 0; plUpdate(); return; }
     if (ev.target.dataset.psInc) { state.ps[ev.target.dataset.psInc] = ev.target.checked; psSync(); return; }
     if (ev.target.dataset.prepHave != null) { var it = prepItems()[+ev.target.dataset.prepHave]; if (it) { state.prep.have[it.id] = ev.target.checked; var po = document.getElementById('prep-out'); if (po) po.textContent = prepStatus(prepItems()); } return; }
-    if (ev.target.dataset.ocHave != null) { var oi = ocItems()[+ev.target.dataset.ocHave]; if (oi) { state.prep.have[oi.id] = ev.target.checked; var oo = document.getElementById('oc-out'); if (oo) oo.textContent = ocStatus(ocItems()); drSave(); } return; }
+    if (ev.target.dataset.ocHave != null) { var oi = ocItems()[+ev.target.dataset.ocHave]; if (oi) { state.prep.have[oi.id] = ev.target.checked; var oo = document.getElementById('oc-out'); if (oo) oo.textContent = ocStatus(ocItems()); eqFiles(ev.target); drSave(); } return; }
     var k = ev.target.dataset.svc; if (!k) return;
     var a = state.order.services, i = a.indexOf(k);
     if (ev.target.checked && i < 0) a.push(k); if (!ev.target.checked && i >= 0) a.splice(i, 1);
