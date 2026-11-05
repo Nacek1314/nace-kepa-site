@@ -37,6 +37,9 @@ photos, a card drawn at build time from the sheet (`/og/portfolio/<slug>.png`, `
 dimensions, title block) that prints on its own or downloads as SVG — `dwBox()` in `src/site/app.js`. Every tool on `#services` prints
 alone from its address (`#services?tool=prices`) or its "Print this tool" button.
 
+`#services?tool=parts` ("Parts list", sheet **NK-L**) takes several different parts — size, material, quantity — and gives each line the fit check,
+plates, weight, time and price, totals them and hands the list to the order form (`bmBox()` in `src/site/app.js`; kept in the browser, localStorage `nk-parts`).
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,

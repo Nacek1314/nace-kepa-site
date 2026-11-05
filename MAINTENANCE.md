@@ -20,6 +20,60 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-11-05
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news,
+#n-bambu-lab-x2d, #skills, #about, #contact, #compare, #studio, #gift, #mine, #order (all 4 steps on the local build in EN + SL,
+validation, nothing sent), /admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google
+Fonts blocked in the cloud, as always), no horizontal scroll, no CSP violations, no broken images; EN ↔ SL key comparison of
+`content.js`: complete. Live site from the laptop: `/`, `/sl/`, `/admin/`, `/news/`, the two feeds, sitemap, robots, manifest, two
+landing pages, an `/og/` card all 200, an unknown address 404; the live inline-script hash equals the CSP hash; "NK-D" present, no
+"Fusion" — the live page is the a8ef93c build. Last Actions run (a8ef93c) succeeded. (The GitHub API and nacekepa.work are blocked
+from the cloud proxy since this run — both checks now run on the laptop, `C:\Users\kepan\Webiste\check-live.ps1`.)
+**No live bugs.** Fixed two latent ones the tenth tool would have hit: the tools index numbered a tenth entry "T-010"
+(`tlNo()` now pads to two digits everywhere, incl. `data-tl`) and the desktop grid only cleared the left border of the fifth tile
+(`:nth-child(4n + 1)` now). The tools label and lead count the tools instead of saying "nine / eight".
+
+**Improvement — review package (order form; `rvRows()` … `rvSelf()` in `app.js`, `rv:` in `content.js`, "Review package" rules in `page.css`):**
+step 3 (Contact) is the last step before "Send project", so it now ends with **"What you are sending"** — one row per answer from steps
+1–2 (services, what, quantity, deadline, files, material, the "What do you already have?" rows) with **Edit** that jumps back to that
+step with the cursor in that field (`rvGo()`; the checklist gets the first tick box), and "optional, not filled in · Add" on an empty
+deadline / files / material. Step 4 (sent screen and the copy-and-send fallback) gets **"Send a copy to myself"** — a `mailto:` to the
+address the client typed, subject + the brief as the body — so they keep what they sent. Tested in Playwright (EN 1280 light, SL 390
+dark): rows and values, Add on the deadline by keyboard → step 2 with `f-deadline` focused, the date shows on the review, Edit on
+services → `svc-print` focused, no button before an e-mail is typed, the mailto on step 4 carries the brief; no overflow, no errors.
+*To remove:* see the comment above `rvRows()` in `app.js`.
+
+**Innovation — Parts list / "Kosovnica" NK-L (`#services?tool=parts`, T-09 in the tools index; `BM_KEY` … `bmFitLink()` in `app.js`,
+`bm:` + `tl.parts` in `content.js`, "Parts list" rules in `page.css`):** an order of **several different parts on one sheet**. Every
+line is a part — name, L × W × H in mm, material (the list from Settings), quantity — and gets its own result line: the **fit check**
+(`fitCalc`: fits as entered / turned / too big), **parts per plate and plates needed** (`pbLayout`, the plate tool's rectangular
+nesting with the gap set under the list) and, with a price list in `settings.json`, **weight, print time and price per piece and per
+line** from the same rules as the Part studio (`estPrint()`, now shared: walls + infill from the print settings, material price ×
+grams + machine hours, minimum per part). The **NK-L sheet** on the right totals part types and pieces, how many fit, plates ("up to
+N" — counted per part type, so mixing can need fewer), weight, print time and the order price (file preparation once, minimum order,
+lines without a material not priced; a part over the build volume is not estimated at all). Buttons: **Start a project with this list**
+(service "3D printing", quantity = all pieces, material when every line shares one, the whole list as one line of the brief — the
+same replace-by-prefix rule as the other tools), **Copy as text**, **Print this tool** (prints alone, like every tool), **Clear the
+list** (asks first). The list stays in the browser (localStorage `nk-parts`, 30 lines max) so it survives a reload and the trip to the
+order form. Hand-offs: **"Add to the parts list"** on the NK-S sheet in the Part studio (name, oriented size, chosen material, quantity)
+and **"Need several different parts? Add this one to the parts list"** under the fit check. Keyboard: Add a part focuses the new line's
+name field, Remove focuses the next line (or the Add button), typing only redraws result lines and the sheet; every input has a label
+("Part 3 · Length · mm" for screen readers; the column labels show as a header row on desktop and per field on phones). Phone layout:
+name + remove, L / W / H, material + quantity, result line. Works without a price list (size, fit and plates only; a shorter note).
+- Tested in Playwright (EN 1280 light, SL 390 dark): tools index T-01 … T-10 (parts = T-09, Part studio = T-10); 40×30×20 PETG ×4 →
+  "Fits in one piece · 40 per plate · 1 plate · ≈ 11 g × 4 · ≈ 3 h · ≈ 6.00 € / pc · 24.00 €"; 300×100×50 → "Too big"; 100×258×80 PLA ×3
+  → "Fits turned (100 × 80 × 258) · 6 per plate"; sheet "3 part types · 9 pcs · 1 part too big · up to 2 plates · ≈ 464.93 € (file
+  preparation 6.00 € included)"; gap 20 → 20 per plate; copy → clipboard text; remove by keyboard; reload keeps the list; print mode
+  hides everything but the tool; Start a project → step 1 with the list in "What should it do?", quantity 9; studio hand-off → line 4
+  "Spacer 50×25×12 ×6"; fit-check hand-off → line 5; clear with confirm; no overflow at 390 px, no errors; full audit of every view: no errors.
+*To remove:* see the comment above `BM_KEY` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: parts list — a plate drawing of the whole order (all footprints mixed on the plates, not per part type).
+- Public: parts list — "Save in My corner" and a `#services?tool=parts&list=…` link that opens the same list on another device.
+- Admin: Quote tab — "Import a parts list" (paste the brief line → one quote line per part).
+
 ## 2026-11-04
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news,
@@ -1888,6 +1942,12 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: "Quote from a brief" — paste the e-mailed brief → services, quantity, reference, client pre-filled in the Quote tab.
 - Admin: quote status (sent / accepted / declined) and a monthly total on the saved quotes, browser-only.
 - Public: "Request a call" on #contact once Nace publishes a phone number.
+- (Built 2026-11-05: Parts list NK-L `#services?tool=parts` — several different parts → fit, plates, weight, time, price per line and
+  for the whole order, hand-offs from the Part studio and the fit check, into the brief; review package in the order form as the
+  improvement — "What you are sending" with Edit links on step 3, "Send a copy to myself" on step 4.)
+- Public: parts list — a plate drawing of the whole order (all footprints mixed on the plates, not per part type).
+- Public: parts list — "Save in My corner" and a shareable `#services?tool=parts&list=…` link.
+- Admin: Quote tab — "Import a parts list" (paste the brief line → one quote line per part).
 
 ## 2026-10-03 (second run)
 
