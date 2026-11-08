@@ -39,6 +39,8 @@ alone from its address (`#services?tool=prices`) or its "Print this tool" button
 
 `#services?tool=parts` ("Parts list", sheet **NK-L**) takes several different parts — size, material, quantity — and gives each line the fit check,
 plates, weight, time and price, totals them and hands the list to the order form (`bmBox()` in `src/site/app.js`; kept in the browser, localStorage `nk-parts`).
+Under the list, **Plate layout NK-N** packs the whole order on the X2D plates (maximal-rectangles nesting with 90° turns) and draws one top
+view per plate; the NK-L sheet, the copied text and the brief carry the mixed plate count (`pnNest()` … `pnInner()` in `src/site/app.js`).
 
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export

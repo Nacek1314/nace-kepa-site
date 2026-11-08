@@ -20,6 +20,57 @@ bugs fixed, the one improvement, ideas for next time.
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
 
+## 2026-11-08
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
+#news, #n-bambu-lab-x2d, #skills, #about, #contact, #compare, #studio, #gift, #mine, #order (all 4 steps on the local build in EN + SL,
+nothing sent), /admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in
+the cloud, as always), no horizontal scroll, no CSP violations, no broken images; axe-core 4.10 on every view: 0 violations; EN ↔ SL
+key comparison of `content.js`: complete (only the intended plural forms differ). Live site from the laptop (`check-live.ps1`): `/`,
+`/sl/`, `/admin/`, `/news/`, feed, sitemap, a landing page all 200, an unknown address 404; the live inline-script hash equals the CSP
+hash; the live page is the a5319e6 build. Last Actions run (a5319e6) succeeded. (No run on 11-06 and 11-07 — this is the next one.)
+**Fixed:** (1) a tool printed alone ("Print this tool" / `#services?tool=…`) printed its drawing as a blank frame — the fit check figure,
+the plate tool's layout and the file check views are `.nk-sheet__art`, which the photo-protection rule hides in print; a print rule
+under `html[data-tool] .tl-on` makes them visible again (they are the visitor's own numbers, not photos). (2) Slovenian NK-L sheet:
+"13 kos" → "13 kos." (the plural form followed the number of part types, not pieces; the abbreviation is right for every count).
+
+**Improvement — brief readability package (what Nace and the client actually read; `bfWhat()` / `bfSubject()` in `app.js`):** a tool's
+hand-off line in "What should it do?" — the parts list, a Part studio spec, an estimate, a shortlist or compared sheets — was one very
+long line ("Parts list: 1. …; 2. …; Plates: …"). Now, everywhere the brief is rendered — the step-4 sheet, "Copy brief", the e-mail the
+Worker sends (its summary is shown pre-wrap, so the lines survive), both `mailto:` bodies, the printable A4 brief and the "What you are
+sending" review on step 3 — such a line becomes a heading with one indented item per line, and a multi-line answer starts on its own
+line under the question. The "Open in your e-mail app" subject now names the services like the Worker's subject does ("New project:
+3D printing & prototyping — Ana"). Plain sentences with one colon are left alone (only lines with ≥ 2 "; " items expand). Tested in
+Playwright (EN 1280 light, SL 390 dark): parts list → brief shows "Parts list:" + 6 indented lines, a typed sentence stays one line,
+review row shows the list, subject carries the service; printable brief; no errors.
+*To remove:* see the comment above `bfWhat()` in `app.js`.
+
+**Innovation — Plate layout / "Razpored po mizah" NK-N (under the parts list, `#services?tool=parts`; `PN_MAX` … `pnMore()` in `app.js`,
+`pn:` in `content.js`, "Plate layout" rules at the end of `page.css`):** the whole order packed on the X2D plates at once. Every piece
+of every fitting line (the footprint from the fit check's orientation) is placed with a **maximal-rectangles packing** (best short-side
+fit, 90° turns, the gap set under the list handled as plate W+g × H+g and pieces w+g × h+g; two sort orders — area and longest side —
+the layout with fewer plates / more plate used wins). Output: **"N plates for the whole order"** with how many fewer than counting each
+part type alone and the average plate usage; **one top-view drawing per plate** (16 mm grid, pieces in red with their line number
+"01", "02" …, caption "Plate 1 · 8 pcs · 73 % used"; the first 8 plates, "Show all plates (N)" toggles the rest, keyboard-focusable);
+a **legend** "Where each part lands" (line, name, oriented size, quantity, plate 1 / plates 1–2); and the **Plates row of the NK-L
+sheet** now reads "2 mixed (per part type up to 4)" — in the sheet, the copied text and the brief. Over 400 pieces the drawing is skipped
+and the sheet keeps the per-type count (says so). The drawings print with the tool (they are not `.nk-sheet__art`, so the photo rule
+does not hide them), work at 390 px (one plate per row), light + dark, SL + EN; nothing stored or sent beyond what the list already
+keeps. The two bm notes now say that each line counts alone and the layout below mixes the order.
+- Tested in Playwright (EN 1280 light, SL 390 dark): empty state; Spacer 40×30×20 ×4 + Bracket 100×258×80 ×3 + Lid 120×90×10 ×6 →
+  "2 plates for the whole order · 2 plates fewer than counting each part type alone · 71 %", plate 1 = 8 pcs 73 %, plate 2 = 5 pcs 70 %,
+  13 rects inside the plate with no overlaps (checked geometrically), labels match the lines, legend "plates 1–2"; gap 5 → 20 → 60 on
+  6 lids: 2 → 2 → 3 plates (never worse than the plate tool's per-type count); 120 lids → 31 plates, 8 drawn, Show all → 31, focus
+  stays on the button; 900 pcs → "More than 400 pieces" note; clipboard + brief carry "Plates: 2 mixed (per part type up to 4)" /
+  "Mize: 2 mešano (po vrstah delov do 4)"; print view shows the plates; axe on the tool: 0 violations; no overflow, no errors.
+*To remove:* see the comment above `PN_MAX` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: plate layout — a "Print the plates" button that prints only the NK-N drawings (one plate per page, with the legend).
+- Public: plate layout — pieces coloured per line (hatch patterns, still one red ink) so a mixed plate reads without the numbers.
+- Admin / Worker: the Worker cuts a brief at 6000 characters (`MAX_SUMMARY`) — a 30-line parts list with the new layout row gets close;
+  Nace could raise it in `cloudflare-worker/worker.js` (not touched by the daily run).
+
 ## 2026-11-05
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news,
@@ -1948,6 +1999,12 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: parts list — a plate drawing of the whole order (all footprints mixed on the plates, not per part type).
 - Public: parts list — "Save in My corner" and a shareable `#services?tool=parts&list=…` link.
 - Admin: Quote tab — "Import a parts list" (paste the brief line → one quote line per part).
+- (Built 2026-11-08: Plate layout NK-N under the parts list — the whole order packed on the X2D plates with maximal-rectangles
+  nesting, one drawing per plate, legend, the mixed plate count on the NK-L sheet / text / brief; brief readability package as the
+  improvement — tool hand-off lines as indented lists everywhere the brief is shown, services in the e-mail subject.)
+- Public: plate layout — "Print the plates" (one NK-N plate per A4 page with the legend).
+- Public: plate layout — hatch patterns per line so a mixed plate reads without the numbers.
+- Worker: raise `MAX_SUMMARY` (6000) so a long parts-list brief is never cut — Nace's call, the daily run does not touch the Worker.
 
 ## 2026-10-03 (second run)
 

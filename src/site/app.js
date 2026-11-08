@@ -396,7 +396,7 @@
     var o = state.order, x = t(), b = x.bp, sent = state.send === 'sent';
     var svc = SERVICES.filter(function (s) { return o.services.indexOf(s.key) >= 0; }).map(function (s) { return L(s.title); }).join(', ');
     var d = new Date(), iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    var rows = [[x.steps[0], svc], [x.fWhat, o.what], [x.fQty, o.qty], [x.fDeadline, o.deadline ? fmtDate(o.deadline) : '—'], [x.fFiles, x.fFilesO[o.files]], [x.fMat, x.fMatO[o.mat]], [x.fName, o.name], [x.fEmail, o.email]];
+    var rows = [[x.steps[0], svc], [x.fWhat, bfWhat()], [x.fQty, o.qty], [x.fDeadline, o.deadline ? fmtDate(o.deadline) : '—'], [x.fFiles, x.fFilesO[o.files]], [x.fMat, x.fMatO[o.mat]], [x.fName, o.name], [x.fEmail, o.email]];
     if (String(o.phone || '').trim()) rows.push([x.eq.phoneB, o.phone.trim()]); rows.push([x.eq.reply, eqReply()]); // Enquiry package (2026-11-04)
     if (o.note) rows.push([x.fNote, o.note]);
     rows = rows.concat(ocRows());
@@ -2639,7 +2639,8 @@
       if (c.est) { tot.g += c.est.g * c.qty; tot.h += c.est.h * c.qty; if (c.est.cost) { sum += c.est.cost.part * c.qty; priced++; } else tot.noMat++; }
     });
     if (PRICE && priced) { var order = sum + (+PRICE.print.setup || 0), min = false; if (+PRICE.print.minOrder > 0 && order < +PRICE.print.minOrder) { order = +PRICE.print.minOrder; min = true; } tot.price = { order: order, min: min, setup: +PRICE.print.setup || 0 }; }
-    return { rows: rows, tot: tot };
+    var tt = { rows: rows, tot: tot }; tt.pn = pnNest(tt); // Plate layout NK-N (2026-11-08): the whole order mixed on the plates
+    return tt;
   }
   function bmBits(c) { // the result of one line as short strings: fit, plates, weight, time, price
     var f = t().bm, x = t().fit, b = [];
@@ -2662,7 +2663,7 @@
     if (!tot.types) return rows;
     rows.push([f.sTypes, pbPlural(tot.types, f.sTypesV).replace('{t}', tot.types).replace('{p}', tot.pcs)]);
     rows.push([f.sFit, tot.noFit ? pbPlural(tot.noFit, f.sFitNo).replace('{n}', tot.noFit) : f.sFitOk]);
-    if (tot.plates) rows.push([f.sPlates, f.sPlatesV.replace('{n}', tot.plates)]);
+    if (tot.plates) rows.push([f.sPlates, tt.pn && tt.pn.n ? t().pn.sheetV.replace('{n}', tt.pn.n).replace('{m}', tot.plates) : f.sPlatesV.replace('{n}', tot.plates)]); // Plate layout NK-N (2026-11-08): the mixed count when it is drawn
     if (tot.g) rows.push([f.sWeight, '≈ ' + fcNum(tot.g, 0) + ' g']);
     if (tot.h) rows.push([f.sTime, f.time.replace('{h}', fcNum(tot.h, 1))]);
     if (tot.price) rows.push([f.sPrice, f.sPriceV.replace('{p}', pcMoney(tot.price.order, 2)), [tot.price.setup ? f.sPriceNote.replace('{s}', pcMoney(tot.price.setup, 2)) : '', tot.price.min ? f.sMin : '', tot.noMat ? pbPlural(tot.noMat, f.sNoMat).replace('{n}', tot.noMat) : ''].filter(Boolean).join(' · ')]);
@@ -2698,12 +2699,14 @@
       '<div class="bm-foot"><button type="button" class="nk-btn" data-bm-add' + (s.rows.length >= BM_MAX ? ' disabled' : '') + '>+ ' + esc(f.add) + '</button>' +
       '<label class="bm-gap"><span class="nk-field__label">' + esc(f.gap) + ' · mm</span><input class="nk-input" id="bm-gap" data-bm-gap type="number" inputmode="decimal" min="0" step="any" value="' + esc(s.gap) + '"></label></div>' +
       '<p class="fit-note bm-privacy">' + esc(f.privacy) + '</p></div>' +
-      '<div class="pl-sheet bm-sheet" id="bm-sheet">' + bmSheet(tt) + '</div></div></section>';
+      '<div class="pl-sheet bm-sheet" id="bm-sheet">' + bmSheet(tt) + '</div></div>' +
+      '<div class="pn" id="bm-plates">' + pnInner(tt) + '</div></section>'; // Plate layout NK-N (2026-11-08)
   }
   function bmUpdate() { // a value changed: only the result lines and the sheet are redrawn (focus stays in the input)
     var tt = bmTotals();
     tt.rows.forEach(function (c, i) { var el = document.getElementById('bm-line-' + i); if (el) el.innerHTML = bmLine(c); });
     var sh = document.getElementById('bm-sheet'); if (sh) sh.innerHTML = bmSheet(tt);
+    var pn = document.getElementById('bm-plates'); if (pn) pn.innerHTML = pnInner(tt); // Plate layout NK-N (2026-11-08)
   }
   function bmRefresh(focusSel) { // a line was added or removed: the whole tool is redrawn
     var sec = document.querySelector('.bm'); if (!sec) return;
@@ -2740,6 +2743,109 @@
   }
   function bmFitLink() { return '<p class="pl-open bm-open"><a href="#services?tool=parts" data-bm-fit>' + esc(t().bm.fitLink) + ' →</a></p>'; }
   bmLoad();
+
+  // ---------- Plate layout NK-N (#services?tool=parts, under the parts list; 2026-11-08) ----------
+  // The whole order on the X2D plates at once: every piece of every part that fits (the footprint from the fit check's
+  // orientation, turned by 90° where that helps) is packed with a maximal-rectangles layout (best short-side fit), plate after plate.
+  // The result is the number of plates for the whole order (the per-line "up to N" counts each part type alone — mixing
+  // usually needs fewer), one top-view drawing per plate with the line numbers in the pieces, a legend that says on which
+  // plates each part lands, and the plates row on the NK-L sheet, in the copied text and in the brief. Only the visitor's
+  // own sizes, the gap set under the list and BED (256 × 256 mm) are used; nothing is stored or sent. Over PN_MAX pieces
+  // the layout is not drawn and the sheet keeps the per-type count. Self-contained: remove PN_MAX … pnInner(), the
+  // `tt.pn = pnNest(tt)` line in bmTotals(), the pn branch in bmSheetRows(), the `<div class="pn" id="bm-plates">` in
+  // bmBox(), the #bm-plates line in bmUpdate(), the data-pn-more line in the click handler, pn: in both languages in
+  // content.js and the "Plate layout" rules at the end of page.css.
+  var PN_MAX = 400, PN_DRAW = 8;
+  state.pn = { all: false };
+  function pnPieces(tt) { // every piece of every fitting line as { i, a, b } with a ≥ b — the footprint the fit check chose
+    var out = [];
+    tt.rows.forEach(function (c, i) {
+      if (!c.fit || !c.fit.fits) return;
+      var a = Math.max(c.fit.o[0], c.fit.o[1]), b = Math.min(c.fit.o[0], c.fit.o[1]);
+      for (var k = 0; k < c.qty && out.length <= PN_MAX; k++) out.push({ i: i, a: a, b: b });
+    });
+    return out;
+  }
+  function pnPack(pieces, g) { // maximal-rectangles packing (best short-side fit, 90° turns allowed), plate after plate → [{ rects: [[x, y, w, h, line]], area }]
+    // The gap is handled the usual way: the plate is W + g × H + g and every piece takes w + g × h + g, so neighbours are g apart and the last one still ends inside the plate.
+    var W = BED[0] + g, H = BED[1] + g, plates = [];
+    function fit(pl, p) { // the best free rectangle of this plate for the piece, as it is or turned
+      var best = null;
+      pl.free.forEach(function (f) {
+        [[p.a + g, p.b + g], [p.b + g, p.a + g]].forEach(function (d) {
+          if (d[0] > f.w || d[1] > f.h) return;
+          var ss = Math.min(f.w - d[0], f.h - d[1]), ls = Math.max(f.w - d[0], f.h - d[1]);
+          if (!best || ss < best.ss || (ss === best.ss && ls < best.ls)) best = { f: f, w: d[0], h: d[1], ss: ss, ls: ls };
+        });
+      });
+      return best;
+    }
+    function place(pl, b, p) {
+      var r = { x: b.f.x, y: b.f.y, w: b.w, h: b.h }, next = [];
+      pl.free.forEach(function (f) { // split every free rectangle the piece overlaps into the parts left over
+        if (r.x >= f.x + f.w || r.x + r.w <= f.x || r.y >= f.y + f.h || r.y + r.h <= f.y) { next.push(f); return; }
+        if (r.x > f.x) next.push({ x: f.x, y: f.y, w: r.x - f.x, h: f.h });
+        if (r.x + r.w < f.x + f.w) next.push({ x: r.x + r.w, y: f.y, w: f.x + f.w - r.x - r.w, h: f.h });
+        if (r.y > f.y) next.push({ x: f.x, y: f.y, w: f.w, h: r.y - f.y });
+        if (r.y + r.h < f.y + f.h) next.push({ x: f.x, y: r.y + r.h, w: f.w, h: f.y + f.h - r.y - r.h });
+      });
+      pl.free = next.filter(function (f, i) { // drop rectangles contained in another one
+        return !next.some(function (o, j) { return j !== i && f.x >= o.x && f.y >= o.y && f.x + f.w <= o.x + o.w && f.y + f.h <= o.y + o.h && !(o.x === f.x && o.y === f.y && o.w === f.w && o.h === f.h && j < i); });
+      });
+      pl.rects.push([r.x, r.y, b.w - g, b.h - g, p.i]); pl.area += (b.w - g) * (b.h - g);
+    }
+    pieces.forEach(function (p) {
+      for (var n = 0; n < plates.length; n++) { var b = fit(plates[n], p); if (b) { place(plates[n], b, p); return; } }
+      var np = { free: [{ x: 0, y: 0, w: W, h: H }], rects: [], area: 0 }, nb = fit(np, p); if (!nb) return; // cannot happen: the fit check said the footprint fits
+      place(np, nb, p); plates.push(np);
+    });
+    return plates;
+  }
+  function pnBest(pieces, g) { // two sort orders (area, longest side), the layout with fewer plates (then more plate used) wins
+    var best = null;
+    [function (p, q) { return q.a * q.b - p.a * p.b || q.a - p.a; }, function (p, q) { return q.a - p.a || q.b - p.b; }].forEach(function (cmp) {
+      var pl = pnPack(pieces.slice().sort(cmp), g), used = pl.reduce(function (m, x) { return m + x.area; }, 0);
+      if (!best || pl.length < best.plates.length || (pl.length === best.plates.length && used > best.used)) best = { plates: pl, used: used };
+    });
+    return best.plates;
+  }
+  function pnNest(tt) { // { plates: [...], n, pcs, perType, used, lines: { i: [first plate, last plate] } } · null while nothing fits · { tooMany: true } over PN_MAX pieces
+    var pieces = pnPieces(tt); if (!pieces.length) return null;
+    if (pieces.length > PN_MAX) return { tooMany: true, pcs: pieces.length };
+    var g = pbNum(state.bm.gap); if (g < 0) g = 0;
+    var plates = pnBest(pieces, g), lines = {}, used = 0;
+    plates.forEach(function (pl, n) { used += pl.area / (BED[0] * BED[1]); pl.rects.forEach(function (r) { var l = lines[r[4]]; if (!l) lines[r[4]] = [n, n]; else l[1] = n; }); });
+    return { plates: plates, n: plates.length, pcs: pieces.length, perType: tt.tot.plates, used: Math.round(used / plates.length * 100), lines: lines, g: g };
+  }
+  function pnSvg(pl, n) { // one plate, top view: 1 unit = 1 mm, 16 mm grid like the plate tool, pieces in red with their line number
+    var W = BED[0], H = BED[1], f = t().pn, pcs = pl.rects.length, grid = '';
+    for (var k = 16; k < W; k += 16) grid += 'M' + k + ' 0 V' + H + ' M0 ' + k + ' H' + W + ' ';
+    return '<svg class="pb-svg pn-svg" viewBox="-4 -4 ' + (W + 8) + ' ' + (H + 8) + '" role="img" aria-label="' + esc(f.plate.replace('{n}', n + 1) + ' · ' + pbPlural(pcs, f.pcs).replace('{n}', pcs)) + '">' +
+      '<path class="pb-grid" d="' + grid + '"/><rect class="ln pb-plate" x="0" y="0" width="' + W + '" height="' + H + '"/>' +
+      pl.rects.map(function (r) {
+        return '<rect class="fit-part" x="' + r[0] + '" y="' + r[1] + '" width="' + r[2] + '" height="' + r[3] + '"/>' +
+          (Math.min(r[2], r[3]) >= 18 ? '<text class="pb-n pn-n" x="' + (r[0] + r[2] / 2) + '" y="' + (r[1] + r[3] / 2) + '" text-anchor="middle" dominant-baseline="central">' + String(r[4] + 1).padStart(2, '0') + '</text>' : '');
+      }).join('') + '</svg>';
+  }
+  function pnInner(tt) { // the block under the parts list: summary, one drawing per plate, legend, note
+    var f = t().pn, nest = tt.pn, head = '<div class="pl-head"><span class="nk-label">' + esc(f.label) + '</span><span class="nk-label">' + esc(f.code) + ' · ' + BED[0] + ' × ' + BED[1] + ' mm</span></div>';
+    if (!nest) return head + '<p class="hint pn-empty">' + esc(f.empty) + '</p>';
+    if (nest.tooMany) return head + '<p class="hint pn-empty">' + esc(f.tooMany.replace('{n}', PN_MAX)) + '</p>';
+    var saved = nest.perType - nest.n, show = state.pn.all ? nest.plates : nest.plates.slice(0, PN_DRAW);
+    var sum = '<p class="pn-sum"><span class="nk-tag nk-tag--ok">' + esc(pbPlural(nest.n, f.plates).replace('{n}', nest.n)) + '</span> <span>' + esc(f.mixed) + ' · ' +
+      esc(saved > 0 ? pbPlural(saved, f.saves).replace('{n}', saved) : f.same) + ' · ' + esc(f.avg.replace('{p}', nest.used)) + '</span></p>';
+    var plates = '<ol class="pn-plates">' + show.map(function (pl, n) {
+      var pcs = pl.rects.length, used = Math.round(pl.area / (BED[0] * BED[1]) * 100);
+      return '<li class="pn-plate"><figure class="pn-fig">' + pnSvg(pl, n) + '<figcaption class="nk-label">' + esc(f.plate.replace('{n}', n + 1)) + ' · ' + esc(pbPlural(pcs, f.pcs).replace('{n}', pcs)) + ' · ' + esc(f.used.replace('{p}', used)) + '</figcaption></figure></li>';
+    }).join('') + '</ol>';
+    var more = nest.n > PN_DRAW ? '<p class="pn-more"><button type="button" class="nk-btn nk-btn--sm" data-pn-more aria-expanded="' + state.pn.all + '">' + esc(state.pn.all ? f.less.replace('{n}', PN_DRAW) : f.more.replace('{n}', nest.n)) + '</button></p>' : '';
+    var legend = '<p class="nk-label pn-legend-l">' + esc(f.legend) + '</p><ul class="pn-legend">' + state.bm.rows.map(function (r, i) {
+      var l = nest.lines[i], c = tt.rows[i]; if (!l) return '';
+      return '<li><b>' + String(i + 1).padStart(2, '0') + '</b> ' + esc((r.name.trim() ? r.name.trim() + ' · ' : '') + fitDims(c.fit.o) + ' mm · × ' + c.qty) + ' <span class="pn-on">' + esc(l[0] === l[1] ? f.onPlate.replace('{a}', l[0] + 1) : f.onPlates.replace('{a}', l[0] + 1).replace('{b}', l[1] + 1)) + '</span></li>';
+    }).join('') + '</ul>';
+    return head + sum + plates + more + legend + '<p class="fit-note pn-note">' + esc(f.note.replace('{g}', fitFmt(nest.g))) + '</p>';
+  }
+  function pnMore() { state.pn.all = !state.pn.all; var el = document.getElementById('bm-plates'); if (el) el.innerHTML = pnInner(bmTotals()); var b = document.querySelector('[data-pn-more]'); if (b) b.focus({ preventScroll: true }); }
 
   // ---------- Blog package (2026-11-02, big update part 5) ----------
   // blogYears(): a year strip on #news (chips, keyboard, aria-pressed) once there is more than one year or six posts;
@@ -3062,7 +3168,7 @@
   function eqPhoneOk(v) { return !String(v || '').trim() || /^[+\d][\d\s().\/-]{5,}$/.test(String(v).trim()); }
   function eqMail() { // step 4: the brief as an e-mail to the studio
     if (!CONTACT_EMAIL) return '';
-    var x = t(), subj = (lang === 'sl' ? 'Novo povpraševanje' : 'New project') + ' — ' + state.order.name;
+    var x = t(), subj = bfSubject(); // Brief readability package (2026-11-08): services in the subject, like the Worker's e-mail
     return '<a class="nk-btn" id="eq-mail" href="mailto:' + esc(CONTACT_EMAIL) + '?subject=' + esc(encodeURIComponent(subj)) + '&amp;body=' + esc(encodeURIComponent(briefText() + '\n')) + '">' + esc(x.eq.mail) + '</a>';
   }
   function eqFiles(el) { // checklist "STL / STEP / 3MF file" ticked → "Do you have files?" jumps to that option while it still says "No"
@@ -3079,7 +3185,7 @@
     var o = state.order, x = t();
     var svc = SERVICES.filter(function (s) { return o.services.indexOf(s.key) >= 0; });
     return [[x.steps[0], svc.map(function (s) { return L(s.title); }).join(', '), 0, svc.length ? 'svc-' + svc[0].key : 'svc-' + SERVICES[0].key],
-      [x.fWhat, o.what.trim(), 1, 'f-what'], [x.fQty, o.qty, 1, 'f-qty'], [x.fDeadline, o.deadline ? fmtDate(o.deadline) : '', 1, 'f-deadline', true],
+      [x.fWhat, bfWhat().trim(), 1, 'f-what'] /* Brief readability package (2026-11-08): tool lines as lists */, [x.fQty, o.qty, 1, 'f-qty'], [x.fDeadline, o.deadline ? fmtDate(o.deadline) : '', 1, 'f-deadline', true],
       [x.fFiles, +o.files ? x.fFilesO[o.files] : '', 1, 'f-files', true], [x.fMat, +o.mat ? x.fMatO[o.mat] : '', 1, 'f-mat', true]]
       .concat(ocRows().map(function (r) { return [r[0].replace(/:$/, ''), r[1], 1, 'oc']; }));
   }
@@ -3110,10 +3216,27 @@
     var pm = promo(); if (pm) rows.push([t().promo.label, L(pm.title)]); // Pricing package (2026-11-02)
     return specs(rows);
   }
+  // ---------- Brief readability package (2026-11-08): the brief as the studio and the client read it ----------
+  // bfWhat(): the "What should it do?" answer on lines of its own; a tool's hand-off line ("Parts list: 1. …; 2. …; Plates: …")
+  // becomes a heading with one indented item per line, so a long order reads as a list on the sent screen, in the copied
+  // text, in the e-mail the Worker sends (rendered pre-wrap), in the mailto: bodies and in the printable brief. bfSubject():
+  // the e-mail subject names the services and the client, like the Worker's. To remove: put o.what back into briefText()
+  // and bpSheet() and the old subject into eqMail().
+  function bfWhat() {
+    return String(state.order.what || '').split('\n').map(function (l) {
+      var m = /^([^:;]{2,40}): (.+)$/.exec(l.trim()); if (!m) return l;
+      var items = m[2].replace(/\.$/, '').split('; '); if (items.length < 2) return l;
+      return m[1] + ':\n' + items.map(function (it) { return '  – ' + it.trim(); }).join('\n');
+    }).join('\n');
+  }
+  function bfSubject() {
+    var o = state.order, svc = SERVICES.filter(function (s) { return o.services.indexOf(s.key) >= 0; }).map(function (s) { return L(s.title); }).join(', ');
+    return (lang === 'sl' ? 'Novo povpraševanje' : 'New project') + (svc ? ': ' + svc : '') + ' — ' + o.name;
+  }
   function briefText() {
-    var o = state.order, x = t();
+    var o = state.order, x = t(), what = bfWhat();
     var svc = SERVICES.filter(function (s) { return o.services.indexOf(s.key) >= 0; }).map(function (s) { return L(s.title); }).join(', ');
-    return [x.orderTitle.toUpperCase() + ' — nacekepa.work', '', x.steps[0] + ': ' + svc, x.fWhat + ' ' + o.what, x.fQty + ': ' + o.qty, x.fDeadline + ': ' + (o.deadline || '—'),
+    return [x.orderTitle.toUpperCase() + ' — nacekepa.work', '', x.steps[0] + ': ' + svc, x.fWhat + (what.indexOf('\n') >= 0 ? '\n' : ' ') + what, x.fQty + ': ' + o.qty, x.fDeadline + ': ' + (o.deadline || '—'),
       x.fFiles + ' ' + x.fFilesO[o.files], x.fMat + ': ' + x.fMatO[o.mat], '', x.fName + ': ' + o.name, x.fEmail + ': ' + o.email, String(o.phone || '').trim() ? x.eq.phoneB + ': ' + o.phone.trim() : '', x.eq.reply + ' ' + eqReply(), o.note ? x.fNote + ' ' + o.note : ''].concat(ocRows().length ? [''].concat(ocRows().map(function (r) { return r[0] + ' ' + r[1]; })) : []).join('\n').replace(/\n{3,}/g, '\n\n').trim();
   }
 
@@ -3303,6 +3426,7 @@
     if (el.hasAttribute('data-bm-go')) { bmToOrder(); return; }
     if (el.hasAttribute('data-bm-copy')) { bmCopy(); return; }
     if (el.hasAttribute('data-bm-clear')) { bmClear(el.getAttribute('data-bm-clear')); return; }
+    if (el.hasAttribute('data-pn-more')) { pnMore(); return; } // Plate layout NK-N (2026-11-08)
     if (el.hasAttribute('data-bm-fit')) { bmAdd({ l: fitNum(state.fit.l) || '', w: fitNum(state.fit.w) || '', h: fitNum(state.fit.h) || '' }); } // the link itself opens the tool
     if (el.hasAttribute('data-bm-st')) { var bs = stSrc(); if (bs) { var bd = stDims(bs), bc = mpChosen(); bmAdd({ name: String(state.st.name || '').trim() || (bs.kind === 'file' ? String(bs.name || '').replace(/\.[a-z0-9]+$/i, '') : ''), l: bd[0], w: bd[1], h: bd[2], mat: bc ? bc.id : '', qty: Math.max(1, Math.round(+state.st.qty || 1)) }); location.hash = 'services?tool=parts'; } return; }
     if (el.hasAttribute('data-qc-go')) { qcToOrder(); return; } // Pricing package (2026-11-02)

@@ -229,6 +229,9 @@ button.project-art { padding: 0; width: 100%; cursor: zoom-in; display: grid; }
 /* Media can't be dragged out, selected or long-press saved */
 img, .lb__img, .nk-viewer, .nk-sheet__art { -webkit-user-drag: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 @media print { .nk-sheet__art, .photos, .nk-viewer, .project-stage { visibility: hidden; } }
+/* Fix (2026-11-08): a tool printed alone (html[data-tool], print package) draws only the visitor's own numbers — the fit check
+   figure, the plate layout and the file check views were printing as blank frames because of the rule above. */
+@media print { html[data-tool] .tl-on .nk-sheet__art { visibility: visible; } }
 
 /* News */
 .news-list { display: grid; gap: var(--space-4); }
@@ -1258,3 +1261,26 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 .rv-self { margin: var(--space-4) 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); font-size: 14px; line-height: 20px; }
 @media (max-width: 480px) { .rv { padding: var(--space-3) var(--space-4); } .rv-rows { grid-template-columns: 1fr; } .rv-rows dt { border-bottom: 0; padding-bottom: 0; } }
 @media print { .rv-self { display: none; } }
+/* Plate layout NK-N (2026-11-08, under the parts list on #services?tool=parts): pnInner() in app.js — summary, one top view per plate, legend */
+.pn { display: grid; gap: var(--space-4); margin-top: var(--space-6); padding: var(--space-5); background: var(--paper-raised); border: 1px solid var(--line-strong); min-width: 0; }
+.pn .pl-head { padding: 0 0 var(--space-3); border-bottom: 1px solid var(--line-strong); }
+.pn-empty { margin: 0; }
+.pn-sum { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: 14px; line-height: 20px; }
+.pn-sum .nk-tag { white-space: normal; text-align: left; }
+.pn-plates { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-4); }
+.pn-plate { min-width: 0; }
+.pn .pn-fig { margin: 0; padding: var(--space-3); border: 1px solid var(--line-strong); background: var(--paper); display: grid; gap: var(--space-2); } /* not .nk-sheet__art: that class is hidden in print to protect photos; this is the visitor's own drawing */
+.pn-svg .pb-plate { fill: none; stroke: var(--ink); stroke-width: 1.2; stroke-linejoin: round; }
+.pn-svg .fit-part { fill: var(--redline-soft); fill-opacity: .7; stroke: var(--redline); stroke-width: .8; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pn-svg .pb-n { fill: var(--ink); font: 11px var(--font-mono); pointer-events: none; }
+.pn-fig .pn-svg { display: block; width: 100%; height: auto; max-width: none; margin: 0; }
+.pn-fig figcaption { white-space: normal; }
+.pn-more { margin: 0; }
+.pn-legend-l { margin: 0; }
+.pn-legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-1) var(--space-4); font: 13px/18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.pn-legend li { display: flex; flex-wrap: wrap; gap: 0 var(--space-2); padding: 2px 0; border-bottom: 1px solid var(--line); }
+.pn-legend b { color: var(--redline); font-weight: 600; }
+.pn-on { color: var(--ink-muted); }
+.pn-note { margin: 0; }
+@media (max-width: 480px) { .pn { padding: var(--space-4); } .pn-plates { grid-template-columns: 1fr; } }
+@media print { .pn { break-inside: auto; border: 0; padding: 0; background: none; } .pn-plate, .pn-legend li { break-inside: avoid; } .pn-more { display: none; } .pn-plates { grid-template-columns: repeat(3, 1fr); } }
