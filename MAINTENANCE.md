@@ -19,6 +19,28 @@ bugs fixed, the one improvement, ideas for next time.
   - All the other rules still apply: only facts already in the repo, EN + SL, light + dark, desktop + phone, keyboard,
     CSP, no new dependencies, no redesign of the look, easy to remove.
   - Ideas in the list below that are too small should be merged into bigger features or treated as parts of a package.
+- **2026-11-08 (Nace, live): unslop pass** (skill by Damir Sokolovsky, github.com/heydamir/unslop, CC BY 4.0). The results are
+  deliberate — do not "fix" them back: headings are weight **600** (display, page and section titles, wordmark) and **500**
+  (card, news, register, service titles, buttons, nav), tight tracking only on display sizes (−.03/−.025/−.02em), none under
+  32 px; **no trailing period on headlines and titles** (EN + SL); the blue `--dimension` colour lives only inside drawings
+  (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
+  one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
+
+## 2026-11-08 (second run — Nace: "preuredi z unslop skillom")
+
+**Unslop pass over the whole site** (skill from github.com/heydamir/unslop). Audit verdict: mostly designed, light slop — one tinted
+ramp, one accent, real drawings as the moments, no gradients / glows / emoji / hype. Nace chose the full nine-pass process with
+headings 800 → 600 / 700 → 500 and the uppercase mono labels kept. Direction: exact, technical, quietly warm; world = the drafting
+table (sheet, graphite, blueprint grid, one red marker); moments = the drawn project sheets and the tools' drawings; signature =
+the redline + the mono title block. Passes: **spacing** — off-grid controls to the 4 px scale (buttons 34/54 → 36/56, chips, lang
+buttons, kbd/shortlist/compare close buttons, 6 px gaps → 8, NK mark 34 → 32, title-block keys 10 → 11 px); **color** — blue only in
+drawings, list "+" markers muted; **icons** — nothing to do; **copy** — 26 headline/title strings lose the trailing period (EN + SL,
+incl. the hero "firmware"); **type** — display/page/section titles 600, card/news/register/service titles, buttons, nav, process,
+choices, FAQ, tools 500, tracking per the tokens, `.nk-label` .08 → .06em, gift "kind" .18 → .08em; **layout** — kept (split hero
+with the sheet as the moment); **details** — kept (2 px radii, redline focus ring); **visuals** — kept, the drawn sheet is the hero
+moment (no image tool used, nothing generated); **motion** — card hover lift + shadow → border-colour step, press = scale(.98),
+one curve `--ease: cubic-bezier(.22,1,.36,1)`, arrow nudge 3 → 2 px. Checked: full Playwright audit (all views, 1280 + 390, light +
+dark, EN + SL) clean, axe 0 violations, EN ↔ SL keys complete.
 
 ## 2026-11-08
 
