@@ -16,7 +16,23 @@
   var START_VIEW = (function () { var m = document.querySelector('meta[name="nk-start"]'); return m ? String(m.getAttribute('content') || '') : landingView(); })();
   var LANDING = !!START_VIEW;
   // EN/SL on a landing page: keep the address on the right language (/portfolio/… ↔ /sl/portfolio/…).
-  function landingLang() { if (!LANDING) return; try { history.replaceState(history.state, '', (lang === 'sl' ? '/sl' : '') + location.pathname.replace(/^\/sl(?=\/)/, '') + location.hash); } catch (e) {} }
+  // Language package (2026-11-09): the address follows the language on every view — / for English, /sl/ for Slovenian
+  // (landing pages: /portfolio/<slug>/ ↔ /sl/portfolio/<slug>/, /news/ ↔ /sl/news/) — so a copied address, a bookmark or
+  // Back always opens the page in the language the visitor was reading, and the EN / SL switch is a real link to the other
+  // language's address (right-click → copy, middle-click → new tab). Only the site's own paths are touched. To remove: put
+  // landingLang() back (the LANDING-only replaceState: "/sl" + the path without it) and the two <button data-lang> elements in frame().
+  function langPath() {
+    var p = location.pathname; if (!/^\/(?:sl\/?)?(?:(?:portfolio|news)\/[a-z0-9-]+\/?|news\/?)?$/.test(p)) return;
+    var isSl = /^\/sl(?:\/|$)/.test(p), want = lang === 'sl'; if (isSl === want) return;
+    var np = langHref(lang, p);
+    try { history.replaceState(history.state, '', np + location.search + location.hash); state.navHref = location.href; } catch (e) {}
+  }
+  function langHref(l, p) { // the address of this view in language l (path only; the hash is added by the caller)
+    var rest = String(p == null ? location.pathname : p).replace(/^\/sl(?=\/|$)/, '') || '/';
+    return l === 'sl' ? '/sl' + (rest === '/' ? '/' : rest) : rest;
+  }
+  function siteUrl(hash) { return 'https://nacekepa.work/' + (lang === 'sl' ? 'sl/' : '') + (hash || ''); } // the public address of a view in the current language
+  function langLinkHash(l) { var h = (location.hash || '').slice(1).replace(/^(en|sl)-?/, ''); return h ? '#' + (l === 'en' ? 'en-' : '') + h : ''; } // the view part of the hash; the English link keeps the explicit #en- prefix, so opened in a new tab it stays English even for a reader whose saved language is Slovenian (/sl/ is always Slovenian)
   function hashPath() { var h = (location.hash || '').replace('#', ''); return h || START_VIEW; }
   var state = { send: 'idle', filter: 'all', step: 0, order: { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '' }, errors: {} };
   var app = document.getElementById('app');
@@ -465,7 +481,7 @@
         '<span><i>' + esc(ps.page) + '</i>' + pg + ' / ' + total + '</span><span><i>' + esc(x.tb.date) + '</i>' + esc(date) + '</span><span class="ps-tb__url"><i>' + esc(ps.online) + '</i>' + esc(url) + '</span>' +
         (qrOn() ? '<span class="ps-tb__qr">' + qrSvg('https://' + url, 40, t().qr.label.replace('{u}', 'https://' + url)) + '</span>' : '') + '</footer>'; // QR package (2026-11-03)
     };
-    var home = 'nacekepa.work/#' + lang + '-work';
+    var home = siteUrl('#work').replace('https://', ''); // Language package: the real language address
     if (state.ps.cover) {
       var cats = []; list.forEach(function (p) { if (cats.indexOf(cat(p)) < 0) cats.push(cat(p)); });
       out.push('<section class="ps-page ps-cover"><div class="ps-body"><div class="ps-cover__mark">' + logo() + '</div><p class="nk-label">' + esc(ps.label) + '</p>' +
@@ -636,7 +652,7 @@
   }
   function cmpHash(a) { return '#compare?s=' + (a || state.cmp).map(encodeURIComponent).join(','); }
   function cmpSync() { try { history.replaceState(history.state, '', cmpHash()); } catch (e) {} }
-  function cmpLink() { return 'https://nacekepa.work/#' + lang + '-' + cmpHash().slice(1); }
+  function cmpLink() { return siteUrl(cmpHash()); } // Language package (2026-11-09): /sl/#compare… instead of /#sl-compare…
   function cmpSet(a, focusSel) {
     state.cmp = a; cmpSync(); render(true);
     var f = focusSel && app.querySelector(focusSel); if (f) f.focus();
@@ -873,7 +889,7 @@
     });
     state.q = q; state.filter = c;
   }
-  function findLink() { return 'https://nacekepa.work/#' + lang + '-work' + findQuery(); }
+  function findLink() { return siteUrl('#work' + findQuery()); } // Language package (2026-11-09)
   function findSync() {
     var h = location.hash, m = /^#(en|sl)-?/.exec(h), want = '#' + (m ? m[1] + '-' : '') + 'work' + findQuery();
     if (h !== want) try { history.replaceState(history.state, '', want); } catch (e) {}
@@ -3350,7 +3366,7 @@
       '<div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div><div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>';
     var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="' + esc(x.aria.home) + '">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="' + esc(x.aria.main) + '">' +
       ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a href="#' + k + '"' + (p === k || ((p === 'project' || p === 'compare') && k === 'work') || (p === 'post' && k === 'news') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
-      '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '"><button type="button" data-lang="en" aria-pressed="' + (lang === 'en') + '">EN</button><button type="button" data-lang="sl" aria-pressed="' + (lang === 'sl') + '">SL</button></div>' + mnLink() + btn(ctaText(), '#order', 'primary', 'sm') + '</div></header>';
+      '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '">' + ['en', 'sl'].map(function (l) { return '<a href="' + esc(langHref(l) + langLinkHash(l)) + '" hreflang="' + l + '" lang="' + l + '" data-lang="' + l + '" aria-current="' + (lang === l) + '">' + l.toUpperCase() + '</a>'; }).join('') + '</div>' + mnLink() + btn(ctaText(), '#order', 'primary', 'sm') + '</div></header>';
     var idx = PAGES.indexOf(p === 'project' || p === 'compare' ? 'work' : p === 'post' ? 'news' : p) + 1;
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
@@ -3500,7 +3516,7 @@
     if (el.hasAttribute('data-sl-clear')) { slClear(); return; }
     if (el.hasAttribute('data-tb-copy')) { tbCopy(); return; }
     if (el.hasAttribute('data-find-clear')) { state.q = ''; var fq = document.getElementById('find-q'); fq.value = ''; findApply(); fq.focus(); return; }
-    if (el.dataset.lang) { lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); landingLang(); render(true); return; }
+    if (el.dataset.lang) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return; ev.preventDefault(); if (el.dataset.lang === lang) return; lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); langPath(); render(true); return; } // Language package: a real link, switched in place on a plain click
     if (el.dataset.filter) { // keep keyboard focus on the chip and announce how many sheets are shown
       state.filter = el.dataset.filter; render(true);
       var fc = app.querySelector('[data-filter="' + state.filter + '"]'); if (fc) fc.focus({ preventScroll: true });
@@ -3641,7 +3657,7 @@
     if ((ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') && !ev.shiftKey) { if (kbdStep(ev.key === 'ArrowRight' ? 1 : -1)) { ev.preventDefault(); return true; } return false; }
     if (ev.shiftKey || !ev.key || ev.key.length !== 1) return false;
     var c = ev.key.toLowerCase();
-    if (c === 'l') { lang = lang === 'en' ? 'sl' : 'en'; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); landingLang(); render(true); ev.preventDefault(); return true; }
+    if (c === 'l') { lang = lang === 'en' ? 'sl' : 'en'; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); langPath(); render(true); ev.preventDefault(); return true; }
     var to = KBD_GO[c]; if (!to || (to === 'news' && !NEWS.length) || (to === 'compare' && PROJECTS.length < 2)) return false;
     ev.preventDefault(); if (page() === to) window.scrollTo(0, 0); else location.hash = to; return true;
   }
@@ -3674,4 +3690,5 @@
   drLoad();
   state.navHref = location.href;
   render(true);
+  langPath(); // Language package: a returning Slovenian reader who opened / carries on at /sl/ (and the other way round)
 })();

@@ -14,7 +14,9 @@ npm run dev
 Open http://localhost:4321/.
 
 The site is a single page: `src/site/Site.astro` inlines the plain HTML/CSS/JS in `src/site/`. It is rendered twice —
-`src/pages/index.astro` (English, `/`) and `src/pages/sl/index.astro` (Slovenian, `/sl/`, starts in Slovenian):
+`src/pages/index.astro` (English, `/`) and `src/pages/sl/index.astro` (Slovenian, `/sl/`, starts in Slovenian). The address
+follows the language: switching to Slovenian moves the page to `/sl/` + the same section (and back), and the EN / SL switch
+is a plain link to the other language's address (`langPath()` in `app.js`):
 
 | File | What |
 | --- | --- |
@@ -93,6 +95,11 @@ Google link) and one row per page with its description length, Slovenian text an
 the quote estimate on `/#services`), print parameters (time / material estimate in the Part studio), the promotion banner,
 gift-card amounts, the FAQ, links and the services' turnaround + "What I need" / "What you get" lists (empty = the text built
 into the site). Empty numbers hide the matching feature on the site.
+
+**Quote:** the *Quote* tab writes a quote NK-O from the Settings prices (hours, printed parts, custom lines → A4 sheet, print /
+PDF, copy, e-mail; kept in the browser only). *From a brief* at its top takes a pasted enquiry (the e-mail or Telegram text, EN
+or SL) and pre-fills a new quote: client, e-mail, language, reference, one line per service and per printed part, with the
+weight, print time, material, rush and promotion the brief already states; what is missing is listed to fill in by hand.
 
 **Table:** the *Table* tab shows all projects as one spreadsheet (category, year, materials, featured, hidden): edit
 cells directly, tick rows to change them together, or copy the table to Excel and paste it back.

@@ -26,6 +26,74 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-09
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
+#news, #n-bambu-lab-x2d, #skills, #about, #contact, #compare, #studio, #gift, #mine, #order (all 4 steps on the local build in EN + SL,
+nothing sent), /admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in
+the cloud, as always), no horizontal scroll, no CSP violations, no broken images; every model / photo path in `projects.json` exists;
+EN ↔ SL key comparison of `content.js`: complete (only the intended plural forms differ); an English-word scan of every Slovenian view:
+clean. Live site from the laptop (`check-live.ps1`): `/`, `/sl/`, `/admin/`, `/news/`, feed, sitemap, a landing page all 200, an unknown
+address 404; the live inline-script hash equals the CSP hash; the live page is the 115ba42 build. Last Actions run (115ba42) succeeded.
+axe-core 4.10 (WCAG 2.1 AA + best practice) on #work EN light, #about SL dark: 0 violations; on the admin Quote tab: see the fixes.
+**Fixed:** (1) **Admin quote: the rush surcharge was applied to the whole subtotal** (hours, custom lines and file preparation included)
+while the price list, the public estimate (`qcCalc()`) and the tab's own label say "+25 % on printed parts" — the same job came out
+213,20 € in the admin and 148,92 € on the site; `qtCalc()` now adds the surcharge on the printed-part lines only (the sheet row reads
+"Rush surcharge on printed parts" / "Doplačilo za hitro izvedbo tiskanih delov"), and the admin quote now equals the public estimate to
+the cent (checked: 3 h CAD + 4 × PETG 40 g / 2 h, rush, promotion → 148,92 € in both). (2) Admin tabs: the counts ("Projects 29",
+"To do 116") sat at .75 opacity → 3.9:1 contrast (axe `color-contrast`, serious); opacity dropped, now 6.4:1. (Noticed, not changed:
+axe still reports two moderate best-practice items on the admin — no `<main>` landmark, no `<h1>`.)
+
+**Improvement — language package (`langPath()` … `langLinkHash()` in `app.js`, `.lang a` rules in `page.css`, README):** the address
+now follows the language on every view — `/#work` ↔ `/sl/#work`, `/portfolio/<slug>/` ↔ `/sl/portfolio/<slug>/`, `/news/` ↔
+`/sl/news/` — not only on landing pages as before: the EN / SL switch and the `L` shortcut move the path with `replaceState`, a
+returning reader whose saved language is Slovenian who opens `/` carries on at `/sl/`, so a copied address bar, a bookmark or a
+shared tab always opens the page in the language that was on screen (and Google's `/sl/` page gets the Slovenian visitors' links).
+The **EN / SL switch is now a pair of real links** (`<a href hreflang lang aria-current>` instead of buttons): a plain click still
+switches in place without a reload, Ctrl / Cmd / Shift / middle-click open the other language in a new tab, right-click copies the
+address; the English link keeps the explicit `#en-` prefix so it stays English even for a reader whose saved language is Slovenian.
+The links the site hands out follow: "Link to these results" on #work and the compare link are `https://nacekepa.work/sl/#work?q=…`
+/ `/sl/#compare?s=…` instead of `/#sl-work?q=…` (old `#sl-…` links keep working), the portfolio set's cover shows the same. Only the
+site's own paths are touched (`/`, `/sl/`, landing pages); the 404 page has its own script. Tested in Playwright (1280 light, 390
+dark): switch → `/sl/#work` + `<html lang="sl">` + Slovenian h1; compare / find links; Enter on the focused EN link; `/#en-work`
+stays English; landing page → `/sl/portfolio/famfive/` → moving on → `/sl/#work`; `/news/` with saved SL → `/sl/news/`; `L` toggles
+`/#n-…` ↔ `/sl/#n-…`; Ctrl-click opens `/#en-n-…` in a new tab with the original untouched; clicking the current language does
+nothing; dark-mode colours as the buttons had; axe 0 violations; full audit of every view: no errors, no overflow.
+*To remove:* see the comment above `langPath()` in `app.js`.
+
+**Innovation — Quote from a brief / "Ponudba iz povpraševanja" (admin tab "Quote" → fold "From a brief" at the top; `QB` …
+`qbAct()` in `admin.js`, `.qb-*` rules in `admin.css`):** Nace receives every enquiry as the text the order form builds (by e-mail
+from the Worker or on Telegram) and until now typed the quote from it by hand. Now he **pastes the whole message** and presses
+**"Fill the quote from the brief"**: `qbParse()` reads the brief's labels in both languages ("Services / Storitve", "What should it
+do? / Kaj naj izdelek počne?", "Quantity / Količina", "Deadline / Rok", "Material", "Your name / Ime", "Your email / E-pošta",
+the Worker's "Contact:" line and the `[NK-…]` code) and the hand-off lines of the tools inside the brief — the **parts list** (one
+printed-part line per item: name, material matched to Settings, weight per piece and machine hours per piece from the list's own
+estimate, copies), the **Part studio** sheet (name, material, weight, time, quantity) or the **estimate** breakdown (hours per
+service, the printed part with material / grams / hours / copies, post-processing hours, rush "+25 %", "with the promotion") —
+in the new 11-08 indented form and the older inline "a; b; c." form, with a sentence typed before a tool line kept as the brief.
+`qbFill()` starts a **new quote**: language of the quote = language of the brief, client, e-mail, reference (the first plain
+sentence of the brief, or the NK code), one **Hours** line per service (hours filled only when the estimate states them), one
+**Printed part** line per part (material = the part's, else the brief's "Material" answer; weight / hours only when the brief
+carries them), rush and discount ticked when the estimate says so, and the requested deadline as a quote note ("Requested
+deadline: 27/11/2026" / "Želeni rok: 27. 11. 2026"). The status line says what was taken and **what is still to fill** ("hours for 3D
+design & CAD; material for Lid"), the fold closes, and focus lands in the first empty field. Nothing is invented: no hours, grams or
+prices that the brief does not state; nothing leaves the browser (the fold says so). Unrecognised text → "Nothing recognised — paste
+the whole brief". Keyboard: textarea → Tab → Fill (Enter); the fold is a native `<details>` with the admin's ▸ / ▾ marker.
+- Tested with a mocked GitHub API (1280 light, 390 dark) on briefs produced by the site itself: EN parts list (Spacer PETG ×4,
+  Bracket PLA ×3, Lid no material ×6) + CAD + deadline + phone, wrapped like the Worker's e-mail → client, e-mail, English, reference
+  "Housing for a sensor board, snap-fit lid.", 1 Hours line (empty), 3 Printed-part lines (11 g / 0.75 h ×4, 522 g / 35.07 h ×3, Lid
+  3.55 h ×6 flagged "material for Lid"), note "Requested deadline: 27/11/2026", focus on the CAD hours; SL estimate (CAD 3 h + PETG
+  40 g / 2 h ×4, rush, first order) typed on the same line as a sentence → Slovenian quote, client, reference "Ohišje za senzor.",
+  CAD 3 h, PETG 40 g / 2 h ×4, rush + promotion ticked, total **148,92 €** = the public estimate; nonsense → the message; Fill
+  disabled until text is typed; axe on the tab before / after: no new violations; no overflow at 390 px; no errors.
+*To remove:* see the comment above `QB` in `admin.js`.
+
+**Ideas for next time** (added to the list below)
+- Admin: "From a brief" — accept the brief's attachments list (file names) as a note and the phone as a "call back" reminder on the saved quote.
+- Admin: quote status (sent / accepted / declined) + "answered" mark on the brief, monthly total — browser-only.
+- Public: step 4 of the order form — "Copy for the studio" variant of the brief that is one line per field (the parser already
+  reads both forms; a stricter one would make the import exact for very long notes).
+
 ## 2026-11-08 (second run — Nace: "preuredi z unslop skillom")
 
 **Unslop pass over the whole site** (skill from github.com/heydamir/unslop). Audit verdict: mostly designed, light slop — one tinted
@@ -2027,6 +2095,12 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: plate layout — "Print the plates" (one NK-N plate per A4 page with the legend).
 - Public: plate layout — hatch patterns per line so a mixed plate reads without the numbers.
 - Worker: raise `MAX_SUMMARY` (6000) so a long parts-list brief is never cut — Nace's call, the daily run does not touch the Worker.
+- (Built 2026-11-09: Quote from a brief in the admin Quote tab — paste the e-mailed / Telegram brief → new quote pre-filled with client,
+  language, reference, hours lines, printed-part lines from the parts list / Part studio / estimate, rush, promotion, deadline note;
+  language package as the improvement — the address follows the language on every view, the EN / SL switch is a real link.)
+- Admin: "From a brief" — attachments list and phone from the brief on the quote; a "quote sent" mark per brief.
+- Admin: quote status (sent / accepted / declined) and a monthly total on the saved quotes, browser-only.
+- Public: order step 4 — a one-line-per-field "Copy for the studio" brief variant for an exact import.
 
 ## 2026-10-03 (second run)
 

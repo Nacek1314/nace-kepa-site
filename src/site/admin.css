@@ -60,7 +60,7 @@ body { padding-inline: 16px; padding-block: 16px; }
 .ad-tabs button { font: 600 14px/20px var(--font-sans); padding: var(--space-2); background: var(--paper-raised); color: var(--ink-muted); border: 0; cursor: pointer; }
 .ad-tabs button + button { border-left: 1px solid var(--line-strong); }
 .ad-tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
-.ad-tabs button span { font: 12px var(--font-mono); opacity: .75; margin-left: 4px; }
+.ad-tabs button span { font: 12px var(--font-mono); margin-left: 4px; } /* contrast fix 2026-11-09: the .75 opacity put the counts under 4.5:1 */
 .ad-tabs button:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
 .ad-list { grid-template-rows: auto auto minmax(0, 1fr); }
 
@@ -339,6 +339,15 @@ div.pv-fb { display: grid; gap: var(--space-4); }
 .qt-notes { margin: 0; padding-left: 1.2em; font-size: 13px; line-height: 20px; }
 .qt-vat { font-size: 13px; line-height: 20px; color: var(--ink-muted); }
 .qt-foot { display: flex; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; font: 11px/16px var(--font-mono); color: var(--ink-muted); border-top: 1px solid var(--line-strong); padding-top: var(--space-3); }
+/* Quote from a brief (2026-11-09) */
+.qb { margin-bottom: var(--space-4); }
+.qb-sum { cursor: pointer; list-style: none; display: flex; align-items: center; gap: var(--space-2); }
+.qb-sum::-webkit-details-marker { display: none; }
+.qb-sum::before { content: '▸'; font-family: var(--font-mono); color: var(--ink-muted); }
+.qb[open] > .qb-sum::before { content: '▾'; }
+.qb-sum:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+.qb-text { font: 13px/20px var(--font-mono); min-height: 120px; resize: vertical; }
+.qb-msg { margin: 0 0 var(--space-4); }
 @media (max-width: 720px) { .qt-sheet { padding: var(--space-4); } .qt-table .qt-n { white-space: normal; } .qt-table td:last-child { white-space: nowrap; } .qt-line__k { flex-basis: 100%; } }
 @media print {
   html.qt-print body { padding: 0; }

@@ -2031,6 +2031,7 @@ root.addEventListener('input', (e) => {
   if (e.target.id === 'q') { S.query = e.target.value; render(); return; }
   if (e.target.dataset.set != null && e.target.tagName !== 'SELECT') { stInput(e.target); return; }
   if (e.target.dataset.qt != null || e.target.dataset.qtL != null) { qtInput(e.target); return; } // Quote tab (2026-11-04)
+  if (e.target.dataset.qb != null) { QB.text = e.target.value; QB.msg = ''; root.querySelectorAll('[data-qb-act]').forEach((b) => { b.disabled = !QB.text.trim(); }); return; } // Quote from a brief (2026-11-09)
   if (e.target.dataset.tr != null) { trInput(e.target); return; }
   if (e.target.dataset.tb != null && e.target.type !== 'checkbox') { tbInput(e.target); return; }
   if (e.target.dataset.tbB != null) { TB.bulk[e.target.dataset.tbB] = e.target.value; return; }
@@ -2141,6 +2142,7 @@ root.addEventListener('click', (e) => {
   if (b.dataset.todoF != null) { S.todoF = b.dataset.todoF; render(); return; }
   if (b.dataset.setAct) { stAct(b); return; }
   if (b.dataset.qtAct) { qtAct(b); return; } // Quote tab (2026-11-04)
+  if (b.dataset.qbAct) { qbAct(b); return; } // Quote from a brief (2026-11-09)
   if (b.dataset.ntNew) { ntNew(b.dataset.ntNew); return; }
   if (b.dataset.ntIns) { ntInsert(b.dataset.ntF, b.dataset.ntIns); return; }
   if (b.dataset.ovTodo != null) { S.tab = 'todo'; S.todoF = b.dataset.ovTodo; render(); return; }
@@ -2214,8 +2216,8 @@ const QT_KEY = 'nk-admin-quotes', QT_MAX = 30;
 const isQt = () => S.tab === 'quote';
 const QT_SVC = { cad: { en: '3D design & CAD', sl: '3D modeliranje in CAD' }, iot: { en: 'Embedded systems & IoT', sl: 'Vgrajeni sistemi in IoT' }, build: { en: 'Full custom builds', sl: 'Celoten izdelek po meri' }, post: { en: 'Post-processing', sl: 'Dodelava' } }; // = SERVICES[].title in content.js
 const QT_T = {
-  en: { title: 'QUOTE', label: 'Quote · NK-O', no: 'Quote no.', date: 'Date', valid: 'Valid until', client: 'Client', ref: 'Reference', item: 'Item', qty: 'Qty', unit: 'Unit', amount: 'Amount', subtotal: 'Subtotal', rush: 'Rush surcharge', disc: 'Discount', total: 'Total · excl. VAT', setup: 'File preparation', print: '3D printing', h: 'h', g: 'g', notes: 'Notes', prepared: 'Prepared by', studio: 'Nace Kepa · Engineering Studio', loc: 'Škofja Loka, Slovenia', sheet: 'Sheet', minPart: 'Printed parts are charged at least the minimum per part.', minOrder: 'The minimum order amount applies.', minHours: 'Hourly work is charged for at least {n} h.', subject: 'Quote {no} — Nace Kepa' },
-  sl: { title: 'PONUDBA', label: 'Ponudba · NK-O', no: 'Št. ponudbe', date: 'Datum', valid: 'Velja do', client: 'Naročnik', ref: 'Sklic', item: 'Postavka', qty: 'Kol.', unit: 'Enota', amount: 'Znesek', subtotal: 'Vmesni seštevek', rush: 'Doplačilo za hitro izvedbo', disc: 'Popust', total: 'Skupaj · brez DDV', setup: 'Priprava datotek', print: '3D tisk', h: 'h', g: 'g', notes: 'Opombe', prepared: 'Pripravil', studio: 'Nace Kepa · Inženirski studio', loc: 'Škofja Loka, Slovenija', sheet: 'List', minPart: 'Tiskani deli se obračunajo najmanj po najnižjem znesku na del.', minOrder: 'Upošteva se najnižji znesek naročila.', minHours: 'Urno delo se obračuna za najmanj {n} h.', subject: 'Ponudba {no} — Nace Kepa' }
+  en: { title: 'QUOTE', label: 'Quote · NK-O', no: 'Quote no.', date: 'Date', valid: 'Valid until', client: 'Client', ref: 'Reference', item: 'Item', qty: 'Qty', unit: 'Unit', amount: 'Amount', subtotal: 'Subtotal', rush: 'Rush surcharge on printed parts', disc: 'Discount', total: 'Total · excl. VAT', setup: 'File preparation', print: '3D printing', h: 'h', g: 'g', notes: 'Notes', prepared: 'Prepared by', studio: 'Nace Kepa · Engineering Studio', loc: 'Škofja Loka, Slovenia', sheet: 'Sheet', minPart: 'Printed parts are charged at least the minimum per part.', minOrder: 'The minimum order amount applies.', minHours: 'Hourly work is charged for at least {n} h.', subject: 'Quote {no} — Nace Kepa' },
+  sl: { title: 'PONUDBA', label: 'Ponudba · NK-O', no: 'Št. ponudbe', date: 'Datum', valid: 'Velja do', client: 'Naročnik', ref: 'Sklic', item: 'Postavka', qty: 'Kol.', unit: 'Enota', amount: 'Znesek', subtotal: 'Vmesni seštevek', rush: 'Doplačilo za hitro izvedbo tiskanih delov', disc: 'Popust', total: 'Skupaj · brez DDV', setup: 'Priprava datotek', print: '3D tisk', h: 'h', g: 'g', notes: 'Opombe', prepared: 'Pripravil', studio: 'Nace Kepa · Inženirski studio', loc: 'Škofja Loka, Slovenija', sheet: 'List', minPart: 'Tiskani deli se obračunajo najmanj po najnižjem znesku na del.', minOrder: 'Upošteva se najnižji znesek naročila.', minHours: 'Urno delo se obračuna za najmanj {n} h.', subject: 'Ponudba {no} — Nace Kepa' }
 };
 const QT = { q: null, saved: [], msg: '', confirm: null };
 function qtBlank() { return { no: '', date: today(), valid: '', lang: 'sl', client: '', email: '', ref: '', lines: [], setup: true, rush: false, promo: false, promoPct: '', note: '' }; }
@@ -2243,7 +2245,7 @@ function qtPromo() { // the promotion as the site shows it: pct > 0 and not past
 function qtCalc(q) { // same rules as qcCalc() on the site: minimum hours, minimum per printed part, setup once, rush, minimum order, promotion
   const P = S.settings ? S.settings.pricing : null, l = q.lang, x = QT_T[l], rows = [], notes = [];
   if (!P) return { rows, notes, sub: 0, rush: 0, disc: 0, total: 0 };
-  let sub = 0, anyPrint = false, minH = false;
+  let sub = 0, printSub = 0, anyPrint = false, minH = false; // printSub: what the rush surcharge applies to (printed parts only, like qcCalc() on the site)
   q.lines.forEach((ln) => {
     if (ln.t === 'hours') {
       let h = qtNum(ln.h); const rate = +P.hourly[ln.svc] || 0; if (!h || !rate) return;
@@ -2253,7 +2255,7 @@ function qtCalc(q) { // same rules as qcCalc() on the site: minimum hours, minim
       const m = qtMat(ln.mat), g = qtNum(ln.g), h = qtNum(ln.h), qty = Math.max(1, Math.round(qtNum(ln.qty) || 1)); if (!g && !h) return;
       let part = g * (m ? +m.perGram : 0) + h * (+P.print.machineHour || 0);
       if (+P.print.minPart > 0 && part < +P.print.minPart) { part = +P.print.minPart; notes.push(x.minPart); }
-      const a = part * qty; anyPrint = true;
+      const a = part * qty; anyPrint = true; printSub += a;
       rows.push({ d: x.print + (ln.desc ? ' — ' + ln.desc : '') + ' · ' + (m ? m.name : '') + (g ? ' · ' + g + ' ' + x.g : '') + (h ? ' · ' + h + ' ' + x.h : ''), qty: String(qty), unit: qtMoney(part, l), a }); sub += a;
     } else if (ln.t === 'custom') {
       const u = qtNum(ln.amt), qty = Math.max(1, Math.round(qtNum(ln.qty) || 1)); if (!u || !ln.desc.trim()) return;
@@ -2262,7 +2264,7 @@ function qtCalc(q) { // same rules as qcCalc() on the site: minimum hours, minim
   });
   if (minH) notes.push(x.minHours.replace('{n}', P.minHours));
   if (anyPrint && q.setup && +P.print.setup > 0) { rows.push({ d: x.setup, qty: '1', unit: qtMoney(+P.print.setup, l), a: +P.print.setup }); sub += +P.print.setup; }
-  let rush = 0; if (q.rush && +P.print.rushPct > 0 && anyPrint) rush = Math.round(sub * +P.print.rushPct) / 100;
+  let rush = 0; if (q.rush && +P.print.rushPct > 0 && anyPrint) rush = Math.round(printSub * +P.print.rushPct) / 100; // fixed 2026-11-09: was the whole subtotal
   let total = sub + rush;
   if (+P.print.minOrder > 0 && rows.length && total < +P.print.minOrder) { total = +P.print.minOrder; notes.push(x.minOrder); }
   const pct = q.promo ? (qtNum(q.promoPct) || (qtPromo() ? qtPromo().pct : 0)) : 0;
@@ -2324,6 +2326,7 @@ function qtView() {
   return `<div class="ad-editor qt">
     <div class="ad-editor__head"><div><p class="nk-label">Quote · NK-O</p><h2 class="sub">Quote composer</h2></div><div class="qt-headact"><button type="button" class="nk-btn nk-btn--sm" data-qt-act="new">+ New quote</button></div></div>
     ${!P || !(+P.hourly.cad > 0 || +P.hourly.iot > 0 || +P.hourly.build > 0 || +P.print.machineHour > 0 || qtMats().length) ? '<p class="ad-bar err" role="alert">No prices in Settings yet — fill in Settings › Prices first; custom lines still work.</p>' : ''}
+    ${qbBox()}
     <fieldset class="ad-sec qt-form"><legend class="nk-label">Quote</legend><div class="form form-3">
       ${fld('qt-no', 'Quote no.', `<input class="nk-input" id="qt-no" data-qt="no" value="${esc(q.no)}">`)}
       ${fld('qt-date', 'Date', `<input class="nk-input" id="qt-date" data-qt="date" type="date" value="${esc(q.date)}">`)}
@@ -2391,6 +2394,115 @@ function qtAct(b) {
   if (/^add-/.test(act)) root.querySelector('.qt-lines li:last-child input, .qt-lines li:last-child select')?.focus();
   if (act === 'new') document.getElementById('qt-client')?.focus();
   if (act === 'rm') root.querySelector('[data-qt-act="add-hours"]')?.focus();
+}
+
+// ---------- Quote from a brief (2026-11-09): paste the enquiry, get the quote pre-filled ----------
+// A brief arrives by e-mail or Telegram as the text the order form builds (briefText() in app.js: "Services: …",
+// "What should it do? …", "Quantity: …", "Deadline: …", "Material: …", "Your name: …", "Your email: …" — or the Slovenian
+// labels — plus the hand-off lines of the tools: "Parts list:" items, a "Part studio:" spec, an "Estimate:" breakdown).
+// qbParse() reads those labels in both languages, qbFill() turns them into a new quote: language of the quote, client,
+// e-mail, reference (the first plain sentence of the brief), one Hours line per service (hours left for Nace), one Printed
+// part line per parts-list item / studio sheet / estimate row (material matched to Settings, weight and machine hours taken
+// when the brief carries them, copies from the quantity), rush and promotion when the estimate says so, and the requested
+// deadline as a note. Nothing is priced that the brief does not state — empty fields are listed in the message so Nace
+// fills them. Self-contained: remove QB … qbAct(), the qbBox() call in qtView(), the data-qb lines in the input / click
+// handlers and the .qb-* rules in admin.css.
+const QB = { text: '', msg: '', open: true };
+const QB_L = { // the brief's labels per language (= T.<lang> in content.js); "?" labels carry the answer on the same line
+  en: { services: 'Services', what: 'What should it do?', qty: 'Quantity', deadline: 'Deadline', files: 'Do you have files?', mat: 'Material', name: 'Your name', email: 'Your email', phone: 'Phone', reply: 'How should I reply?', note: 'Anything else?', parts: 'Parts list', studio: 'Part studio', est: 'Estimate', ref: ['Reference projects', 'Similar to', 'Compared sheets'], promo: 'with the promotion', time: 'Print time', part: 'Part', postp: 'Post-processing', setup: 'File preparation', dl: 'Requested deadline' },
+  sl: { services: 'Storitve', what: 'Kaj naj izdelek počne?', qty: 'Količina', deadline: 'Rok', files: 'Imate datoteke?', mat: 'Material', name: 'Ime', email: 'E-pošta', phone: 'Telefon', reply: 'Kako naj odgovorim?', note: 'Še kaj?', parts: 'Kosovnica', studio: 'Studio dela', est: 'Ocena', ref: ['Referenčni projekti', 'Podobno kot', 'Primerjani listi'], promo: 'z akcijo', time: 'Čas tiska', part: 'Del', postp: 'Obdelava po tisku', setup: 'Priprava datoteke', dl: 'Želeni rok' }
+};
+const QB_SVC = { cad: ['3D design & CAD', '3D modeliranje in CAD'], print: ['3D printing & prototyping', '3D tisk in prototipi'], iot: ['Embedded systems & IoT', 'Vgrajeni sistemi in IoT'], build: ['Full custom builds', 'Celoten izdelek po meri'], post: ['Post-processing', 'Obdelava po tisku'] }; // = SERVICES[].title + pc.post in content.js
+function qbNum(s) { // "3,5" / "1.234" (sl) and "3.5" / "1,234" (en) → number; a lone separator before exactly 3 digits groups thousands
+  let v = String(s ?? '').trim(); if (!v) return 0;
+  if (/[.,]\d{3}$/.test(v) && !/[.,].*[.,]/.test(v)) v = v.replace(/[.,]/, '');
+  else if (/,/.test(v) && /\./.test(v)) v = v.lastIndexOf(',') > v.lastIndexOf('.') ? v.replace(/\./g, '').replace(',', '.') : v.replace(/,/g, '');
+  else v = v.replace(',', '.');
+  const n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0;
+}
+function qbMatKey(s) { // the Settings material named in a piece of brief text ("PETG", "ABS / ASA" → abs, "Nylon / PA-CF" → pacf, "TPU / flexible" → tpu)
+  const ms = qtMats().slice().sort((a, b) => b.name.length - a.name.length), up = ' ' + String(s || '').toUpperCase() + ' ';
+  for (const m of ms) if (up.indexOf(' ' + m.name.toUpperCase() + ' ') >= 0) return m.key;
+  for (const m of ms) { const w = m.name.toUpperCase().split(/[\s/]+/)[0]; if (w.length >= 2 && new RegExp('(^|[^A-Z0-9-])' + w.replace(/[-]/g, '\\-') + '(?![A-Z0-9])').test(up)) return m.key; }
+  return '';
+}
+function qbItems(rest, lines, i) { // the items of a tool line: inline "a; b; c." or the indented "– a" lines that follow
+  const out = []; let j = i;
+  if (rest.trim()) out.push(...rest.replace(/\.$/, '').split('; '));
+  while (j + 1 < lines.length && /^\s*[–-]\s+/.test(lines[j + 1])) { j++; out.push(lines[j].replace(/^\s*[–-]\s+/, '').trim()); }
+  return { items: out.map((s) => s.trim()).filter(Boolean), next: j };
+}
+function qbParse(raw) {
+  const text = String(raw || '').replace(/\r/g, ''), lines = text.split('\n').map((l) => l.replace(/\s+$/, ''));
+  const lang = /(^|\n)\s*(Ime|E-pošta|Storitve):/.test(text) ? 'sl' : 'en', L = QB_L[lang], o = { lang, services: [], what: [], parts: [], studio: null, est: null, ref: '', promo: false, rush: false, qty: 0, deadline: '', mat: '', client: '', email: '', phone: '', found: [], post: 0 };
+  const labelRe = (lab) => new RegExp('^\\s*' + lab.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + (/\?$/.test(lab) ? '\\s*' : ':\\s*') + '(.*)$');
+  const KEYS = ['services', 'what', 'qty', 'deadline', 'files', 'mat', 'name', 'email', 'phone', 'reply', 'note'];
+  const svcKey = (s) => Object.keys(QB_SVC).find((k) => QB_SVC[k].some((t) => s.toLowerCase().indexOf(t.toLowerCase()) >= 0));
+  let inWhat = false;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i]; if (!l.trim()) { if (inWhat && o.what.length) inWhat = false; continue; }
+    let k = null, rest = '';
+    for (const key of KEYS) { const m = labelRe(L[key]).exec(l); if (m) { k = key; rest = m[1]; break; } }
+    if (k === 'what') { inWhat = true; if (rest.trim()) o.what.push(rest.trim()); continue; }
+    if (k && k !== 'mat') inWhat = false; // "Material:" is also a row inside a Part studio spec — handled below while inWhat
+    if (inWhat && !k) {
+      const tool = (lab) => { const m = new RegExp('^\\s*(?:(.*?[.!?])\\s+)?' + lab + ':\\s*(.*)$').exec(l); if (m && m[1]) o.what.push(m[1]); return m ? m[2] : null; }; // a sentence typed before the tool line stays in the brief
+      let r;
+      if ((r = tool(L.parts)) != null) { const it = qbItems(r, lines, i); i = it.next; it.items.forEach((s) => { const m = /^\d+\.\s*(?:(.+?) — )?([\d.,]+) × ([\d.,]+) × ([\d.,]+) mm(.*)$/.exec(s); if (!m) return; const tail = m[5] || '', q = /· × (\d+)/.exec(tail), g = /≈ ([\d.,]+) g/.exec(tail), h = /≈ ([\d.,]+) h/.exec(tail), mat = tail.split(' · ').map((x) => x.trim()).filter(Boolean)[0]; const qty = q ? +q[1] : 1; o.parts.push({ name: (m[1] || '').trim(), size: `${m[2]} × ${m[3]} × ${m[4]} mm`, qty, mat: qbMatKey(mat && !/^×/.test(mat) ? mat : ''), g: g ? qbNum(g[1]) : 0, h: h ? qbNum(h[1]) / qty : 0 }); }); o.found.push('parts'); continue; }
+      if ((r = tool(L.studio)) != null) { const it = qbItems(r, lines, i); i = it.next; const st = { name: '', qty: 1, mat: '', g: 0, h: 0 }; it.items.forEach((s) => { let m; if ((m = new RegExp('^' + L.part + ': (.*)$').exec(s))) st.name = m[1]; else if ((m = new RegExp('^' + L.qty + ': (\\d+)$').exec(s))) st.qty = +m[1]; else if ((m = /^[^:]+: ≈ ([\d.,]+) g (.+)$/.exec(s))) { st.g = qbNum(m[1]); st.mat = qbMatKey(m[2]); } else if ((m = new RegExp('^' + L.time + ': ≈ ([\\d.,]+) h').exec(s))) st.h = qbNum(m[1]); else if ((m = new RegExp('^' + L.mat + ': (.*)$').exec(s)) && !st.mat) st.mat = qbMatKey(m[1]); }); o.studio = st; o.found.push('studio'); continue; }
+      if ((r = tool(L.est)) != null) { const it = qbItems(r, lines, i); i = it.next; const est = { hours: [], print: null, post: 0 }; if ((r + ' ' + it.items.join(' ')).indexOf(L.promo) >= 0) o.promo = true; it.items.map((s) => s.replace(/ → .*$/, '')).forEach((s) => { const k2 = svcKey(s), h = /([\d.,]+) h/.exec(s); if (k2 === 'print') { const g = /([\d.,]+) g/.exec(s), q = /× (\d+)/.exec(s), ru = /\+(\d+) %/.exec(s); est.print = { mat: qbMatKey(s.split('·')[1] || ''), g: g ? qbNum(g[1]) : 0, h: h ? qbNum(h[1]) : 0, qty: q ? +q[1] : 1 }; if (ru) o.rush = true; } else if (k2 === 'post' && h) est.post = qbNum(h[1]); else if (k2 && h) est.hours.push({ svc: k2, h: qbNum(h[1]) }); }); o.est = est; o.found.push('est'); continue; }
+      const refLab = L.ref.find((lab) => l.trim().indexOf(lab + ':') === 0); if (refLab) { o.ref = o.ref || l.trim().slice(refLab.length + 1).split(';')[0].trim(); continue; }
+      o.what.push(l.trim()); continue;
+    }
+    if (!k) { const em = !o.email && /^\s*Contact:\s*(\S+@\S+)/.exec(l); if (em) o.email = em[1]; continue; }
+    const v = rest.trim();
+    if (k === 'services') { v.split(/,\s*/).forEach((s) => { const key = svcKey(s); if (key && key !== 'post' && o.services.indexOf(key) < 0) o.services.push(key); }); }
+    else if (k === 'qty') o.qty = Math.round(qbNum(v));
+    else if (k === 'deadline') o.deadline = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '';
+    else if (k === 'mat') o.mat = qbMatKey(v);
+    else if (k === 'name') o.client = v;
+    else if (k === 'email') { const em = /\S+@\S+/.exec(v); o.email = em ? em[0] : ''; }
+    else if (k === 'phone') o.phone = v;
+    if (k && o.found.indexOf(k) < 0 && v) o.found.push(k);
+  }
+  if (!o.ref) { const plain = o.what.find((w) => !/^[^:]{2,40}:/.test(w) && w.length > 3); if (plain) o.ref = plain.length > 80 ? plain.slice(0, 77).replace(/\s+\S*$/, '') + '…' : plain; }
+  if (!o.ref) { const code = /\[(NK-[A-Z0-9]{4,8})\]/.exec(text); if (code) o.ref = code[1]; }
+  return o;
+}
+function qbFill() {
+  const o = qbParse(QB.text), q = qtBlank(), todo = [], got = [];
+  if (!o.found.length && !o.email && !o.what.length) { QB.msg = 'Nothing recognised — paste the whole brief (the text of the e-mail or Telegram message).'; render(); return; }
+  q.lang = o.lang; q.no = qtNextNo(q.date); q.client = o.client; q.email = o.email; q.ref = o.ref; q.rush = o.rush; q.promo = o.promo;
+  if (o.client) got.push(o.client); if (o.email) got.push(o.email); got.push(o.lang === 'sl' ? 'quote in Slovenian' : 'quote in English');
+  const hours = {}; (o.est ? o.est.hours : []).forEach((h) => { hours[h.svc] = h.h; });
+  o.services.filter((s) => s !== 'print').forEach((s) => { q.lines.push({ t: 'hours', svc: s, h: hours[s] ? String(hours[s]) : '', desc: '' }); if (!hours[s]) todo.push('hours for ' + QT_SVC[s].en); });
+  if (o.est && o.est.post) q.lines.push({ t: 'hours', svc: 'post', h: String(o.est.post), desc: '' });
+  const partLine = (p, src) => { q.lines.push({ t: 'print', mat: p.mat || o.mat || (qtMats()[0] || {}).key || '', g: p.g ? String(Math.round(p.g)) : '', h: p.h ? String(Math.round(p.h * 100) / 100) : '', qty: String(Math.max(1, p.qty || 1)), desc: p.name || (p.size || '') }); if (!p.g && !p.h) todo.push('weight and print time for ' + (p.name || p.size || 'the printed part')); else if (!p.mat && !o.mat) todo.push('material for ' + (p.name || p.size || 'the printed part')); };
+  if (o.parts.length) { o.parts.forEach((p) => partLine(p)); got.push(o.parts.length + (o.parts.length === 1 ? ' part from the parts list' : ' parts from the parts list')); }
+  else if (o.studio) { partLine(o.studio); got.push('the Part studio sheet'); }
+  else if (o.est && o.est.print) { partLine(o.est.print); got.push('the printed part of the estimate'); }
+  else if (o.services.indexOf('print') >= 0) { partLine({ name: '', qty: o.qty || 1, mat: o.mat, g: 0, h: 0 }); }
+  if (o.services.length) got.push(o.services.length + (o.services.length === 1 ? ' service' : ' services'));
+  if (o.rush) got.push('rush'); if (o.promo) got.push('promotion');
+  if (o.deadline) { q.note = QB_L[o.lang].dl + ': ' + qtDate(o.deadline, o.lang); got.push('deadline as a note'); }
+  if (!o.client) todo.push('the client'); if (!q.lines.length) todo.push('the lines (no service recognised)');
+  QT.q = q; QT.confirm = null; QT.msg = '';
+  QB.msg = 'New quote filled from the brief — ' + got.join(' · ') + '.' + (todo.length ? ' Still to fill: ' + todo.join('; ') + '.' : ' Check the lines and print.');
+  QB.open = false;
+  render();
+  const first = root.querySelector('.qt-lines input[value=""]:not([type="number"]), .qt-lines input[type="number"][value=""]') || document.getElementById('qt-client');
+  if (first) first.focus();
+}
+function qbBox() {
+  return `<details class="ad-sec qb"${QB.open ? ' open' : ''} id="qb"><summary class="nk-label qb-sum">From a brief</summary>
+    <p class="ad-small">Paste the enquiry as it arrived (the e-mail or the Telegram message, EN or SL). The quote below is filled with the client, the services, the printed parts and what the brief already says about weight, print time, material and deadline — the rest stays empty for you.</p>
+    ${fld('qb-text', 'The brief', `<textarea class="nk-input qb-text" id="qb-text" data-qb="text" rows="6" spellcheck="false" placeholder="Services: 3D printing & prototyping&#10;What should it do? …&#10;Quantity: 4&#10;Your name: …">${esc(QB.text)}</textarea>`, 'Only read in this browser — nothing is sent anywhere.', true)}
+    <p class="qt-add"><button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-qb-act="fill"${QB.text.trim() ? '' : ' disabled'}>Fill the quote from the brief</button><button type="button" class="nk-btn nk-btn--sm" data-qb-act="clear"${QB.text.trim() ? '' : ' disabled'}>Clear</button></p>
+  </details>${QB.msg ? `<p class="ad-bar qb-msg" role="status" aria-live="polite">${esc(QB.msg)}</p>` : ''}`;
+}
+function qbAct(b) {
+  if (b.dataset.qbAct === 'fill') { qbFill(); return; }
+  if (b.dataset.qbAct === 'clear') { QB.text = ''; QB.msg = ''; QB.open = true; render(); document.getElementById('qb-text')?.focus(); }
 }
 
 // ---------- start ----------
