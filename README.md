@@ -41,6 +41,8 @@ alone from its address (`#services?tool=prices`) or its "Print this tool" button
 
 `#services?tool=parts` ("Parts list", sheet **NK-L**) takes several different parts — size, material, quantity — and gives each line the fit check,
 plates, weight, time and price, totals them and hands the list to the order form (`bmBox()` in `src/site/app.js`; kept in the browser, localStorage `nk-parts`).
+"From your files" under the list takes several STL / 3MF / OBJ files at once and adds one line per file — bounding box, and the mesh's own
+volume for weight, time and price — read in the browser like the file check, nothing uploaded (`bmFiles()`).
 Under the list, **Plate layout NK-N** packs the whole order on the X2D plates (maximal-rectangles nesting with 90° turns) and draws one top
 view per plate; the NK-L sheet, the copied text and the brief carry the mixed plate count (`pnNest()` … `pnInner()` in `src/site/app.js`).
 

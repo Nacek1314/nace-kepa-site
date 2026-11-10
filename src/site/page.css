@@ -1206,10 +1206,10 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 .bm-rows { list-style: none; margin: 0; padding: 0; display: grid; }
 .bm-row { padding: var(--space-3) 0; border-bottom: 1px solid var(--line); }
 .bm-n { align-self: center; padding-bottom: 0; }
-.bm-cell { display: grid; gap: var(--space-1); min-width: 0; }
+.bm-cell { position: relative; display: grid; gap: var(--space-1); min-width: 0; }
 .bm-cell .nk-input { height: 40px; padding: 0 var(--space-2); min-width: 0; width: 100%; }
 .bm-cell select.nk-input { padding-right: var(--space-5); }
-.bm-k { display: none; font: 500 11px/16px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); }
+.bm-k { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; font: 500 11px/16px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); } /* visually hidden on desktop (the header row carries the column names), never display: none — the label must still name its input (2026-11-10) */
 .bm-rm { height: 40px; width: 100%; min-width: 2em; padding: 0; background: none; border: 1px solid var(--line-strong); color: var(--ink-muted); font: 18px/1 var(--font-mono); cursor: pointer; }
 .bm-rm:hover { color: var(--redline); border-color: var(--redline); }
 .bm-rm:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
@@ -1234,7 +1234,7 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 @media (max-width: 1000px) { .bm-grid { grid-template-columns: 1fr; } }
 @media (max-width: 720px) {
   .bm-head { display: none; }
-  .bm-k { display: block; }
+  .bm-k { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; white-space: normal; }
   .bm-row, .bm-list--nomat .bm-row { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
   .bm-n { display: none; }
   .bm-name { grid-column: 1 / 3; grid-row: 1; }
@@ -1246,7 +1246,7 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 @media print {
   .bm-list { background: none; }
   .bm-head { display: none; }
-  .bm-k { display: block; }
+  .bm-k { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; white-space: normal; }
   .bm-foot, .bm-rm, .bm-privacy, .bm-sheet .st-act, .bm-sheet .share-msg { display: none !important; }
   .bm-row { break-inside: avoid; }
   .bm-cell .nk-input { height: 32px; font-size: 13px; }
@@ -1287,3 +1287,27 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 .pn-note { margin: 0; }
 @media (max-width: 480px) { .pn { padding: var(--space-4); } .pn-plates { grid-template-columns: 1fr; } }
 @media print { .pn { break-inside: auto; border: 0; padding: 0; background: none; } .pn-plate, .pn-legend li { break-inside: avoid; } .pn-more { display: none; } .pn-plates { grid-template-columns: repeat(3, 1fr); } }
+/* Files → parts list (2026-11-10, bmDrop() / bmFiles() in app.js): several STL / 3MF / OBJ files → one line per file */
+.bm-drop { display: grid; gap: var(--space-2); }
+.bm-drop > .nk-label { padding-bottom: 0; }
+.bm-drop__zone { position: relative; display: grid; gap: var(--space-1); justify-items: center; text-align: center; padding: var(--space-5) var(--space-4); border: 1.5px dashed var(--line-strong); background: var(--paper); cursor: pointer; }
+.bm-drop__zone:hover, .bm-drop.is-over .bm-drop__zone { border-color: var(--redline); background: var(--paper-sunk); }
+.bm-drop__zone:focus-within { outline: 2px solid var(--redline); outline-offset: 3px; }
+.bm-drop__zone:has(.bm-drop__file:disabled) { cursor: default; opacity: .6; }
+.bm-drop__t { font-weight: 500; font-size: 16px; }
+.bm-drop__t::before { content: "+ "; color: var(--redline); }
+.bm-drop__h { font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; color: var(--ink-muted); max-width: 40em; }
+.bm-drop__file { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.bm-drop__file:disabled { cursor: default; }
+.bm-drop__msg { margin: 0; overflow-wrap: anywhere; }
+.bm-drop__msg:empty { display: none; }
+.bm-drop__note { margin: 0; border-top: 0; padding-top: 0; }
+@media print { .bm-drop { display: none !important; } }
+/* Your files (2026-11-10, yfBox() in app.js): order step 4 + the sent screen — where the client's 3D files go */
+.yf { display: grid; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--line-strong); border-left: 3px solid var(--redline); background: var(--paper-raised); }
+.yf p { margin: 0; }
+.yf > .nk-label { padding-bottom: 0; }
+.yf-names { font-family: var(--font-mono); font-size: 12px; line-height: 18px; color: var(--ink-muted); overflow-wrap: anywhere; }
+.yf .cta-row { margin-top: var(--space-1); }
+.sent ~ .yf { margin-bottom: var(--space-4); }
+@media print { .yf { display: none !important; } }

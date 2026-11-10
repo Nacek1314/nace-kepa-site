@@ -26,6 +26,62 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-10
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
+#news, #n-bambu-lab-x2d, #skills, #about, #studio, #order (all 4 steps on the local build in EN + SL, nothing sent), #mine, #compare, #gift,
+/admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in the cloud, as always),
+no horizontal scroll, no clipped text, no CSP violations, no broken images; EN ↔ SL key comparison of `content.js`: complete (only the intended
+plural forms differ); an English-word scan of every Slovenian view: clean. Live site from the laptop (`check-live.ps1`): `/`, `/sl/`, `/admin/`,
+`/news/`, feed, sitemap, a landing page all 200, an unknown address 404; the live inline-script hash equals the CSP hash; the live page is the
+f21e2ad build. Last Actions run (f21e2ad) succeeded. axe-core 4.10 (WCAG 2.1 AA + best practice) on the parts list, order step 2 and step 4: see the fixes.
+**Fixed:** (1) **Parts list, desktop: the inputs of every line had no accessible name** (axe `label` + `select-name`, critical) — the per-cell
+labels (`.bm-k`) were `display: none` above 720 px (the header row shows the column names, but it is `aria-hidden`), so a screen reader heard
+"edit text" ×4 per line; the labels are now visually hidden (clip) instead, static again on phones and in print — nothing changes on screen.
+(2) Admin: the sheet-preview title (`.pv-title`) was still weight 800 — 600 like the site's titles since the unslop pass.
+
+**Improvement — "Your files" package (`yfNames()` … `yfBox()` in `app.js`, `yf:` in `content.js`, "Your files" rules in `page.css`):** the
+order form sends text only (Nace's choice on 11-02: no upload with the brief), but nothing told a client with files where they go. Now:
+(a) step 2, under "Do you have files?": "Files are not uploaded here — attach them to the e-mail with the brief, or send them after my reply"
+(`aria-describedby`); (b) step 4, for a client who answered "STL / STEP / 3MF" or "Native CAD" — or whose brief carries parts-list lines read
+from files / a file check — a **"Your files"** box under Copy brief / Open in your e-mail app: attach them to the e-mail with this brief (STL,
+STEP or 3MF, native CAD, sketches or photos), the form itself sends text only; the "Open in your e-mail app" body ends with "Files: see the
+attachments of this e-mail"; (c) the **sent screen** (Worker path): the same box with the tracking code — "Send the files by e-mail with the
+code NK-… in the subject, so they land next to your brief" — and a **"Send the files by e-mail"** button (`mailto:` with the code and the
+client's name in the subject, the services in the body), plus the file names the brief already mentions ("Named in the brief: Spacer.stl,
+Cube.obj"). Hidden in print. Tested in Playwright (EN 1280 light, SL 390 dark) with a mocked Worker (`PUBLIC_ORDER_ENDPOINT` test build +
+`page.route` → `{ok:true}`): hint + `aria-describedby` on step 2, the box on step 4 and on the sent screen with the same code the Worker
+received, the mailto subject/body in both languages, the names from a parts list built from files; no box when "No, starting from scratch"
+is chosen and no file-based line is in the brief; axe 0 violations; no overflow.
+*To remove:* see the comment above `yfNames()` in `app.js`.
+
+**Innovation — Files → parts list / "Iz vaših datotek" (`#services?tool=parts`, drop zone "From your files" under the list; `bmDrop()` /
+`bmFiles()` in `app.js`, `f*`, `fromFile*`, `fLines*` keys of `bm:` in `content.js`, "Files → parts list" rules in `page.css`):** a client with
+several STL / 3MF / OBJ files chooses or drops them all at once and gets **one parts-list line per file** — name = file name, L × W × H = the
+mesh's bounding box (a 3MF brings its own unit, STL / OBJ are read as mm), quantity 1 — and, for a closed mesh, the line carries the **mesh's
+own volume and surface** (`row.vol` / `row.area`), which `bmCalc()` now uses for weight, print time and price instead of the bounding box
+(the Part studio already did this for one file; the parts list only knew boxes). The result line says "from the file · 24 cm³" (open mesh:
+"from the file · open mesh, box volume"); the NK-L sheet gets a row **"From files: 3 lines (volume from the mesh)"**; typing a size over such a
+line drops the file's numbers again (the box no longer matches). Files are read one after another with the file check's own readers
+(`fcSTL` / `fcOBJ` / `fc3MF` / `fcStats`) with a live "Reading file 2 of 6…" status; unreadable ones are listed as skipped with the reason
+(STEP / IGES → export STL, wrong type, over 200 MB, no triangles, damaged), the list stops at 30 parts (`BM_MAX`). Nothing is uploaded — like
+the file check, and the zone says so. Keyboard: the file input is in the tab order (focus ring on the zone), Enter / Space opens the picker;
+drag-and-drop highlights the zone; light + dark, 390 px (full-width zone), print (zone hidden). The line text in the brief keeps its form, so
+the admin's "Quote from a brief" still reads the lines (the extra "from the file · N cm³" item is ignored by its regexes).
+- Tested in Playwright (EN 1280 light, SL 390 dark) with generated files — Spacer.stl 40×30×20 (closed), "Big bracket.stl" 300×100×50 (too
+  big), open-lid.stl (one triangle, open), Cube.obj 50³, housing.step, notes.txt: "4 lines added from files. Skipped: housing.step (STEP /
+  IGES …), notes.txt (not an STL …)" / "Iz datotek dodane 4 vrstice. Izpuščeno: …"; sizes, "from the file · 24 cm³", "open mesh, box
+  volume", "Too big for one piece · from the file · 1,500 cm³"; sheet row "From files: 2 lines" (the open mesh and the too-big part don't
+  count); PLA on line 1 → ≈ 11 g · 0.7 h · 6.00 €/pc from the mesh volume; typing L = 41 → marker gone, box estimate (0.8 h); localStorage
+  keeps vol / area / file; a dropped empty STL → "No line added. Skipped: empty.stl (no triangles found)"; "Start a project with this list"
+  → the brief with the lines; print: zone hidden; axe 0 violations; no errors, no overflow.
+*To remove:* see the comment above `state.bmf` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: parts list — read a ZIP of files, and a 3MF with several objects → one line per object.
+- Public: parts list — "Show in 3D" per file line (the file check's plate preview, viewer.js) and the three drawing views on the NK-L sheet.
+- Admin: Quote from a brief — pick up "from the file · N cm³" as the line's volume so the quote can show cm³ next to grams.
+
 ## 2026-11-09
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
@@ -2101,6 +2157,12 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: "From a brief" — attachments list and phone from the brief on the quote; a "quote sent" mark per brief.
 - Admin: quote status (sent / accepted / declined) and a monthly total on the saved quotes, browser-only.
 - Public: order step 4 — a one-line-per-field "Copy for the studio" brief variant for an exact import.
+- (Built 2026-11-10: Files → parts list — several STL / 3MF / OBJ files dropped on the parts list → one line per file with the mesh's own
+  volume for weight / time / price; "Your files" package as the improvement — where the client's files go: step-2 hint, step-4 box, sent-screen
+  box with the tracking code and a "Send the files by e-mail" button.)
+- Public: parts list — read a ZIP of files, and a 3MF with several objects → one line per object.
+- Public: parts list — "Show in 3D" per file line (the file check's plate preview) and the three drawing views on the NK-L sheet.
+- Admin: Quote from a brief — pick up "from the file · N cm³" as the line's volume so the quote can show cm³ next to grams.
 
 ## 2026-10-03 (second run)
 

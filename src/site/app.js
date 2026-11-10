@@ -1774,7 +1774,7 @@
         field('what', x.fWhat, '<textarea class="nk-input" id="f-what" data-f="what" placeholder="' + esc(x.fWhatPh) + '">' + esc(o.what) + '</textarea>', e.what ? x.errWhat : x.fWhatH, e.what, true) +
         field('qty', x.fQty, '<input class="nk-input" id="f-qty" data-f="qty" type="number" inputmode="numeric" enterkeyhint="next" min="1" value="' + esc(o.qty) + '">') +
         field('deadline', x.fDeadline, '<input class="nk-input" id="f-deadline" data-f="deadline" type="date" min="' + dlMin() + '" value="' + esc(o.deadline) + '">') +
-        field('files', x.fFiles, select('files', x.fFilesO, o.files)) +
+        field('files', x.fFiles, select('files', x.fFilesO, o.files), x.yf.hint) + // Your files (2026-11-10): where the files go
         field('mat', x.fMat, select('mat', x.fMatO, o.mat)).replace(/<\/div>$/, mpOpen() + '</div>') + dlBox() + ocBox() + '</div>';
     } else if (st === 2) {
       body = '<h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.q3) + '</h2><div class="form">' +
@@ -1789,12 +1789,12 @@
       var brief = briefText();
       if (state.send === 'sent') {
         body = '<div class="sent" role="status"><span class="nk-tag nk-tag--ok">' + esc(x.sentTag) + '</span><h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.sentTitle) + '</h2><p class="hint">' + esc(x.sentBody) + '</p></div>' +
-          ocNext() + '<pre class="brief" tabindex="0">' + esc(briefText()) + '</pre>' + bpBtn() + rvSelf(); // Review package (2026-11-05): a copy to the client's own address
+          ocNext() + yfBox(true) + '<pre class="brief" tabindex="0">' + esc(briefText()) + '</pre>' + bpBtn() + rvSelf(); // yfBox: Your files (2026-11-10) // Review package (2026-11-05): a copy to the client's own address
       } else {
       body = (state.send === 'sending' ? '<p class="nk-label" role="status">' + esc(x.sending) + '</p>' : '') + (state.send === 'error' || state.send === 'limited' ? '<p class="err" role="alert">' + esc(state.send === 'limited' ? x.sendLimited : x.sendFail) + '</p>' : '') +
         '<h2 class="sub" id="wiz-h" tabindex="-1">' + esc(x.briefTitle) + '</h2><p class="hint">' + esc(x.briefLead) + '</p>' +
         '<div class="brief-grid"><pre class="brief" id="brief" tabindex="0">' + esc(brief) + '</pre><div class="brief-side"><p class="nk-label">' + esc(x.estimate) + '</p>' + estimate() +
-        '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" id="copy">' + esc(x.copy) + '</button>' + eqMail() + '<span class="copy-msg" id="copy-msg" role="status"></span></div>' + bpBtn() + rvSelf() +
+        '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" id="copy">' + esc(x.copy) + '</button>' + eqMail() + '<span class="copy-msg" id="copy-msg" role="status"></span></div>' + yfBox(false) + bpBtn() + rvSelf() + // yfBox: Your files (2026-11-10)
         '<p class="nk-label">' + esc(x.sendVia) + '</p>' + (CONTACT_EMAIL ? '<p class="mail" id="mail">' + esc(CONTACT_EMAIL) + '</p><div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mail-copy>' + esc(x.mailCopy) + '</button><span class="copy-msg" id="mail-msg" role="status"></span></div>' : '') +
         '<a class="nk-btn nk-btn--sm" href="' + LINKEDIN + '" target="_blank" rel="noopener">' + esc(x.linkedin) + '<span class="vh"> (' + esc(t().newTab) + ')</span><span class="nk-btn__arrow" aria-hidden="true">↗</span></a></div></div>';
       }
@@ -2630,7 +2630,8 @@
   // content.js and the "Parts list" rules at the end of page.css.
   var BM_KEY = 'nk-parts', BM_MAX = 30;
   state.bm = { rows: [], gap: '5', msg: '', ask: false };
-  function bmNew(o) { o = o || {}; return { name: String(o.name || '').slice(0, 60), l: String(o.l || ''), w: String(o.w || ''), h: String(o.h || ''), mat: String(o.mat || ''), qty: String(o.qty || '1') }; }
+  function bmNew(o) { o = o || {}; var r = { name: String(o.name || '').slice(0, 60), l: String(o.l || ''), w: String(o.w || ''), h: String(o.h || ''), mat: String(o.mat || ''), qty: String(o.qty || '1') };
+    if (+o.vol > 0 && +o.area > 0) { r.vol = +o.vol; r.area = +o.area; } if (o.file) r.file = String(o.file).slice(0, 80); return r; } // vol / area (mm³ / mm²) and file: set by bmFiles() (2026-11-10) — the mesh's own numbers instead of the box
   function bmLoad() { try { var d = JSON.parse(localStorage.getItem(BM_KEY) || 'null'); if (d && d.v === 1 && Array.isArray(d.rows)) { state.bm.rows = d.rows.slice(0, BM_MAX).map(bmNew); if (d.gap != null) state.bm.gap = String(d.gap); } } catch (e) {} }
   function bmSave() { try { localStorage.setItem(BM_KEY, JSON.stringify({ v: 1, rows: state.bm.rows, gap: state.bm.gap })); } catch (e) {} }
   function bmMat(r) { return pcMats().filter(function (m) { return m.key === r.mat; })[0] || null; }
@@ -2644,7 +2645,8 @@
     if (!d[0] || !d[1] || !d[2]) return out;
     out.fit = fitCalc({ l: d[0], w: d[1], h: d[2] });
     if (out.fit.fits) { var best = 0; PB_LAYS.forEach(function (k) { var l = pbLayout(out.fit.o[0], out.fit.o[1], g, k); if (l && l.n > best) best = l.n; }); out.per = best; out.plates = best ? Math.ceil(qty / best) : 0; }
-    if (out.fit.fits) out.est = estPrint(d[0] * d[1] * d[2], 2 * (d[0] * d[1] + d[1] * d[2] + d[0] * d[2]), out.mat, qty); // a part over the build volume is not estimated — it needs a look first
+    if (out.fit.fits) out.est = r.vol > 0 && r.area > 0 ? estPrint(r.vol, r.area, out.mat, qty) : estPrint(d[0] * d[1] * d[2], 2 * (d[0] * d[1] + d[1] * d[2] + d[0] * d[2]), out.mat, qty); // a part over the build volume is not estimated — it needs a look first; a line read from a file (bmFiles, 2026-11-10) uses the mesh's volume and surface
+    out.file = r.file || ''; out.mesh = r.vol > 0 && r.area > 0; out.vol = out.mesh ? r.vol : 0;
     return out;
   }
   function bmTotals() { // { rows: [bmCalc…], tot: { types, pcs, open, noFit, plates, g, h, noMat, price } }
@@ -2667,6 +2669,7 @@
       b.push(f.time.replace('{h}', fcNum(c.est.h * c.qty, 1)));
       if (c.est.cost) b.push(f.price.replace('{p}', pcMoney(c.est.cost.part, 2)) + (c.qty > 1 ? ' · ' + pcMoney(c.est.cost.part * c.qty, 2) : ''));
     }
+    if (c.file) b.push(c.mesh ? f.fromFile.replace('{v}', fcNum(c.vol / 1000)) : f.fromFileOpen); // Files → parts list (2026-11-10)
     return b;
   }
   function bmLine(c) { // the result line under a part's inputs
@@ -2684,6 +2687,7 @@
     if (tot.h) rows.push([f.sTime, f.time.replace('{h}', fcNum(tot.h, 1))]);
     if (tot.price) rows.push([f.sPrice, f.sPriceV.replace('{p}', pcMoney(tot.price.order, 2)), [tot.price.setup ? f.sPriceNote.replace('{s}', pcMoney(tot.price.setup, 2)) : '', tot.price.min ? f.sMin : '', tot.noMat ? pbPlural(tot.noMat, f.sNoMat).replace('{n}', tot.noMat) : ''].filter(Boolean).join(' · ')]);
     if (tot.open) rows.push([f.sOpen, pbPlural(tot.open, f.sOpenV).replace('{n}', tot.open)]);
+    var nf = tt.rows.filter(function (c) { return c.fit && c.mesh; }).length; if (nf) rows.push([f.fLines, pbPlural(nf, f.fLinesV).replace('{n}', nf)]); // Files → parts list (2026-11-10)
     return rows;
   }
   function bmSheet(tt) {
@@ -2712,6 +2716,7 @@
     var headRow = '<div class="bm-head' + (mats.length ? '' : ' bm-head--nomat') + '" aria-hidden="true"><span></span><span class="nk-label">' + esc(f.name) + '</span><span class="nk-label">' + esc(f.l) + ' · mm</span><span class="nk-label">' + esc(f.w) + ' · mm</span><span class="nk-label">' + esc(f.h) + ' · mm</span>' + (mats.length ? '<span class="nk-label">' + esc(f.mat) + '</span>' : '') + '<span class="nk-label">' + esc(f.qty) + '</span><span></span></div>';
     return '<section class="block bm">' + head(f.label, f.title, f.lead) + '<div class="bm-grid"><div class="bm-list' + (mats.length ? '' : ' bm-list--nomat') + '">' +
       (s.rows.length ? headRow + '<ol class="bm-rows">' + rows + '</ol>' : '<p class="hint bm-empty">' + esc(f.empty) + '</p>') +
+      bmDrop() + // Files → parts list (2026-11-10)
       '<div class="bm-foot"><button type="button" class="nk-btn" data-bm-add' + (s.rows.length >= BM_MAX ? ' disabled' : '') + '>+ ' + esc(f.add) + '</button>' +
       '<label class="bm-gap"><span class="nk-field__label">' + esc(f.gap) + ' · mm</span><input class="nk-input" id="bm-gap" data-bm-gap type="number" inputmode="decimal" min="0" step="any" value="' + esc(s.gap) + '"></label></div>' +
       '<p class="fit-note bm-privacy">' + esc(f.privacy) + '</p></div>' +
@@ -2730,7 +2735,7 @@
     if (focusSel) { var el = document.querySelector(focusSel); if (el) el.focus({ preventScroll: true }); }
     tlMark(state.tool);
   }
-  function bmSet(i, k, v) { var r = state.bm.rows[i]; if (!r) return; r[k] = k === 'name' ? String(v).slice(0, 60) : String(v); state.bm.msg = ''; bmSave(); bmUpdate(); }
+  function bmSet(i, k, v) { var r = state.bm.rows[i]; if (!r) return; r[k] = k === 'name' ? String(v).slice(0, 60) : String(v); if ((k === 'l' || k === 'w' || k === 'h') && r.file) { delete r.vol; delete r.area; delete r.file; } state.bm.msg = ''; bmSave(); bmUpdate(); } // a size typed over a file's line → back to the box (2026-11-10)
   function bmRemove(i) { state.bm.rows.splice(i, 1); state.bm.msg = ''; state.bm.ask = false; bmSave(); bmRefresh(state.bm.rows[i] ? '#bm-row-' + i + ' [data-bm-f="name"]' : '[data-bm-add]'); }
   function bmClear(a) { if (a === 'yes') { state.bm.rows = []; state.bm.msg = t().bm.cleared; bmSave(); } state.bm.ask = a === 'ask'; bmRefresh(a === 'ask' ? '[data-bm-clear="no"]' : a === 'yes' ? '[data-bm-add]' : '[data-bm-clear="ask"]'); }
   function bmText(tt) { // the list as plain text (clipboard, brief)
@@ -2758,6 +2763,60 @@
     location.hash = 'order';
   }
   function bmFitLink() { return '<p class="pl-open bm-open"><a href="#services?tool=parts" data-bm-fit>' + esc(t().bm.fitLink) + ' →</a></p>'; }
+  // ---------- Files → parts list (2026-11-10): several STL / 3MF / OBJ files → one line per file ----------
+  // The drop zone under the parts list takes any number of 3D files at once (choose or drop). Each is parsed in the browser
+  // with the file check's readers (fcSTL / fcOBJ / fc3MF / fcStats) and becomes one line: name = file name, L × W × H = the
+  // mesh's bounding box (mm; a 3MF brings its own unit, STL / OBJ are read as mm), quantity 1, and — for a closed mesh — the
+  // mesh's own volume and surface (row.vol / row.area), which bmCalc() uses for weight, time and price instead of the box. The
+  // line says "from the file · 12.3 cm³"; typing a size over it drops the file's numbers again. Files are read one after
+  // another (a phone stays responsive), unreadable ones are listed as skipped (STEP / IGES, wrong type, over FC_MAX, empty,
+  // damaged), the list stops at BM_MAX. Nothing is uploaded — like the file check. Self-contained: remove this block, bmDrop()
+  // in bmBox(), the vol / area / file lines in bmNew() / bmCalc() / bmBits() / bmSet() / bmSheetRows(), the data-bm-files /
+  // data-bm-drop lines in the change / dragover / dragleave / drop handlers, the f* + fromFile* + fLines* keys of bm: in both
+  // languages in content.js and the "Files → parts list" rules in page.css.
+  state.bmf = { busy: false, i: 0, n: 0 };
+  function bmDrop() {
+    var f = t().bm, b = state.bmf, full = state.bm.rows.length >= BM_MAX;
+    return '<div class="bm-drop" id="bm-drop" data-bm-drop><p class="nk-label">' + esc(f.fLabel) + '</p>' +
+      '<label class="bm-drop__zone" for="bm-files"><span class="bm-drop__t">' + esc(f.fPick) + '</span><span class="bm-drop__h">' + esc(f.fHint) + '</span>' +
+      '<input class="bm-drop__file" id="bm-files" type="file" multiple accept=".stl,.obj,.3mf,model/stl,model/3mf,model/obj" data-bm-files' + (full || b.busy ? ' disabled' : '') + '></label>' +
+      '<p class="bm-drop__msg share-msg" id="bm-fmsg" role="status" aria-live="polite">' + (b.busy ? esc(f.fBusy.replace('{i}', b.i).replace('{n}', b.n)) : '') + '</p>' +
+      '<p class="fit-note bm-drop__note">' + esc(f.fPrivate) + ' ' + esc(f.fUnits) + '</p></div>';
+  }
+  function bmFiles(list) {
+    var f = t().bm, files = Array.prototype.slice.call(list || []), b = state.bmf; if (!files.length || b.busy) return;
+    b.busy = true; b.i = 0; b.n = files.length;
+    var added = 0, skipped = [], msgEl = function () { return document.getElementById('bm-fmsg'); };
+    var say = function (txt) { var m = msgEl(); if (m) m.textContent = txt; };
+    var skip = function (file, why) { skipped.push(file.name + ' (' + why + ')'); };
+    var one = function (file) { // → Promise, never rejects
+      var ext = (/\.([a-z0-9]+)$/i.exec(file.name) || [])[1]; ext = ext ? ext.toLowerCase() : '';
+      if (ext === 'step' || ext === 'stp' || ext === 'iges' || ext === 'igs') { skip(file, f.fStep); return Promise.resolve(); }
+      if (ext !== 'stl' && ext !== 'obj' && ext !== '3mf') { skip(file, f.fType); return Promise.resolve(); }
+      if (file.size > FC_MAX) { skip(file, f.fBig); return Promise.resolve(); }
+      return (file.arrayBuffer ? file.arrayBuffer() : new Response(file).arrayBuffer()).then(function (buf) {
+        if (ext === '3mf') return fc3MF(buf);
+        return { pos: ext === 'stl' ? fcSTL(buf) : fcOBJ(buf), objects: 1, unit: '' };
+      }).then(function (r) {
+        var st = fcStats(r.pos); if (!st.ok) { skip(file, f.fEmpty); return; }
+        var k = r.unit && FC_3MF_UNITS[r.unit] ? FC_3MF_UNITS[r.unit] : 1, closed = st.open === 0;
+        var i = bmAdd({ name: file.name.replace(/\.[a-z0-9]+$/i, ''), l: fcR1(st.size[0] * k), w: fcR1(st.size[1] * k), h: fcR1(st.size[2] * k), qty: 1, vol: closed ? st.vol * k * k * k : 0, area: closed ? st.area * k * k : 0, file: file.name });
+        if (i < 0) skip(file, f.fFull.replace('{n}', BM_MAX)); else added++;
+      }).catch(function () { skip(file, f.fRead); });
+    };
+    var step = function (idx) {
+      if (idx < files.length && state.bm.rows.length >= BM_MAX) { files.slice(idx).forEach(function (fl) { skip(fl, f.fFull.replace('{n}', BM_MAX)); }); idx = files.length; }
+      if (idx >= files.length) {
+        b.busy = false; state.bm.msg = '';
+        bmRefresh('#bm-files');
+        say((added ? pbPlural(added, f.fDone).replace('{n}', added) : f.fNone) + (skipped.length ? ' ' + f.fSkipped.replace('{list}', skipped.join(', ')) : ''));
+        return;
+      }
+      b.i = idx + 1; say(f.fBusy.replace('{i}', b.i).replace('{n}', b.n));
+      one(files[idx]).then(function () { setTimeout(function () { step(idx + 1); }, 0); });
+    };
+    step(0);
+  }
   bmLoad();
 
   // ---------- Plate layout NK-N (#services?tool=parts, under the parts list; 2026-11-08) ----------
@@ -3185,7 +3244,33 @@
   function eqMail() { // step 4: the brief as an e-mail to the studio
     if (!CONTACT_EMAIL) return '';
     var x = t(), subj = bfSubject(); // Brief readability package (2026-11-08): services in the subject, like the Worker's e-mail
-    return '<a class="nk-btn" id="eq-mail" href="mailto:' + esc(CONTACT_EMAIL) + '?subject=' + esc(encodeURIComponent(subj)) + '&amp;body=' + esc(encodeURIComponent(briefText() + '\n')) + '">' + esc(x.eq.mail) + '</a>';
+    return '<a class="nk-btn" id="eq-mail" href="mailto:' + esc(CONTACT_EMAIL) + '?subject=' + esc(encodeURIComponent(subj)) + '&amp;body=' + esc(encodeURIComponent(briefText() + (yfOn() ? '\n\n' + x.yf.mailLine : '') + '\n')) + '">' + esc(x.eq.mail) + '</a>'; // the files reminder: Your files (2026-11-10)
+  }
+  // ---------- Your files (2026-11-10): how the client's 3D files reach the studio ----------
+  // The order form sends text only (Nace's choice: no upload with the brief), so a client who answered "STL / STEP / 3MF" or
+  // "Native CAD" to "Do you have files?" — or whose brief carries a parts list / file check built from files — is told where
+  // the files go: a hint under that field on step 2, a "Your files" box on step 4 (attach them to the e-mail with the brief;
+  // the "Open in your e-mail app" body ends with a reminder line) and, once the brief is sent through the Worker, the same box
+  // with the tracking code and a "Send the files by e-mail" button whose subject carries the code, so the files land next to
+  // the brief. File names the brief already mentions (parts list lines read from files, the file check) are listed.
+  // Self-contained: remove yfOn() … yfBox(), the three yfBox / yf.hint / yf.mailLine call sites above, yf: in both languages
+  // in content.js and the "Your files" rules in page.css.
+  function yfNames() {
+    var o = state.order, x = t(), n = [];
+    if ((o.what || '').indexOf(x.bm.brief + ':') >= 0) state.bm.rows.forEach(function (r) { if (r.file && n.indexOf(r.file) < 0) n.push(r.file); });
+    if ((o.what || '').indexOf(x.fc.brief + ':') >= 0 && state.fc.res && state.fc.res.name && n.indexOf(state.fc.res.name) < 0) n.push(state.fc.res.name);
+    return n;
+  }
+  function yfOn() { return +state.order.files >= 2 || yfNames().length > 0; }
+  function yfBox(sent) {
+    if (!yfOn()) return '';
+    var f = t().yf, o = state.order, names = yfNames(), mail = '';
+    if (sent && CONTACT_EMAIL) {
+      var svc = SERVICES.filter(function (s) { return o.services.indexOf(s.key) >= 0; }).map(function (s) { return L(s.title); }).join(', ');
+      mail = '<div class="cta-row"><a class="nk-btn nk-btn--sm" href="mailto:' + esc(CONTACT_EMAIL) + '?subject=' + esc(encodeURIComponent(f.mailSubj.replace('{c}', CODE).replace('{n}', String(o.name || '').trim()))) + '&amp;body=' + esc(encodeURIComponent(f.mailBody.replace('{c}', CODE).replace('{s}', svc) + '\n\n' + String(o.name || '').trim() + '\n')) + '">' + esc(f.mail) + '</a></div>';
+    }
+    return '<div class="yf" id="yf"><p class="nk-label">' + esc(f.label) + '</p><p>' + esc(sent ? f.sent.replace('{c}', CODE) : f.brief) + '</p>' +
+      (names.length ? '<p class="yf-names">' + esc(f.named.replace('{list}', names.join(', '))) + '</p>' : '') + mail + '</div>';
   }
   function eqFiles(el) { // checklist "STL / STEP / 3MF file" ticked → "Do you have files?" jumps to that option while it still says "No"
     var it = ocItems()[+el.getAttribute('data-oc-have')], sel = document.getElementById('f-files'); if (!it || !el.checked || !sel || +sel.value !== 0) return;
@@ -3555,6 +3640,7 @@
   app.addEventListener('input', function (ev) { var v3 = ev.target.dataset && ev.target.dataset.v3Cut; if (v3) { v3Set(v3, 'cut', ev.target.value); return; } var sf = ev.target.dataset && ev.target.dataset.stF; if (sf) { state.st[sf] = ev.target.value; if (sf === 'l' || sf === 'w' || sf === 'h') stDims3d(); stSheetShow(); return; } var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); ofInput(ev.target, fk); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var pf = ev.target.dataset && ev.target.dataset.plF; if (pf && pf !== 'mat') { state.pl[pf] = ev.target.value; plUpdate(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
     if (ev.target.hasAttribute('data-fc-file')) { if (ev.target.files && ev.target.files[0]) fcRead(ev.target.files[0]); return; }
+    if (ev.target.hasAttribute('data-bm-files')) { if (ev.target.files && ev.target.files.length) bmFiles(ev.target.files); return; } // Files → parts list (2026-11-10)
     if (ev.target.hasAttribute('data-st-file')) { if (ev.target.files && ev.target.files[0]) fcRead(ev.target.files[0]); return; }
     if (ev.target.hasAttribute('data-st-need')) { state.mp.needs[ev.target.value] = ev.target.checked; stSheetShow(); return; }
     if (ev.target.hasAttribute('data-st-axes')) { stAxes(ev.target.value); return; }
@@ -3583,9 +3669,9 @@
   app.addEventListener('input', function (ev) { if (ev.target.hasAttribute('data-st-sp-deg')) { state.sp.deg = ev.target.value; spUpdate(); } }); // Support check (2026-10-31)
   app.addEventListener('input', function (ev) { if (ev.target.hasAttribute('data-st-wt-lim')) { state.wt.limit = ev.target.value; wtUpdate(); } }); // Wall thickness (2026-11-02)
   // File check: drop a file on the box; the views follow the light/dark theme.
-  app.addEventListener('dragover', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop'); if (!d) return; ev.preventDefault(); d.classList.add('is-over'); });
-  app.addEventListener('dragleave', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop'); if (d) d.classList.remove('is-over'); });
-  app.addEventListener('drop', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop'); if (!d) return; ev.preventDefault(); d.classList.remove('is-over'); var fl = ev.dataTransfer && ev.dataTransfer.files; if (fl && fl[0] && !state.fc.busy) fcRead(fl[0]); });
+  app.addEventListener('dragover', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop, #bm-drop'); if (!d) return; ev.preventDefault(); d.classList.add('is-over'); });
+  app.addEventListener('dragleave', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop, #bm-drop'); if (d) d.classList.remove('is-over'); });
+  app.addEventListener('drop', function (ev) { var d = ev.target.closest && ev.target.closest('#fc-drop, #bm-drop'); if (!d) return; ev.preventDefault(); d.classList.remove('is-over'); var fl = ev.dataTransfer && ev.dataTransfer.files; if (d.id === 'bm-drop') { if (fl && fl.length) bmFiles(fl); return; } if (fl && fl[0] && !state.fc.busy) fcRead(fl[0]); }); // #bm-drop: Files → parts list (2026-11-10)
   try { new MutationObserver(function () { fcDraw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', fcDraw); } catch (e) {}
   function submitOrder() {
     if (!ORDER_ENDPOINT || state.send === 'sending') return;
