@@ -515,7 +515,7 @@ function stView() {
       </div>
       <div class="form">${stArea('pricing.vatNote.en', 'VAT / quote note · EN')}${stArea('pricing.vatNote.sl', 'Opomba o DDV / ponudbi · SL')}${stTxt('pricing.buildNote.en', 'Full builds note · EN', 'e.g. "Parts and materials at cost."')}${stTxt('pricing.buildNote.sl', 'Opomba za celotne izdelke · SL')}</div>
       <p class="nk-label st-sub">Printing materials · € per gram (density only for the weight estimate in the Part studio)</p>
-      <table class="st-table"><thead><tr><th>Order form</th><th>Name</th><th>€ / g</th><th>g/cm³</th><th></th></tr></thead><tbody>${o.pricing.print.materials.map(stMatRow).join('')}</tbody></table>
+      <table class="st-table"><thead><tr><th>Order form</th><th>Name</th><th>€ / g</th><th>g/cm³</th><th><span class="vh">Remove</span></th></tr></thead><tbody>${o.pricing.print.materials.map(stMatRow).join('')}</tbody></table>
       <p><button type="button" class="nk-btn nk-btn--sm" data-set-act="mat-add">+ Material</button></p>
     </fieldset>
     <fieldset class="ad-sec" id="st-printing"><legend class="nk-label">Print parameters · time and material estimate in the Part studio (#studio)</legend>
@@ -622,7 +622,7 @@ function ovView() {
       <td class="ov-act">${x.hidden || x._new ? '' : `<a class="tb-copy" href="${esc(ovLanding(kind, x.slug))}" target="_blank" rel="noopener">EN ↗</a> <a class="tb-copy" href="${esc(ovLanding(kind, x.slug, true))}" target="_blank" rel="noopener">SL ↗</a> <button type="button" class="tb-copy" data-ov-copy="${esc(ovLanding(kind, x.slug))}">Copy link</button> <button type="button" class="tb-copy" data-ov-qr="${esc(ovLanding(kind, x.slug))}" data-ov-qr-name="${esc(x.slug)}" title="Download the QR code of this page (SVG)">QR ↓</button>${x.photos.length ? '' : ` <a class="tb-copy" href="${esc(ovCard(kind, x.slug))}" target="_blank" rel="noopener">Card ↗</a>`}`}</td></tr>`;
   };
   const pages = `<p class="ad-small">Each published project and post has its own page (title, description, link preview, structured data). A good description is 50–160 characters in both languages. The link preview is the first photo, or — without photos — a card drawn from the sheet (title, drawing, category, year, materials) at build time; open it with “Card ↗”. Sitemap: ${2 + shown.length * 2 + posts.length * 2} addresses.</p>
-    <table class="ov-table"><thead><tr><th>Page</th><th>Search / preview</th><th></th></tr></thead><tbody>
+    <table class="ov-table"><thead><tr><th>Page</th><th>Search / preview</th><th><span class="vh">Open and copy links</span></th></tr></thead><tbody>
       <tr><td><b>Home</b><br><span class="ov-url">nacekepa.work/ · /sl/</span></td><td><span class="ov-chk is-ok">✓ studio description, services, FAQ, projects, posts</span></td><td class="ov-act"><a class="tb-copy" href="/" target="_blank" rel="noopener">EN ↗</a> <a class="tb-copy" href="/sl/" target="_blank" rel="noopener">SL ↗</a> <button type="button" class="tb-copy" data-ov-qr="https://nacekepa.work/" data-ov-qr-name="nacekepa-work" title="Download the QR code of the home page (SVG)">QR ↓</button></td></tr>
       ${sortNews(N).map((n) => row('n', n)).join('')}${P.map((p) => row('p', p)).join('')}</tbody></table>
     <p class="ov-msg" id="ov-msg" role="status" aria-live="polite"></p>`;
@@ -717,7 +717,7 @@ function logo() {
 }
 
 function loginView() {
-  return `<div class="ad-login">
+  return `<main class="ad-login">
     <a class="wordmark" href="/">${logo()}<span class="wm-text">nacekepa<span>.work</span></span></a>
     <p class="nk-label">Admin · Sheet NK-ADM</p>
     <h1 class="page-title">Dashboard</h1>
@@ -739,12 +739,12 @@ function loginView() {
       <button class="nk-btn nk-btn--primary" type="submit" ${S.busy ? 'disabled' : ''}>Sign in<span class="nk-btn__arrow" aria-hidden="true">→</span></button>
       <p class="ad-small">The token is sent only to GitHub. With a PIN it is kept encrypted on this device; the dashboard locks itself after 15 minutes without activity.</p>
     </form>
-  </div>`;
+  </main>`;
 }
 
 function unlockView() {
   const v = vault();
-  return `<div class="ad-login">
+  return `<main class="ad-login">
     <a class="wordmark" href="/">${logo()}<span class="wm-text">nacekepa<span>.work</span></span></a>
     <p class="nk-label">Admin · Locked</p>
     <h1 class="page-title">Unlock</h1>
@@ -760,7 +760,7 @@ function unlockView() {
       <button class="nk-btn nk-btn--sm nk-btn--ghost" type="button" data-act="forget">Use a different token</button>
       ${S.projects.length && dirty() ? '<p class="ad-small">Your unpublished changes are still here and come back after unlocking.</p>' : ''}
     </form>
-  </div>`;
+  </main>`;
 }
 
 function deployPill() {
@@ -772,18 +772,32 @@ function deployPill() {
   return `<a class="nk-tag nk-tag--rev" href="${esc(d.url)}" target="_blank" rel="noopener">Build failed ↗</a>`;
 }
 
-function tabsView() {
-  return `<div class="ad-tabs" role="tablist" aria-label="Content">
-    <button type="button" role="tab" data-tab="overview" aria-selected="${isOv()}">Overview</button>
-    <button type="button" role="tab" data-tab="projects" aria-selected="${S.tab === 'projects'}">Projects <span>${S.projects.length}</span></button>
-    <button type="button" role="tab" data-tab="news" aria-selected="${isNews()}">News <span>${S.news.length}</span></button>
-    <button type="button" role="tab" data-tab="todo" aria-selected="${isTodo()}">To do <span>${todoItems().length}</span></button>
-    <button type="button" role="tab" data-tab="arrange" aria-selected="${isArr()}">Arrange</button>
-    <button type="button" role="tab" data-tab="translate" aria-selected="${isTr()}">EN ⇄ SL <span>${trCount()}</span></button>
-    <button type="button" role="tab" data-tab="table" aria-selected="${isTb()}">Table <span>${S.projects.length}</span></button>
-    <button type="button" role="tab" data-tab="settings" aria-selected="${isSet()}">Settings</button>
-    <button type="button" role="tab" data-tab="quote" aria-selected="${isQt()}">Quote</button>
+const TAB_NAMES = { overview: 'Overview', projects: 'Projects', news: 'News', todo: 'To do', arrange: 'Arrange', translate: 'EN ⇄ SL', table: 'Table', settings: 'Settings', quote: 'Quote', jobs: 'Jobs' };
+function tabsView() { // one real tab list (2026-11-11): ids keep the focus across re-renders, the selected tab is the only tab stop, ← → Home End move between tabs
+  const tab = (id, label, count) => `<button type="button" role="tab" id="ad-tab-${id}" data-tab="${id}" aria-selected="${S.tab === id}" tabindex="${S.tab === id ? 0 : -1}" aria-controls="ad-editor">${label}${count != null ? ` <span>${count}</span>` : ''}</button>`;
+  return `<div class="ad-tabs" role="tablist" aria-label="Dashboard tabs">
+    ${tab('overview', 'Overview')}
+    ${tab('projects', 'Projects', S.projects.length)}
+    ${tab('news', 'News', S.news.length)}
+    ${tab('todo', 'To do', todoItems().length)}
+    ${tab('arrange', 'Arrange')}
+    ${tab('translate', 'EN ⇄ SL', trCount())}
+    ${tab('table', 'Table', S.projects.length)}
+    ${tab('settings', 'Settings')}
+    ${tab('quote', 'Quote')}
+    ${tab('jobs', 'Jobs', jbOpen().length || null)}
   </div>`;
+}
+function tabKey(e) { // arrow keys on the tab list (admin accessibility package 2026-11-11)
+  const t = e.target.closest('.ad-tabs [role="tab"]'); if (!t || e.altKey || e.ctrlKey || e.metaKey) return false;
+  const tabs = [...root.querySelectorAll('.ad-tabs [role="tab"]')], i = tabs.indexOf(t);
+  const to = { ArrowLeft: i - 1, ArrowRight: i + 1, ArrowUp: i - 1, ArrowDown: i + 1, Home: 0, End: tabs.length - 1 }[e.key];
+  if (to == null) return false;
+  e.preventDefault();
+  const n = tabs[(to + tabs.length) % tabs.length];
+  S.tab = n.dataset.tab; S.query = ''; S.confirmDelete = false; render();
+  document.getElementById(n.id)?.focus();
+  return true;
 }
 
 function newsListView() {
@@ -811,6 +825,7 @@ function listView() {
   if (isOv()) return ovListView();
   if (isSet()) return stListView();
   if (isQt()) return qtListView(); // Quote tab (2026-11-04)
+  if (isJb()) return jbListView(); // Jobs tab (2026-11-11)
   if (isTodo()) return todoListView();
   if (isArr()) return arListView();
   if (isTr()) return trListView();
@@ -1359,6 +1374,7 @@ function arPos(input) {
 document.addEventListener('keydown', (e) => { pfKey(e); }); // Publishing safety package (2026-11-03): Ctrl+S / Cmd+S anywhere
 root.addEventListener('toggle', (e) => { if (e.target && e.target.id === 'pf') PF.open = e.target.open; }, true); // remember whether the list is folded
 root.addEventListener('keydown', (e) => {
+  if (tabKey(e)) return; // admin accessibility package (2026-11-11)
   if (isTb() && tbKey(e)) return;
   if (!isArr()) return;
   if (e.target.dataset.arPos != null && e.key === 'Enter') { e.preventDefault(); arPos(e.target); return; }
@@ -1784,7 +1800,7 @@ function spCard(p, miss, isCur) { // = sheet() in app.js
   const ti = spPick(p.title, isCur ? miss : null, 'title'), de = spPick(p.description, isCur ? miss : null, 'description');
   const no = arSheet(S.projects, p) || '—';
   return `<div class="nk-sheet sp-card${isCur ? ' is-cur' : ''}"${isCur ? ' aria-current="true"' : ''}><div class="nk-sheet__head"><span class="nk-label">${esc(no)}</span><span class="nk-label">${p.model ? '<b class="has3d">3D · </b>' : ''}${esc(spCat(p))} · ${esc(p.year)}</span></div>
-    <div class="nk-sheet__art">${spArt(p)}</div><div class="nk-sheet__foot"><h4 class="nk-sheet__title">${spWrap(esc(ti.v.trim() || 'Untitled'), ti.fb)}</h4><p class="nk-sheet__desc">${spWrap(esc(de.v), de.fb)}</p></div></div>`;
+    <div class="nk-sheet__art">${spArt(p)}</div><div class="nk-sheet__foot"><h3 class="nk-sheet__title">${spWrap(esc(ti.v.trim() || 'Untitled'), ti.fb)}</h3><p class="nk-sheet__desc">${spWrap(esc(de.v), de.fb)}</p></div></div>`;
 }
 function spPage(p, miss) { // = projectView() in app.js (3D viewer and buttons shown as placeholders)
   const tx = SP_T[SP.lang], no = arSheet(S.projects, p) || '—';
@@ -1894,6 +1910,7 @@ function editorView() {
   if (isOv()) return ovView();
   if (isSet()) return stView();
   if (isQt()) return qtView(); // Quote tab (2026-11-04)
+  if (isJb()) return jbView(); // Jobs tab (2026-11-11)
   if (isTodo()) return todoView();
   if (isArr()) return arView();
   if (isTr()) return trView();
@@ -1955,10 +1972,12 @@ function editorView() {
 
 function dashView() {
   const n = changeCount();
+  // Admin accessibility package (2026-11-11): skip link → the editor, <header> + <main> landmarks, an h1, tabs with roving focus.
   return `<div class="ad-shell">
+    <a class="skip ad-skip" href="#ad-editor" data-act="skip">Skip to the ${TAB_NAMES[S.tab] || S.tab} tab</a>
     <header class="ad-top">
       <a class="wordmark" href="/" target="_blank" rel="noopener">${logo()}<span class="wm-text">nacekepa<span>.work</span></span></a>
-      <span class="nk-label">Admin · ${esc(S.user)}</span>
+      <h1 class="nk-label ad-h1">Admin · ${esc(S.user)}</h1>
       <span class="ad-top__status">${deployPill()}</span>
       <button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="reload" ${S.busy ? 'disabled' : ''}>Reload</button>
       ${vault() ? '<button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-act="lock">Lock</button>' : ''}
@@ -1969,7 +1988,7 @@ function dashView() {
     ${S.error ? `<p class="ad-bar err" role="alert">${esc(S.error)}</p>` : ''}
     ${S.notice && !S.busy && !S.error ? `<p class="ad-bar ok" role="status">${esc(S.notice)}</p>` : ''}
     ${pfView()}
-    <div class="ad-main">${listView()}${editorView()}</div>
+    <main class="ad-main">${listView()}<div class="ad-editor-wrap" id="ad-editor" tabindex="-1" role="tabpanel" aria-labelledby="ad-tab-${esc(S.tab)}">${editorView()}</div></main>
   </div>`;
 }
 
@@ -2031,6 +2050,7 @@ root.addEventListener('input', (e) => {
   if (e.target.id === 'q') { S.query = e.target.value; render(); return; }
   if (e.target.dataset.set != null && e.target.tagName !== 'SELECT') { stInput(e.target); return; }
   if (e.target.dataset.qt != null || e.target.dataset.qtL != null) { qtInput(e.target); return; } // Quote tab (2026-11-04)
+  if (e.target.dataset.jb != null || e.target.dataset.jbSvc != null || e.target.dataset.jbStep != null || e.target.dataset.jbBrief != null) { jbInput(e.target); return; } // Jobs tab (2026-11-11)
   if (e.target.dataset.qb != null) { QB.text = e.target.value; QB.msg = ''; root.querySelectorAll('[data-qb-act]').forEach((b) => { b.disabled = !QB.text.trim(); }); return; } // Quote from a brief (2026-11-09)
   if (e.target.dataset.tr != null) { trInput(e.target); return; }
   if (e.target.dataset.tb != null && e.target.type !== 'checkbox') { tbInput(e.target); return; }
@@ -2134,11 +2154,13 @@ root.addEventListener('change', async (e) => {
 
 root.addEventListener('click', (e) => {
   if (e.target.dataset && e.target.dataset.tbSel != null) { tbSelect(e.target, e.shiftKey); return; }
+  if (e.target.closest && e.target.closest('a.ad-skip')) { e.preventDefault(); const ed = document.getElementById('ad-editor'); if (ed) { ed.focus({ preventScroll: true }); ed.scrollIntoView({ block: 'start' }); } return; } // admin accessibility package (2026-11-11)
   const b = e.target.closest('button');
   if (!b) return;
   const p = cur();
   const act = b.dataset.act;
   if (b.dataset.tab) { S.tab = b.dataset.tab; S.query = ''; S.confirmDelete = false; render(); return; }
+  if (b.dataset.jbAct) { jbAct(b); return; } // Jobs tab (2026-11-11)
   if (b.dataset.todoF != null) { S.todoF = b.dataset.todoF; render(); return; }
   if (b.dataset.setAct) { stAct(b); return; }
   if (b.dataset.qtAct) { qtAct(b); return; } // Quote tab (2026-11-04)
@@ -2352,6 +2374,7 @@ function qtView() {
       <button type="button" class="nk-btn" data-qt-act="copy"${c.rows.length ? '' : ' disabled'}>Copy as text</button>
       ${mail && c.rows.length ? `<a class="nk-btn" href="${esc(mail)}" id="qt-mail">Open in e-mail</a>` : ''}
       <button type="button" class="nk-btn" data-qt-act="save"${c.rows.length ? '' : ' disabled'}>Save in this browser</button>
+      <button type="button" class="nk-btn" data-jb-act="from-quote"${c.rows.length ? '' : ' disabled'} title="A job on the Jobs board with this client, the services and the printed parts">Start a job</button>
       ${QT.saved.some((s) => s.q.no === q.no) ? (QT.confirm === q.no ? `<span class="qt-confirm">Delete ${esc(q.no)}?<button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-qt-act="del-yes">Delete</button><button type="button" class="nk-btn nk-btn--sm" data-qt-act="del-no">Keep</button></span>` : `<button type="button" class="nk-btn nk-btn--ghost" data-qt-act="del">Delete saved</button>`) : ''}
       <span class="copy-msg" id="qt-msg" role="status" aria-live="polite">${esc(QT.msg)}</span>
     </div>
@@ -2503,6 +2526,215 @@ function qbBox() {
 function qbAct(b) {
   if (b.dataset.qbAct === 'fill') { qbFill(); return; }
   if (b.dataset.qbAct === 'clear') { QB.text = ''; QB.msg = ''; QB.open = true; render(); document.getElementById('qb-text')?.focus(); }
+}
+
+// ---------- Jobs tab (2026-11-11): job board + job card NK-J ----------
+// What happens to an enquiry after the quote? Until now nothing in the admin kept track: the brief sat in the mailbox, the
+// quote in the Quote tab, the deadline in Nace's head. The Jobs tab is a small board of every job — Enquiry → Quoted → In
+// progress → Delivered (or declined) — with the due date, the client, the services, a checklist of the workshop steps (the
+// eight process steps the home page lists, filtered by the job's services, plus post-processing) and the parts, and an A4
+// **job card NK-J** (traveller) in the drawing-sheet look that prints alone and goes next to the printer. A job starts
+// blank ("+ New job"), from the pasted brief ("From a brief": client, e-mail, phone, reference, tracking code, deadline,
+// services and the parts list are read by qbParse() of the Quote tab) or from the quote on screen ("Start a job" in the
+// Quote tab: client, reference, language, services, printed parts and the total). Jobs are kept in this browser only
+// (localStorage "nk-admin-jobs", JB_MAX) and never in the repository or on the site — like the quotes. Self-contained:
+// remove JB_KEY … jbAct(), the 'jobs' entries in TAB_NAMES / tabsView(), the isJb() lines in listView() / editorView(),
+// the data-jb lines in the input / click handlers, the "Start a job" button in qtView() and the .jb-* rules in admin.css.
+const JB_KEY = 'nk-admin-jobs', JB_MAX = 60;
+const isJb = () => S.tab === 'jobs';
+const JB_STATUS = [['open', 'Enquiry'], ['quoted', 'Quoted'], ['progress', 'In progress'], ['done', 'Delivered'], ['declined', 'Declined']];
+const JB_SVC = [['cad', '3D design & CAD'], ['print', '3D printing & prototyping'], ['iot', 'Embedded systems & IoT'], ['build', 'Full custom build'], ['post', 'Post-processing']]; // = the services on #services
+const JB_STEPS = [['brief', 'Brief', ''], ['cad', 'CAD', 'cad'], ['sim', 'Sim & calc', 'cad'], ['slice', 'Slice & print', 'print'], ['fw', 'Firmware', 'iot'], ['asm', 'Assembly', 'build'], ['post', 'Post-processing', 'post'], ['test', 'Test', 'build'], ['deliver', 'Deliver', '']]; // = the process steps on the home page (+ post-processing); '' = every job
+const JB = { list: null, sel: null, msg: '', confirm: null, brief: '', briefMsg: '', briefOpen: false };
+function jbNormal(j) { return Object.assign({ no: '', client: '', email: '', phone: '', ref: '', code: '', lang: 'sl', status: 'open', due: '', services: [], steps: {}, parts: '', notes: '', quote: '', total: '', created: today(), log: [] }, j); }
+function jbLoad() { if (JB.list) return; try { const a = JSON.parse(localStorage.getItem(JB_KEY) || '[]'); JB.list = Array.isArray(a) ? a.filter((j) => j && j.no).map(jbNormal) : []; } catch { JB.list = []; } }
+function jbStore() { try { localStorage.setItem(JB_KEY, JSON.stringify(JB.list.slice(0, JB_MAX))); return true; } catch { return false; } }
+function jbClosed(j) { return j.status === 'done' || j.status === 'declined'; }
+function jbOpen() { jbLoad(); return JB.list.filter((j) => !jbClosed(j)); }
+function jbCur() { jbLoad(); return JB.list.find((j) => j.no === JB.sel) || null; }
+function jbNextNo(date) { // NK-J-YYMMDD-NN, NN = one more than the jobs already started that day
+  const d = String(date || today()).replace(/-/g, '').slice(2), pre = 'NK-J-' + d + '-';
+  let n = 0; JB.list.forEach((j) => { const m = new RegExp('^' + pre + '(\\d+)$').exec(j.no); if (m) n = Math.max(n, +m[1]); });
+  return pre + String(n + 1).padStart(2, '0');
+}
+function jbStatusName(s) { return (JB_STATUS.find(([k]) => k === s) || JB_STATUS[0])[1]; }
+function jbSteps(j) { return JB_STEPS.filter(([, , svc]) => !svc || j.services.indexOf(svc) >= 0); }
+function jbDays(due) { if (!/^\d{4}-\d{2}-\d{2}$/.test(due || '')) return null; return Math.round((new Date(due + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 864e5); }
+function jbDue(j, long) { // the due date as the board shows it: overdue / due today / due in N days (open jobs only)
+  const d = jbDays(j.due); if (d == null) return { t: long ? 'No due date' : 'no date', cls: '' };
+  if (jbClosed(j)) return { t: qtDate(j.due, 'en'), cls: '' };
+  if (d < 0) return { t: (long ? 'Overdue by ' : '') + (-d) + (-d === 1 ? ' day' : ' days') + (long ? '' : ' late'), cls: 'is-late' };
+  if (d === 0) return { t: 'Due today', cls: 'is-soon' };
+  if (d <= 7) return { t: 'Due in ' + d + (d === 1 ? ' day' : ' days'), cls: 'is-soon' };
+  return { t: (long ? 'Due ' : '') + qtDate(j.due, 'en'), cls: '' };
+}
+function jbSort(a, b) { // open jobs first, by due date (no date last), then closed jobs, newest first
+  const ac = jbClosed(a), bc = jbClosed(b); if (ac !== bc) return ac ? 1 : -1;
+  if (ac) return (b.created || '').localeCompare(a.created || '') || b.no.localeCompare(a.no);
+  if (!!a.due !== !!b.due) return a.due ? -1 : 1;
+  return (a.due || '').localeCompare(b.due || '') || (a.created || '').localeCompare(b.created || '') || a.no.localeCompare(b.no);
+}
+function jbNew(seed) {
+  jbLoad();
+  const j = jbNormal(Object.assign({ no: jbNextNo(today()), created: today() }, seed || {}));
+  j.log = [{ at: today(), s: j.status }];
+  JB.list.unshift(j); JB.list = JB.list.slice(0, JB_MAX); jbStore();
+  JB.sel = j.no; JB.msg = ''; JB.confirm = null;
+  return j;
+}
+function jbFromQuote() { // "Start a job" in the Quote tab: the quote on screen → a job in "Quoted"
+  jbLoad(); const q = QT.q; if (!q) return;
+  const old = q.no && JB.list.find((j) => j.quote === q.no);
+  if (old) { JB.sel = old.no; JB.msg = 'This quote already has job ' + old.no + '.'; S.tab = 'jobs'; render(); document.getElementById('jb-client')?.focus(); return; }
+  const c = qtCalc(q), services = [];
+  q.lines.forEach((ln) => { const s = ln.t === 'hours' ? ln.svc : ln.t === 'print' ? 'print' : ''; if (s && services.indexOf(s) < 0) services.push(s); });
+  const parts = q.lines.filter((ln) => ln.t === 'print').map((ln) => { const m = qtMat(ln.mat); return (ln.desc.trim() || 'Printed part') + ' × ' + Math.max(1, Math.round(qtNum(ln.qty) || 1)) + (m ? ' · ' + m.name : '') + (qtNum(ln.g) ? ' · ' + qtNum(ln.g) + ' g' : '') + (qtNum(ln.h) ? ' · ' + qtNum(ln.h) + ' h' : ''); }).join('\n');
+  const dl = /(?:Requested deadline|Želeni rok): (.+)$/m.exec(q.note || ''), due = dl ? jbIso(dl[1]) : '';
+  const j = jbNew({ client: q.client, email: q.email, ref: q.ref, lang: q.lang, status: 'quoted', services, parts, quote: q.no, total: c.rows.length ? qtMoney(c.total, q.lang) : '', due, notes: q.note.replace(/(?:Requested deadline|Želeni rok): .+\n?/, '').trim() });
+  JB.msg = 'Job ' + j.no + ' started from quote ' + q.no + '.';
+  S.tab = 'jobs'; render(); document.getElementById('jb-due')?.focus();
+}
+function jbIso(d) { const m = /^(\d{1,2})[./ ]+(\d{1,2})[./ ]+(\d{4})/.exec(String(d).trim()); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; } // "27/11/2026" / "27. 11. 2026" → 2026-11-27
+function jbFromBrief() { // "From a brief": the pasted enquiry → a job in "Enquiry" (qbParse() of the Quote tab reads it)
+  const o = qbParse(JB.brief);
+  if (!o.found.length && !o.email && !o.what.length) { JB.briefMsg = 'Nothing recognised — paste the whole brief (the text of the e-mail or Telegram message).'; render(); return; }
+  const code = /\[(NK-[A-Z0-9]{4,8})\]/.exec(JB.brief);
+  const parts = o.parts.map((p) => { const m = p.mat ? qtMat(p.mat) : null; return (p.name || 'Part') + ' · ' + p.size + ' × ' + p.qty + (m ? ' · ' + m.name : '') + (p.g ? ' · ≈ ' + Math.round(p.g) + ' g' : ''); }).join('\n');
+  const j = jbNew({ client: o.client, email: o.email, phone: o.phone || '', ref: o.ref, code: code ? code[1] : '', lang: o.lang, due: o.deadline, services: o.services.slice(), parts, notes: o.what.filter((w) => w !== o.ref).join('\n') });
+  JB.brief = ''; JB.briefMsg = ''; JB.briefOpen = false;
+  const got = [j.client, j.email, j.phone, j.code, o.deadline ? 'due ' + qtDate(o.deadline, 'en') : '', o.services.length ? o.services.length + (o.services.length === 1 ? ' service' : ' services') : '', o.parts.length ? o.parts.length + (o.parts.length === 1 ? ' part' : ' parts') : ''].filter(Boolean);
+  JB.msg = 'Job ' + j.no + ' started from the brief — ' + got.join(' · ') + '.' + (j.client ? '' : ' Fill in the client.') + (j.due ? '' : ' Set a due date.');
+  render(); document.getElementById(j.client ? 'jb-due' : 'jb-client')?.focus();
+}
+function jbSummary() {
+  const open = jbOpen(), late = open.filter((j) => jbDays(j.due) != null && jbDays(j.due) < 0).length, week = open.filter((j) => { const d = jbDays(j.due); return d != null && d >= 0 && d <= 7; }).length, prog = open.filter((j) => j.status === 'progress').length;
+  if (!JB.list.length) return 'No jobs yet.';
+  return `${open.length} open${prog ? ` · ${prog} in progress` : ''}${late ? ` · <b class="is-late">${late} overdue</b>` : ''}${week ? ` · ${week} due within a week` : ''} · ${JB.list.length - open.length} delivered or declined`;
+}
+function jbCard(j) {
+  const d = jbDue(j), st = jbSteps(j), done = st.filter(([k]) => j.steps[k]).length;
+  return `<button type="button" class="jb-card${j.no === JB.sel ? ' is-sel' : ''}" data-jb-act="sel" data-jb-no="${esc(j.no)}" aria-pressed="${j.no === JB.sel}">
+    <span class="jb-card__no">${esc(j.no)}${j.status === 'declined' ? ' · declined' : ''}</span>
+    <span class="jb-card__t">${esc(j.client || 'No client yet')}</span>${j.ref ? `<span class="jb-card__r">${esc(j.ref)}</span>` : ''}
+    <span class="jb-card__m"><span class="${d.cls}">${esc(d.t)}</span>${st.length ? ` · ${done}/${st.length} steps` : ''}${j.total ? ` · ${esc(j.total)}` : ''}</span></button>`;
+}
+function jbBoard() {
+  return `<div class="jb-board">${JB_STATUS.slice(0, 4).map(([s, name]) => { const items = JB.list.filter((j) => j.status === s || (s === 'done' && j.status === 'declined')).sort(jbSort); return `<section class="jb-col" aria-label="${name} · ${items.length}"><h3 class="nk-label jb-col__h">${name} <span>${items.length}</span></h3>${items.length ? items.map(jbCard).join('') : '<p class="jb-empty">—</p>'}</section>`; }).join('')}</div>`;
+}
+function jbEditor(j) {
+  const st = jbSteps(j), quotes = QT.saved.map((s) => `<option value="${esc(s.q.no)}">${esc(s.q.client || '')} · ${esc(qtMoney(s.total, 'en'))}</option>`).join('');
+  const f = (k, label, attrs, hint) => fld('jb-' + k, label, `<input class="nk-input" id="jb-${k}" data-jb="${k}" autocomplete="off" ${attrs || ''} value="${esc(j[k])}">`, hint);
+  return `<fieldset class="ad-sec jb-form" id="jb-form"><legend class="nk-label">Job ${esc(j.no)} · ${esc(jbStatusName(j.status))}</legend>
+    <div class="form form-3">
+      ${f('client', 'Client')}${f('email', 'E-mail', 'type="email" spellcheck="false"')}${f('phone', 'Phone', 'type="tel"')}
+      ${f('ref', 'Reference', '', 'The part, the brief’s first sentence or a sheet number')}${f('code', 'Tracking code', 'spellcheck="false" placeholder="NK-…"', 'The [NK-…] code of the brief, if it came through the order form')}
+      ${fld('jb-lang', 'Client’s language', `<select class="nk-input" id="jb-lang" data-jb="lang"><option value="sl"${j.lang === 'sl' ? ' selected' : ''}>Slovenščina</option><option value="en"${j.lang === 'en' ? ' selected' : ''}>English</option></select>`)}
+      ${fld('jb-due', 'Due date', `<input class="nk-input" id="jb-due" data-jb="due" type="date" value="${esc(j.due)}">`, jbDue(j, true).t)}
+      ${fld('jb-status', 'Status', `<select class="nk-input" id="jb-status" data-jb="status">${JB_STATUS.map(([k, n]) => `<option value="${k}"${j.status === k ? ' selected' : ''}>${n}</option>`).join('')}</select>`)}
+      ${fld('jb-quote', 'Quote no.', `<input class="nk-input" id="jb-quote" data-jb="quote" list="jb-quotes" autocomplete="off" spellcheck="false" value="${esc(j.quote)}"><datalist id="jb-quotes">${quotes}</datalist>`, 'A quote saved in the Quote tab')}
+      ${f('total', 'Agreed total', 'placeholder="€"', 'As quoted or agreed — nothing is calculated here')}
+    </div>
+    <p class="nk-label jb-k">Services</p>
+    <div class="jb-checks">${JB_SVC.map(([k, n]) => `<label class="ad-check"><input type="checkbox" data-jb-svc="${k}"${j.services.indexOf(k) >= 0 ? ' checked' : ''}> ${n}</label>`).join('')}</div>
+    <p class="nk-label jb-k">Steps <span class="jb-k__n">${st.filter(([k]) => j.steps[k]).length} / ${st.length}</span></p>
+    <ol class="jb-steps">${st.map(([k, n]) => `<li><label class="ad-check"><input type="checkbox" data-jb-step="${k}"${j.steps[k] ? ' checked' : ''}> <span${j.steps[k] ? ' class="is-done"' : ''}>${n}</span></label></li>`).join('')}</ol>
+    <div class="form">
+      ${fld('jb-parts', 'Parts', `<textarea class="nk-input" id="jb-parts" data-jb="parts" rows="3" spellcheck="false">${esc(j.parts)}</textarea>`, 'One line per part — from the brief’s parts list or the quote’s printed parts')}
+      ${fld('jb-notes', 'Notes', `<textarea class="nk-input" id="jb-notes" data-jb="notes" rows="3">${esc(j.notes)}</textarea>`, 'What the client wrote, what was agreed, what to remember')}
+    </div>
+    <div class="cta-row jb-act">
+      <button type="button" class="nk-btn nk-btn--primary" data-jb-act="print">Print the job card</button>
+      <button type="button" class="nk-btn" data-jb-act="copy">Copy as text</button>
+      ${j.quote && QT.saved.some((s) => s.q.no === j.quote) ? `<button type="button" class="nk-btn" data-jb-act="quote">Open quote ${esc(j.quote)}</button>` : ''}
+      ${j.status !== 'done' ? '<button type="button" class="nk-btn" data-jb-act="done">Mark delivered</button>' : ''}
+      ${JB.confirm === j.no ? `<span class="qt-confirm">Delete ${esc(j.no)}?<button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-jb-act="del-yes">Delete</button><button type="button" class="nk-btn nk-btn--sm" data-jb-act="del-no">Keep</button></span>` : '<button type="button" class="nk-btn nk-btn--ghost" data-jb-act="del">Delete</button>'}
+      <span class="copy-msg" id="jb-msg" role="status" aria-live="polite">${esc(JB.msg)}</span>
+    </div>
+  </fieldset>`;
+}
+function jbSheet(j) { // the A4 job card NK-J (the traveller that goes next to the printer; also what prints)
+  const st = jbSteps(j), d = jbDue(j, true);
+  const cell = (k, v, cls) => `<div class="nk-tb__cell${cls ? ' nk-tb__cell--' + cls : ''}"><span class="nk-tb__k">${esc(k)}</span><span class="nk-tb__v">${v}</span></div>`;
+  const lines = (t) => String(t || '').trim() ? `<ul class="qt-notes">${String(t).trim().split('\n').filter((l) => l.trim()).map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : '<p class="jb-none">—</p>';
+  return `<article class="qt-sheet jb-sheet" id="jb-sheet" aria-label="Job card NK-J">
+    <header class="qt-head"><span class="tb-brand">${logo()}<span>Nace Kepa · Engineering studio</span></span><span class="qt-head__r"><span class="nk-label">Job card · NK-J</span><strong class="qt-title">JOB CARD</strong></span></header>
+    <div class="nk-tb qt-tb" style="--tb-cols:4">
+      ${cell('Job no.', esc(j.no))}${cell('Started', esc(qtDate(j.created, 'en')))}${cell('Due', `<span class="${d.cls}">${esc(j.due ? qtDate(j.due, 'en') : '—')}</span>`)}${cell('Status', esc(jbStatusName(j.status)))}
+      ${cell('Client', esc(j.client || '—') + (j.email ? '<br>' + esc(j.email) : '') + (j.phone ? '<br>' + esc(j.phone) : '') + ' · ' + (j.lang === 'sl' ? 'SL' : 'EN'), 'wide')}${cell('Reference', esc(j.ref || '—') + (j.code ? '<br>' + esc(j.code) : '') + (j.quote ? '<br>' + esc(j.quote) + (j.total ? ' · ' + esc(j.total) : '') : ''), 'wide')}
+    </div>
+    <p class="nk-label">Services</p><p class="jb-svcs">${j.services.length ? j.services.map((k) => esc((JB_SVC.find(([s]) => s === k) || [k, k])[1])).join(' · ') : '—'}</p>
+    <p class="nk-label">Steps</p>
+    <table class="qt-table jb-table"><thead><tr><th class="jb-box"><span class="vh">Done</span></th><th>Step</th><th class="qt-n">Date · initials</th></tr></thead>
+      <tbody>${st.map(([k, n], i) => `<tr><td class="jb-box" aria-label="${j.steps[k] ? 'done' : 'open'}">${j.steps[k] ? '☑' : '☐'}</td><td>${String(i + 1).padStart(2, '0')} · ${esc(n)}</td><td class="qt-n jb-fill"></td></tr>`).join('')}</tbody></table>
+    <p class="nk-label">Parts</p>${lines(j.parts)}
+    <p class="nk-label">Notes</p>${lines(j.notes)}
+    ${j.log.length ? `<p class="nk-label">Log</p><p class="jb-log">${j.log.map((l) => esc(qtDate(l.at, 'en') + ' · ' + jbStatusName(l.s))).join(' → ')}</p>` : ''}
+    <footer class="qt-foot"><span>N. Kepa · Škofja Loka</span><span>nacekepa.work · kepanace@gmail.com</span></footer>
+  </article>`;
+}
+function jbText(j) {
+  const st = jbSteps(j), out = ['JOB CARD ' + j.no + ' — Nace Kepa', 'Started: ' + qtDate(j.created, 'en') + ' · Due: ' + (j.due ? qtDate(j.due, 'en') : '—') + ' · Status: ' + jbStatusName(j.status), 'Client: ' + (j.client || '—') + (j.email ? ' · ' + j.email : '') + (j.phone ? ' · ' + j.phone : '') + ' · ' + (j.lang === 'sl' ? 'SL' : 'EN')];
+  if (j.ref || j.code || j.quote) out.push('Reference: ' + [j.ref, j.code, j.quote ? j.quote + (j.total ? ' · ' + j.total : '') : ''].filter(Boolean).join(' · '));
+  out.push('Services: ' + (j.services.length ? j.services.map((k) => (JB_SVC.find(([s]) => s === k) || [k, k])[1]).join(', ') : '—'), '', 'Steps:', ...st.map(([k, n]) => (j.steps[k] ? '[x] ' : '[ ] ') + n));
+  if (j.parts.trim()) out.push('', 'Parts:', ...j.parts.trim().split('\n').map((l) => '- ' + l));
+  if (j.notes.trim()) out.push('', 'Notes:', ...j.notes.trim().split('\n').map((l) => '- ' + l));
+  return out.join('\n');
+}
+function jbBriefBox() {
+  return `<details class="ad-sec qb jb-brief"${JB.briefOpen ? ' open' : ''} id="jb-brief"><summary class="nk-label qb-sum">From a brief</summary>
+    <p class="ad-small">Paste the enquiry as it arrived (the e-mail or the Telegram message, EN or SL). A new job is started with the client, e-mail, phone, reference, tracking code, deadline, services and the parts list the brief carries. Nothing leaves this browser.</p>
+    ${fld('jb-brief-text', 'The brief', `<textarea class="nk-input qb-text" id="jb-brief-text" data-jb-brief rows="5" spellcheck="false" placeholder="Services: 3D printing & prototyping&#10;What should it do? …&#10;Deadline: 2026-12-01&#10;Your name: …">${esc(JB.brief)}</textarea>`)}
+    <p class="qt-add"><button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-jb-act="brief"${JB.brief.trim() ? '' : ' disabled'}>Start a job from the brief</button></p>
+  </details>${JB.briefMsg ? `<p class="ad-bar qb-msg" role="status" aria-live="polite">${esc(JB.briefMsg)}</p>` : ''}`;
+}
+function jbListView() {
+  jbLoad(); const list = JB.list.slice().sort(jbSort);
+  return `<div class="ad-list">${tabsView()}
+    <p class="ad-small st-intro">Enquiries, quotes and work in progress on one board, each with a printable job card. Jobs stay in this browser — nothing goes to the repository or the site.</p>
+    <ol class="ad-items">${list.length ? list.map((j) => { const d = jbDue(j); return `<li class="ad-item${j.no === JB.sel ? ' is-sel' : ''}${jbClosed(j) ? ' is-hidden' : ''}"><button type="button" class="ad-item__main" data-jb-act="sel" data-jb-no="${esc(j.no)}"><span class="ad-item__t">${esc(j.client || 'No client yet')}${j.ref ? ' · ' + esc(j.ref) : ''}</span><span class="ad-item__m">${esc(j.no)} · ${esc(jbStatusName(j.status))} · <span class="${d.cls}">${esc(d.t)}</span></span></button></li>`; }).join('') : '<li class="ad-item"><span class="ad-item__main"><span class="ad-item__m">No jobs yet. Press “+ New job”, paste a brief, or start one from a quote.</span></span></li>'}</ol>
+  </div>`;
+}
+function jbView() {
+  jbLoad(); qtLoad(); const j = jbCur();
+  return `<div class="ad-editor jb">
+    <div class="ad-editor__head"><div><p class="nk-label">Jobs · NK-J</p><h2 class="sub">Job board</h2></div><div class="qt-headact"><button type="button" class="nk-btn nk-btn--sm" data-jb-act="new">+ New job</button></div></div>
+    <p class="ad-small jb-sum" id="jb-sum">${jbSummary()}</p>
+    ${jbBriefBox()}
+    ${jbBoard()}
+    ${j ? jbEditor(j) + jbSheet(j) : `<p class="ad-small">${JB.list.length ? 'Pick a job on the board to edit it or print its job card.' : 'Start the first job: “+ New job”, paste a brief above, or press “Start a job” under a quote in the Quote tab.'}</p>`}
+  </div>`;
+}
+function jbInput(el) { // every change is saved at once (the board has no "save" — like a notebook)
+  if (el.dataset.jbBrief != null) { JB.brief = el.value; JB.briefMsg = ''; root.querySelectorAll('[data-jb-act="brief"]').forEach((b) => { b.disabled = !JB.brief.trim(); }); return; }
+  const j = jbCur(); if (!j) return;
+  let redraw = false;
+  if (el.dataset.jbSvc) { const k = el.dataset.jbSvc, i = j.services.indexOf(k); if (el.checked && i < 0) j.services.push(k); if (!el.checked && i >= 0) j.services.splice(i, 1); redraw = true; }
+  else if (el.dataset.jbStep) { if (el.checked) j.steps[el.dataset.jbStep] = today(); else delete j.steps[el.dataset.jbStep]; redraw = true; }
+  else if (el.dataset.jb === 'status') { if (j.status !== el.value) { j.status = el.value; j.log.push({ at: today(), s: j.status }); } redraw = true; }
+  else if (el.dataset.jb) { j[el.dataset.jb] = el.value; redraw = el.tagName === 'SELECT' || el.type === 'date'; }
+  JB.msg = jbStore() ? 'Saved.' : 'Could not save — is storage blocked?'; JB.confirm = null;
+  if (redraw) { render(); return; }
+  const sheet = document.getElementById('jb-sheet'); if (sheet) sheet.outerHTML = jbSheet(j); // keep the caret while typing: only the sheet, the board and the list are redrawn
+  const board = root.querySelector('.jb-board'); if (board) board.outerHTML = jbBoard();
+  const list = root.querySelector('.ad-list'); if (list) list.outerHTML = jbListView();
+  const sum = document.getElementById('jb-sum'); if (sum) sum.innerHTML = jbSummary();
+  const msg = document.getElementById('jb-msg'); if (msg) msg.textContent = JB.msg;
+}
+function jbAct(b) {
+  jbLoad(); const act = b.dataset.jbAct, j = jbCur();
+  JB.msg = '';
+  if (act === 'sel') { JB.sel = b.dataset.jbNo; JB.confirm = null; render(); document.getElementById('jb-form')?.scrollIntoView({ block: 'start' }); document.getElementById('jb-client')?.focus({ preventScroll: true }); return; }
+  if (act === 'new') { const n = jbNew({}); JB.msg = 'Job ' + n.no + ' started.'; render(); document.getElementById('jb-client')?.focus(); return; }
+  if (act === 'from-quote') { jbFromQuote(); return; }
+  if (act === 'brief') { jbFromBrief(); return; }
+  if (!j) return;
+  if (act === 'done') { j.status = 'done'; j.log.push({ at: today(), s: 'done' }); if (!j.steps.deliver) j.steps.deliver = today(); jbStore(); JB.msg = 'Delivered.'; render(); document.getElementById('jb-status')?.focus(); return; }
+  if (act === 'del') { JB.confirm = j.no; render(); root.querySelector('[data-jb-act="del-yes"]')?.focus(); return; }
+  if (act === 'del-no') { JB.confirm = null; render(); root.querySelector('[data-jb-act="del"]')?.focus(); return; }
+  if (act === 'del-yes') { JB.list = JB.list.filter((x) => x.no !== j.no); jbStore(); JB.confirm = null; JB.sel = null; JB.msg = 'Deleted.'; render(); root.querySelector('[data-jb-act="new"]')?.focus(); return; }
+  if (act === 'quote') { const i = QT.saved.findIndex((s) => s.q.no === j.quote); if (i >= 0) { QT.q = JSON.parse(JSON.stringify(QT.saved[i].q)); QT.confirm = null; S.tab = 'quote'; render(); document.getElementById('qt-client')?.focus(); } return; }
+  if (act === 'copy') { const txt = jbText(j); const done = () => { JB.msg = 'Copied.'; render(); }; const fail = () => { JB.msg = 'Copy failed — select the card and copy it by hand.'; render(); }; try { navigator.clipboard.writeText(txt).then(done, fail); } catch { fail(); } return; }
+  if (act === 'print') { qtPrint(); return; } // the job card has the .qt-sheet class, so the quote's print mode prints it alone
 }
 
 // ---------- start ----------

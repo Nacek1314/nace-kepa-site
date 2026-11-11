@@ -26,6 +26,70 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-11
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
+#news, #n-bambu-lab-x2d, #skills, #about, #studio, #order (all 4 steps on the local build in EN + SL, nothing sent), #mine, #compare, #gift,
+`/news/`, `/portfolio/famfive/`, `/sl/portfolio/famfive/`, 404, /admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors,
+no failed requests (Google Fonts blocked in the cloud, as always), no horizontal scroll, no CSP violations, no broken images; EN ↔ SL key
+comparison of `content.js`: complete. axe-core 4.10 (WCAG 2.1 AA + best practice) on **every** public view in both languages and sizes:
+0 violations. axe on the **signed-in admin** (mocked GitHub API), all nine tabs, 1280 + 390: see the improvement. Live site from the laptop:
+`/` 200, last Actions run (0d080dc) succeeded. Note: the cloud session can no longer reach `nacekepa.work` or the GitHub Actions API directly
+(egress proxy); both were checked from the laptop.
+**Fixed:** nothing broken on the public site. Admin (found by axe, fixed inside the package below): no `<main>` landmark and no `<h1>` on the
+dashboard (two moderate violations on every tab, noted on 11-09); two empty `<th>` (Overview "Pages" table, Settings materials table);
+the sheet-preview card used an `<h4>` straight under the editor's `<h2>` (heading order); the tabs lost keyboard focus after every click
+(the buttons had no ids, so `render()` could not restore focus); the 7th tab (Table) drew a doubled left line (the `border-left: 0` rule
+only covered the 4th tab).
+
+**Improvement — admin accessibility package (`dashView()`, `tabsView()` / `tabKey()`, `loginView()` / `unlockView()` in `admin.js`,
+"Admin accessibility package" rules in `admin.css`):** the dashboard is now a proper page for keyboards and screen readers: `<header>` +
+`<main>` landmarks (sign-in and unlock screens are a `<main>` too), the "Admin · user" line is the `<h1>`, a **skip link** ("Skip to the
+Quote tab" — names the open tab) is the first Tab stop and lands on the editor column (`#ad-editor`, `role="tabpanel"` labelled by the
+open tab), the tab list is a **real tab list**: ids on every tab (focus survives re-renders), roving tabindex (one Tab stop), **← → ↑ ↓
+Home End** move between tabs and open them, `aria-controls` → the panel; empty table headers got visually-hidden names ("Remove",
+"Open and copy links"); the preview card title is an `<h3>`; the tab grid's first-of-row rule; the quote sheet's "QUOTE" title 800 → 600
+like every title since the unslop pass. Tested in Playwright (1280 light, 390 dark, mocked GitHub API): landmarks, h1, skip link →
+editor focused, ArrowRight / End select + focus tabs, exactly one tab stop in the list; axe on all ten tabs: 0 violations (was 3–4 per tab);
+no overflow; the public site untouched (axe 0 on every view).
+*To remove:* the comments "admin accessibility package (2026-11-11)" in `admin.js` mark each line.
+
+**Innovation — Jobs board + job card NK-J / "Posli" (admin tab "Jobs"; `JB_KEY` … `jbAct()` in `admin.js`, `.jb-*` rules in `admin.css`,
+"Start a job" button in `qtView()`):** what happens to an enquiry after the quote was nowhere in the admin — the brief in the mailbox, the
+quote in the Quote tab, the deadline in Nace's head. The new tab is a **board** of every job in four columns — Enquiry · Quoted · In
+progress · Delivered (declined jobs sit in the last column, marked) — each card with job number (`NK-J-YYMMDD-NN`), client, reference,
+the due date as the board reads it (**"Overdue by 3 days"** in redline, "Due today", "Due in 5 days", else the date), steps done / total
+and the agreed total; a summary line ("3 open · 1 in progress · 1 overdue · 1 due within a week · 2 delivered or declined") and a Jobs
+count on the tab button (open jobs). A job starts in three ways: **"+ New job"** (blank), **"From a brief"** (paste the e-mail / Telegram
+text, EN or SL — `qbParse()` of the Quote tab reads client, e-mail, phone, reference, the `[NK-…]` tracking code, deadline, services and
+the parts list → one job in Enquiry, due date set) or **"Start a job"** under the quote in the Quote tab (client, e-mail, reference,
+language, services from the lines, printed parts with material / grams / hours, the quote number and total, the requested deadline from
+the quote's note → a job in Quoted; the same quote twice opens the existing job). The **editor** under the board: client, e-mail, phone,
+reference, tracking code, client's language, due date (with the plain-English hint), status, quote no. (datalist of the saved quotes →
+"Open quote NK-O-…" button loads it in the Quote tab), agreed total (typed, never calculated), the five services as checkboxes, the
+**steps checklist** built from the home page's process steps filtered by the services (Brief · CAD · Sim & calc · Slice & print ·
+Firmware · Assembly · Post-processing · Test · Deliver — e.g. a printing-only job gets Brief, Slice & print, Deliver), parts and notes;
+every change is saved at once (localStorage `nk-admin-jobs`, 60 jobs, browser only — like the quotes, nothing goes to the repo or the
+site), a status change is logged with its date, "Mark delivered" ticks Deliver. The **job card NK-J** (A4, drawing-sheet look, same
+frame as the quote sheet NK-O): title block (job no., started, due, status, client with e-mail / phone / language, reference with code,
+quote and total), services, a steps table with ☐ / ☑ boxes and a "Date · initials" column to fill by hand, parts, notes, the status log;
+**"Print the job card"** prints it alone (the quote's print mode), **"Copy as text"** gives the same as plain text. Keyboard: cards are
+buttons (`aria-pressed`), delete asks first (focus on the confirm), focus lands in the right field after every action.
+- Tested in Playwright (1280 light, 390 dark, mocked GitHub API, 116 checks): landmarks / tabs; blank job → due "Due in 2 days", services
+  → steps "Brief, CAD, Sim & calc, Slice & print, Deliver", 2 / 5 ticked, localStorage record, card in Enquiry, sheet with 5 rows and ☑;
+  status select → In progress column + log; EN brief with `[NK-7Q2M4A]`, phone, 2 parts-list lines, deadline → job no. -02 with
+  everything read ("Spacer · 40 × 30 × 20 mm × 4 · PETG · ≈ 11 g"); SL brief → Slovenian job, "Due in 1 day"; nonsense → message;
+  past due → "10 days late", "1 overdue" in the summary, first in the list; quote (PLA 20 g / 1.5 h × 4 + 2 h CAD, deadline note) →
+  Quoted job with the same total (114,48 €) and due 27/11/2026, duplicate → existing job; saved quote → "Open quote" works; Mark
+  delivered → Delivered column; copied text; print mode shows only the card; delete confirm / keep / delete; reload → "Jobs 3" and 3
+  cards; axe 0 on the tab (empty and full) and on five other tabs; no overflow at 390; no errors.
+*To remove:* see the comment above `JB_KEY` in `admin.js`.
+
+**Ideas for next time** (added to the list below)
+- Admin: Jobs — a week / month calendar strip of due dates above the board, and "e-mail the client" (mailto with the job's reference and code).
+- Admin: Jobs — "Quote this job" (job → new quote with client, reference, parts as printed-part lines), the reverse of "Start a job".
+- Admin: Overview — "Jobs" card (open, overdue, due this week) next to the content health.
+
 ## 2026-11-10
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
@@ -2163,6 +2227,12 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: parts list — read a ZIP of files, and a 3MF with several objects → one line per object.
 - Public: parts list — "Show in 3D" per file line (the file check's plate preview) and the three drawing views on the NK-L sheet.
 - Admin: Quote from a brief — pick up "from the file · N cm³" as the line's volume so the quote can show cm³ next to grams.
+- (Built 2026-11-11: Jobs board + job card NK-J in the admin — Enquiry / Quoted / In progress / Delivered columns, due dates, steps
+  checklist from the process steps, parts, notes, from a brief / from a quote, printable A4 traveller; admin accessibility package as the
+  improvement — landmarks, h1, skip link, real tab list with arrow keys and kept focus, empty headers, heading order.)
+- Admin: Jobs — a week / month calendar strip of due dates above the board, and "e-mail the client" (mailto with the job's reference and code).
+- Admin: Jobs — "Quote this job" (job → new quote with client, reference, parts as printed-part lines), the reverse of "Start a job".
+- Admin: Overview — "Jobs" card (open, overdue, due this week) next to the content health.
 
 ## 2026-10-03 (second run)
 

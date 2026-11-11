@@ -103,6 +103,12 @@ PDF, copy, e-mail; kept in the browser only). *From a brief* at its top takes a 
 or SL) and pre-fills a new quote: client, e-mail, language, reference, one line per service and per printed part, with the
 weight, print time, material, rush and promotion the brief already states; what is missing is listed to fill in by hand.
 
+**Jobs:** the *Jobs* tab is a board of every job — Enquiry → Quoted → In progress → Delivered (or declined) — with client, due
+date (overdue / due in N days), services, a checklist of the workshop steps (the process steps of the home page, filtered by the
+job's services), the parts and notes, and a printable A4 **job card NK-J** (the traveller that goes next to the printer). A job starts
+blank, from a pasted brief (*From a brief*) or from the quote on screen (*Start a job* in the Quote tab). Jobs are kept in the
+browser only (localStorage), like the quotes.
+
 **Table:** the *Table* tab shows all projects as one spreadsheet (category, year, materials, featured, hidden): edit
 cells directly, tick rows to change them together, or copy the table to Excel and paste it back.
 
