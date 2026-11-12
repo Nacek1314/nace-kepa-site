@@ -46,6 +46,10 @@ volume for weight, time and price — read in the browser like the file check, n
 Under the list, **Plate layout NK-N** packs the whole order on the X2D plates (maximal-rectangles nesting with 90° turns) and draws one top
 view per plate; the NK-L sheet, the copied text and the brief carry the mixed plate count (`pnNest()` … `pnInner()` in `src/site/app.js`).
 
+**Find anything** (Ctrl / Cmd + K, or the magnifier in the header) is one search box over the whole site — pages, tools, services, project
+sheets, news, skills, FAQ answers and a few actions, in EN or SL words (`fxOpen()` in `src/site/app.js`). On `#skills`, a term the project
+sheets mention links to those sheets with their count, and each group ends with its service and project categories (`skTerms()` / `skFoot()`).
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,

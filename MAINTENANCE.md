@@ -26,6 +26,59 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-12
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
+#news, #n-bambu-lab-x2d, #skills, #about, #contact, #studio, #order, #mine, #compare, #gift, `/news/`, `/portfolio/famfive/`,
+`/sl/portfolio/famfive/`, 404, /admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts
+blocked in the cloud, as always), no horizontal scroll, no CSP violations, no broken images; EN ↔ SL key comparison of `content.js`: complete.
+Live site from the laptop (`check-live.ps1`): `/`, `/sl/`, `/admin/`, `/news/`, feed, sitemap, a landing page all 200, an unknown address 404;
+the live inline-script hash equals the CSP hash; last Actions run (5b4b992) succeeded. (The cloud session still cannot reach `nacekepa.work`
+or the Actions API — both checked from the laptop.)
+**Fixed:** nothing was broken.
+
+**Improvement — Skills → proof package (`SK_MAP` … `skLegend()` in `app.js`, `sk:` in `content.js`, "Skills → proof" rules in `page.css`):**
+#skills was a list of claims with no way on to the work behind them. Now (a) every term on the page that the project sheets mention is a
+link to those sheets (`#work?q=ESP32`) with their count as a small superscript ("ESP32 ⁶", "Telegram ²", "PETG ¹" …) — counted from
+`projects.json` when the page is drawn, so the numbers follow what Nace publishes; a term is linked only when a whole-word match exists
+and the #work search finds exactly the same sheets (so "PA" or "PC" never link to "packaged" / "PCB"); screen readers hear "ESP32 — 6
+project sheets"; (b) each group ends with a dashed foot: its service with code and published turnaround (S-01 3D design & CAD · 2–5 days;
+S-03; S-02) and its project categories with counts (`#work?cat=CAD` "Projects · CAD (17)", Mechanical, IoT, Embedded), the Manufacturing
+group with the three print tools (material picker, fit check, batch on the plate); Industrial automation has no service or projects on
+the site, so it gets no foot; (c) a one-line legend under the grid explains the underline and the number. Hidden in print. Tested in
+Playwright (EN 1280 light, SL 390 dark): 7 linked terms, the count on the link = the sheets #work shows after the click, category link
+presses the right filter chip; axe 0 violations (the first version used `aria-label` → `label-content-name-mismatch`, replaced by hidden
+text); no overflow.
+*To remove:* see the comment above `SK_MAP` in `app.js`.
+
+**Innovation — Find anything / "Poišči karkoli" (Ctrl / Cmd + K anywhere, or the magnifier button in the header; `fxBtn()` … `fxKey()` in
+`app.js`, `fx:` in `content.js`, "Find anything" rules in `page.css`):** the site has grown to 12 views, 10 tools, 29 sheets, posts, skills
+and a FAQ, and the only search was the project / news box on #work. The new box finds **everything** from every view: pages (incl.
+Contact, Start a project, Compare, Gift card, My corner), the tools T-01 … T-10 by their name ("Price list", "Parts list", "Fit check" —
+shown with their question and one-line description), the four services, every project sheet (title, description, details, category,
+materials, year, sheet number), news posts, every Skills row, the FAQ questions from Settings (**none yet — the group appears once Nace adds
+questions in the admin**; picking one opens that answer on #services) and three actions (switch language, keyboard shortcuts, write an
+e-mail). It reads EN and SL words in either language and ignores č š ž ("cenik" finds the price list on the English page, "skofja" finds
+Contact). Results are grouped (best group first, 5 per group, "N more — show all on the Work page" hands the query to `#work?q=…`), the
+typed words are underlined in redline, each row carries its code (T-04, S-03, NK-25-09, date). Empty box = all pages and tools as a site
+index. Nothing found → "Ask about it — start a project". Keyboard: a combobox + listbox (`aria-activedescendant`), ↑ ↓ move, Enter opens,
+Esc clears then closes, focus returns to where it was; mouse / touch: hover and tap; a status line announces the count. Drawing-sheet
+look (the shortcuts dialog's frame), light + dark, 390 px, hidden in print, forced-colours rule; the `?` list has a "Ctrl K" row. No
+dependency, no request, passes the CSP.
+- Tested in Playwright (EN 1280 light, SL 390 dark, 66 checks): Ctrl+K / Cmd+K / button / Enter on the button open it with focus in the
+  box; empty → Pages 11 + Tools 10; "esp32" → Services 1, Projects 6 (+1 more), Skills 1; arrows + Enter → the sheet, on `/sl/` the address
+  stays `/sl/#p-…`; "cenik", "price", "skofja", "petg", "fit", "solidworks"; "parts list" / "kosovnica" → `#services?tool=parts`;
+  FAQ with two temporary test questions (build only, not committed) → #services, answer open, summary focused and in view; "zzzqqq" →
+  the message + Enter → #order; "slovenščina" / "english" → language switched; backdrop click closes and focus returns to the button;
+  Ctrl+K from the `?` list; "more" row → `#work?q=a` with the box filled; from a landing page → `/sl/#skills`; axe 0 violations (empty,
+  with results, nothing found; light + dark, both sizes); full audit of every view: no errors, no overflow.
+*To remove:* see the comment above `fxItems` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: Find anything — remember the last five picks ("Recent") and index the price-list rows and the materials of the material picker.
+- Public: Skills — a "Used in" row on project sheets (the skills terms a sheet mentions → back to #skills), the reverse of today's links.
+- Admin: Overview — "Search preview": what Find anything shows for a project / post (title, description, code) and which sheets no skill term reaches.
+
 ## 2026-11-11
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
@@ -2233,6 +2286,12 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: Jobs — a week / month calendar strip of due dates above the board, and "e-mail the client" (mailto with the job's reference and code).
 - Admin: Jobs — "Quote this job" (job → new quote with client, reference, parts as printed-part lines), the reverse of "Start a job".
 - Admin: Overview — "Jobs" card (open, overdue, due this week) next to the content health.
+- (Built 2026-11-12: Find anything — Ctrl / Cmd + K or the header magnifier: one box over pages, tools, services, projects, news, skills,
+  FAQ and actions, EN + SL words, grouped results; Skills → proof package as the improvement — skill terms link to the sheets that mention
+  them with counts, each group ends with its service, project categories or tools.)
+- Public: Find anything — "Recent" picks; index the price-list rows and the material picker's materials.
+- Public: "Used in" skills row on project sheets (back-links to #skills).
+- Admin: Overview — "Search preview" per project / post and sheets no skill term reaches.
 
 ## 2026-10-03 (second run)
 

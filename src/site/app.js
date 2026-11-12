@@ -162,7 +162,7 @@
     skills: function () {
       var x = t();
       return '<section class="block first">' + head(x.nav.skills, x.skillsPageTitle, x.skillsPageLead, true) + '<div class="grid-2 skills">' +
-        SKILLS.map(function (g) { return '<div class="skill-group"><h2 class="sub">' + esc(g[lang]) + '</h2>' + specs(g.items) + '</div>'; }).join('') + '</div></section>' +
+        SKILLS.map(function (g, i) { return '<div class="skill-group"><h2 class="sub">' + esc(g[lang]) + '</h2>' + skSpecs(g.items) + skFoot(i) + '</div>'; }).join('') + '</div>' + skLegend() + '</section>' +
         '<section class="block"><p class="nk-label">' + esc(x.certs) + '</p><div class="certs"><div class="cert"><span class="nk-tag nk-tag--ok">CSWA</span><span>Certified SolidWorks Associate</span></div><div class="cert"><span class="nk-tag nk-tag--ok">CSWA-AM</span><span>Certified SolidWorks Associate — Additive Manufacturing</span></div></div></section>' + ctaBand();
     },
     about: function () {
@@ -3451,7 +3451,7 @@
       '<div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div><div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>';
     var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="' + esc(x.aria.home) + '">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="' + esc(x.aria.main) + '">' +
       ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a href="#' + k + '"' + (p === k || ((p === 'project' || p === 'compare') && k === 'work') || (p === 'post' && k === 'news') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
-      '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '">' + ['en', 'sl'].map(function (l) { return '<a href="' + esc(langHref(l) + langLinkHash(l)) + '" hreflang="' + l + '" lang="' + l + '" data-lang="' + l + '" aria-current="' + (lang === l) + '">' + l.toUpperCase() + '</a>'; }).join('') + '</div>' + mnLink() + btn(ctaText(), '#order', 'primary', 'sm') + '</div></header>';
+      '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '">' + ['en', 'sl'].map(function (l) { return '<a href="' + esc(langHref(l) + langLinkHash(l)) + '" hreflang="' + l + '" lang="' + l + '" data-lang="' + l + '" aria-current="' + (lang === l) + '">' + l.toUpperCase() + '</a>'; }).join('') + '</div>' + fxBtn() + mnLink() + btn(ctaText(), '#order', 'primary', 'sm') + '</div></header>';
     var idx = PAGES.indexOf(p === 'project' || p === 'compare' ? 'work' : p === 'post' ? 'news' : p) + 1;
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
@@ -3514,6 +3514,7 @@
 
   app.addEventListener('click', function (ev) {
     var el = ev.target.closest('button, a'); if (!el) return;
+    if (el.hasAttribute('data-fx')) { fxOpen(); return; } // Find anything (2026-11-12)
     if (el.hasAttribute('data-top')) { window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); var tm = document.getElementById('main'); if (tm) tm.focus({ preventScroll: true }); return; }
     if (el.hasAttribute('data-skip')) { ev.preventDefault(); var mn = document.getElementById('main'); mn.focus({ preventScroll: true }); mn.scrollIntoView({ block: 'start' }); return; }
     var th = el.tagName === 'A' && /^#services\?tool=([a-z]+)$/.exec(el.getAttribute('href') || ''); // Tools index: same link again → jump again
@@ -3703,13 +3704,181 @@
     live.textContent = '';
     setTimeout(function () { live.textContent = document.title; }, 80);
   }
+
+  // ---------- Skills → proof package (#skills; 2026-11-12) ----------
+  // Every term on the Skills page that the project sheets mention opens those sheets (#work?q=…) with their count, each
+  // group ends with its service (code, turnaround) and its project categories / tools, a legend explains the underline.
+  // Counts come from projects.json at view time; a term is a link only when a whole-word match exists and the #work
+  // search (which matches parts of words) finds exactly the same sheets. Self-contained: remove SK_MAP … skLegend(),
+  // put specs(g.items) back in views.skills, sk: in content.js and the "Skills → proof" rules in page.css.
+  var SK_MAP = [{ svc: 'cad', cats: ['CAD', 'Mechanical'] }, { svc: 'iot', cats: ['IoT', 'Embedded'] }, { svc: 'print', tools: ['material', 'fit', 'plate'] }, {}];
+  var skAny = false;
+  function skCount(term) {
+    var f = findFold(term).trim(); if (f.length < 2 || !/[a-z]/.test(f)) return 0;
+    var re = new RegExp('(^|[^a-z0-9])' + f.replace(/[.*+?^${}()|[\]\\\/-]/g, '\\$&') + '($|[^a-z0-9])'), n = 0, loose = 0;
+    PROJECTS.forEach(function (p) { var tx = findProjectText(p); if (findHit(tx, f)) loose++; if (re.test(tx)) n++; });
+    return n && n === loose ? n : 0;
+  }
+  function skTerms(v) {
+    var k = t().sk;
+    return String(v).split(/( · |, )/).map(function (part, i) {
+      if (i % 2) return esc(part);
+      var n = skCount(part); if (!n) return esc(part);
+      skAny = true;
+      return '<a class="sk-term" href="#work?q=' + encodeURIComponent(part) + '">' + esc(part) + '<span class="sk-n" aria-hidden="true">' + n + '</span><span class="vh"> — ' + esc((n === 1 ? k.one : k.many).replace('{n}', n)) + '</span></a>';
+    }).join('');
+  }
+  function skSpecs(items) { return '<dl class="nk-specs">' + items.map(function (i) { return '<div><dt>' + skTerms(L(i[0])) + '</dt><dd>' + skTerms(L(i[1])) + '</dd></div>'; }).join('') + '</dl>'; }
+  function skFoot(i) {
+    var m = SK_MAP[i] || {}, k = t().sk, a = [];
+    var s = SERVICES.filter(function (v) { return v.key === m.svc; })[0];
+    if (s) a.push('<a href="#services"><span class="nk-label">' + esc(s.code) + '</span> ' + esc(L(s.title)) + (s.time ? ' · ' + esc(L(s.time)) : '') + ' →</a>');
+    (m.cats || []).forEach(function (c) { var n = PROJECTS.filter(function (p) { return p.category === c; }).length; if (n && CATS[c]) a.push('<a href="#work?cat=' + encodeURIComponent(c) + '">' + esc(k.cat.replace('{c}', CATS[c][lang]).replace('{n}', n)) + ' →</a>'); });
+    (m.tools || []).forEach(function (tk) { var d = TL_TOOLS.filter(function (v) { return v[0] === tk; })[0]; if (d) a.push('<a href="' + tlHash(tk) + '">' + esc(t()[d[1]].title) + ' →</a>'); });
+    return a.length ? '<p class="sk-foot"><span class="nk-label">' + esc(m.tools ? k.tools : k.proof) + '</span>' + a.join('') + '</p>' : '';
+  }
+  function skLegend() { var on = skAny; skAny = false; return on ? '<p class="sk-legend"><span class="sk-term sk-term--demo" aria-hidden="true">abc<span class="sk-n">3</span></span> ' + esc(t().sk.legend) + '</p>' : ''; }
+
+  // ---------- Find anything / "Poišči karkoli" (Ctrl / Cmd + K or the magnifier in the header; 2026-11-12) ----------
+  // One box that finds every page, tool, service, project sheet, news post, skill and FAQ answer of the site (EN or SL
+  // words, with or without č š ž) and opens it with Enter. Built from the data the site already renders; nothing leaves
+  // the browser. Self-contained: remove fxBtn() … fxKey(), the fxBtn() call in frame(), the data-fx line in the click
+  // handler, the fxKey(ev) line in the keydown handler, the fxClose hashchange listener, the 'Ctrl K' row in kbdRows(),
+  // fx: in both languages in content.js and the "Find anything" rules in page.css.
+  var fxItems = [], fxShown = [], fxAt = 0;
+  function fxBtn() {
+    var f = t().fx;
+    return '<button type="button" class="fx-open" data-fx aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K" aria-label="' + esc(f.btn) + '" title="' + esc(f.btn) + ' (Ctrl K)">' +
+      '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="6.5" cy="6.5" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 10l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><kbd aria-hidden="true">K</kbd></button>';
+  }
+  function fxIndex() {
+    var x = t(), f = x.fx, a = [];
+    function add(g, title, sub, href, kw, tag, act) { if (title) a.push({ g: g, t: String(title), s: sub || '', h: href, tag: tag || '', act: act, ft: findFold(title), fk: findFold([sub, kw, tag].join(' ')) }); }
+    [['home', x.nav.home], ['services', x.nav.services], ['work', x.nav.work], ['news', NEWS.length ? x.nav.news : ''], ['skills', x.nav.skills], ['about', x.nav.about], ['contact', f.contact],
+      ['order', x.cta], ['compare', PROJECTS.length > 1 ? x.nav.compare : ''], ['gift', giftOn() ? x.nav.gift : ''], ['mine', x.nav.mine]].forEach(function (p) { add('pages', p[1], '', '#' + p[0], [p[0], T.en.nav[p[0]], T.sl.nav[p[0]], p[0] === 'order' ? T.en.cta + ' ' + T.sl.cta : '', p[0] === 'contact' ? 'kontakt e-mail e-posta LinkedIn Škofja Loka' : ''].join(' ')); });
+    TL_TOOLS.forEach(function (d, i) { add('tools', x[d[1]].label.split(' · ')[0], x[d[1]].title + ' — ' + x.tl[d[0]], tlHash(d[0]), [d[0], T.en[d[1]].label, T.en[d[1]].title, T.sl[d[1]].label, T.sl[d[1]].title].join(' '), tlNo(i + 1)); });
+    add('tools', x.st.label.split(' · ')[0], x.st.title + ' — ' + x.st.tlLine, '#studio', [T.en.st.label, T.en.st.title, T.sl.st.label, T.sl.st.title].join(' '), tlNo(TL_TOOLS.length + 1));
+    SERVICES.forEach(function (s) { add('services', L(s.title), L(s.body), '#services', findBoth(s.title) + ' ' + L(s.get).join(' ') + ' ' + (s.time ? L(s.time) : ''), s.code); });
+    PROJECTS.forEach(function (p) { add('projects', P(p, 'title'), P(p, 'description'), '#p-' + p.slug, [findBoth(p.title), findBoth(p.description), findBoth(p.details), p.category, cat(p), p.materials, p.year].join(' '), sheetNo(p)); });
+    NEWS.forEach(function (n) { add('news', P(n, 'title'), P(n, 'summary'), '#n-' + n.slug, [findBoth(n.title), findBoth(n.summary), findBoth(n.body)].join(' '), fmtDate(n.date)); });
+    SKILLS.forEach(function (g) { g.items.forEach(function (it) { add('skills', L(it[0]), L(it[1]), '#skills', g[lang] + ' ' + findBoth(it[0]) + ' ' + findBoth(it[1]), ''); }); });
+    (SET.faq || []).filter(function (q) { return q && q.q && L(q.q) && q.a && L(q.a); }).forEach(function (q, i) { add('faq', L(q.q), L(q.a).replace(/\s+/g, ' '), '#services', '', '', function () { fxFaq(i); }); });
+    add('actions', lang === 'en' ? 'Slovenščina' : 'English', x.keys.lang, '', 'language jezik slovensko english anglesko', 'L', function () { lang = lang === 'en' ? 'sl' : 'en'; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); langPath(); render(true); });
+    add('actions', x.keys.btn, x.keys.title, '', 'keyboard tipkovnica', '?', kbdOpen);
+    if (CONTACT_EMAIL) add('actions', f.mail, CONTACT_EMAIL, '', 'email e-mail mail e-posta posta pisi write', '', function () { location.href = 'mailto:' + CONTACT_EMAIL; });
+    return a;
+  }
+  function fxFaq(i) {
+    var go = function () { var el = document.querySelectorAll('#faq .faq-item')[i]; if (!el) return; el.open = true; el.scrollIntoView({ block: 'center' }); var s = el.querySelector('summary'); if (s) s.focus({ preventScroll: true }); };
+    if (page() === 'services' && !state.tool) go(); else { location.hash = 'services'; setTimeout(go, 250); } // after the view is drawn and navFocus() has run
+  }
+  function fxScore(it, w) {
+    var sc = 0;
+    for (var i = 0; i < w.length; i++) {
+      var q = w[i], p = it.ft.indexOf(q);
+      if (p === 0) sc += 8; else if (p > 0 && /[^a-z0-9]/.test(it.ft.charAt(p - 1))) sc += 5; else if (p > 0) sc += 3; else if (it.fk.indexOf(q) >= 0) sc += 1; else return 0;
+    }
+    return sc;
+  }
+  function fxMark(s, w) { // underline the typed words in a title; the folded text has the same length as the original
+    var f = findFold(s), on = [], out = '', i;
+    if (f.length !== s.length) return esc(s);
+    w.forEach(function (q) { var p = f.indexOf(q); while (p >= 0) { for (i = p; i < p + q.length; i++) on[i] = 1; p = f.indexOf(q, p + q.length); } });
+    for (i = 0; i < s.length; i++) out += (on[i] && !on[i - 1] ? '<mark>' : '') + esc(s.charAt(i)) + (on[i] && !on[i + 1] ? '</mark>' : '');
+    return out;
+  }
+  function fxDraw() {
+    var d = document.getElementById('fx'); if (!d) return;
+    var f = t().fx, inp = d.querySelector('#fx-q'), box = d.querySelector('#fx-list'), out = d.querySelector('#fx-out');
+    var q = inp.value.trim(), w = findFold(q).split(/\s+/).filter(Boolean), groups = {}, order = [], html = '', n = 0, total = 0;
+    fxShown = [];
+    fxItems.forEach(function (it, i) {
+      var sc = w.length ? fxScore(it, w) : (it.g === 'pages' || it.g === 'tools' ? 1 : 0); if (!sc) return;
+      if (!groups[it.g]) { groups[it.g] = []; order.push(it.g); }
+      groups[it.g].push({ it: it, sc: sc, i: i }); total++;
+    });
+    if (w.length) {
+      order.forEach(function (g) { groups[g].sort(function (a, b) { return b.sc - a.sc || a.i - b.i; }); });
+      order.sort(function (a, b) { return groups[b][0].sc - groups[a][0].sc; });
+    }
+    order.forEach(function (g) {
+      var list = groups[g], cap = w.length ? 5 : 20, more = list.length - cap;
+      html += '<div role="group" aria-labelledby="fx-g-' + g + '"><p class="nk-label fx-g" id="fx-g-' + g + '">' + esc(f.groups[g]) + ' · ' + list.length + '</p>';
+      list.slice(0, cap).forEach(function (r) {
+        html += '<div class="fx-o" role="option" id="fx-o-' + n + '" data-fx-i="' + n + '" aria-selected="false"><span class="fx-t">' + fxMark(r.it.t, w) + '</span>' + (r.it.tag ? '<span class="nk-label fx-tag">' + esc(r.it.tag) + '</span>' : '') + (r.it.s ? '<span class="fx-s">' + fxMark(r.it.s, w) + '</span>' : '') + '</div>';
+        fxShown.push(r.it); n++;
+      });
+      if (more > 0 && (g === 'projects' || g === 'news')) {
+        html += '<div class="fx-o fx-o--more" role="option" id="fx-o-' + n + '" data-fx-i="' + n + '" aria-selected="false"><span class="fx-t">' + esc(f.more.replace('{n}', more)) + ' →</span></div>';
+        fxShown.push({ h: '#work?q=' + encodeURIComponent(q) }); n++;
+      }
+      html += '</div>';
+    });
+    if (!n) html = '<p class="fx-none">' + esc(f.none.replace('{q}', q)) + '</p><div class="fx-o" role="option" id="fx-o-0" data-fx-i="0" aria-selected="false"><span class="fx-t">' + esc(f.ask) + ' →</span><span class="fx-s">' + esc(f.askSub) + '</span></div>';
+    if (!n) fxShown.push({ h: '#order' });
+    box.innerHTML = html; box.scrollTop = 0;
+    out.textContent = w.length ? (total ? (total === 1 ? f.count1 : f.count).replace('{n}', total) : f.none.replace('{q}', q)) : '';
+    out.classList.toggle('vh', !n); // the same sentence is on screen in the list
+    fxSel(0);
+  }
+  function fxSel(i, scroll) {
+    var d = document.getElementById('fx'); if (!d || !fxShown.length) return;
+    fxAt = (i + fxShown.length) % fxShown.length;
+    Array.prototype.forEach.call(d.querySelectorAll('.fx-o'), function (el) { var on = +el.getAttribute('data-fx-i') === fxAt; el.setAttribute('aria-selected', on); if (on && scroll) el.scrollIntoView({ block: 'nearest' }); });
+    d.querySelector('#fx-q').setAttribute('aria-activedescendant', 'fx-o-' + fxAt);
+  }
+  function fxPick(i) {
+    var it = fxShown[i]; if (!it) return;
+    var d = document.getElementById('fx'); if (d) { d.fxBack = null; d.close(); }
+    if (it.act) { it.act(); return; }
+    var h = it.h.slice(1);
+    if (hashPath().replace(/^(en|sl)-?/, '') === h) { window.scrollTo(0, 0); var mn = document.getElementById('main'); if (mn) mn.focus({ preventScroll: true }); }
+    else location.hash = h;
+  }
+  function fxClose() { var d = document.getElementById('fx'); if (d && d.open) d.close(); else if (d) d.remove(); }
+  function fxOpen() {
+    if (document.getElementById('fx')) return;
+    kbdClose();
+    var f = t().fx, d = document.createElement('dialog');
+    d.id = 'fx'; d.className = 'kbd fx'; d.setAttribute('aria-labelledby', 'fx-l'); d.lang = lang;
+    d.fxBack = document.activeElement;
+    d.innerHTML = '<div class="kbd-head"><label class="nk-label" id="fx-l" for="fx-q">' + esc(f.label) + '</label><button type="button" class="chip kbd-x" data-fx-close aria-label="' + esc(t().keys.close) + '">✕</button></div>' +
+      '<input class="nk-input" id="fx-q" type="search" role="combobox" aria-expanded="true" aria-controls="fx-list" aria-autocomplete="list" aria-describedby="fx-out" enterkeyhint="go" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="' + esc(f.ph) + '">' +
+      '<div class="fx-list" id="fx-list" role="listbox" aria-labelledby="fx-l" tabindex="-1"></div>' +
+      '<p class="nk-label fx-out" id="fx-out" role="status" aria-live="polite"></p>' +
+      '<p class="kbd-note fx-keys"><kbd>↑</kbd> <kbd>↓</kbd> ' + esc(f.kMove) + ' · <kbd>Enter</kbd> ' + esc(f.kOpen) + ' · <kbd>Esc</kbd> ' + esc(t().keys.close.toLowerCase()) + '</p>';
+    var inp = d.querySelector('#fx-q');
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-fx-close]')) { d.close(); return; }
+      var o = e.target.closest('.fx-o'); if (o) fxPick(+o.getAttribute('data-fx-i'));
+    });
+    d.addEventListener('mousemove', function (e) { var o = e.target.closest && e.target.closest('.fx-o'); if (o && +o.getAttribute('data-fx-i') !== fxAt) fxSel(+o.getAttribute('data-fx-i')); });
+    inp.addEventListener('input', fxDraw);
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); fxSel(fxAt + (e.key === 'ArrowDown' ? 1 : -1), true); }
+      else if (e.key === 'Enter') { e.preventDefault(); fxPick(fxAt); }
+      else if (e.key === 'Escape' && inp.value) { e.preventDefault(); inp.value = ''; fxDraw(); } // first Esc clears, the second closes
+    });
+    d.addEventListener('close', function () { var b = d.fxBack; d.remove(); if (b && b.focus && document.contains(b)) b.focus(); else if (b) { var o = document.querySelector('.fx-open'); if (o) o.focus(); } });
+    document.body.appendChild(d);
+    fxItems = fxIndex();
+    try { d.showModal(); } catch (e) { d.setAttribute('open', ''); }
+    fxDraw(); inp.focus();
+  }
+  // Ctrl / Cmd + K from anywhere (also while typing in a field); not in the photo viewer. Returns true when handled.
+  function fxKey(ev) {
+    if (!(ev.ctrlKey || ev.metaKey) || ev.altKey || ev.shiftKey || !ev.key || ev.key.toLowerCase() !== 'k' || lb) return false;
+    ev.preventDefault();
+    if (document.getElementById('fx')) fxClose(); else fxOpen();
+    return true;
+  }
   // ---------- Keyboard shortcuts: "?" opens a list; ← / → previous/next sheet; H S W N O jump; L switches EN/SL ----------
   // Self-contained: remove this block (KBD_GO … kbdKey()), kbdBtn() in frame(), the data-kbd line in the click handler,
   // the kbdKey(ev) line in the keydown handler, keys: in both languages in content.js and the "Keyboard shortcuts" rules in page.css.
   var KBD_GO = { h: 'home', s: 'services', w: 'work', n: 'news', p: 'studio', o: 'order', c: 'compare' };
   function kbdBtn() { return '<button type="button" class="kbd-open" data-kbd aria-haspopup="dialog">' + esc(t().keys.btn) + ' <kbd>?</kbd></button>'; }
   function kbdRows() {
-    var x = t(), k = x.keys, r = [['?', k.help], ['/', k.find], ['← →', k.prevNext]];
+    var x = t(), k = x.keys, r = [['?', k.help], ['Ctrl K', x.fx.key], ['/', k.find], ['← →', k.prevNext]];
     Object.keys(KBD_GO).forEach(function (c) { var v = KBD_GO[c]; if ((v === 'news' && !NEWS.length) || (v === 'compare' && PROJECTS.length < 2)) return; r.push([c.toUpperCase(), v === 'order' ? x.cta : v === 'home' ? x.nav.home : x.nav[v]]); });
     return r.concat([['L', k.lang], ['Esc', k.close]]);
   }
@@ -3748,10 +3917,12 @@
     ev.preventDefault(); if (page() === to) window.scrollTo(0, 0); else location.hash = to; return true;
   }
   window.addEventListener('hashchange', kbdClose);
+  window.addEventListener('hashchange', fxClose);
   // Search keys: "/" jumps to the search on #work from anywhere; Esc in the box clears it.
   document.addEventListener('keydown', function (ev) {
     var tg = ev.target, typing = tg && (/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName) || tg.isContentEditable);
     if (ev.key === 'Escape' && tg && tg.id === 'find-q' && state.q) { state.q = ''; tg.value = ''; findApply(); ev.preventDefault(); return; }
+    if (fxKey(ev)) return; // Find anything (2026-11-12)
     if (ofKey(ev)) return;
     if (kbdKey(ev, typing)) return;
     if (ev.key !== '/' || typing || lb || ev.ctrlKey || ev.metaKey || ev.altKey) return;
