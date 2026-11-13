@@ -26,6 +26,63 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-13
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
+#news, #n-bambu-lab-x2d, #skills, #about, #contact, #studio, #order, #mine, #compare, #gift, `/news/`, `/portfolio/famfive/`, 404, /admin/
+sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in the cloud, as always), no
+horizontal scroll, no CSP violations, no broken images; axe on 15 views (EN 1280 light / dark, SL 390 dark / light): 0 violations. Live site
+from the laptop (`check-live.ps1`): `/`, `/sl/`, `/admin/`, `/news/`, feed, sitemap, a landing page all 200, an unknown address 404; the
+live inline-script hash equals the CSP hash; last Actions run (e239651) succeeded.
+**Fixed:** nothing was broken.
+
+**Improvement — search package (Find anything + the #work search; `fxIndex()`, `fxElse()`, `fxRecent` in `app.js`, `fx:` in `content.js`):**
+(a) Find anything now knows the **materials** of the material picker — PLA … PC, each with its one-line note from the picker and, while
+the price list is published, its price per gram ("PETG · 0.036 € / g · Tough everyday material …"); picking one opens the material picker
+with that material pre-selected for when the visitor ticks the needs; (b) it knows the **price-list rows** — the hourly rate of each
+service, machine time, file preparation, the two minimums, post-processing, rush — each with the first sentence of the VAT note from
+Settings, found by "price", "cost", "rate", "cena", "cenik", "koliko stane" or the row's own name in EN or SL, opening the price list
+(only while Settings has prices; numbers are read from `settings.json`, none are written in the code); (c) the empty box starts with
+**"Opened earlier"** — the last five things this visitor opened from the box during the visit (kept in memory only, gone on reload, nothing
+stored); (d) when the **#work search finds nothing** but the rest of the site has the words (tools, prices, materials, services, skills,
+pages, answers), the "nothing matches" box gets a button "Results from the rest of the site (N)" that opens Find anything with the same
+words typed ("price list" / "cenik" on #work → the price list instead of a dead end); no button when the site has nothing either. The
+box's label names prices and materials. Tested in Playwright (EN 1280 light, SL 390 dark): "petg" → Materials with the price, Enter →
+`#services?tool=material`, PETG pre-selected after ticking "outdoors"; "cena" on the English page → price rows with "42 € / h" and the VAT
+sentence; "rush" / "nujno" → "+25 %" → `#services?tool=prices`; "Opened earlier" first with both picks; the #work button, its count, the
+pre-filled box, focus back on the button after Esc; axe 0 violations.
+*To remove:* the two "Search package (2026-11-13)" blocks in `fxIndex()` / `fxDraw()`, `fxRecent` (declaration + the line in `fxPick()`),
+`fxElse()` and its call in `findApply()`, the `q` argument of `fxOpen()`, `groups.recent / materials / prices` + `elsewhere` in `fx:`.
+
+**Innovation — Presentation / "Predstavitev" (`PZ_SECS` … `pzKey()` in `app.js`, `pz:` in `content.js`, "Presentation" rules in `page.css`):**
+the project sheets one at a time on the whole screen — for a meeting, a second screen, or a phone handed across the table. Until now the
+only ways through the work were the grid, the register and one sheet page at a time. **Where:** #work → View row → **▶ Present N** (N = the
+sheets the page shows right now: category filter + search; in the Register view the register's sort order); the shortlist box on #work has
+its own **Present** button (only the starred sheets); Find anything → "Present the work" (all sheets, from any page); and a link opens it
+directly — `#work?show=1`, `#work?cat=IoT&show=1`, `#work?q=esp32&show=<slug>` ("Copy link" in the presentation copies the link to the
+sheet on screen, in the page's language). **A slide:** the sheet's photo if it has one, else its drawing; sheet number · discipline · year;
+title; description; materials / 3D model / photo count and the first two paragraphs of the details **when Nace has filled them in** (today
+no sheet has photos, materials or details, so slides show drawing + title + description — they get richer by themselves as he adds them);
+"Open the sheet" and a ☆ shortlist toggle (a client can star sheets during the walk-through; the stars are on #work when the presentation
+closes). **Controls:** Previous / Next buttons, a position counter "03 / 29" with a tick strip; ← → / PageUp PageDown / Space, Home / End,
+swipe on touch; **A** = auto-advance every 8 s (off by default, any manual step restarts the countdown), **F** = full screen (button hidden
+where the browser has none, e.g. iPhone), **S** = star, Esc closes and returns focus to the button. While it is open the site's own
+shortcuts (H, W, L, /, ?, Ctrl K) are off. A modal `<dialog>` in the drawing-sheet look (paper + grid, mono labels, redline tick), light +
+dark, phone layout stacked, a live region announces "Sheet 3 of 29: title", hidden in print, forced-colours rule. Only `projects.json`;
+nothing stored or sent; no dependency; passes the CSP.
+- Tested in Playwright (EN 1280 light, SL 390 dark, 138 checks with the search package): button count 29 / IoT 5 / follows the search /
+  disabled at 0; every key incl. wrap-around; site shortcuts swallowed; star by key and by click → shortlist of 2 after closing; shortlist
+  presentation (no "Copy link"); auto-advance after 8 s and off again; copied link = `…#work?show=<slug>` / `…#work?q=esp32&cat=IoT&show=…`
+  and opens at that sheet with `show` removed from the address; `#work?cat=CAD&show=1` typed into an open page; register order; "Open the
+  sheet" closes it and draws the sheet; swipe; focus return (button, shortlist button, deep link); from Find anything; axe 0 violations;
+  no overflow at 390 px. Full screen could not be exercised in headless Chromium (the API is absent there) — worth one click by Nace.
+*To remove:* see the comment above `PZ_SECS` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: Presentation — step through a sheet's photos inside the slide and a closing slide with the contact card + QR (once sheets have photos).
+- Public: Presentation of the shortlist as a shareable link (`#work?list=slug,slug&show=1`) — needs the shareable shortlist link first.
+- Admin: Overview — "Presentation check": which sheets would show only a drawing (no photo, materials or details) with a jump to each.
+
 ## 2026-11-12
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
@@ -2292,6 +2349,13 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: Find anything — "Recent" picks; index the price-list rows and the material picker's materials.
 - Public: "Used in" skills row on project sheets (back-links to #skills).
 - Admin: Overview — "Search preview" per project / post and sheets no skill term reaches.
+
+- (Built 2026-11-13: Presentation — #work "▶ Present", shortlist "Present", Find anything "Present the work", `#work?…&show=1`: the
+  sheets one at a time on the whole screen with keys, swipe, auto-advance, full screen, star; search package as the improvement — Find
+  anything knows materials and price-list rows, "Opened earlier", "Results from the rest of the site" on an empty #work search.)
+- Public: Presentation — photos inside the slide + a closing contact slide with QR.
+- Public: Presentation of a shortlist as a shareable link (`#work?list=…&show=1`).
+- Admin: Overview — "Presentation check" (sheets that would show only a drawing).
 
 ## 2026-10-03 (second run)
 
