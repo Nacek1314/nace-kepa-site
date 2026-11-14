@@ -54,6 +54,10 @@ sheets mention links to those sheets with their count, and each group ends with 
 project sheets one at a time on the whole screen — arrow keys / swipe, auto-advance, full screen, shortlist star (`pzOpen()` in
 `src/site/app.js`). Find anything also finds the material picker's materials and the price-list rows.
 
+**Shared selection**: "Copy link" in the shortlist box on `#work` gives `#work?list=slug,slug` — the link opens those sheets as a box
+above the work (present, compare, add to the visitor's own shortlist, start a project; `&show=1` presents at once) — `sxBox()` in
+`src/site/app.js`. A project sheet's spec table also names its service and the Skills terms it mentions (`sdRows()`).
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,

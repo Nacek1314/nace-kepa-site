@@ -26,6 +26,45 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-14
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`, `?tool=material`), #work, #work?view=list, #p-famfive,
+#p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about, #contact, #studio, #order (4 steps in SL on the local build, nothing sent),
+#mine, #compare, #gift, `/news/`, `/portfolio/famfive/`, `/sl/portfolio/famfive/`, 404, /admin/ sign-in — 1280 + 390 px, light + dark,
+`/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in the cloud, as always), no horizontal scroll, no CSP violations, no
+broken images. Live site from the laptop (`check-live.ps1`): all addresses 200, an unknown address 404, the live inline-script hash equals
+the CSP hash; last Actions run (83b9778) succeeded.
+**Fixed:** nothing was broken.
+
+**Improvement — sheet → service & skills package (`sdSvc()` … `sdRows()` in `app.js`, `sd:` in `content.js`):** the reverse of the
+2026-11-12 Skills → proof links. (a) every project sheet's spec table has a **Service** row — the service behind the sheet's discipline
+with its code and published turnaround ("S-01 3D design & CAD · 2–5 days", "S-03 Embedded systems & IoT"; S-03 has no turnaround in the
+repo, so none is shown) → #services; (b) a **Skills** row with the Skills-page terms the sheet mentions ("ESP32 ⁶") — a term other sheets
+mention too opens those sheets with the same count as on #skills, then "All skills →"; the row is absent when the sheet mentions none;
+(c) **"Start a project like this"** ticks that service in the order form when the visitor has not ticked one yet (an existing choice is
+kept). Tested in Playwright (EN 1280 light, SL 390 dark): rows on an Embedded and a CAD sheet, count on the term = sheets #work shows,
+service ticked / kept; axe 0 violations.
+*To remove:* see the comment above `sdSvc()` in `app.js`.
+
+**Innovation — Shared selection / "Poslani izbor" (`sxParse()` … `sxClose()` in `app.js`, `sx:` in `content.js`, "Shared selection" rules
+in `page.css`):** a shortlist as a link, so a client can send the sheets they like to a colleague (or Nace can send a hand-picked set to a
+client). **Where:** star two or more sheets → #work → shortlist box → **Copy link** → `https://nacekepa.work/#work?list=slug,slug`
+(`/sl/#work?…` on the Slovenian page). Opening it on any device shows a **Shared selection** box above the work: the sheets with number,
+title, description and discipline; **▶ Present** (the 2026-11-13 presentation with just these sheets), Compare, **Add all to my
+shortlist** (only then anything is stored in that browser; sheets already starred are marked ★), Start a project with these (reference
+line in the brief), Copy link, Close. `…&show=1` / `&show=<slug>` opens the presentation directly; "Copy link" inside a shortlist or
+shared presentation (new for the shortlist) gives exactly that link at the sheet on screen. The selection stays in the address while
+filtering / searching, unknown slugs are dropped, a link with none valid shows nothing. Only `projects.json`; nothing sent; no dependency.
+- Tested in Playwright (EN 1280 light, SL 390 dark, 92 checks with the package): copied link, fresh browser → box of 2, nothing stored,
+  address normalised, filter keeps it, sheet and Back, presentation (label, keys, copied link, focus return, `show=` deep link), keep →
+  shortlist + focus + message, "already on your shortlist", order brief line, close, garbage / script in `list=` ignored; axe 0; no overflow.
+*To remove:* see the comment above `sxParse()` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Admin: "Selection link" builder — tick projects in the Table tab → copy the `#work?list=…` link (EN / SL) + QR for an offer e-mail.
+- Public: a QR of the shared-selection link in the shortlist box; a printable "selection sheet" (the portfolio set pre-filled from `list=`).
+- Public: Presentation — the Service / Skills rows on the slide; a closing contact slide with QR.
+
 ## 2026-11-13
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
@@ -2356,6 +2395,13 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: Presentation — photos inside the slide + a closing contact slide with QR.
 - Public: Presentation of a shortlist as a shareable link (`#work?list=…&show=1`).
 - Admin: Overview — "Presentation check" (sheets that would show only a drawing).
+
+- (Built 2026-11-14: Shared selection — shortlist "Copy link" → `#work?list=slug,slug` opens the sheets as a "Shared selection" box with
+  Present / Compare / add to my shortlist / start a project, `&show=1`; sheet → service & skills package as the improvement — Service and
+  Skills rows on project sheets, "Start a project like this" ticks the service.)
+- Admin: selection-link builder in the Table tab (+ QR).
+- Public: QR of the selection link; printable selection sheet from `list=`.
+- Public: Presentation — Service / Skills rows on the slide.
 
 ## 2026-10-03 (second run)
 

@@ -151,7 +151,7 @@
       var has3d = PROJECTS.some(function (p) { return p.model; });
       if (has3d) cats.splice(1, 0, '3d');
       return '<section class="block first">' + head(PROJECTS.length + ' ' + x.shown, x.workPageTitle, x.workPageLead, true) +
-        slBox() +
+        sxBox() + slBox() +
         findBox() +
         '<div class="filters" role="group" aria-label="' + esc(x.aria.filter) + '">' + cats.map(function (c) {
           var n = c === 'all' ? PROJECTS.length : PROJECTS.filter(function (p) { return c === '3d' ? !!p.model : p.category === c; }).length;
@@ -278,7 +278,7 @@
     return '<section class="block first project">' +
       '<a class="back" href="#work">← ' + esc(x.allWork) + '</a>' +
       head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
-      '<div class="project-grid"><div class="project-stage">' + stage + '</div><div class="project-side">' + specs(rows) +
+      '<div class="project-grid"><div class="project-stage">' + stage + '</div><div class="project-side">' + specs(rows).replace('</dl>', sdRows(p) + '</dl>') +
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
       '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', null, true) + askLink(p) + '</div>' + slToggle(p) + cmpFrom(p) + shareBox('p', p) + printBox('p', p) + '</div></div>' +
       (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="' + esc(P(p, 'title') + ' · ' + (i + 1)) + '" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
@@ -559,6 +559,7 @@
     var p = bySlug(currentSlug()), o = state.order; if (!p) return;
     var line = t().rel.brief + ': ' + P(p, 'title') + ' (' + sheetNo(p) + ').';
     if (o.what.indexOf(line) < 0) o.what = o.what ? o.what + '\n' + line : line;
+    var sv = sdSvc(p); if (sv && !o.services.length) o.services = [sv.key]; // Sheet → service package (2026-11-14)
     state.step = 0; state.errors = {}; state.send = 'idle';
     location.hash = 'order';
   }
@@ -598,7 +599,7 @@
           '<button type="button" class="chip sl-x" data-sl-del="' + esc(p.slug) + '" aria-label="' + esc(x.del.replace('{t}', P(p, 'title'))) + '">✕</button></li>';
       }).join('') + '</ul>' +
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--sm" data-sl-go>' + esc(x.start) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
-      cmpSlBtn(a) + '<button type="button" class="nk-btn nk-btn--sm" data-pz="sl" aria-haspopup="dialog">' + esc(t().pz.btn) + '</button><button type="button" class="nk-btn nk-btn--sm" data-sl-copy>' + esc(x.copy) + '</button><button type="button" class="share-link" data-sl-clear>' + esc(x.clear) + '</button></div>' +
+      cmpSlBtn(a) + '<button type="button" class="nk-btn nk-btn--sm" data-pz="sl" aria-haspopup="dialog">' + esc(t().pz.btn) + '</button><button type="button" class="nk-btn nk-btn--sm" data-sl-copy>' + esc(x.copy) + '</button><button type="button" class="nk-btn nk-btn--sm" data-sx-copy="sl">' + esc(t().sx.link) + '</button><button type="button" class="share-link" data-sl-clear>' + esc(x.clear) + '</button></div>' +
       '<p class="share-msg" id="sl-msg" role="status" aria-live="polite"></p></section>';
   }
   function slDel(slug) {
@@ -617,8 +618,8 @@
     var fail = function () { msg.textContent = x.copyFail; var r = document.createRange(); r.selectNodeContents(list); var s = getSelection(); s.removeAllRanges(); s.addRange(r); };
     try { navigator.clipboard.writeText(slText()).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
   }
-  function slToOrder() {
-    var a = slRead(), o = state.order; if (!a.length) return;
+  function slToOrder(b) {
+    var a = b || slRead(), o = state.order; if (!a.length) return;
     var line = t().sl.brief + ': ' + a.map(function (s) { var p = bySlug(s); return P(p, 'title') + ' (' + sheetNo(p) + ')'; }).join('; ') + '.';
     if (o.what.indexOf(line) < 0) o.what = o.what ? o.what + '\n' + line : line;
     state.step = 0; state.errors = {}; state.send = 'idle';
@@ -868,19 +869,59 @@
     pzSync(); // Presentation (2026-11-13)
   }
 
+  // ---------- Shared selection / "Poslani izbor" (#work?list=slug,slug; 2026-11-14) ----------
+  // A shortlist as a link: "Copy link" in the shortlist box (and in a shortlist presentation) gives
+  // https://nacekepa.work/#work?list=slug,slug — opened on any device it shows those sheets in a "Shared selection" box
+  // above the work: open a sheet, Present (…&show=1 opens the presentation at once), Compare, add them to the visitor's
+  // own shortlist, start a project with them as references, or close it. Nothing is stored until the visitor adds them;
+  // unknown slugs are dropped. Only projects.json; no request. Self-contained: remove sxParse() … sxClose(), the sxBox()
+  // call in views.work, the data-sx-copy button in slBox(), the `b` argument of slToOrder(), the three "Shared selection"
+  // lines in findQuery() / findRead() (and `noList`), the four data-sx-* lines in the click handler, the 'sx' lines in
+  // pzList() / pzLink() / render(), sx: + pz.sets.sx in content.js and the "Shared selection" rules in page.css.
+  function sxParse(v) { var a = []; String(v).split(',').forEach(function (s) { s = s.trim(); if (bySlug(s) && a.indexOf(s) < 0) a.push(s); }); return a; }
+  function sxList() { return (state.sx || []).map(bySlug).filter(Boolean); }
+  function sxUrl(slugs, show) { return siteUrl('#work?list=' + slugs.join(',') + (show ? '&show=' + encodeURIComponent(show) : '')); }
+  function sxBox() {
+    var x = t().sx, a = sxList(), mine = slRead(); if (!a.length) return '';
+    var fresh = a.filter(function (p) { return mine.indexOf(p.slug) < 0; }).length;
+    return '<section class="sl sx" aria-labelledby="sx-h"><div class="sl-head"><p class="nk-label">' + esc(x.label) + ' · ' + a.length + '</p><h2 class="sub" id="sx-h" tabindex="-1">' + esc(x.title) + '</h2><p class="sl-lead">' + esc(x.lead) + '</p></div>' +
+      '<ol class="sl-list sx-list">' + a.map(function (p) {
+        var on = mine.indexOf(p.slug) >= 0;
+        return '<li><a href="#p-' + esc(p.slug) + '"><span class="nk-label">' + sheetNo(p) + '</span><span class="sl-t">' + esc(P(p, 'title')) + (on ? ' <span class="sl-mark" aria-hidden="true">★</span><span class="vh"> — ' + esc(t().sl.on) + '</span>' : '') + '<span class="sx-d">' + esc(P(p, 'description')) + '</span></span><span class="nk-label sl-c">' + esc(cat(p)) + '</span></a></li>';
+      }).join('') + '</ol>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--sm" data-pz="sx" aria-haspopup="dialog"><span aria-hidden="true">▶ </span>' + esc(t().pz.btn) + '</button>' + cmpSlBtn(a) +
+      (fresh ? '<button type="button" class="nk-btn nk-btn--sm" data-sx-keep><span class="sl-star" aria-hidden="true">☆</span>' + esc(x.keep) + '</button>' : '') +
+      '<button type="button" class="nk-btn nk-btn--sm" data-sx-go>' + esc(t().sl.start) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
+      '<button type="button" class="nk-btn nk-btn--sm" data-sx-copy="sx">' + esc(x.link) + '</button><button type="button" class="share-link" data-sx-close>' + esc(x.close) + '</button></div>' +
+      '<p class="share-msg" id="sx-msg" role="status" aria-live="polite">' + (fresh ? '' : esc(x.have)) + '</p></section>';
+  }
+  function sxCopy(src) {
+    var x = t().sx, a = src === 'sl' ? slRead() : state.sx || [], msg = document.getElementById(src === 'sl' ? 'sl-msg' : 'sx-msg'); if (!a.length || !msg) return;
+    var url = sxUrl(a), ok = x.copied.replace('{n}', a.length), fail = function () { msg.textContent = x.copyFail + ' ' + url; };
+    try { navigator.clipboard.writeText(url).then(function () { msg.textContent = ok; }, fail); } catch (e) { fail(); }
+  }
+  function sxKeep() {
+    var a = slRead(), n = 0; (state.sx || []).forEach(function (s) { if (a.indexOf(s) < 0) { a.push(s); n++; } });
+    slSave(a); state.sx = []; render(true);
+    var h = document.getElementById('sl-h'), msg = document.getElementById('sl-msg');
+    if (h) { h.scrollIntoView({ block: 'center' }); h.focus({ preventScroll: true }); } if (msg) msg.textContent = t().sx.kept.replace('{n}', n);
+  }
+  function sxClose() { state.sx = []; render(true); var f = document.getElementById('find-q'); if (f) f.focus(); }
+
   // ---------- Search links (#work): the search and category filter live in the address, e.g. #en-work?q=esp32&cat=iot ----------
   // Self-contained: remove findQuery()…findShareCopy(), the "?" line in page(), the findShareBox() call in findBox(),
   // the findSync() call at the end of findApply(), the data-find-copy line in the click handler, find.link* in content.js
   // and the "Search links" rules at the end of page.css.
-  function findQuery() {
+  function findQuery(noList) {
     var a = [], q = state.q.trim();
+    if (!noList && state.sx && state.sx.length) a.push('list=' + state.sx.join(',')); // Shared selection (2026-11-14)
     if (q) a.push('q=' + encodeURIComponent(q));
     if (state.filter !== 'all') a.push('cat=' + encodeURIComponent(state.filter));
     if (state.rg && state.rg.view === 'reg') a.push('view=list');
     return a.length ? '?' + a.join('&') : '';
   }
   function findRead(qs) {
-    var q = '', c = 'all';
+    var q = '', c = 'all', sx = [];
     qs.split('&').forEach(function (kv) {
       var i = kv.indexOf('='), k = i < 0 ? kv : kv.slice(0, i), v = i < 0 ? '' : kv.slice(i + 1);
       try { v = decodeURIComponent(v.replace(/\+/g, ' ')); } catch (e) { v = ''; }
@@ -888,8 +929,9 @@
       if (k === 'cat' && (v === '3d' || CATS[v])) c = v;
       if (k === 'view' && state.rg) state.rg.view = v === 'list' ? 'reg' : 'grid';
       if (k === 'show') state.pzGo = v || '1'; // Presentation (2026-11-13): #work?…&show=1 / &show=<slug>
+      if (k === 'list') sx = sxParse(v); // Shared selection (2026-11-14)
     });
-    state.q = q; state.filter = c;
+    state.q = q; state.filter = c; state.sx = sx;
   }
   function findLink() { return siteUrl('#work' + findQuery()); } // Language package (2026-11-09)
   function findSync() {
@@ -897,7 +939,7 @@
     if (h !== want) try { history.replaceState(history.state, '', want); } catch (e) {}
     state.findHash = location.hash; // read back from the address only when it changes from outside (link, Back, typed)
     var box = document.getElementById('find-share'); if (!box) return;
-    var on = !!findQuery(), url = document.getElementById('find-url');
+    var on = !!findQuery(true), url = document.getElementById('find-url');
     box.hidden = !on;
     if (url && url.value !== findLink()) { url.value = findLink(); document.getElementById('find-msg').textContent = ''; }
   }
@@ -3495,7 +3537,7 @@
     if (p === 'services' && state.plFocus) { state.plFocus = false; var pb = document.getElementById('plan'); if (pb) { pb.scrollIntoView({ block: 'start' }); var pr = pb.querySelector('input'); if (pr) pr.focus({ preventScroll: true }); } }
     if (p === 'about' && state.ctGo) { state.ctGo = false; var ct = document.getElementById('contact'); if (ct) { ct.scrollIntoView({ block: 'start' }); ct.focus({ preventScroll: true }); } }
     if (p === 'work') { findApply(); if (state.findFocus) { state.findFocus = false; var fq = document.getElementById('find-q'); if (fq) fq.focus(); } }
-    if (p === 'work' && state.pzGo) { var pg = state.pzGo; state.pzGo = ''; pzOpen('work', pg); } else state.pzGo = ''; // Presentation (2026-11-13)
+    if (p === 'work' && state.pzGo) { var pg = state.pzGo; state.pzGo = ''; pzOpen(state.sx && state.sx.length ? 'sx' : 'work', pg); } else state.pzGo = ''; // Presentation (2026-11-13)
     // Back from a project sheet / news post to its list: scroll to and focus the card the visitor opened, not the top.
     var came = state.from; state.from = p === 'project' ? '#p-' + currentSlug() : p === 'post' ? '#n-' + currentSlug() : '';
     if (came && !keepScroll && (p === 'work' || p === 'news')) {
@@ -3604,6 +3646,10 @@
     if (el.hasAttribute('data-dr-keep')) { dr.ask = false; var dk = document.getElementById('dr'); if (dk) { dk.innerHTML = drInner(); var cb = dk.querySelector('[data-dr-clear]'); if (cb) cb.focus(); } return; }
     if (el.hasAttribute('data-dr-yes')) { drClearAll(); return; }
     if (el.hasAttribute('data-sl-clear')) { slClear(); return; }
+    if (el.hasAttribute('data-sx-copy')) { sxCopy(el.getAttribute('data-sx-copy')); return; } // Shared selection (2026-11-14)
+    if (el.hasAttribute('data-sx-keep')) { sxKeep(); return; }
+    if (el.hasAttribute('data-sx-go')) { slToOrder(state.sx); return; }
+    if (el.hasAttribute('data-sx-close')) { sxClose(); return; }
     if (el.hasAttribute('data-tb-copy')) { tbCopy(); return; }
     if (el.hasAttribute('data-find-clear')) { state.q = ''; var fq = document.getElementById('find-q'); fq.value = ''; findApply(); fq.focus(); return; }
     if (el.dataset.lang) { if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return; ev.preventDefault(); if (el.dataset.lang === lang) return; lang = el.dataset.lang; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); langPath(); render(true); return; } // Language package: a real link, switched in place on a plain click
@@ -3742,6 +3788,30 @@
     return a.length ? '<p class="sk-foot"><span class="nk-label">' + esc(m.tools ? k.tools : k.proof) + '</span>' + a.join('') + '</p>' : '';
   }
   function skLegend() { var on = skAny; skAny = false; return on ? '<p class="sk-legend"><span class="sk-term sk-term--demo" aria-hidden="true">abc<span class="sk-n">3</span></span> ' + esc(t().sk.legend) + '</p>' : ''; }
+
+  // ---------- Sheet → service & skills package (project sheets; 2026-11-14) ----------
+  // The reverse of the Skills → proof links: a project sheet's spec table gets a "Service" row (the service behind the
+  // sheet's discipline, with its code and published turnaround → #services) and a "Skills" row (the Skills-page terms
+  // this sheet mentions; a term other sheets mention too opens those sheets with the count, then "All skills" → #skills).
+  // "Start a project like this" ticks that service in the order form when none is ticked yet. Counts and terms come from
+  // projects.json + SKILLS at view time. Self-contained: remove sdSvc() … sdRows(), the .replace(…sdRows(p)…) in
+  // projectView(), the sdSvc line in relToOrder() and sd: in content.js.
+  function sdSvc(p) { var k = ''; SK_MAP.forEach(function (m) { if ((m.cats || []).indexOf(p.category) >= 0) k = m.svc; }); return SERVICES.filter(function (v) { return v.key === k; })[0] || null; }
+  function sdTerms(p) {
+    var tx = findProjectText(p), out = [];
+    SKILLS.forEach(function (g) { g.items.forEach(function (it) { [L(it[0]), L(it[1])].forEach(function (v) { String(v).split(/ · |, /).forEach(function (term) {
+      var f = findFold(term).trim(); if (out.indexOf(term) >= 0 || !skCount(term)) return;
+      if (new RegExp('(^|[^a-z0-9])' + f.replace(/[.*+?^${}()|[\]\\\/-]/g, '\\$&') + '($|[^a-z0-9])').test(tx)) out.push(term);
+    }); }); }); });
+    return out;
+  }
+  function sdRows(p) {
+    var x = t().sd, s = sdSvc(p), a = sdTerms(p), h = '';
+    if (s) h += '<div><dt>' + esc(x.svc) + '</dt><dd><a class="sk-term" href="#services">' + esc(s.code + ' ' + L(s.title)) + '</a>' + (s.time ? ' · ' + esc(L(s.time)) : '') + '</dd></div>';
+    if (a.length) h += '<div><dt>' + esc(x.skills) + '</dt><dd>' + a.map(function (term) { return skCount(term) > 1 ? skTerms(term) : esc(term); }).join(' · ') + ' · <a class="sk-term" href="#skills">' + esc(x.all) + ' →</a></dd></div>';
+    skAny = false;
+    return h;
+  }
 
   // ---------- Find anything / "Poišči karkoli" (Ctrl / Cmd + K or the magnifier in the header; 2026-11-12) ----------
   // One box that finds every page, tool, service, project sheet, news post, skill and FAQ answer of the site (EN or SL
@@ -3917,6 +3987,7 @@
   var PZ_SECS = 8, pz = null;
   function pzList(src) {
     if (src === 'sl') return slRead().map(bySlug).filter(Boolean);
+    if (src === 'sx') return sxList(); // Shared selection (2026-11-14)
     if (src !== 'work') return PROJECTS.slice();
     var q = state.q.trim();
     return (rgOn() ? rgSorted() : PROJECTS).filter(function (p) { return (state.filter === 'all' || (state.filter === '3d' ? !!p.model : p.category === state.filter)) && (!q || findHit(findProjectText(p), q)); });
@@ -3967,7 +4038,7 @@
     var d = document.getElementById('pz'); if (!d || !d.requestFullscreen) return;
     try { if (document.fullscreenElement) document.exitFullscreen(); else { var r = d.requestFullscreen(); if (r && r.catch) r.catch(function () {}); } } catch (e) {}
   }
-  function pzLink() { var p = pz.list[pz.at], q = pz.src === 'work' ? findQuery() : ''; return siteUrl('#work' + q + (q ? '&' : '?') + 'show=' + encodeURIComponent(p.slug)); }
+  function pzLink() { var p = pz.list[pz.at], q = pz.src === 'work' ? findQuery(true) : ''; if (pz.src === 'sl' || pz.src === 'sx') return sxUrl(pz.list.map(function (v) { return v.slug; }), p.slug); return siteUrl('#work' + q + (q ? '&' : '?') + 'show=' + encodeURIComponent(p.slug)); }
   function pzCopy() {
     var d = document.getElementById('pz'), msg = d.querySelector('#pz-msg'), x = t().pz, url = pzLink();
     var fail = function () { msg.textContent = x.copyFail + ' ' + url; };
@@ -3993,7 +4064,7 @@
     d.innerHTML = '<div class="pz-top"><p class="nk-label" id="pz-l">' + esc(x.label) + ' · <b>' + esc(pzName()) + '</b></p><div class="pz-tools">' +
       (list.length > 1 ? '<button type="button" class="chip" data-pz-auto aria-pressed="false" title="' + esc(x.autoT.replace('{s}', PZ_SECS)) + '">' + esc(x.auto) + '</button>' : '') +
       (d.requestFullscreen && document.fullscreenEnabled ? '<button type="button" class="chip" data-pz-full aria-pressed="false">' + esc(x.full) + '</button>' : '') +
-      (src === 'sl' ? '' : '<button type="button" class="chip" data-pz-copy>' + esc(t().share.copy) + '</button>') +
+      '<button type="button" class="chip" data-pz-copy>' + esc(t().share.copy) + '</button>' +
       '<button type="button" class="chip kbd-x" data-pz-close aria-label="' + esc(k.close) + '">✕</button></div></div>' +
       '<div class="pz-stage" id="pz-stage" tabindex="-1"></div>' +
       '<p class="share-msg pz-msg" id="pz-msg" role="status" aria-live="polite"></p>' +
