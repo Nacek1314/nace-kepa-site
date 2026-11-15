@@ -100,6 +100,12 @@ const services: any[] = new Function(content + '\nreturn SERVICES;')();
   ['need', 'get'].forEach((k) => { if (o[k]) ['en', 'sl'].forEach((l) => { const alt = l === 'en' ? 'sl' : 'en'; if (Array.isArray(o[k][l]) && o[k][l].length) s[k][l] = o[k][l]; else if (Array.isArray(o[k][alt]) && o[k][alt].length) s[k][l] = o[k][alt]; }); }); }); })();
 // Structured data for search engines (a data block, not executed, so the CSP script hash doesn't apply).
 // Only facts already on the page: name, place, contact, services, LinkedIn.
+// Prices-on-the-service package (2026-11-15): the published rates from settings.json on each service offer — hourly rate (EUR / h,
+// excl. VAT as the price list states) or, for 3D printing, the minimum order. No price list → no priceSpecification.
+const offerPrice = (key: string) => { const pc: any = (settings as any).pricing; if (!pc || !pc.hourly || !pc.print) return {};
+  const cur = pc.currency || 'EUR';
+  if (key === 'print') return +pc.print.minOrder > 0 ? { priceSpecification: { '@type': 'PriceSpecification', minPrice: +pc.print.minOrder, priceCurrency: cur, valueAddedTaxIncluded: false } } : {};
+  return +pc.hourly[key] > 0 ? { priceSpecification: { '@type': 'UnitPriceSpecification', price: +pc.hourly[key], priceCurrency: cur, unitCode: 'HUR', valueAddedTaxIncluded: false } } : {}; };
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'ProfessionalService',
@@ -123,7 +129,7 @@ const jsonLd = JSON.stringify({
   hasOfferCatalog: {
     '@type': 'OfferCatalog',
     name: SL ? 'Storitve' : 'Services',
-    itemListElement: services.map((s: any) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: tl(s.title), description: tl(s.body), url: home + '#services', provider: { '@type': 'Person', name: 'Nace Kepa' } } }))
+    itemListElement: services.map((s: any) => ({ '@type': 'Offer', ...offerPrice(s.key), itemOffered: { '@type': 'Service', name: tl(s.title), description: tl(s.body), url: home + '#services', provider: { '@type': 'Person', name: 'Nace Kepa' } } }))
   }
 }).replace(/</g, '\\u003c');
 // One news post as BlogPosting and one project as CreativeWork (data blocks, not executed). Text, dates, years, categories

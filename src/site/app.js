@@ -97,12 +97,23 @@
   }
   function sheetH2(p) { return sheet(p, 'h2'); }
   function featured() { var f = PROJECTS.filter(function (p) { return p.featured; }); return (f.length ? f : PROJECTS).slice(0, 4); }
+  // Prices-on-the-service package (2026-11-15): the published rate of a service on its card (home + #services) — the hourly rate from
+  // settings.json, for 3D printing how the price is built and the minimum order; on #services with a link to the price list.
+  // Nothing without a price list. To remove: svcRate(), its call in service(), pc.rate… in content.js, .svc-rate in page.css.
+  function svcRate(s, full) {
+    if (!pcOn()) return '';
+    var x = t().pc, h = +PRICE.hourly[s.key], pr = PRICE.print, txt = '';
+    if (s.key === 'print') { if (pcMats().length || +pr.machineHour > 0) txt = x.ratePrint + (+pr.minOrder > 0 ? ' · ' + x.rateMin.replace('{m}', pcMoney(pr.minOrder)) : ''); }
+    else if (h > 0) txt = x.perHour.replace('{n}', pcMoney(h));
+    if (!txt) return '';
+    return '<p class="svc-rate"><span class="nk-label">' + esc(x.rate) + '</span> <b>' + esc(txt) + '</b>' + (full ? ' <a href="#services?tool=prices">' + esc(x.rateLink) + ' →</a>' : '') + '</p>';
+  }
   function service(s, full) {
     var x = t();
     return '<article class="nk-service" id="' + s.id + '"><div class="nk-service__top"><span class="nk-service__code">' + s.code + '</span><span class="nk-label">' + esc(s.time ? L(s.time) : x.onRequest) + '</span></div>' +
       (full ? '<h2' : '<h3') + ' class="nk-service__title">' + esc(L(s.title)) + (full ? '</h2>' : '</h3>') + '<p>' + esc(L(s.body)) + '</p>' +
       (full ? '<div class="svc-cols"><div><p class="nk-label">' + esc(x.deliverables) + '</p><ul>' + L(s.get).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div><div><p class="nk-label">' + esc(x.needs) + '</p><ul>' + L(s.need).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div></div>'
-        : '<ul>' + L(s.get).slice(0, 3).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>') +
+        : '<ul>' + L(s.get).slice(0, 3).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>') + svcRate(s, full) +
       '<div class="svc-act">' + btn(full ? x.quote : x.allServices, full ? '#order' : '#services', null, 'sm', true) + '</div></article>';
   }
   // labelHtml (optional) replaces the escaped label, e.g. to wrap a date in <time>.
@@ -142,7 +153,7 @@
         tlWrap('material', mpBox()) +
         tlWrap('prep', prepBox()) +
         tlWrap('plate', pbBox()) +
-        (pcOn() ? tlWrap('prices', pcList()) + tlWrap('quote', qcBox()) : '') + tlWrap('parts', bmBox()) + faqBox() +
+        (pcOn() ? tlWrap('prices', pcList()) + tlWrap('quote', qcBox()) : '') + tlWrap('parts', bmBox()) + (srOn() ? tlWrap('series', srBox()) : '') + faqBox() +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     work: function () {
@@ -2276,7 +2287,7 @@
   }
   function stEstBox(src) {
     var f = t().st.est, e = stEst(src), pr = SET.printing || {}; if (!e) return '';
-    return '<p class="fit-note st-est">' + esc(f.note.replace('{infill}', pr.infill).replace('{walls}', pr.walls).replace('{rate}', pr.rateCm3h)) + (pcOn() ? ' <a href="#services?tool=quote" data-st-qc>' + esc(f.link) + ' →</a>' : '') + '</p>';
+    return '<p class="fit-note st-est">' + esc(f.note.replace('{infill}', pr.infill).replace('{walls}', pr.walls).replace('{rate}', pr.rateCm3h)) + (pcOn() ? ' <a href="#services?tool=quote" data-st-qc>' + esc(f.link) + ' →</a>' : '') + (srOn() ? ' <a href="#services?tool=series" data-st-sr>' + esc(t().sr.fromQuote) + ' →</a>' : '') + '</p>';
   }
 
   // ---------- Drawing sheet NK-D (#studio; 2026-11-02, evening run) ----------
@@ -2585,14 +2596,14 @@
   state.qc = { cad: 0, iot: 0, build: 0, print: 0, cadH: '', iotH: '', buildH: '', mat: '', g: '', h: '', qty: '1', postH: '', rush: 0, first: 1, src: '' };
   function qcNum(v) { var n = parseFloat(String(v).replace(',', '.')); return isFinite(n) && n > 0 ? n : 0; }
   function qcCalc() {
-    var q = state.qc, P = PRICE, x = t().qc, rows = [], total = 0, notes = [];
+    var q = state.qc, P = PRICE, x = t().qc, rows = [], total = 0, notes = [], pcsN = 0, hrN = 0;
     if (!P) return null;
     [['cad', 'cadH'], ['iot', 'iotH'], ['build', 'buildH']].forEach(function (k) {
       if (!q[k[0]] || !(+P.hourly[k[0]] > 0)) return;
       var hrs = qcNum(q[k[1]]); if (!hrs) return;
       if (+P.minHours > 0 && hrs < +P.minHours) hrs = +P.minHours;
       var c = hrs * +P.hourly[k[0]], sv = SERVICES.filter(function (s) { return s.key === k[0]; })[0];
-      rows.push([L(sv.title) + ' · ' + hrs + ' h', c]); total += c;
+      rows.push([L(sv.title) + ' · ' + hrs + ' h', c]); total += c; hrN++;
     });
     if (q.print) {
       var m = pcMat(q.mat), g = qcNum(q.g), hh = qcNum(q.h), qty = Math.max(1, Math.round(qcNum(q.qty) || 1)), pr = P.print;
@@ -2601,7 +2612,7 @@
         if (+pr.minPart > 0 && part < +pr.minPart) { part = +pr.minPart; notes.push(x.minPartApplied); }
         var pc = part * qty, lbl = (m ? m.name + ' · ' : '') + (g ? g + ' g' : '') + (g && hh ? ' + ' : '') + (hh ? hh + ' h' : '') + (qty > 1 ? ' × ' + qty : '');
         if (q.rush && +pr.rushPct > 0) { pc *= 1 + pr.rushPct / 100; lbl += ' · +' + pr.rushPct + ' %'; }
-        rows.push([L(SERVICES[1].title) + ' · ' + lbl, pc]); total += pc;
+        rows.push([L(SERVICES[1].title) + ' · ' + lbl, pc]); total += pc; pcsN = qty;
         if (+pr.setup > 0) { rows.push([t().pc.setup, +pr.setup]); total += +pr.setup; }
       }
       var ph = qcNum(q.postH); if (ph && +P.hourly.post > 0) { rows.push([t().pc.post + ' · ' + ph + ' h', ph * +P.hourly.post]); total += ph * +P.hourly.post; }
@@ -2610,13 +2621,14 @@
     if (+P.print.minOrder > 0 && total < +P.print.minOrder) { total = +P.print.minOrder; notes.push(x.minApplied); }
     var pm = promo(), disc = 0;
     if (pm && q.first && (pm.scope === 'all' || pm.scope === 'first' || (pm.scope === 'print' && q.print))) disc = Math.round(total * pm.pct) / 100;
-    return { rows: rows, total: Math.round(total * 100) / 100, disc: disc, after: Math.round((total - disc) * 100) / 100, notes: notes, promo: pm };
+    return { rows: rows, total: Math.round(total * 100) / 100, disc: disc, after: Math.round((total - disc) * 100) / 100, notes: notes, promo: pm, pcs: pcsN > 1 && !hrN ? pcsN : 0 }; // pcs: printing only and more than one piece → the total also reads per piece (2026-11-15)
   }
   function qcOut(c) {
     var x = t().qc; if (!c) return '<p class="hint">' + esc(x.empty) + '</p>';
     return '<p class="nk-label">' + esc(x.rows) + '</p><dl class="nk-specs qc-rows">' + c.rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(pcMoney(r[1], 2)) + '</dd></div>'; }).join('') + '</dl>' +
-      '<p class="qc-total"><span class="nk-label">' + esc(x.total) + '</span><b>' + esc('≈ ' + pcMoney(c.disc ? c.after : c.total, 2)) + '</b>' + (c.disc ? '<span class="qc-was">' + esc(pcMoney(c.total, 2)) + ' → −' + esc(pcMoney(c.disc, 2)) + ' ' + esc(x.withPromo) + '</span>' : '') + '</p>' +
-      (c.notes.length ? '<p class="qc-notes">' + c.notes.map(esc).join(' · ') + '</p>' : '');
+      '<p class="qc-total"><span class="nk-label">' + esc(x.total) + '</span><b>' + esc('≈ ' + pcMoney(c.disc ? c.after : c.total, 2)) + '</b>' + (c.disc ? '<span class="qc-was">' + esc(pcMoney(c.total, 2)) + ' → −' + esc(pcMoney(c.disc, 2)) + ' ' + esc(x.withPromo) + '</span>' : '') + (c.pcs ? '<span class="qc-was qc-each">' + esc(x.each.replace('{p}', pcMoney((c.disc ? c.after : c.total) / c.pcs, 2)).replace('{n}', c.pcs)) + '</span>' : '') + '</p>' +
+      (c.notes.length ? '<p class="qc-notes">' + c.notes.map(esc).join(' · ') + '</p>' : '') +
+      (srOn() && state.qc.print && (qcNum(state.qc.g) || qcNum(state.qc.h)) ? '<p class="pl-open qc-sr"><a href="#services?tool=series" data-qc-sr>' + esc(t().sr.fromQuote) + ' →</a></p>' : ''); // Series price NK-R (2026-11-15)
   }
   function qcText(c) {
     var x = t().qc; if (!c) return '';
@@ -2655,6 +2667,141 @@
     ['cad', 'iot', 'build', 'print'].forEach(function (k) { if (q[k] && o.services.indexOf(k) < 0) o.services.push(k); });
     if (q.print) { var m = pcMat(q.mat), mm = m && MP_MATS.filter(function (v) { return v.id === m.key; })[0]; if (mm) o.mat = mm.o; var qty = Math.round(qcNum(q.qty)); if (qty > 0) o.qty = String(qty); }
     var line = qcText(c);
+    if (o.what.indexOf(x.brief + ':') < 0) o.what = o.what ? o.what + '\n' + line : line;
+    else o.what = o.what.split('\n').map(function (l) { return l.indexOf(x.brief + ':') === 0 ? line : l; }).join('\n');
+    state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+
+  // ---------- Series price / "Cena serije" NK-R (#services?tool=series, the tool after the parts list; 2026-11-15) ----------
+  // One printed part (material, weight, print time — typed, or taken over from the quote estimate / the Part studio) priced at
+  // 1 … 100 pieces and at the visitor's own quantity: price per piece, order total and the difference to a single piece, a
+  // chart of the price per piece against the quantity, and plain-language lines on why it falls (file preparation once per
+  // order, minimum order, minimum per part). The sums are the quote estimate's (qcCalc): piece = material + machine time (not
+  // below the minimum per part, + rush), order = pieces + file preparation, not below the minimum order — every number from
+  // settings.json, no quantity discount is invented. Without print prices the tool does not render. Nothing is stored or sent.
+  // Self-contained: remove SR_STEPS … srFromQc(), the 'series' entry in TL_TOOLS, tlWrap('series', srBox()) in views.services,
+  // the data-qc-sr link in qcOut() and the data-st-sr link in stEstBox(), the data-sr-* lines in the click / input / change
+  // handlers, sr: and tl.series in both languages in content.js and the "Series price" rules at the end of page.css.
+  var SR_STEPS = [1, 2, 5, 10, 25, 50, 100];
+  state.sr = { mat: '', g: '', h: '', qty: '10', rush: 0, seeded: 0 };
+  function srOn() { return !!(PRICE && (pcMats().length || +PRICE.print.machineHour > 0)); }
+  function srQty() { var n = Math.round(qcNum(state.sr.qty)); return n >= 1 ? Math.min(n, 10000) : 0; }
+  function srPart() { // one piece: { m, g, h, part, minPart, rush, unit }, or null without a weight or a print time
+    var s = state.sr, pr = PRICE.print, m = pcMat(s.mat), g = qcNum(s.g), h = qcNum(s.h); if (!g && !h) return null;
+    var raw = g * (m ? +m.perGram : 0) + h * (+pr.machineHour || 0), low = +pr.minPart > 0 && raw < +pr.minPart, part = low ? +pr.minPart : raw;
+    var rush = s.rush && +pr.rushPct > 0;
+    return { m: m, g: g, h: h, part: part, minPart: low, rush: rush, unit: part * (rush ? 1 + pr.rushPct / 100 : 1) };
+  }
+  function srAt(p, q) { // the order of q pieces
+    var pr = PRICE.print, sum = p.unit * q + (+pr.setup || 0), low = +pr.minOrder > 0 && sum < +pr.minOrder, total = Math.round((low ? +pr.minOrder : sum) * 100) / 100;
+    return { q: q, total: total, each: total / q, min: low };
+  }
+  function srCalc() {
+    var p = srPart(); if (!p || !(p.unit > 0)) return null;
+    var pr = PRICE.print, own = srQty(), qs = SR_STEPS.slice(); if (own && qs.indexOf(own) < 0) qs.push(own);
+    qs.sort(function (a, b) { return a - b; });
+    var setup = +pr.setup || 0, minO = +pr.minOrder || 0;
+    var qMin = minO > setup ? Math.max(1, Math.ceil((minO - setup) / p.unit - 1e-9)) : 1; // first quantity the minimum order no longer applies to
+    var near = setup > 0 ? Math.max(qMin, Math.ceil(setup / (0.05 * p.unit) - 1e-9)) : 0; // from here the piece carries under 5 % of preparation
+    return { p: p, own: own, rows: qs.map(function (q) { return srAt(p, q); }), one: srAt(p, 1), pick: own ? srAt(p, own) : null, qMin: qMin, near: near, max: qs[qs.length - 1] };
+  }
+  function srPcs(n) { var x = t().sr; return n + ' ' + (lang === 'sl' ? (n % 100 === 1 ? x.pc1 : n % 100 === 2 ? x.pc2 : n % 100 === 3 || n % 100 === 4 ? x.pc3 : x.pcs) : n === 1 ? x.pc1 : x.pcs); }
+  function srPartText(p) { return (p.m ? p.m.name + ' · ' : '') + (p.g ? fitFmt(p.g) + ' g' : '') + (p.g && p.h ? ' + ' : '') + (p.h ? fitFmt(p.h) + ' h' : ''); }
+  function srSave(c, r) { var d = Math.round((1 - r.each / c.one.each) * 100); return r.q === 1 || d <= 0 ? '—' : '−' + d + ' %'; }
+  function srSvg(c) { // price per piece against the quantity (log scale), the piece itself as a dashed line, the visitor's quantity marked
+    var x = t().sr, nar = window.innerWidth < 600, W = nar ? 292 : 360, H = nar ? 208 : 216, l = 46, r = 12, tp = 16, b = 34, // a narrower drawing on a phone keeps the labels readable
+      pw = W - l - r, ph = H - tp - b;
+    var maxQ = Math.max(100, c.max), top = c.one.each * 1.08, lx = Math.log(maxQ);
+    var X = function (q) { return l + (Math.log(q) / lx) * pw; }, Y = function (v) { return tp + ph - (v / top) * ph; };
+    var f1 = function (n) { return (Math.round(n * 10) / 10).toFixed(1); };
+    var pts = [], q = 1; while (q <= maxQ) { pts.push(f1(X(q)) + ',' + f1(Y(srAt(c.p, q).each))); q = q < 30 ? q + 1 : Math.ceil(q * 1.08); }
+    if (q !== maxQ) pts.push(f1(X(maxQ)) + ',' + f1(Y(srAt(c.p, maxQ).each)));
+    var s = '<svg class="sr-svg' + (nar ? ' sr-svg--n' : '') + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(x.chartAria.replace('{a}', pcMoney(c.one.each, 2)).replace('{b}', pcMoney(srAt(c.p, maxQ).each, 2)).replace('{n}', maxQ)) + '">';
+    [0, 0.5, 1].forEach(function (k) { var v = c.one.each * k, y = f1(Y(v)); s += '<line class="sr-g" x1="' + l + '" x2="' + (W - r) + '" y1="' + y + '" y2="' + y + '"/><text class="sr-tx" x="' + (l - 6) + '" y="' + f1(Y(v) + 3.5) + '" text-anchor="end">' + esc(pcMoney(v, v >= 100 ? 0 : 2).replace(' €', '')) + '</text>'; });
+    SR_STEPS.forEach(function (n) { var xx = f1(X(n)); s += '<line class="sr-g" x1="' + xx + '" x2="' + xx + '" y1="' + tp + '" y2="' + (tp + ph) + '"/><text class="sr-tx" x="' + xx + '" y="' + (tp + ph + 14) + '" text-anchor="middle">' + n + '</text>'; });
+    s += '<text class="sr-tx" x="' + (W - r) + '" y="' + (H - 4) + '" text-anchor="end">' + esc(x.axisX) + '</text><text class="sr-tx" x="' + 2 + '" y="' + 9 + '">' + esc(x.axisY) + '</text>';
+    s += '<line class="sr-ax" x1="' + l + '" x2="' + (W - r) + '" y1="' + (tp + ph) + '" y2="' + (tp + ph) + '"/><line class="sr-ax" x1="' + l + '" x2="' + l + '" y1="' + tp + '" y2="' + (tp + ph) + '"/>';
+    var fy = f1(Y(c.p.unit)); s += '<line class="sr-fl" x1="' + l + '" x2="' + (W - r) + '" y1="' + fy + '" y2="' + fy + '"/><text class="sr-tx sr-tx--d" x="' + (W - r - 2) + '" y="' + f1(Y(c.p.unit) + 11) + '" text-anchor="end">' + esc(x.floor + ' ' + pcMoney(c.p.unit, 2)) + '</text>';
+    s += '<polyline class="sr-ln" points="' + pts.join(' ') + '"/>';
+    c.rows.forEach(function (rw) { if (rw.q !== c.own) s += '<circle class="sr-pt" cx="' + f1(X(rw.q)) + '" cy="' + f1(Y(rw.each)) + '" r="2.5"/>'; });
+    if (c.pick) { var ox = f1(X(c.own)), oy = f1(Y(c.pick.each)); s += '<line class="sr-own" x1="' + ox + '" x2="' + ox + '" y1="' + oy + '" y2="' + (tp + ph) + '"/><circle class="sr-pt sr-pt--on" cx="' + ox + '" cy="' + oy + '" r="4"/>'; }
+    return s + '</svg>';
+  }
+  function srSum(c) {
+    var x = t().sr; if (!c) return x.empty;
+    return c.pick ? x.sum.replace('{each}', pcMoney(c.pick.each, 2)).replace('{total}', pcMoney(c.pick.total, 2)).replace('{n}', srPcs(c.own)) : x.pickQ;
+  }
+  function srNotes(c) {
+    var x = t().sr, pr = PRICE.print, a = [];
+    a.push(x.nPiece.replace('{p}', pcMoney(c.p.unit, 2)).replace('{part}', srPartText(c.p)) + (c.p.minPart ? ' (' + t().qc.minPartApplied + ')' : '') + (c.p.rush ? ' (' + x.rushIn.replace('{n}', pr.rushPct) + ')' : ''));
+    if (+pr.setup > 0) a.push(x.nSetup.replace('{s}', pcMoney(pr.setup)));
+    if (c.qMin > 1) a.push(x.nMin.replace('{m}', pcMoney(pr.minOrder)).replace('{n}', srPcs(c.qMin - 1)));
+    if (c.near > 1) a.push(x.nNear.replace('{n}', srPcs(c.near)));
+    a.push(x.nNoDisc);
+    return a;
+  }
+  function srBody(c) {
+    var x = t().sr; if (!c) return '';
+    var rows = c.rows.map(function (r) {
+      var on = r.q === c.own;
+      return '<tr' + (on ? ' class="is-on"' : '') + '><th scope="row"><button type="button" class="sr-q" data-sr-q="' + r.q + '" aria-pressed="' + on + '" aria-label="' + esc(x.choose.replace('{n}', srPcs(r.q))) + '">' + r.q + '</button></th><td>' + esc(pcMoney(r.each, 2)) + '</td><td>' + esc(pcMoney(r.total, 2)) + (r.min ? '<abbr class="sr-min" title="' + esc(t().qc.minApplied) + '">*</abbr>' : '') + '</td><td>' + esc(srSave(c, r)) + '</td></tr>';
+    }).join('');
+    var anyMin = c.rows.some(function (r) { return r.min; });
+    return '<div class="sr-fig">' + srSvg(c) + '</div>' +
+      '<div class="sr-scroll"><table class="sr-table"><caption class="vh">' + esc(x.caption) + '</caption><thead><tr><th scope="col">' + esc(x.cQty) + '</th><th scope="col">' + esc(x.cEach) + '</th><th scope="col">' + esc(x.cTotal) + '</th><th scope="col">' + esc(x.cSave) + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      (anyMin ? '<p class="sr-foot">* ' + esc(t().qc.minApplied) + '</p>' : '') +
+      '<ul class="sr-notes">' + srNotes(c).map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+  }
+  function srLine(c) { // one line for the brief and the clipboard
+    var x = t().sr, r = c.pick || c.one;
+    return x.brief + ': ' + srPartText(c.p) + ' ' + x.perPiece + '; ' + srPcs(r.q) + ' ≈ ' + pcMoney(r.each, 2) + ' ' + x.perPiece + ', ≈ ' + pcMoney(r.total, 2) + ' ' + x.inTotal + (r.q > 1 ? ' (' + srPcs(1) + ' ≈ ' + pcMoney(c.one.total, 2) + ')' : '') + '.';
+  }
+  function srText(c) {
+    var x = t().sr, out = [x.label.split(' · ')[0].toUpperCase() + ' NK-R — nacekepa.work', srPartText(c.p) + ' ' + x.perPiece, '', [x.cQty, x.cEach, x.cTotal, x.cSave].join(' | ')];
+    c.rows.forEach(function (r) { out.push((r.q === c.own ? '→ ' : '  ') + [r.q, pcMoney(r.each, 2), pcMoney(r.total, 2) + (r.min ? ' *' : ''), srSave(c, r)].join(' | ')); });
+    if (c.rows.some(function (r) { return r.min; })) out.push('* ' + t().qc.minApplied);
+    out.push(''); srNotes(c).forEach(function (n) { out.push('- ' + n); });
+    out.push('', t().qc.note.replace('{vat}', L(PRICE.vatNote) || '').trim());
+    return out.join('\n');
+  }
+  function srSeed() { // first look at the tool: the part typed in the quote estimate (or handed over by the Part studio) is taken over
+    var s = state.sr, q = state.qc; if (s.seeded || s.g || s.h) return;
+    if (q.print && (qcNum(q.g) || qcNum(q.h))) srFromQc();
+  }
+  function srFromQc() { var s = state.sr, q = state.qc; s.mat = q.mat; s.g = q.g; s.h = q.h; s.rush = q.rush ? 1 : 0; var n = Math.round(qcNum(q.qty)); if (n > 1) s.qty = String(n); s.seeded = 1; }
+  function srBox() {
+    srSeed();
+    var x = t().sr, s = state.sr, pr = PRICE.print, c = srCalc();
+    var num = function (k, label, unit, attrs, hint) { return '<div class="nk-field"><label class="nk-field__label" for="sr-' + k + '">' + esc(label) + (unit ? ' · ' + esc(unit) : '') + '</label><input class="nk-input" id="sr-' + k + '" data-sr-f="' + k + '" type="number" inputmode="decimal" min="0" ' + attrs + ' value="' + esc(s[k]) + '">' + (hint ? '<span class="nk-field__hint">' + esc(hint) + '</span>' : '') + '</div>'; };
+    return '<section class="block sr">' + head(x.label, x.title, x.lead) + '<div class="fit-grid sr-grid"><div class="fit-form"><p class="nk-label">' + esc(x.part) + '</p><div class="qc-print sr-form">' +
+      (pcMats().length ? '<div class="nk-field"><label class="nk-field__label" for="sr-mat">' + esc(t().pc.material) + '</label><select class="nk-input" id="sr-mat" data-sr-f="mat">' + pcMats().map(function (m) { return '<option value="' + esc(m.key) + '"' + (pcMat(s.mat) === m ? ' selected' : '') + '>' + esc(m.name) + '</option>'; }).join('') + '</select></div>' + num('g', t().qc.weight, t().qc.grams, 'step="1"', s.seeded ? (state.qc.src ? t().qc.fromStudio : x.seeded) : '') : '') +
+      (+pr.machineHour > 0 ? num('h', t().qc.printHours, t().qc.h, 'step="0.25"') : '') + num('qty', x.yourQty, '', 'step="1" inputmode="numeric" min="1" max="10000"') +
+      (+pr.rushPct > 0 ? '<label class="ad-check qc-check"><input type="checkbox" data-sr-rush' + (s.rush ? ' checked' : '') + '> ' + esc(t().qc.rush.replace('{n}', pr.rushPct)) + '</label>' : '') + '</div>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-sr-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-sr-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><span class="copy-msg" id="sr-msg" role="status"></span></div>' +
+      '<p class="fit-note">' + esc(t().qc.note.replace('{vat}', L(PRICE.vatNote) || '')) + '</p>' +
+      '<p class="pl-open"><a href="#services?tool=quote" data-sr-qc>' + esc(x.toQuote) + ' →</a><span aria-hidden="true"> · </span><a href="#studio">' + esc(x.toStudio) + ' →</a></p></div>' +
+      '<div class="pl-sheet sr-sheet"><div class="pl-head"><span class="nk-label">' + esc(x.table) + '</span><span class="nk-label">NK-R</span></div><div class="sr-out"><p class="sr-sum' + (c ? '' : ' is-empty') + '" id="sr-sum" role="status" aria-live="polite">' + esc(srSum(c)) + '</p><div id="sr-body">' + srBody(c) + '</div></div></div></div></section>';
+  }
+  function srUpdate(focusQ) {
+    var c = srCalc(), sum = document.getElementById('sr-sum'), body = document.getElementById('sr-body'); if (!sum || !body) return;
+    sum.textContent = srSum(c); sum.classList.toggle('is-empty', !c); body.innerHTML = srBody(c);
+    ['data-sr-go', 'data-sr-copy'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
+    if (focusQ) { var el = body.querySelector('[data-sr-q="' + focusQ + '"]'); if (el) el.focus({ preventScroll: true }); }
+  }
+  function srPick(q) { state.sr.qty = String(q); var i = document.getElementById('sr-qty'); if (i) i.value = state.sr.qty; srUpdate(q); }
+  function srCopy() {
+    var c = srCalc(), msg = document.getElementById('sr-msg'), x = t().sr; if (!c || !msg) return;
+    var fail = function () { msg.textContent = t().qc.copyFail; };
+    try { navigator.clipboard.writeText(srText(c)).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+  }
+  function srToQc() { var s = state.sr, q = state.qc; q.print = 1; q.mat = s.mat; q.g = s.g; q.h = s.h; q.rush = s.rush ? 1 : 0; if (srQty()) q.qty = String(srQty()); q.src = ''; } // the link itself opens the estimate
+  function srToOrder() {
+    var c = srCalc(), o = state.order, x = t().sr; if (!c) return;
+    if (o.services.indexOf('print') < 0) o.services.push('print');
+    var mm = c.p.m && MP_MATS.filter(function (v) { return v.id === c.p.m.key; })[0]; if (mm) o.mat = mm.o;
+    if (c.own) o.qty = String(c.own);
+    var line = srLine(c);
     if (o.what.indexOf(x.brief + ':') < 0) o.what = o.what ? o.what + '\n' + line : line;
     else o.what = o.what.split('\n').map(function (l) { return l.indexOf(x.brief + ':') === 0 ? line : l; }).join('\n');
     state.step = 0; state.errors = {}; state.send = 'idle';
@@ -3073,7 +3220,7 @@
   // Added 2026-10-29 (#services tools package). Only links and scrolling; the tools themselves are unchanged.
   // To remove: TL_TOOLS … tlGo(), the tlIndex() / tlWrap() calls in views.services, tlHome() in views.home, the state.tool
   // line in page(), the tlGo line in render(), tl: in both languages in content.js and the "Tools index" rules in page.css.
-  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']].concat(pcOn() ? [['prices', 'pc', 'prices'], ['quote', 'qc', 'quote']] : []).concat([['parts', 'bm', 'parts']]); // 'parts': the parts list NK-L (2026-11-05) // [link name, content key, section id]; the two pricing tools only with a price list in settings.json
+  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']].concat(pcOn() ? [['prices', 'pc', 'prices'], ['quote', 'qc', 'quote']] : []).concat([['parts', 'bm', 'parts']]).concat(srOn() ? [['series', 'sr', 'series']] : []); // 'series': Series price NK-R (2026-11-15), only with print prices // 'parts': the parts list NK-L (2026-11-05) // [link name, content key, section id]; the two pricing tools only with a price list in settings.json
   function tlHash(k) { return '#services?tool=' + k; }
   function tlNo(i) { return 'T-' + String(i).padStart(2, '0'); } // T-01 … T-10 (two digits from the tenth tool on)
   function tlIndex() {
@@ -3578,6 +3725,12 @@
     if (el.hasAttribute('data-bm-fit')) { bmAdd({ l: fitNum(state.fit.l) || '', w: fitNum(state.fit.w) || '', h: fitNum(state.fit.h) || '' }); } // the link itself opens the tool
     if (el.hasAttribute('data-bm-st')) { var bs = stSrc(); if (bs) { var bd = stDims(bs), bc = mpChosen(); bmAdd({ name: String(state.st.name || '').trim() || (bs.kind === 'file' ? String(bs.name || '').replace(/\.[a-z0-9]+$/i, '') : ''), l: bd[0], w: bd[1], h: bd[2], mat: bc ? bc.id : '', qty: Math.max(1, Math.round(+state.st.qty || 1)) }); location.hash = 'services?tool=parts'; } return; }
     if (el.hasAttribute('data-qc-go')) { qcToOrder(); return; } // Pricing package (2026-11-02)
+    if (el.dataset.srQ) { srPick(+el.dataset.srQ); return; } // Series price NK-R (2026-11-15)
+    if (el.hasAttribute('data-sr-go')) { srToOrder(); return; }
+    if (el.hasAttribute('data-sr-copy')) { srCopy(); return; }
+    if (el.hasAttribute('data-sr-qc')) { srToQc(); } // the link itself opens the estimate
+    if (el.hasAttribute('data-qc-sr')) { srFromQc(); } // the link itself opens the series price
+    if (el.hasAttribute('data-st-sr')) { var ss = stEst(stSrc()); if (ss) { qcSet({ mat: ss.mat ? ss.mat.key : '', g: ss.g, h: ss.h, qty: ss.qty }); srFromQc(); } }
     if (el.dataset.giftAmt) { state.gift.amt = el.dataset.giftAmt; state.gift.errors = {}; render(true); var gc = document.getElementById('gift-custom'); if (gc) gc.focus(); else { var ga = document.querySelector('[data-gift-amt="' + el.dataset.giftAmt + '"]'); if (ga) ga.focus(); } return; } // Gift cards (2026-11-02)
     if (el.hasAttribute('data-gift-send')) { giftSend(); return; }
     if (el.dataset.blogYear != null) { state.blogYear = el.dataset.blogYear; var bl = document.getElementById('blog-list'), bs = document.querySelector('.blog-years'); if (bl) bl.innerHTML = blogList().map(newsCard).join(''); if (bs) bs.outerHTML = blogYears(); var bb = document.querySelector('[data-blog-year="' + state.blogYear + '"]'); if (bb) bb.focus(); return; } // Blog package (2026-11-02)
@@ -3717,6 +3870,8 @@
   app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.giftF; if (k) { state.gift[k] = ev.target.value; if (state.gift.send === 'error') state.gift.send = 'idle'; giftRefresh(); } }); // Gift cards (2026-11-02)
   app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.qcF; if (k && ev.target.tagName !== 'SELECT') { state.qc[k] = ev.target.value; state.qc.src = ''; qcUpdate(); } }); // Quote estimate (2026-11-02)
   app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.qcK) { state.qc[d.qcK] = ev.target.checked ? 1 : 0; qcUpdate(true); } else if (d.qcF === 'mat') { state.qc.mat = ev.target.value; qcUpdate(); } });
+  app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.srF; if (k && ev.target.tagName !== 'SELECT') { state.sr[k] = ev.target.value; if (k !== 'qty') state.sr.seeded = 0; srUpdate(); } }); // Series price NK-R (2026-11-15)
+  app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.srF === 'mat') { state.sr.mat = ev.target.value; srUpdate(); } else if (ev.target.hasAttribute('data-sr-rush')) { state.sr.rush = ev.target.checked ? 1 : 0; srUpdate(); } });
   app.addEventListener('input', function (ev) { if (ev.target.hasAttribute('data-st-sp-deg')) { state.sp.deg = ev.target.value; spUpdate(); } }); // Support check (2026-10-31)
   app.addEventListener('input', function (ev) { if (ev.target.hasAttribute('data-st-wt-lim')) { state.wt.limit = ev.target.value; wtUpdate(); } }); // Wall thickness (2026-11-02)
   // File check: drop a file on the box; the views follow the light/dark theme.

@@ -26,6 +26,47 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-15
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=quote`, `?tool=parts`, `?tool=prices`, `?tool=series`), #work, #work?view=list,
+#p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about, #contact, #studio, #mine, #compare, #gift, #order (steps 1–2 on
+the local build in EN + SL through the new hand-off, nothing sent), `/news/`, `/portfolio/famfive/`, `/sl/portfolio/famfive/`, 404, /admin/
+sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in the cloud, as always), no
+horizontal scroll, no CSP violations, no broken images. Live site from the laptop (`check-live.ps1`): all addresses 200, an unknown address
+404, the live inline-script hash equals the CSP hash; last Actions run (9c1316e) succeeded.
+**Fixed:** nothing was broken.
+
+**Improvement — prices-on-the-service package (`svcRate()` in `app.js`, `offerPrice()` in `Site.astro`, `pc.rate…` / `qc.each` in `content.js`):**
+the published prices now stand where a client decides, not only in the price list. (a) every service card (home + #services) ends with its
+**rate** from `settings.json` — "42 € / h", for 3D printing "material + machine time · minimum order 18 €" — on #services with a
+"Price list →" link; (b) the structured data of each service offer carries the same number (`priceSpecification`: EUR per hour, excl. VAT;
+for printing the minimum order), in EN and SL, so search engines can show it; (c) the quote estimate adds **"≈ … per piece at N pieces"**
+under the total when only printing is estimated and the quantity is above one. All three show nothing without a price list.
+Tested in Playwright (EN 1280 light, SL 390 dark): four rates, links, home without links, per-piece line shown / hidden; axe 0 violations.
+*To remove:* see the comment above `svcRate()` in `app.js`; `offerPrice()` + its spread in `Site.astro`; `c.pcs` / `.qc-each` in `qcCalc()` / `qcOut()`.
+
+**Innovation — Series price / "Cena serije" NK-R (`SR_STEPS` … `srToOrder()` in `app.js`, `sr:` in `content.js`, "Series price" rules in
+`page.css`):** a new tool **T-10** on #services — `https://nacekepa.work/#services?tool=series` (`/sl/#services?tool=series`). The visitor
+enters one printed part (material, weight, print time, optional rush) and gets the **price per piece and the order total at 1, 2, 5, 10, 25,
+50, 100 pieces and at their own quantity**, the saving per piece against a single piece, a drawn chart of price per piece against quantity
+(the piece itself as a dashed dimension line, their quantity in red) and plain lines on why it falls: file preparation once per order, up
+to which quantity the minimum order applies, from which quantity preparation is under 5 % of a piece — and that the price list has **no
+quantity discount** (nothing is invented; the sums are exactly the quote estimate's). Quantities in the table are buttons (click / Enter
+picks that quantity). Hand-offs: "Price by quantity →" in the quote estimate and under the Part studio estimate bring the part along;
+"Open this part in the quote estimate"; **"Start a project with this quantity"** ticks 3D printing, sets material + quantity and adds a
+"Series price: …" line to the brief; "Copy table"; prints alone like every tool; Find anything finds it. Only `settings.json` prices —
+without print prices the tool, its index entry and the links do not render. Nothing stored, nothing sent, no dependency.
+- Tested in Playwright (EN 1280 light, SL 390 dark, 88 checks with the package): numbers against the price list by hand (PETG 40 g + 2 h),
+  minimum order mark, own quantity row, keyboard pick + kept focus, rush, minimum per part, 0 / huge quantity, copied text, print alone,
+  estimate ⇄ series, Part studio → series, order form (service, quantity, material, brief line), Find anything, no English on `/sl/`,
+  no overflow at 390 px; axe 0 violations.
+*To remove:* see the comment above `SR_STEPS` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: Series price — "Save in My corner" and a shareable link with the part in the address (`#services?tool=series&g=40&h=2&m=petg`).
+- Public: Series price for a whole parts list (NK-L × number of sets) and the plates / print days a series needs from the plate tool.
+- Admin: Quote tab — "Quantity options" block on the NK-O quote (the same table for 2–3 quantities the client asked about).
+
 ## 2026-11-14
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=parts`, `?tool=prices`, `?tool=material`), #work, #work?view=list, #p-famfive,
@@ -2402,6 +2443,13 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: selection-link builder in the Table tab (+ QR).
 - Public: QR of the selection link; printable selection sheet from `list=`.
 - Public: Presentation — Service / Skills rows on the slide.
+
+- (Built 2026-11-15: Series price NK-R `#services?tool=series` — one printed part priced at 1 … 100 pieces and the visitor's own quantity,
+  chart, why-it-falls lines, hand-offs from the estimate / Part studio and into the order form; prices-on-the-service package as the
+  improvement — rate on every service card, prices in the structured data, per-piece line in the quote estimate.)
+- Public: Series price — save in My corner + a shareable link with the part in the address.
+- Public: Series price for a whole parts list (sets) + plates / print days for the series.
+- Admin: "Quantity options" block on the NK-O quote.
 
 ## 2026-10-03 (second run)
 

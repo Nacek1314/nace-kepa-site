@@ -58,6 +58,10 @@ project sheets one at a time on the whole screen — arrow keys / swipe, auto-ad
 above the work (present, compare, add to the visitor's own shortlist, start a project; `&show=1` presents at once) — `sxBox()` in
 `src/site/app.js`. A project sheet's spec table also names its service and the Skills terms it mentions (`sdRows()`).
 
+**Series price NK-R** (`#services?tool=series`): one printed part — material, weight, print time — priced at 1 … 100 pieces and the visitor's
+own quantity from the `settings.json` prices (the quote estimate's sums), with a chart and the reasons the price per piece falls; hands the
+quantity to the order form (`srBox()` in `src/site/app.js`). Service cards show their published rate (`svcRate()`).
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,
