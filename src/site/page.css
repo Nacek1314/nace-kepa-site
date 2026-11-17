@@ -1480,3 +1480,28 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 @media (max-width: 720px) { .bg-out { padding: var(--space-4); } .bg-sum { font-size: 18px; line-height: 26px; } .bg-tx { font-size: 11px; } }
 @media (max-width: 380px) { .bg-table { font-size: 12px; } .bg-table th, .bg-table td { padding-inline: 4px; } }
 @media print { .bg-fig, .bg-table tr { break-inside: avoid; } .bg-s { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+
+/* Material price NK-V (2026-11-17, second run): mxBox() in app.js — one printed part priced in every material (#services?tool=matprice); the table reuses the series price rules (.sr-*) */
+.mx-body { display: grid; gap: var(--space-4); min-width: 0; }
+.mx-body:empty { display: none; }
+.mx-svg { display: block; width: 100%; height: auto; max-width: 520px; color: var(--ink); }
+.mx-ax { stroke: var(--ink); stroke-width: 1.2; }
+.mx-ref { stroke: var(--dimension); stroke-width: 1; stroke-dasharray: 5 4; }
+.mx-bar { fill: var(--ink); fill-opacity: .3; }
+.mx-bar.is-out { fill-opacity: .12; }
+.mx-bar.is-on { fill: var(--redline); fill-opacity: 1; }
+.mx-tx { font: 10px var(--font-mono); fill: var(--ink-muted); }
+.mx-tx--n, .mx-tx.is-on { fill: var(--ink); }
+.mx-tx.is-on { font-weight: 500; }
+.mx-tx--d { font-size: 9px; fill: var(--dimension); }
+.mx-table th:first-child { white-space: nowrap; }
+.mx-m { min-width: 64px; }
+.mx-mk { margin-left: var(--space-2); font-family: var(--font-mono); }
+.mx-mk--x { color: var(--ink-muted); }
+.mx-typed { margin-left: var(--space-2); font: 11px/16px var(--font-mono); font-weight: 400; color: var(--ink-muted); }
+.mx-table tr.is-out td { color: var(--ink-muted); }
+.mp-mx { margin: 0; }
+.mn-calc-sum { overflow-wrap: anywhere; }
+.mn-calc-text { margin: var(--space-3) 0 0; font-size: 14px; line-height: 21px; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .mx-typed { display: block; margin-left: 0; } .mx-w { display: none; } .mx-table thead th { white-space: normal; vertical-align: bottom; } .mx-table th, .mx-table td { padding-inline: 4px; } .mx-m { min-width: 56px; } } /* phone: the weight column gives way so the prices fit without sideways scrolling */
+@media print { .mx-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .mx-fig { break-inside: avoid; } }

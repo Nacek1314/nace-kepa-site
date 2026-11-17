@@ -26,6 +26,51 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-17 (second run)
+
+The scheduled run of the day (the morning run was the catch-up for 2026-11-16).
+**Checked:** build (66 pages), home, #services (incl. `?tool=matprice`, `?tool=series`, `?tool=budget`, `?tool=quote`), #work, #work?view=list,
+#p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about, #contact, #studio, #mine, #compare, #gift, #order, `/news/`,
+`/portfolio/famfive/`, /admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in
+the cloud, as always), no horizontal scroll, no CSP violations. Live site + last Actions run checked from the laptop (see the report).
+**Fixed:** nothing was broken.
+
+**Improvement — My corner: calculations package (`MN_CALC` … `mnOpen()` in `app.js`, `mn.calc…` in `content.js`):** the pricing tools now
+save like the quote estimate does. (a) **"Save in My corner"** on the Series price, the Budget and the new Material price tool; (b) a new
+**"Calculations"** section on `#mine` — one card per saved calculation with its result, the line for the brief, "Put it in the brief",
+"Open this calculation" and Remove; (c) "Open this calculation" uses the calculation link of the morning run, so the tool opens with the
+same numbers — saved **quote estimates** get the same button (older saved estimates keep the plain tool link); (d) the header star count,
+the text export (with the full link), print and "Forget everything" know the new section; lead / empty / forget texts in EN + SL updated.
+Stored in the same `nk-mine` entry (`calc: []`, newest 20); only a link that matches `MN_CALC` is ever rendered.
+*To remove:* see the comment above `MN_CALC` in `app.js`.
+
+**Innovation — Material price / "Cena po materialih" NK-V (`MX_KEY` … `mpMxLink()` in `app.js`, `mx:` in `content.js`, "Material price"
+rules in `page.css`):** a new tool **T-12** on #services — `https://nacekepa.work/#services?tool=matprice` (`/sl/#services?tool=matprice`).
+The visitor enters one printed part once — the weight **in one material**, the print time, the quantity, optional rush — and gets the
+**price in every material of the price list**, cheapest first: weight in that material (same volume of plastic → the `density` values in
+`settings.json`), price per piece, order total, difference to the entered material, a drawn bar per material (entered material as a dashed
+dimension line, chosen one red) and plain notes (what is assumed, cheapest ↔ dearest, rush). **With ticks in the material picker every row
+gets ● suits / ✕ not suited** (`mpRank` data) — price and suitability on one sheet; without ticks a note sends the visitor to the picker.
+Rows are buttons (click / Enter chooses the material, focus stays). Hand-offs: **"Start a project in {material}"** ticks 3D printing, sets the
+material + quantity and adds a "Material price: …" line to the brief; "{material} by quantity" → Series price and "{material} in the quote
+estimate" take the material with its own weight; "Price in every material" in the quote estimate and under the Series price bring the part
+along; a link under the material picker's table; "Copy table"; "Save in My corner"; calculation link
+(`#services?tool=matprice&m=petg&g=40&h=2&q=10&p=asa`); prints alone like every tool; Find anything finds it; the tools index counts 13.
+Only `settings.json` numbers and the quote estimate's sums (minimum per part, file preparation once, minimum order) — the tool, its index
+entry and its links render only with two or more priced materials. A material without a `density` keeps the entered weight (and the note
+says so). Nothing stored, nothing sent, no dependency. On phones the weight column is hidden so the prices fit.
+- Tested in Playwright (EN 1280 light, SL 390 dark, 77 checks): eight totals against the price list by hand (PETG 40 g + 2 h × 10: PLA
+  92.06 … PETG 92.40 … PA-CF 127.89 €), order, keyboard pick + kept focus, picker marks (outdoors + heat → PLA and ABS ✕), copied text, link
+  round trip incl. the chosen material, rubbish in the link ignored, mx → series → mx, estimate → mx, order form (service, material,
+  quantity, brief line), My corner (3 calculations + estimate, links, brief, text export), Find anything EN + SL, time-only / one piece,
+  no English on `/sl/`, no overflow at 390 px; whole-site sweep clean.
+*To remove:* see the comment above `MX_KEY` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: Material price for a whole parts list (NK-L in every material) and "price in every material" on the Part studio estimate.
+- Public: material picker — price per material as a column once a part is entered (the reverse link of NK-V).
+- Admin: Quote tab — "Material options" block on the NK-O quote (the same part in 2–3 materials the client asked about).
+
 ## 2026-11-17
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=quote`, `?tool=parts`, `?tool=prices`, `?tool=series`), #work, #work?view=list,
@@ -2506,6 +2551,13 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: Budget — save in My corner; budget for a whole parts list (sets).
 - Public: calculation links for the parts list and the plate tool; calculation link + QR on the printed tool.
 - Admin: Quote tab — "From a calculation link".
+
+- (Built 2026-11-17, second run: Material price NK-V `#services?tool=matprice` — one printed part priced in every material of the price
+  list, weight by density, ● / ✕ from the material picker, hand-offs to the order form / series price / estimate; My corner: calculations
+  package as the improvement — "Save in My corner" on the series price, budget and material price, "Open this calculation" links.)
+- Public: Material price for a whole parts list; "price in every material" on the Part studio estimate.
+- Public: material picker — price column once a part is entered.
+- Admin: "Material options" block on the NK-O quote.
 
 ## 2026-10-03 (second run)
 

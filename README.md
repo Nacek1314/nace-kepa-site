@@ -68,6 +68,12 @@ printed part → the plan it covers (hours + whole pieces), a bar of the budget 
 under the quote estimate, the series price and the budget tool copies the address with the typed numbers
 (`#services?tool=series&m=petg&g=40&h=2&q=25`), and such an address fills the tool again (`clUrl()` / `clRead()`).
 
+**Material price NK-V** (`#services?tool=matprice`): one printed part — weight in one material, print time, quantity — priced in every
+material of the `settings.json` price list (the weight follows each material's density), cheapest first, with a bar per material; with ticks
+in the material picker every row also says whether the material suits them. The chosen row goes to the order form, the series price or the
+quote estimate (`mxBox()` in `src/site/app.js`). The series price, the budget and the material price have "Save in My corner": the saved
+calculation re-opens from `#mine` through its calculation link (`mnSaveCalc()`).
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,

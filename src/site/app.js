@@ -153,7 +153,7 @@
         tlWrap('material', mpBox()) +
         tlWrap('prep', prepBox()) +
         tlWrap('plate', pbBox()) +
-        (pcOn() ? tlWrap('prices', pcList()) + tlWrap('quote', qcBox()) : '') + tlWrap('parts', bmBox()) + (srOn() ? tlWrap('series', srBox()) : '') + (bgOn() ? tlWrap('budget', bgBox()) : '') + faqBox() +
+        (pcOn() ? tlWrap('prices', pcList()) + tlWrap('quote', qcBox()) : '') + tlWrap('parts', bmBox()) + (srOn() ? tlWrap('series', srBox()) : '') + (bgOn() ? tlWrap('budget', bgBox()) : '') + (mxOn() ? tlWrap('matprice', mxBox()) : '') + faqBox() +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     work: function () {
@@ -1650,7 +1650,7 @@
     var top = !need.length ? '<p class="mp-msg">' + esc(f.empty) + '</p>' : !ch ? '<p class="mp-msg mp-msg--none" role="note">' + esc(f.none) + '</p>' : '<p class="nk-label mp-legend">' + esc(f.legend) + '</p>';
     var act = ch ? '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-mp-go>' + esc(f.go.replace('{m}', ch.name)) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
       '<button type="button" class="nk-btn" data-mp-copy>' + esc(f.copy) + '</button></div>' : '';
-    return top + '<ol class="mp-list" id="mp-list">' + rows + '</ol>' + act + '<p class="share-msg" id="mp-msg" role="status" aria-live="polite"></p>';
+    return top + '<ol class="mp-list" id="mp-list">' + rows + '</ol>' + act + mpMxLink() + '<p class="share-msg" id="mp-msg" role="status" aria-live="polite"></p>';
   }
   function mpBox() {
     var f = t().mp;
@@ -2628,7 +2628,7 @@
     return '<p class="nk-label">' + esc(x.rows) + '</p><dl class="nk-specs qc-rows">' + c.rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(pcMoney(r[1], 2)) + '</dd></div>'; }).join('') + '</dl>' +
       '<p class="qc-total"><span class="nk-label">' + esc(x.total) + '</span><b>' + esc('≈ ' + pcMoney(c.disc ? c.after : c.total, 2)) + '</b>' + (c.disc ? '<span class="qc-was">' + esc(pcMoney(c.total, 2)) + ' → −' + esc(pcMoney(c.disc, 2)) + ' ' + esc(x.withPromo) + '</span>' : '') + (c.pcs ? '<span class="qc-was qc-each">' + esc(x.each.replace('{p}', pcMoney((c.disc ? c.after : c.total) / c.pcs, 2)).replace('{n}', c.pcs)) + '</span>' : '') + '</p>' +
       (c.notes.length ? '<p class="qc-notes">' + c.notes.map(esc).join(' · ') + '</p>' : '') +
-      (srOn() && state.qc.print && (qcNum(state.qc.g) || qcNum(state.qc.h)) ? '<p class="pl-open qc-sr"><a href="#services?tool=series" data-qc-sr>' + esc(t().sr.fromQuote) + ' →</a></p>' : ''); // Series price NK-R (2026-11-15)
+      (srOn() && state.qc.print && (qcNum(state.qc.g) || qcNum(state.qc.h)) ? '<p class="pl-open qc-sr"><a href="#services?tool=series" data-qc-sr>' + esc(t().sr.fromQuote) + ' →</a>' + (mxOn() ? '<span aria-hidden="true"> · </span><a href="#services?tool=matprice" data-qc-mx>' + esc(t().mx.fromQuote) + ' →</a>' : '') + '</p>' : ''); // Series price NK-R (2026-11-15) // data-qc-mx: Material price NK-V (2026-11-17, second run)
   }
   function qcText(c) {
     var x = t().qc; if (!c) return '';
@@ -2778,15 +2778,15 @@
       (pcMats().length ? '<div class="nk-field"><label class="nk-field__label" for="sr-mat">' + esc(t().pc.material) + '</label><select class="nk-input" id="sr-mat" data-sr-f="mat">' + pcMats().map(function (m) { return '<option value="' + esc(m.key) + '"' + (pcMat(s.mat) === m ? ' selected' : '') + '>' + esc(m.name) + '</option>'; }).join('') + '</select></div>' + num('g', t().qc.weight, t().qc.grams, 'step="1"', s.seeded ? (state.qc.src ? t().qc.fromStudio : x.seeded) : '') : '') +
       (+pr.machineHour > 0 ? num('h', t().qc.printHours, t().qc.h, 'step="0.25"') : '') + num('qty', x.yourQty, '', 'step="1" inputmode="numeric" min="1" max="10000"') +
       (+pr.rushPct > 0 ? '<label class="ad-check qc-check"><input type="checkbox" data-sr-rush' + (s.rush ? ' checked' : '') + '> ' + esc(t().qc.rush.replace('{n}', pr.rushPct)) + '</label>' : '') + '</div>' +
-      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-sr-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-sr-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><span class="copy-msg" id="sr-msg" role="status"></span></div>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-sr-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-sr-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-mn-calc="series"' + (c ? '' : ' disabled') + '>' + esc(t().mn.calcSave) + '</button><span class="copy-msg" id="sr-msg" role="status"></span></div>' +
       '<p class="fit-note">' + esc(t().qc.note.replace('{vat}', L(PRICE.vatNote) || '')) + '</p>' +
-      '<p class="pl-open"><a href="#services?tool=quote" data-sr-qc>' + esc(x.toQuote) + ' →</a><span aria-hidden="true"> · </span><a href="#studio">' + esc(x.toStudio) + ' →</a></p></div>' +
+      '<p class="pl-open"><a href="#services?tool=quote" data-sr-qc>' + esc(x.toQuote) + ' →</a><span aria-hidden="true"> · </span><a href="#studio">' + esc(x.toStudio) + ' →</a>' + (mxOn() ? '<span aria-hidden="true"> · </span><a href="#services?tool=matprice" data-sr-mx>' + esc(t().mx.fromQuote) + ' →</a>' : '') + '</p></div>' +
       '<div class="pl-sheet sr-sheet"><div class="pl-head"><span class="nk-label">' + esc(x.table) + '</span><span class="nk-label">NK-R</span></div><div class="sr-out"><p class="sr-sum' + (c ? '' : ' is-empty') + '" id="sr-sum" role="status" aria-live="polite">' + esc(srSum(c)) + '</p><div id="sr-body">' + srBody(c) + '</div></div></div></div></section>';
   }
   function srUpdate(focusQ) {
     var c = srCalc(), sum = document.getElementById('sr-sum'), body = document.getElementById('sr-body'); if (!sum || !body) return;
     sum.textContent = srSum(c); sum.classList.toggle('is-empty', !c); body.innerHTML = srBody(c);
-    ['data-sr-go', 'data-sr-copy'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
+    ['data-sr-go', 'data-sr-copy', 'data-mn-calc="series"'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
     if (focusQ) { var el = body.querySelector('[data-sr-q="' + focusQ + '"]'); if (el) el.focus({ preventScroll: true }); }
   }
   function srPick(q) { state.sr.qty = String(q); var i = document.getElementById('sr-qty'); if (i) i.value = state.sr.qty; srUpdate(q); }
@@ -2976,7 +2976,7 @@
         (pcMats().length ? '<div class="nk-field"><label class="nk-field__label" for="bg-mat">' + esc(t().pc.material) + '</label><select class="nk-input" id="bg-mat" data-bg-f="mat">' + pcMats().map(function (m) { return '<option value="' + esc(m.key) + '"' + (pcMat(s.mat) === m ? ' selected' : '') + '>' + esc(m.name) + '</option>'; }).join('') + '</select></div>' + num('g', 'g', t().qc.weight, t().qc.grams, 'step="1"') : '') +
         (+P.print.machineHour > 0 ? num('h', 'h', t().qc.printHours, t().qc.h, 'step="0.25"') : '') +
         (+P.print.rushPct > 0 ? '<label class="ad-check qc-check"><input type="checkbox" data-bg-k="rush"' + (s.rush ? ' checked' : '') + '> ' + esc(t().qc.rush.replace('{n}', P.print.rushPct)) + '</label>' : '') + '</div></div>' : '') +
-      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-bg-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-bg-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><span class="copy-msg" id="bg-msg" role="status"></span></div>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-bg-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-bg-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-mn-calc="budget"' + (c ? '' : ' disabled') + '>' + esc(t().mn.calcSave) + '</button><span class="copy-msg" id="bg-msg" role="status"></span></div>' +
       '<p class="fit-note">' + esc(t().qc.note.replace('{vat}', L(P.vatNote) || '')) + '</p><p class="pl-open" id="bg-links">' + bgLinks(c) + '</p></div>' +
       '<div class="pl-sheet bg-sheet"><div class="pl-head"><span class="nk-label">' + esc(x.sheet) + '</span><span class="nk-label">NK-B</span></div><div class="bg-out"><p class="bg-sum' + (c && (c.plan || c.over) ? '' : ' is-empty') + (c && c.over ? ' is-over' : '') + '" id="bg-sum" role="status" aria-live="polite">' + esc(bgSum(c)) + '</p><div id="bg-body">' + bgBody(c) + '</div></div></div></div></section>';
   }
@@ -2984,7 +2984,7 @@
     var c = bgCalc(), sum = document.getElementById('bg-sum'), body = document.getElementById('bg-body'), ln = document.getElementById('bg-links'); if (!sum || !body) return;
     sum.textContent = bgSum(c); sum.classList.toggle('is-empty', !(c && (c.plan || c.over))); sum.classList.toggle('is-over', !!(c && c.over)); body.innerHTML = bgBody(c);
     if (ln) ln.innerHTML = bgLinks(c);
-    ['data-bg-go', 'data-bg-copy'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
+    ['data-bg-go', 'data-bg-copy', 'data-mn-calc="budget"'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
   }
   function bgCopy() {
     var c = bgCalc(), msg = document.getElementById('bg-msg'), x = t().bg; if (!c || !msg) return;
@@ -3037,11 +3037,13 @@
       s = state.sr; if (qcNum(s.g) || qcNum(s.h)) { part(); add('q', srQty() || ''); if (s.rush) add('r', 1); }
     } else if (k === 'budget') {
       s = state.bg; if (bgAmt()) { add('b', clNum(s.amt)); BG_HR.forEach(function (h) { add(h, clNum(s[h + 'H'])); }); if (qcNum(s.g) || qcNum(s.h)) { part(); if (s.rush) add('r', 1); } if (!s.first) add('f', 0); }
+    } else if (k === 'matprice') { // Material price NK-V (2026-11-17, second run)
+      s = state.mx; if (qcNum(s.g) || qcNum(s.h)) { part(); if (mxQty() > 1) add('q', mxQty()); if (s.rush) add('r', 1); var pk = mxCalc(); if (pk && !pk.pick.ref) add('p', pk.pick.m.key); }
     }
     return a.length ? tlUrl(k) + '&' + a.join('&') : '';
   }
   function clRead(k, qs) { // fills the tool the address names from its numbers; an address without numbers changes nothing
-    if (!PRICE || !/^(quote|series|budget)$/.test(k)) return;
+    if (!PRICE || !/^(quote|series|budget|matprice)$/.test(k)) return;
     var o = {}; qs.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) { try { o[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)).slice(0, 12); } catch (e) {} } });
     var n = function (key) { return clNum(o[key]); }, mat = function () { var m = pcMats().filter(function (v) { return v.key === o.m; })[0]; return m ? m.key : ''; }, s;
     if (k === 'quote' && (n('cad') || n('iot') || n('build') || n('g') || n('h'))) {
@@ -3052,8 +3054,166 @@
       s = state.sr; s.mat = mat(); s.g = n('g'); s.h = n('h'); s.rush = o.r === '1' ? 1 : 0; s.seeded = 0; if (n('q')) s.qty = String(Math.min(10000, Math.max(1, Math.round(+n('q')))));
     } else if (k === 'budget' && n('b')) {
       s = state.bg; s.amt = n('b'); BG_HR.forEach(function (h) { s[h + 'H'] = n(h); }); s.mat = mat(); s.g = n('g'); s.h = n('h'); s.rush = o.r === '1' ? 1 : 0; s.first = o.f === '0' ? 0 : 1;
+    } else if (k === 'matprice' && state.mx && (n('g') || n('h'))) { // Material price NK-V (2026-11-17, second run)
+      s = state.mx; s.mat = mat(); s.g = n('g'); s.h = n('h'); s.rush = o.r === '1' ? 1 : 0; s.seeded = 0; s.qty = String(Math.min(10000, Math.max(1, Math.round(+n('q') || 1))));
+      s.pick = pcMats().some(function (v) { return v.key === o.p; }) ? o.p : '';
     }
   }
+
+  // ---------- Material price / "Cena po materialih" NK-V (#services?tool=matprice, the tool after the budget; 2026-11-17, second run) ----------
+  // The same printed part priced in every material of the price list: the visitor types the weight in one material, the print
+  // time and the quantity; the weight in the other materials follows from the densities in settings.json (same volume of
+  // plastic), the print time is taken as the same. Table (weight, per piece, order, difference to the typed material), a drawn
+  // bar per material and plain notes. With ticks in the material picker each row also says whether that material suits them
+  // (mpRank) — price and suitability on one sheet. A row is a button: the chosen material goes to the order form, the series
+  // price or the quote estimate. The sums are the quote estimate's (piece = material + machine time, not below the minimum per
+  // part, + rush; order = pieces + file preparation, not below the minimum order) — every number from settings.json. Without
+  // at least two priced materials the tool does not render. Nothing is stored or sent.
+  // Self-contained: remove MX_KEY … mxFrom(), the 'matprice' entry in TL_TOOLS, tlWrap('matprice', mxBox()) in views.services,
+  // the data-qc-mx link in qcOut(), the data-sr-mx link in srBox(), the mpMxLink() call in mpOut(), the data-mx-* lines in the
+  // click / input / change handlers, the 'matprice' branches of clUrl() / clRead() / mnSaveCalc(), mx: and tl.matprice in both
+  // languages in content.js and the "Material price" rules at the end of page.css. (Uses srPcs() of the series price for "pieces".)
+  var MX_KEY = 'matprice';
+  state.mx = { mat: '', g: '', h: '', qty: '1', rush: 0, pick: '', seeded: 0 };
+  function mxOn() { return !!(PRICE && pcMats().length > 1); }
+  function mxQty() { var n = Math.round(qcNum(state.mx.qty)); return n >= 1 ? Math.min(n, 10000) : 1; }
+  function mxR1(n) { return Math.round(n * 10) / 10; }
+  function mxSuit(m) { // 1 suits / 0 does not suit what is ticked in the material picker; -1 when nothing is ticked or the material is not in the picker
+    var need = mpTicked(), mm = MP_MATS.filter(function (v) { return v.id === m.key; })[0];
+    return !need.length || !mm ? -1 : need.every(function (k) { return mm.v[k] > 0; }) ? 1 : 0;
+  }
+  function mxCalc() {
+    var s = state.mx, pr = PRICE.print, ref = pcMat(s.mat), g = qcNum(s.g), h = +pr.machineHour > 0 ? qcNum(s.h) : 0, q = mxQty(); if (!ref || (!g && !h)) return null;
+    var rush = !!(s.rush && +pr.rushPct > 0), setup = +pr.setup || 0;
+    var rows = pcMats().map(function (m, i) {
+      var conv = g > 0 && +ref.density > 0 && +m.density > 0, gm = conv ? g * m.density / ref.density : g;
+      var raw = gm * +m.perGram + h * (+pr.machineHour || 0), low = +pr.minPart > 0 && raw < +pr.minPart, unit = (low ? +pr.minPart : raw) * (rush ? 1 + pr.rushPct / 100 : 1);
+      var sum = unit * q + setup, min = +pr.minOrder > 0 && sum < +pr.minOrder, total = Math.round((min ? +pr.minOrder : sum) * 100) / 100;
+      return { m: m, i: i, g: gm, conv: conv, minPart: low, min: min, total: total, each: total / q, ref: m === ref, suit: mxSuit(m) };
+    });
+    if (!rows.some(function (r) { return r.total > 0; })) return null;
+    var refRow = rows.filter(function (r) { return r.ref; })[0];
+    rows.sort(function (a, b) { return (a.total - b.total) || (a.i - b.i); });
+    var pick = rows.filter(function (r) { return r.m.key === s.pick; })[0] || refRow;
+    return { rows: rows, ref: refRow, pick: pick, q: q, g: g, h: h, rush: rush, lo: rows[0], hi: rows[rows.length - 1], same: rows.every(function (r) { return r.conv || !g; }), ticked: mpTicked().length > 0 };
+  }
+  function mxDiff(c, r) { var d = Math.round((r.total / c.ref.total - 1) * 100); return r.ref ? '—' : d === 0 ? '±0 %' : (d > 0 ? '+' : '−') + Math.abs(d) + ' %'; }
+  function mxPart(c, r) { return r.m.name + (c.g ? ' · ' + fitFmt(mxR1(r.g)) + ' g' : '') + (c.g && c.h ? ' + ' : c.h ? ' · ' : '') + (c.h ? fitFmt(c.h) + ' h' : ''); }
+  function mxSum(c) {
+    var x = t().mx; if (!c) return x.empty;
+    return c.q > 1 ? x.sum.replace('{m}', c.pick.m.name).replace('{each}', pcMoney(c.pick.each, 2)).replace('{total}', pcMoney(c.pick.total, 2)).replace('{n}', srPcs(c.q)) : x.sum1.replace('{m}', c.pick.m.name).replace('{total}', pcMoney(c.pick.total, 2));
+  }
+  function mxSvg(c) { // one bar per material, cheapest first; the typed material as a dashed dimension line, the chosen one in red
+    var x = t().mx, W = 320, rh = 22, tp = 14, l = 62, r = 64, pw = W - l - r, H = tp + c.rows.length * rh + 6, top = c.hi.total || 1;
+    var f1 = function (n) { return (Math.round(n * 10) / 10).toFixed(1); };
+    var s = '<svg class="mx-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(x.chartAria.replace('{a}', c.lo.m.name).replace('{pa}', pcMoney(c.lo.total, 2)).replace('{b}', c.hi.m.name).replace('{pb}', pcMoney(c.hi.total, 2))) + '">';
+    var rx = f1(l + (c.ref.total / top) * pw);
+    s += '<line class="mx-ref" x1="' + rx + '" x2="' + rx + '" y1="' + (tp - 3) + '" y2="' + (H - 4) + '"/><text class="mx-tx mx-tx--d" x="' + rx + '" y="9" text-anchor="' + (c.ref.total / top > 0.6 ? 'end' : 'start') + '">' + esc(c.ref.m.name + ' · ' + x.typed) + '</text>';
+    c.rows.forEach(function (rw, n) {
+      var y = tp + n * rh, w = Math.max(1, (rw.total / top) * pw), on = rw === c.pick;
+      s += '<text class="mx-tx mx-tx--n' + (on ? ' is-on' : '') + '" x="' + (l - 6) + '" y="' + (y + 14) + '" text-anchor="end">' + esc(rw.m.name) + '</text>' +
+        '<rect class="mx-bar' + (on ? ' is-on' : '') + (rw.suit === 0 ? ' is-out' : '') + '" x="' + l + '" y="' + (y + 4) + '" width="' + f1(w) + '" height="' + (rh - 8) + '"/>' +
+        '<text class="mx-tx' + (on ? ' is-on' : '') + '" x="' + f1(l + w + 5) + '" y="' + (y + 14) + '">' + esc(pcMoney(rw.total, 2)) + '</text>';
+    });
+    return s + '<line class="mx-ax" x1="' + l + '" x2="' + l + '" y1="' + (tp - 3) + '" y2="' + (H - 4) + '"/></svg>';
+  }
+  function mxNeeds() { var f = t().mp; return mpTicked().map(function (k) { return f.short[k]; }).join(', '); }
+  function mxNotes(c) {
+    var x = t().mx, pr = PRICE.print, a = [];
+    a.push(c.g ? (c.same ? x.nSame : x.nSameW) + (c.h ? ' ' + x.nTime : '') : x.nNoW);
+    if (c.hi.total > c.lo.total) a.push(x.nRange.replace('{a}', c.lo.m.name).replace('{pa}', pcMoney(c.lo.total, 2)).replace('{b}', c.hi.m.name).replace('{pb}', pcMoney(c.hi.total, 2)).replace('{d}', pcMoney(c.hi.total - c.lo.total, 2)));
+    if (c.rush) a.push(x.nRush.replace('{n}', pr.rushPct));
+    a.push(c.ticked ? x.nSuit.replace('{needs}', mxNeeds()) : x.nPick);
+    a.push(x.nQuote);
+    return a;
+  }
+  function mxMark(r) { var x = t().mx; return r.suit < 0 ? '' : '<span class="mx-mk mx-mk--' + (r.suit ? 'g' : 'x') + '"><span aria-hidden="true">' + (r.suit ? '●' : '✕') + '</span><span class="vh"> ' + esc(r.suit ? x.suits : x.suitsNot) + '</span></span>'; }
+  function mxBody(c) {
+    var x = t().mx; if (!c) return '';
+    var many = c.q > 1, anyMin = c.rows.some(function (r) { return r.min; }), anyLow = c.rows.some(function (r) { return r.minPart; });
+    var rows = c.rows.map(function (r) {
+      var on = r === c.pick;
+      return '<tr class="' + (on ? 'is-on' : '') + (r.suit === 0 ? ' is-out' : '') + '"><th scope="row"><button type="button" class="sr-q mx-m" data-mx-m="' + esc(r.m.key) + '" aria-pressed="' + on + '" aria-label="' + esc(x.choose.replace('{m}', r.m.name)) + '">' + esc(r.m.name) + '</button>' + mxMark(r) + (r.ref ? '<span class="mx-typed">' + esc(x.typed) + '</span>' : '') + '</th>' +
+        (c.g ? '<td class="mx-w">' + esc(fitFmt(mxR1(r.g))) + ' g</td>' : '') + (many ? '<td>' + esc(pcMoney(r.each, 2)) + (r.minPart ? '<abbr class="sr-min" title="' + esc(t().qc.minPartApplied) + '">†</abbr>' : '') + '</td>' : '') +
+        '<td>' + esc(pcMoney(r.total, 2)) + (r.min ? '<abbr class="sr-min" title="' + esc(t().qc.minApplied) + '">*</abbr>' : '') + (!many && r.minPart ? '<abbr class="sr-min" title="' + esc(t().qc.minPartApplied) + '">†</abbr>' : '') + '</td><td>' + esc(mxDiff(c, r)) + '</td></tr>';
+    }).join('');
+    return '<div class="sr-fig mx-fig">' + mxSvg(c) + '</div>' +
+      '<div class="sr-scroll"><table class="sr-table mx-table"><caption class="vh">' + esc(x.caption) + '</caption><thead><tr><th scope="col">' + esc(t().pc.material) + '</th>' + (c.g ? '<th scope="col" class="mx-w">' + esc(x.cWeight) + '</th>' : '') + (many ? '<th scope="col">' + esc(t().sr.cEach) + '</th>' : '') + '<th scope="col">' + esc(many ? t().sr.cTotal : x.cPrice) + '</th><th scope="col">' + esc(x.cDiff.replace('{m}', c.ref.m.name)) + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      (anyMin ? '<p class="sr-foot">* ' + esc(t().qc.minApplied) + '</p>' : '') + (anyLow ? '<p class="sr-foot">† ' + esc(t().qc.minPartApplied) + '</p>' : '') +
+      (c.ticked ? '<p class="sr-foot mx-legend">' + esc(x.legend) + '</p>' : '') +
+      '<ul class="sr-notes">' + mxNotes(c).map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+  }
+  function mxLine(c) { // one line for the brief
+    var x = t().mx, p = c.pick;
+    return x.brief + ': ' + mxPart(c, p) + ' ' + t().sr.perPiece + '; ' + srPcs(c.q) + ' ≈ ' + pcMoney(p.total, 2) + (c.q > 1 ? ' (≈ ' + pcMoney(p.each, 2) + ' ' + t().sr.perPiece + ')' : '') + '; ' + x.others + ': ' + c.rows.filter(function (r) { return r !== p; }).map(function (r) { return r.m.name + ' ≈ ' + pcMoney(r.total, 2); }).join(', ') + '.';
+  }
+  function mxText(c) {
+    var x = t().mx, many = c.q > 1, out = [x.label.split(' · ')[0].toUpperCase() + ' NK-V — nacekepa.work', mxPart(c, c.ref) + ' ' + t().sr.perPiece + ' · ' + srPcs(c.q), ''];
+    out.push([t().pc.material].concat(c.g ? [x.cWeight] : [], many ? [t().sr.cEach] : [], [many ? t().sr.cTotal : x.cPrice, x.cDiff.replace('{m}', c.ref.m.name)], c.ticked ? [x.cSuit] : []).join(' | '));
+    c.rows.forEach(function (r) { out.push((r === c.pick ? '→ ' : '  ') + [r.m.name].concat(c.g ? [fitFmt(mxR1(r.g)) + ' g'] : [], many ? [pcMoney(r.each, 2)] : [], [pcMoney(r.total, 2) + (r.min ? ' *' : '') + (r.minPart ? ' †' : ''), mxDiff(c, r)], c.ticked ? [r.suit < 0 ? '—' : r.suit ? x.suits : x.suitsNot] : []).join(' | ')); });
+    if (c.rows.some(function (r) { return r.min; })) out.push('* ' + t().qc.minApplied);
+    if (c.rows.some(function (r) { return r.minPart; })) out.push('† ' + t().qc.minPartApplied);
+    out.push(''); mxNotes(c).forEach(function (n) { out.push('- ' + n); });
+    out.push('', t().qc.note.replace('{vat}', L(PRICE.vatNote) || '').trim());
+    if (clUrl(MX_KEY)) out.push(clUrl(MX_KEY));
+    return out.join('\n');
+  }
+  function mxFrom(k) { // the part typed in the quote estimate ('qc') or the series price ('sr') comes along
+    var s = state.mx, q = k === 'qc' ? state.qc : state.sr; s.mat = q.mat; s.g = q.g; s.h = q.h; s.rush = q.rush ? 1 : 0; s.pick = '';
+    var n = Math.round(qcNum(q.qty)); s.qty = String(n >= 1 ? n : 1); s.seeded = k === 'qc' ? 1 : 2;
+  }
+  function mxSeed() { var s = state.mx, q = state.qc; if (s.seeded || s.g || s.h) return; if (q.print && (qcNum(q.g) || qcNum(q.h))) mxFrom('qc'); }
+  function mxLinks(c) {
+    var x = t().mx, a = [];
+    if (c && srOn()) a.push('<a href="#services?tool=series" data-mx-sr>' + esc(x.toSeries.replace('{m}', c.pick.m.name)) + ' →</a>');
+    if (c && pcOn()) a.push('<a href="#services?tool=quote" data-mx-qc>' + esc(x.toQuote.replace('{m}', c.pick.m.name)) + ' →</a>');
+    a.push('<a href="#services?tool=material">' + esc(x.toPicker) + ' →</a>');
+    return a.join('<span aria-hidden="true"> · </span>');
+  }
+  function mxGo(c) { return t().mx.go.replace('{m}', c ? c.pick.m.name : pcMat(state.mx.mat).name); }
+  function mxBox() {
+    mxSeed();
+    var x = t().mx, s = state.mx, pr = PRICE.print, c = mxCalc();
+    var num = function (k, label, unit, attrs, hint) { return '<div class="nk-field"><label class="nk-field__label" for="mx-' + k + '">' + esc(label) + (unit ? ' · ' + esc(unit) : '') + '</label><input class="nk-input" id="mx-' + k + '" data-mx-f="' + k + '" type="number" inputmode="decimal" min="0" ' + attrs + ' value="' + esc(s[k]) + '">' + (hint ? '<span class="nk-field__hint">' + esc(hint) + '</span>' : '') + '</div>'; };
+    return '<section class="block mx">' + head(x.label, x.title, x.lead) + '<div class="fit-grid sr-grid"><div class="fit-form"><p class="nk-label">' + esc(x.part) + '</p><div class="qc-print sr-form">' +
+      '<div class="nk-field"><label class="nk-field__label" for="mx-mat">' + esc(x.weighedIn) + '</label><select class="nk-input" id="mx-mat" data-mx-f="mat">' + pcMats().map(function (m) { return '<option value="' + esc(m.key) + '"' + (pcMat(s.mat) === m ? ' selected' : '') + '>' + esc(m.name) + '</option>'; }).join('') + '</select></div>' +
+      num('g', t().qc.weight, t().qc.grams, 'step="1"', s.seeded === 1 ? (state.qc.src ? t().qc.fromStudio : t().sr.seeded) : s.seeded === 2 ? x.seededSr : x.weightHint) +
+      (+pr.machineHour > 0 ? num('h', t().qc.printHours, t().qc.h, 'step="0.25"') : '') + num('qty', t().qc.qty, '', 'step="1" inputmode="numeric" min="1" max="10000"') +
+      (+pr.rushPct > 0 ? '<label class="ad-check qc-check"><input type="checkbox" data-mx-rush' + (s.rush ? ' checked' : '') + '> ' + esc(t().qc.rush.replace('{n}', pr.rushPct)) + '</label>' : '') + '</div>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-mx-go' + (c ? '' : ' disabled') + '><span id="mx-go-t">' + esc(mxGo(c)) + '</span><span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-mx-copy' + (c ? '' : ' disabled') + '>' + esc(t().sr.copy) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-mn-calc="' + MX_KEY + '"' + (c ? '' : ' disabled') + '>' + esc(t().mn.calcSave) + '</button><span class="copy-msg" id="mx-msg" role="status"></span></div>' +
+      '<p class="fit-note">' + esc(t().qc.note.replace('{vat}', L(PRICE.vatNote) || '')) + '</p><p class="pl-open" id="mx-links">' + mxLinks(c) + '</p></div>' +
+      '<div class="pl-sheet sr-sheet"><div class="pl-head"><span class="nk-label">' + esc(x.table) + '</span><span class="nk-label">NK-V</span></div><div class="sr-out"><p class="sr-sum' + (c ? '' : ' is-empty') + '" id="mx-sum" role="status" aria-live="polite">' + esc(mxSum(c)) + '</p><div id="mx-body" class="mx-body">' + mxBody(c) + '</div></div></div></div></section>';
+  }
+  function mxUpdate(focusM) {
+    var c = mxCalc(), sum = document.getElementById('mx-sum'), body = document.getElementById('mx-body'), ln = document.getElementById('mx-links'), go = document.getElementById('mx-go-t'); if (!sum || !body) return;
+    sum.textContent = mxSum(c); sum.classList.toggle('is-empty', !c); body.innerHTML = mxBody(c);
+    if (ln) ln.innerHTML = mxLinks(c); if (go) go.textContent = mxGo(c);
+    ['data-mx-go', 'data-mx-copy', 'data-mn-calc="' + MX_KEY + '"'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
+    if (focusM) { var el = body.querySelector('[data-mx-m="' + focusM + '"]'); if (el) el.focus({ preventScroll: true }); }
+  }
+  function mxPick(k) { state.mx.pick = k; mxUpdate(k); }
+  function mxCopy() {
+    var c = mxCalc(), msg = document.getElementById('mx-msg'); if (!c || !msg) return;
+    var fail = function () { msg.textContent = t().qc.copyFail; };
+    try { navigator.clipboard.writeText(mxText(c)).then(function () { msg.textContent = t().sr.copied; }, fail); } catch (e) { fail(); }
+  }
+  function mxHand(to) { // the chosen material with its own weight goes to the series price ('sr') or the quote estimate ('qc'); the link itself opens the tool
+    var c = mxCalc(), s = state.mx; if (!c) return;
+    var o = to === 'sr' ? state.sr : state.qc; o.mat = c.pick.m.key; o.g = c.g ? String(mxR1(c.pick.g)) : ''; o.h = s.h; o.rush = c.rush ? 1 : 0;
+    if (to === 'sr') { if (c.q > 1) o.qty = String(c.q); o.seeded = 0; } else { o.print = 1; o.qty = String(c.q); o.src = ''; }
+  }
+  function mxToOrder() {
+    var c = mxCalc(), o = state.order, x = t().mx; if (!c) return;
+    if (o.services.indexOf('print') < 0) o.services.push('print');
+    var mm = MP_MATS.filter(function (v) { return v.id === c.pick.m.key; })[0]; if (mm) o.mat = mm.o;
+    if (c.q > 1) o.qty = String(c.q);
+    var line = mxLine(c);
+    if (o.what.indexOf(x.brief + ':') < 0) o.what = o.what ? o.what + '\n' + line : line;
+    else o.what = o.what.split('\n').map(function (l) { return l.indexOf(x.brief + ':') === 0 ? line : l; }).join('\n');
+    state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+  function mpMxLink() { return mxOn() ? '<p class="pl-open mp-mx"><a href="#services?tool=' + MX_KEY + '">' + esc(t().mx.fromPicker) + ' →</a></p>' : ''; }
 
   // ---------- Parts list / "Kosovnica" NK-L (#services?tool=parts, T-10; 2026-11-05) ----------
   // An order of several different parts on one sheet: every line is a part (name, L × W × H, material, quantity) and gets
@@ -3467,9 +3627,9 @@
   // Added 2026-10-29 (#services tools package). Only links and scrolling; the tools themselves are unchanged.
   // To remove: TL_TOOLS … tlGo(), the tlIndex() / tlWrap() calls in views.services, tlHome() in views.home, the state.tool
   // line in page(), the tlGo line in render(), tl: in both languages in content.js and the "Tools index" rules in page.css.
-  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']].concat(pcOn() ? [['prices', 'pc', 'prices'], ['quote', 'qc', 'quote']] : []).concat([['parts', 'bm', 'parts']]).concat(srOn() ? [['series', 'sr', 'series']] : []).concat(bgOn() ? [['budget', 'bg', 'budget']] : []); // 'budget': Budget NK-B (2026-11-17), only with a price list // // 'series': Series price NK-R (2026-11-15), only with print prices // 'parts': the parts list NK-L (2026-11-05) // [link name, content key, section id]; the two pricing tools only with a price list in settings.json
+  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']].concat(pcOn() ? [['prices', 'pc', 'prices'], ['quote', 'qc', 'quote']] : []).concat([['parts', 'bm', 'parts']]).concat(srOn() ? [['series', 'sr', 'series']] : []).concat(bgOn() ? [['budget', 'bg', 'budget']] : []).concat(mxOn() ? [['matprice', 'mx', 'matprice']] : []); // 'matprice': Material price NK-V (2026-11-17, second run), only with two or more priced materials // 'budget': Budget NK-B (2026-11-17), only with a price list // // 'series': Series price NK-R (2026-11-15), only with print prices // 'parts': the parts list NK-L (2026-11-05) // [link name, content key, section id]; the two pricing tools only with a price list in settings.json
   function tlHash(k) { return '#services?tool=' + k; }
-  function tlNo(i) { return 'T-' + String(i).padStart(2, '0'); } // T-01 … T-12 (two digits from the tenth tool on)
+  function tlNo(i) { return 'T-' + String(i).padStart(2, '0'); } // T-01 … T-13 (two digits from the tenth tool on)
   function tlIndex() {
     var x = t().tl;
     var n = TL_TOOLS.length + 1; // the tools on this page + the Part studio
@@ -3791,15 +3951,15 @@
   var MN_KEY = 'nk-mine', MN_MAX = 20, mnMem = null, mnAsk = false, mnMsg = '';
   function mnRead() {
     if (!mnMem) {
-      mnMem = { v: 1, cmp: [], st: [], qc: [] };
-      try { var d = JSON.parse(localStorage.getItem(MN_KEY) || 'null'); if (d && d.v === 1) ['cmp', 'st', 'qc'].forEach(function (k) { if (Array.isArray(d[k])) mnMem[k] = d[k].filter(function (e) { return e && typeof e === 'object' && typeof e.at === 'number'; }).slice(0, MN_MAX); }); } catch (e) {}
+      mnMem = { v: 1, cmp: [], st: [], qc: [], calc: [] };
+      try { var d = JSON.parse(localStorage.getItem(MN_KEY) || 'null'); if (d && d.v === 1) ['cmp', 'st', 'qc', 'calc'].forEach(function (k) { if (Array.isArray(d[k])) mnMem[k] = d[k].filter(function (e) { return e && typeof e === 'object' && typeof e.at === 'number'; }).slice(0, MN_MAX); }); } catch (e) {}
     }
     return mnMem;
   }
   function mnSave() { try { localStorage.setItem(MN_KEY, JSON.stringify(mnMem)); } catch (e) {} }
   function mnAdd(kind, entry) { var m = mnRead(); entry.at = Date.now(); m[kind] = [entry].concat(m[kind]).slice(0, MN_MAX); mnSave(); return entry; }
   function mnDrop(kind, at) { var m = mnRead(); m[kind] = m[kind].filter(function (e) { return e.at !== +at; }); mnSave(); }
-  function mnCount() { var m = mnRead(); return slRead().length + (dr.at && state.send !== 'sent' ? 1 : 0) + m.cmp.length + m.st.length + m.qc.length; }
+  function mnCount() { var m = mnRead(); return slRead().length + (dr.at && state.send !== 'sent' ? 1 : 0) + m.cmp.length + m.st.length + m.qc.length + m.calc.length; }
   function mnWhen(at) { try { return new Date(at).toLocaleString(lang === 'sl' ? 'sl-SI' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
   function mnLink() { var n = mnCount(), x = t().mn; return '<a class="mine-link" href="#mine" aria-label="' + esc(n ? x.linkN.replace('{n}', n) : x.link) + '" title="' + esc(x.link) + '"' + (page() === 'mine' ? ' aria-current="page"' : '') + '><span aria-hidden="true">★</span>' + (n ? '<b>' + n + '</b>' : '') + '</a>'; }
   function mnFlash(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
@@ -3814,8 +3974,28 @@
   }
   function mnSaveQc() {
     var c = qcCalc(); if (!c) return;
-    mnAdd('qc', { rows: c.rows.map(function (r) { return [r[0], pcMoney(r[1], 2)]; }), total: pcMoney(c.disc ? c.after : c.total, 2), text: qcText(c), svcs: ['cad', 'iot', 'build', 'print'].filter(function (k) { return state.qc[k]; }) });
+    mnAdd('qc', { rows: c.rows.map(function (r) { return [r[0], pcMoney(r[1], 2)]; }), total: pcMoney(c.disc ? c.after : c.total, 2), text: qcText(c), svcs: ['cad', 'iot', 'build', 'print'].filter(function (k) { return state.qc[k]; }), hash: mnCalcHash('quote') });
     mnFlash('qc-msg', t().mn.qcSaved); mnLinkShow();
+  }
+  // My corner: calculations (2026-11-17, second run, improvement package): the series price, the budget and the material price
+  // save their calculation like the quote estimate does — one card each under "Calculations" with the result, the line for the
+  // brief and the calculation link (clUrl) that opens the tool with the same numbers; saved quote estimates get the same link.
+  // To remove: MN_CALC … mnOpen(), 'calc' in mnRead() / mnCount() / mnForget(), calcB + its sec() in mnView(), the calc lines in
+  // mnText(), hash: in mnSaveQc(), the data-mn-calc buttons in srBox() / bgBox() / mxBox() + their click line, mn.calc… in content.js.
+  var MN_CALC = /^#services\?tool=(quote|series|budget|matprice)(&[a-z]{1,5}=[\w.%-]{0,16})*$/;
+  function mnCalcHash(k) { var u = clUrl(k), h = u ? u.slice(u.indexOf('#')) : ''; return MN_CALC.test(h) ? h : ''; }
+  function mnSaveCalc(k) {
+    var e = null, c, id = { series: 'sr', budget: 'bg', matprice: 'mx' }[k]; if (!id || !PRICE) return;
+    if (k === 'series' && (c = srCalc())) e = { sum: srPartText(c.p) + ' — ' + srSum(c), text: srLine(c), svcs: ['print'] };
+    else if (k === 'budget' && (c = bgCalc())) e = { sum: bgSum(c), text: bgLine(c), svcs: c.plan ? c.plan.rows.map(function (r) { return r.k; }).filter(function (v) { return v !== 'setup'; }) : [] };
+    else if (k === 'matprice' && (c = mxCalc())) e = { sum: mxPart(c, c.ref) + ' — ' + mxSum(c), text: mxLine(c), svcs: ['print'] };
+    if (!e) return;
+    e.tool = k; e.title = t()[id].label.split(' · ')[0]; e.hash = mnCalcHash(k);
+    mnAdd('calc', e); mnFlash(id + '-msg', t().mn.calcSaved); mnLinkShow();
+  }
+  function mnOpen(e, fallback) { // "Open this calculation" when the entry carries a valid calculation link, else the plain tool
+    var ok = typeof e.hash === 'string' && MN_CALC.test(e.hash);
+    return btn(ok ? t().mn.calcOpen : fallback[0], ok ? e.hash : fallback[1], 'ghost', 'sm');
   }
   function mnLinkShow() { var el = document.querySelector('.mine-link'); if (el) el.outerHTML = mnLink(); }
   // A saved sheet or estimate goes into the brief the same way the studio and the quote tool hand over (one line each).
@@ -3836,7 +4016,7 @@
     location.hash = 'order';
   }
   function mnForget() {
-    mnMem = { v: 1, cmp: [], st: [], qc: [] }; try { localStorage.removeItem(MN_KEY); localStorage.removeItem(SL_KEY); } catch (e) {}
+    mnMem = { v: 1, cmp: [], st: [], qc: [], calc: [] }; try { localStorage.removeItem(MN_KEY); localStorage.removeItem(SL_KEY); } catch (e) {}
     slMem = []; mnAsk = false;
     try { localStorage.removeItem(DR_KEY); } catch (e) {}
     state.order = { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '', phone: '', reply: 0 };
@@ -3851,6 +4031,8 @@
     out.push(x.cmpT); out.push(m.cmp.length ? m.cmp.map(function (e) { return '- ' + e.s.map(function (sl) { var p = bySlug(sl); return p ? P(p, 'title') : sl; }).join(' · ') + ' — ' + mnWhen(e.at) + '\n  https://nacekepa.work/' + (lang === 'sl' ? 'sl/' : '') + cmpHash(e.s); }).join('\n') : x.cmpEmpty); out.push('');
     out.push(x.stT); out.push(m.st.length ? m.st.map(function (e) { return '- ' + e.name + ' — ' + mnWhen(e.at) + '\n' + e.rows.map(function (r) { return '  ' + r[0] + ': ' + r[1]; }).join('\n'); }).join('\n') : x.stEmpty); out.push('');
     out.push(x.qcT); out.push(m.qc.length ? m.qc.map(function (e) { return '- ' + mnWhen(e.at) + ': ' + e.text; }).join('\n') : x.qcEmpty); out.push('');
+    var site = 'https://nacekepa.work/' + (lang === 'sl' ? 'sl/' : '');
+    out.push(x.calcT); out.push(m.calc.length ? m.calc.map(function (e) { return '- ' + mnWhen(e.at) + ' · ' + (e.title || '') + ': ' + (e.sum || '') + '\n  ' + (e.text || '') + (typeof e.hash === 'string' && MN_CALC.test(e.hash) ? '\n  ' + site + e.hash : ''); }).join('\n') : x.calcEmpty); out.push('');
     out.push(x.privacy);
     return out.join('\n');
   }
@@ -3876,12 +4058,14 @@
     var stB = m.st.length ? m.st.map(function (e) { return '<details class="mn-card"><summary><b>' + esc(e.name) + '</b> <span class="nk-label">' + esc((e.size || []).map(fitFmt).join(' × ')) + (e.size ? ' mm' : '') + ' · ×' + esc(e.qty || 1) + '</span>' + when(e) + '</summary><dl class="nk-specs mn-specs">' + e.rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('') + '</dl>' +
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mn-brief="st" data-mn-at="' + e.at + '">' + esc(x.stBrief) + '</button>' + btn(x.stAgain, '#studio', 'ghost', 'sm') + rm('st', e) + '</div></details>'; }).join('') : '<p class="hint">' + esc(x.stEmpty) + '</p>';
     var qcB = m.qc.length ? m.qc.map(function (e) { return '<details class="mn-card"><summary><b>≈ ' + esc(e.total) + '</b> <span class="nk-label">' + esc(e.rows.map(function (r) { return r[0]; }).join(' · ')) + '</span>' + when(e) + '</summary><dl class="nk-specs mn-specs">' + e.rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('') + '</dl>' +
-      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mn-brief="qc" data-mn-at="' + e.at + '">' + esc(x.qcBrief) + '</button>' + btn(t().qc.title, '#services?tool=quote', 'ghost', 'sm') + rm('qc', e) + '</div></details>'; }).join('') : '<p class="hint">' + esc(x.qcEmpty) + '</p>';
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mn-brief="qc" data-mn-at="' + e.at + '">' + esc(x.qcBrief) + '</button>' + mnOpen(e, [t().qc.title, '#services?tool=quote']) + rm('qc', e) + '</div></details>'; }).join('') : '<p class="hint">' + esc(x.qcEmpty) + '</p>';
+    var calcB = m.calc.length ? m.calc.map(function (e) { var tk = /^(series|budget|matprice)$/.test(e.tool) ? e.tool : 'series'; return '<details class="mn-card"><summary><b>' + esc(e.title || '') + '</b> <span class="nk-label mn-calc-sum">' + esc(e.sum || '') + '</span>' + when(e) + '</summary><p class="mn-pre mn-calc-text">' + esc(e.text || '') + '</p>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mn-brief="calc" data-mn-at="' + e.at + '">' + esc(x.qcBrief) + '</button>' + mnOpen(e, [e.title || x.calcT, tlHash(tk)]) + rm('calc', e) + '</div></details>'; }).join('') : '<p class="hint">' + esc(x.calcEmpty) + '</p>';
     var tools = '<div class="mn-tools"><div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mn-print>' + psIco() + ' ' + esc(x.print) + '</button><button type="button" class="nk-btn nk-btn--sm" data-mn-dl>' + esc(x.download) + '</button>' +
       (mnAsk ? '<span class="mn-ask">' + esc(x.forgetAsk) + ' <button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-mn-forget="yes">' + esc(x.forgetYes) + '</button> <button type="button" class="nk-btn nk-btn--sm" data-mn-forget="no">' + esc(x.forgetNo) + '</button></span>' : '<button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-mn-forget="ask">' + esc(x.forget) + '</button>') + '</div>' +
       '<p class="share-msg" id="mn-msg" role="status" aria-live="polite">' + esc(mnMsg) + '</p><p class="fit-note">' + esc(x.privacy) + ' ' + esc(x.max.replace('{n}', MN_MAX)) + '</p></div>';
     return '<section class="block first mine-page">' + head(x.label, x.title, x.lead, true) + (total ? '' : '<p class="mn-empty">' + esc(x.empty) + '</p>') +
-      sec(x.slT, slB, sl.length) + sec(x.drT, drB) + sec(x.cmpT, cmpB, m.cmp.length) + sec(x.stT, stB, m.st.length) + sec(x.qcT, qcB, m.qc.length) + tools + '</section>' + ctaBand();
+      sec(x.slT, slB, sl.length) + sec(x.drT, drB) + sec(x.cmpT, cmpB, m.cmp.length) + sec(x.stT, stB, m.st.length) + sec(x.qcT, qcB, m.qc.length) + sec(x.calcT, calcB, m.calc.length) + tools + '</section>' + ctaBand();
   }
   function frame(inner) {
     var x = t(), p = page();
@@ -3973,6 +4157,14 @@
     if (el.hasAttribute('data-bm-st')) { var bs = stSrc(); if (bs) { var bd = stDims(bs), bc = mpChosen(); bmAdd({ name: String(state.st.name || '').trim() || (bs.kind === 'file' ? String(bs.name || '').replace(/\.[a-z0-9]+$/i, '') : ''), l: bd[0], w: bd[1], h: bd[2], mat: bc ? bc.id : '', qty: Math.max(1, Math.round(+state.st.qty || 1)) }); location.hash = 'services?tool=parts'; } return; }
     if (el.hasAttribute('data-qc-go')) { qcToOrder(); return; } // Pricing package (2026-11-02)
     if (el.dataset.srQ) { srPick(+el.dataset.srQ); return; } // Series price NK-R (2026-11-15)
+    if (el.dataset.mxM) { mxPick(el.dataset.mxM); return; } // Material price NK-V (2026-11-17, second run)
+    if (el.hasAttribute('data-mx-go')) { mxToOrder(); return; }
+    if (el.hasAttribute('data-mx-copy')) { mxCopy(); return; }
+    if (el.hasAttribute('data-mx-sr')) { mxHand('sr'); } // the links themselves open the tools
+    if (el.hasAttribute('data-mx-qc')) { mxHand('qc'); }
+    if (el.hasAttribute('data-qc-mx')) { mxFrom('qc'); }
+    if (el.hasAttribute('data-sr-mx') && (qcNum(state.sr.g) || qcNum(state.sr.h))) { mxFrom('sr'); }
+    if (el.dataset.mnCalc) { mnSaveCalc(el.dataset.mnCalc); return; } // My corner: calculations (2026-11-17, second run)
     if (el.hasAttribute('data-bg-go')) { bgToOrder(); return; } // Budget NK-B (2026-11-17)
     if (el.hasAttribute('data-bg-copy')) { bgCopy(); return; }
     if (el.hasAttribute('data-bg-qc')) { bgToQc(); } // the links themselves open the tools
@@ -4018,7 +4210,7 @@
     if (el.hasAttribute('data-pl-go')) { plToOrder(); return; }
     if (el.hasAttribute('data-mp-go')) { mpToOrder(); return; }
     if (el.hasAttribute('data-mp-copy')) { mpCopy(); return; }
-    if (el.hasAttribute('data-mp-clear')) { state.mp = { needs: {}, pick: '' }; mpRefresh('[data-mp-need]'); return; }
+    if (el.hasAttribute('data-mp-clear')) { state.mp = { needs: {}, pick: '' }; mpRefresh('[data-mp-need]'); mxUpdate(); return; }
     if (el.hasAttribute('data-mp-open')) { ev.preventDefault(); state.mpFocus = true; if (page() === 'services') render(true); else location.hash = 'services'; return; }
     if (el.hasAttribute('data-pl-copy')) { plCopy(); return; }
     if (el.hasAttribute('data-pl-prep')) { plPrep(); return; }
@@ -4124,6 +4316,8 @@
   app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.qcK) { state.qc[d.qcK] = ev.target.checked ? 1 : 0; qcUpdate(true); } else if (d.qcF === 'mat') { state.qc.mat = ev.target.value; qcUpdate(); } });
   app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.srF; if (k && ev.target.tagName !== 'SELECT') { state.sr[k] = ev.target.value; if (k !== 'qty') state.sr.seeded = 0; srUpdate(); } }); // Series price NK-R (2026-11-15)
   app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.srF === 'mat') { state.sr.mat = ev.target.value; srUpdate(); } else if (ev.target.hasAttribute('data-sr-rush')) { state.sr.rush = ev.target.checked ? 1 : 0; srUpdate(); } });
+  app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.mxF; if (k && ev.target.tagName !== 'SELECT') { state.mx[k] = ev.target.value; state.mx.seeded = 0; mxUpdate(); } }); // Material price NK-V (2026-11-17, second run)
+  app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.mxF === 'mat') { state.mx.mat = ev.target.value; state.mx.pick = ''; mxUpdate(); } else if (ev.target.hasAttribute('data-mx-rush')) { state.mx.rush = ev.target.checked ? 1 : 0; mxUpdate(); } else if (ev.target.hasAttribute('data-mp-need')) { mxUpdate(); } }); // data-mp-need: the ● / ✕ marks follow the material picker
   app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.bgF; if (k && ev.target.tagName !== 'SELECT') { state.bg[k] = ev.target.value; bgUpdate(); } }); // Budget NK-B (2026-11-17)
   app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.bgF === 'mat') { state.bg.mat = ev.target.value; bgUpdate(); } else if (d.bgK) { state.bg[d.bgK] = ev.target.checked ? 1 : 0; bgUpdate(); } });
   app.addEventListener('input', function (ev) { if (ev.target.hasAttribute('data-st-sp-deg')) { state.sp.deg = ev.target.value; spUpdate(); } }); // Support check (2026-10-31)
