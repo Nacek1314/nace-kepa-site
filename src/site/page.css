@@ -1442,3 +1442,41 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 @media (max-width: 720px) { .sr-out { padding: var(--space-4); } .sr-sum { font-size: 18px; line-height: 26px; } }
 @media (max-width: 380px) { .sr-table { font-size: 12px; } .sr-table th, .sr-table td { padding-inline: 4px; } }
 @media print { .sr-q { border: 0; min-width: 0; min-height: 0; padding: 0; background: none !important; color: #000 !important; } .sr-fig, .sr-table tr { break-inside: avoid; } .sr-table tr.is-on td, .sr-table tr.is-on th { background: none; font-weight: 700; } }
+
+/* Budget NK-B (2026-11-17): bgBox() in app.js — an amount → the hours and printed pieces it covers (#services?tool=budget) */
+.bg-form { margin-left: 0; }
+.bg-group { display: grid; gap: var(--space-3); }
+.bg-group > .nk-label { margin: 0; }
+.bg-hint { margin: 0; font-size: 13px; line-height: 19px; color: var(--ink-muted); }
+.bg-out { display: grid; gap: var(--space-4); padding: var(--space-5); align-content: start; min-height: 160px; }
+.bg-out .nk-label { margin: 0; }
+.bg-sum { margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; overflow-wrap: anywhere; }
+.bg-sum.is-empty { font-size: 15px; line-height: 22px; font-weight: 400; color: var(--ink-muted); }
+.bg-sum.is-over { color: var(--redline); }
+#bg-body { display: grid; gap: var(--space-4); min-width: 0; }
+#bg-body:empty { display: none; }
+.bg-fig { border: 1px solid var(--line); background: var(--paper-raised); padding: var(--space-2); }
+.bg-svg { display: block; width: 100%; height: auto; color: var(--ink); }
+.bg-dim { stroke: var(--dimension); stroke-width: 1; }
+.bg-s { fill: var(--ink); stroke: var(--paper-raised); stroke-width: 1; }
+.bg-s--1 { fill-opacity: .62; }
+.bg-s--2 { fill-opacity: .38; }
+.bg-s--3 { fill-opacity: .2; }
+.bg-left { fill: none; stroke: var(--ink-muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.bg-tx { font: 9px var(--font-mono); fill: var(--ink-muted); }
+.bg-tx--d { fill: var(--dimension); }
+.bg-rows dt { overflow-wrap: anywhere; }
+.bg-n { display: inline-block; min-width: 18px; margin-right: var(--space-2); font: 11px/16px var(--font-mono); color: var(--ink-muted); text-align: center; border: 1px solid var(--line-strong); border-radius: 2px; }
+.bg-scroll { overflow-x: auto; }
+.bg-table { width: 100%; border-collapse: collapse; font: 13px/20px var(--font-mono); font-variant-numeric: tabular-nums; }
+.bg-table th, .bg-table td { padding: 6px var(--space-2); text-align: right; border-bottom: 1px solid var(--line); }
+.bg-table thead th { font-size: 11px; line-height: 16px; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); border-bottom: 1.5px solid var(--ink); }
+.bg-table th:first-child { text-align: left; padding-left: 0; font-weight: 500; }
+.bg-table td { white-space: nowrap; }
+.bg-table td:last-child { padding-right: 0; color: var(--ink-muted); }
+.bg-notes { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); font-size: 14px; line-height: 21px; }
+.bg-notes li { padding-left: var(--space-4); position: relative; }
+.bg-notes li::before { content: "+"; position: absolute; left: 0; font-family: var(--font-mono); color: var(--ink-muted); }
+@media (max-width: 720px) { .bg-out { padding: var(--space-4); } .bg-sum { font-size: 18px; line-height: 26px; } .bg-tx { font-size: 11px; } }
+@media (max-width: 380px) { .bg-table { font-size: 12px; } .bg-table th, .bg-table td { padding-inline: 4px; } }
+@media print { .bg-fig, .bg-table tr { break-inside: avoid; } .bg-s { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

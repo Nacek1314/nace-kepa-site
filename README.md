@@ -62,6 +62,12 @@ above the work (present, compare, add to the visitor's own shortlist, start a pr
 own quantity from the `settings.json` prices (the quote estimate's sums), with a chart and the reasons the price per piece falls; hands the
 quantity to the order form (`srBox()` in `src/site/app.js`). Service cards show their published rate (`svcRate()`).
 
+**Budget NK-B** (`#services?tool=budget`): the quote estimate run backwards — an amount, optionally the hours already expected and one
+printed part → the plan it covers (hours + whole pieces), a bar of the budget and what the whole budget covers on one service, from the
+`settings.json` prices; hands the plan to the order form (`bgBox()` in `src/site/app.js`). **Calculation links**: "Copy link to this tool"
+under the quote estimate, the series price and the budget tool copies the address with the typed numbers
+(`#services?tool=series&m=petg&g=40&h=2&q=25`), and such an address fills the tool again (`clUrl()` / `clRead()`).
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,

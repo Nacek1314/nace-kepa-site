@@ -67,7 +67,7 @@
     if (m) { lang = m[1]; try { localStorage.setItem('nk-lang', lang); } catch (e) {} h = m[2]; }
     var qi = h.indexOf('?'), qs = qi >= 0 ? h.slice(qi + 1) : ''; if (qi >= 0) { if (h.slice(0, qi) === 'work' && location.hash !== state.findHash) findRead(qs); h = h.slice(0, qi); }
     if (h === 'compare' && PROJECTS.length) { cmpRead(qs); return 'compare'; }
-    if (h === 'services') state.tool = (/(?:^|&)tool=([a-z]+)/.exec(qs) || [])[1] || '';
+    if (h === 'services') { state.tool = (/(?:^|&)tool=([a-z]+)/.exec(qs) || [])[1] || ''; if (state.bg && location.hash !== state.clHash) { state.clHash = location.hash; clRead(state.tool, qs); } } // clRead: Calculation links (2026-11-17)
     if (h === 'contact') { state.ctGo = true; return 'about'; } // Contact package (2026-10-29): #contact opens the contact card on #about
     if (/^p-/.test(h) && bySlug(h.slice(2))) return 'project';
     if (/^n-/.test(h) && newsBySlug(h.slice(2))) return 'post';
@@ -153,7 +153,7 @@
         tlWrap('material', mpBox()) +
         tlWrap('prep', prepBox()) +
         tlWrap('plate', pbBox()) +
-        (pcOn() ? tlWrap('prices', pcList()) + tlWrap('quote', qcBox()) : '') + tlWrap('parts', bmBox()) + (srOn() ? tlWrap('series', srBox()) : '') + faqBox() +
+        (pcOn() ? tlWrap('prices', pcList()) + tlWrap('quote', qcBox()) : '') + tlWrap('parts', bmBox()) + (srOn() ? tlWrap('series', srBox()) : '') + (bgOn() ? tlWrap('budget', bgBox()) : '') + faqBox() +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     work: function () {
@@ -2646,7 +2646,7 @@
     return '<section class="block qc">' + head(x.label, x.title, x.lead) + '<div class="fit-grid"><div class="fit-form"><p class="nk-label">' + esc(x.services) + '</p><div class="qc-svcs">' + svcs + '</div>' +
       (pm ? '<label class="ad-check qc-check qc-first"><input type="checkbox" data-qc-k="first"' + (q.first ? ' checked' : '') + '> ' + esc(x.first.replace('{n}', pm.pct)) + '</label>' : '') +
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-qc-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-qc-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><button type="button" class="nk-btn" data-tl-print="quote"' + (c ? '' : ' disabled') + '>' + psIco() + ' ' + esc(t().tl.printQuote) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-mn-qc' + (c ? '' : ' disabled') + '>' + esc(t().mn.qcSave) + '</button><span class="copy-msg" id="qc-msg" role="status"></span></div>' +
-      '<p class="fit-note">' + esc(x.note.replace('{vat}', L(P.vatNote) || '')) + '</p></div>' +
+      '<p class="fit-note">' + esc(x.note.replace('{vat}', L(P.vatNote) || '')) + '</p>' + (bgOn() ? '<p class="pl-open"><a href="#services?tool=budget" data-qc-bg>' + esc(t().bg.fromQuote) + ' →</a></p>' : '') + '</div>' +
       '<div class="fit-out qc-out" id="qc-out" role="status" aria-live="polite">' + qcOut(c) + '</div></div></section>';
   }
   function qcUpdate(full) {
@@ -2660,7 +2660,7 @@
   function qcCopy() {
     var c = qcCalc(), msg = document.getElementById('qc-msg'), x = t().qc; if (!c || !msg) return;
     var fail = function () { msg.textContent = x.copyFail; };
-    try { navigator.clipboard.writeText(qcText(c)).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+    try { navigator.clipboard.writeText(qcText(c) + (clUrl('quote') ? '\n' + clUrl('quote') : '')).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
   }
   function qcToOrder() {
     var c = qcCalc(), q = state.qc, o = state.order, x = t().qc; if (!c) return;
@@ -2793,7 +2793,7 @@
   function srCopy() {
     var c = srCalc(), msg = document.getElementById('sr-msg'), x = t().sr; if (!c || !msg) return;
     var fail = function () { msg.textContent = t().qc.copyFail; };
-    try { navigator.clipboard.writeText(srText(c)).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+    try { navigator.clipboard.writeText(srText(c) + (clUrl('series') ? '\n' + clUrl('series') : '')).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
   }
   function srToQc() { var s = state.sr, q = state.qc; q.print = 1; q.mat = s.mat; q.g = s.g; q.h = s.h; q.rush = s.rush ? 1 : 0; if (srQty()) q.qty = String(srQty()); q.src = ''; } // the link itself opens the estimate
   function srToOrder() {
@@ -2806,6 +2806,253 @@
     else o.what = o.what.split('\n').map(function (l) { return l.indexOf(x.brief + ':') === 0 ? line : l; }).join('\n');
     state.step = 0; state.errors = {}; state.send = 'idle';
     location.hash = 'order';
+  }
+
+  // ---------- Budget / "Proračun" NK-B (#services?tool=budget, the tool after the series price; 2026-11-17) ----------
+  // The quote estimate run backwards: the visitor types an amount and — optionally — the hours of work they already expect and
+  // one printed part; the tool shows what the amount covers: a plan (the hours as typed + as many whole pieces as still fit),
+  // a drawn bar of the budget split into the plan's rows and what is left, and a table of what the whole budget covers when it
+  // is spent on one service (hours in half-hour steps, whole pieces). The sums are the quote estimate's (qcCalc): hourly rates
+  // with the minimum hours, piece = material + machine time (not below the minimum per part, + rush), file preparation once,
+  // minimum order, the running promotion — every number from settings.json, nothing invented. Without a price list the tool
+  // does not render. Nothing is stored or sent. Uses srPcs() (piece plural) of the Series price.
+  // Self-contained: remove BG_HR … bgToSr(), the 'budget' entry in TL_TOOLS, tlWrap('budget', bgBox()) in views.services, the
+  // data-qc-bg link in qcBox(), the data-bg-* lines in the click / input / change handlers, the 'budget' branches of clUrl() /
+  // clRead(), bg: and tl.budget in both languages in content.js and the "Budget NK-B" rules at the end of page.css.
+  var BG_HR = ['cad', 'iot', 'build'];
+  state.bg = { amt: '', first: 1, cadH: '', iotH: '', buildH: '', mat: '', g: '', h: '', rush: 0 };
+  function bgOn() { return pcOn(); }
+  function bgPrintOn() { return !!(PRICE && (pcMats().length || +PRICE.print.machineHour > 0)); }
+  function bgAmt() { return Math.min(qcNum(state.bg.amt), 1000000); }
+  function bgSvc(k) { return SERVICES.filter(function (s) { return s.key === k; })[0]; }
+  function bgHrs() { var o = {}; BG_HR.forEach(function (k) { if (+PRICE.hourly[k] > 0) { var h = Math.min(qcNum(state.bg[k + 'H']), 10000); if (h) o[k] = h; } }); return o; }
+  function bgPart() { // one printed piece, priced like the quote estimate; null without a weight or a print time
+    if (!bgPrintOn()) return null;
+    var s = state.bg, pr = PRICE.print, m = pcMat(s.mat), g = qcNum(s.g), h = qcNum(s.h), raw = g * (m ? +m.perGram : 0) + h * (+pr.machineHour || 0); if (!(raw > 0)) return null;
+    var low = +pr.minPart > 0 && raw < +pr.minPart, rush = !!(s.rush && +pr.rushPct > 0);
+    return { m: m, g: g, h: h, minPart: low, rush: rush, unit: (low ? +pr.minPart : raw) * (rush ? 1 + pr.rushPct / 100 : 1) };
+  }
+  function bgPartText(p) { return (p.m ? p.m.name + ' · ' : '') + (p.g ? fitFmt(p.g) + ' g' : '') + (p.g && p.h ? ' + ' : '') + (p.h ? fitFmt(p.h) + ' h' : '') + (p.rush ? ' · +' + PRICE.print.rushPct + ' %' : ''); }
+  function bgPlan(hrs, p, q) { // the quote estimate's sums for these hours + q pieces of the part
+    var P = PRICE, pr = P.print, rows = [], total = 0, minH = false;
+    BG_HR.forEach(function (k) {
+      var h = hrs[k]; if (!h || !(+P.hourly[k] > 0)) return;
+      if (+P.minHours > 0 && h < +P.minHours) { h = +P.minHours; minH = true; }
+      rows.push({ k: k, t: L(bgSvc(k).title) + ' · ' + fitFmt(h) + ' h', c: h * +P.hourly[k], h: h }); total += h * +P.hourly[k];
+    });
+    if (p && q > 0) {
+      rows.push({ k: 'print', t: L(bgSvc('print').title) + ' · ' + bgPartText(p) + ' × ' + q, c: p.unit * q }); total += p.unit * q;
+      if (+pr.setup > 0) { rows.push({ k: 'setup', t: t().pc.setup, c: +pr.setup }); total += +pr.setup; }
+    }
+    var minO = +pr.minOrder > 0 && rows.length > 0 && total < +pr.minOrder; if (minO) total = +pr.minOrder;
+    var pm = promo(), disc = 0;
+    if (pm && state.bg.first && (pm.scope === 'all' || pm.scope === 'first' || (pm.scope === 'print' && p && q > 0))) disc = Math.round(total * pm.pct) / 100;
+    return { rows: rows, total: Math.round(total * 100) / 100, disc: disc, after: Math.round((total - disc) * 100) / 100, minO: minO, minH: minH, minPart: !!(p && q > 0 && p.minPart), q: p && q > 0 ? q : 0, pm: disc ? pm : null };
+  }
+  function bgFits(B, pl) { return pl.after <= B + 1e-9; }
+  function bgMaxQ(B, hrs, p) { // the most whole pieces that still fit next to the hours
+    if (!p || !bgFits(B, bgPlan(hrs, p, 1))) return 0;
+    var lo = 1, hi = 100000; if (bgFits(B, bgPlan(hrs, p, hi))) return hi;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (bgFits(B, bgPlan(hrs, p, mid))) lo = mid; else hi = mid; }
+    return lo;
+  }
+  function bgMaxH(B, k) { // the most hours of one service, in half-hour steps
+    var one = function (n) { var o = {}; o[k] = n / 2; return bgPlan(o, null, 0); };
+    if (!bgFits(B, one(1))) return 0;
+    var lo = 1, hi = 40000; if (bgFits(B, one(hi))) return hi / 2;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (bgFits(B, one(mid))) lo = mid; else hi = mid; }
+    return Math.max(lo / 2, +PRICE.minHours || 0);
+  }
+  function bgCalc() {
+    var B = bgAmt(); if (!B) return null;
+    var hrs = bgHrs(), p = bgPart(), anyH = Object.keys(hrs).length > 0, work = bgPlan(hrs, null, 0);
+    var c = { B: B, p: p, hrs: hrs, anyH: anyH, work: work, over: anyH && !bgFits(B, work), plan: null, q: 0, first: null, alone: [] };
+    if (!c.over && (anyH || p)) {
+      c.q = bgMaxQ(B, hrs, p);
+      if (anyH || c.q) c.plan = bgPlan(hrs, p, c.q);
+      if (p && !c.q) c.first = bgPlan(hrs, p, 1);
+    }
+    BG_HR.forEach(function (k) {
+      if (!(+PRICE.hourly[k] > 0)) return;
+      var h = bgMaxH(B, k), o = {}; o[k] = h || +PRICE.minHours || 0.5;
+      c.alone.push({ k: k, t: L(bgSvc(k).title), h: h, plan: bgPlan(o, null, 0) });
+    });
+    if (bgPrintOn()) { var q = p ? bgMaxQ(B, {}, p) : 0; c.alone.push({ k: 'print', t: L(bgSvc('print').title), q: q, need: !p, plan: p ? bgPlan({}, p, q || 1) : null }); }
+    c.any = c.alone.some(function (r) { return r.h || r.q || (r.need && B >= (+PRICE.print.minOrder || 0)); });
+    return c;
+  }
+  function bgLeft(c) { return Math.max(0, Math.round((c.B - c.plan.after) * 100) / 100); }
+  function bgWhat(c) { // "CAD design 2 h + 3D printing 14 pieces"
+    return c.plan.rows.filter(function (r) { return r.k !== 'setup'; }).map(function (r) { return r.k === 'print' ? L(bgSvc('print').title) + ' ' + srPcs(c.plan.q) : L(bgSvc(r.k).title) + ' ' + fitFmt(r.h) + ' h'; }).join(' + ');
+  }
+  function bgSum(c) {
+    var x = t().bg; if (!c) return x.empty;
+    if (c.over) return x.over.replace('{c}', pcMoney(c.work.after, 2)).replace('{d}', pcMoney(c.work.after - c.B, 2));
+    if (c.plan) return x.sum.replace('{b}', pcMoney(c.B)).replace('{what}', bgWhat(c)) + ' · ' + x.sumLeft.replace('{l}', pcMoney(bgLeft(c), 2)) + (c.first ? '. ' + x.noPiece.replace('{c}', pcMoney(c.first.after, 2)) : '');
+    if (!c.any && +PRICE.print.minOrder > 0 && c.B < +PRICE.print.minOrder) return x.tooLow.replace('{b}', pcMoney(c.B)).replace('{m}', pcMoney(+PRICE.print.minOrder));
+    if (c.first) return x.noPiece.replace('{c}', pcMoney(c.first.after, 2));
+    return x.sumOnly.replace('{b}', pcMoney(c.B));
+  }
+  function bgSvg(c) { // the budget as a dimensioned bar: one segment per row of the plan, the rest dashed
+    var x = t().bg, pl = c.plan, W = 360, H = 78, l = 8, bw = W - 16, y = 32, bh = 20, raw = pl.rows.reduce(function (a, r) { return a + r.c; }, 0) || 1, k = pl.after / raw;
+    var f1 = function (n) { return (Math.round(n * 10) / 10).toFixed(1); }, at = l, left = bgLeft(c);
+    var s = '<svg class="bg-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(x.chartAria.replace('{b}', pcMoney(c.B)).replace('{n}', pl.rows.length).replace('{l}', pcMoney(left, 2))) + '">' +
+      '<line class="bg-dim" x1="' + l + '" x2="' + (W - 8) + '" y1="18" y2="18"/><line class="bg-dim" x1="' + l + '" x2="' + l + '" y1="12" y2="' + (y + bh) + '"/><line class="bg-dim" x1="' + (W - 8) + '" x2="' + (W - 8) + '" y1="12" y2="' + (y + bh) + '"/>' +
+      '<text class="bg-tx bg-tx--d" x="' + (W / 2) + '" y="11" text-anchor="middle">' + esc(x.budget + ' ' + pcMoney(c.B)) + '</text>';
+    pl.rows.forEach(function (r, i) {
+      var w = Math.max(0, r.c * k / c.B * bw);
+      s += '<rect class="bg-s bg-s--' + (i % 4) + '" x="' + f1(at) + '" y="' + y + '" width="' + f1(w) + '" height="' + bh + '"/>' + (w >= 9 ? '<text class="bg-tx" x="' + f1(at + w / 2) + '" y="' + (y + bh + 14) + '" text-anchor="middle">' + (i + 1) + '</text>' : '');
+      at += w;
+    });
+    var lw = Math.max(0, l + bw - at);
+    if (lw > 0.5) s += '<rect class="bg-left" x="' + f1(at) + '" y="' + (y + 0.5) + '" width="' + f1(lw) + '" height="' + (bh - 1) + '"/>' + (lw >= 56 ? '<text class="bg-tx" x="' + f1(at + lw / 2) + '" y="' + (y + bh + 14) + '" text-anchor="middle">' + esc(x.sumLeft.replace('{l}', pcMoney(left, 2))) + '</text>' : '');
+    return s + '</svg>';
+  }
+  function bgNotes(c) {
+    var x = t().bg, P = PRICE, a = [];
+    if (c.plan && c.plan.pm) a.push(x.nPromo.replace('{n}', c.plan.pm.pct));
+    if (c.plan && c.plan.minO) a.push(t().qc.minApplied.charAt(0).toUpperCase() + t().qc.minApplied.slice(1) + ' (' + pcMoney(P.print.minOrder) + ').');
+    else if (+P.print.minOrder > 0) a.push(x.nMinO.replace('{m}', pcMoney(P.print.minOrder)));
+    if (c.plan && c.plan.minPart) a.push(t().qc.minPartApplied.charAt(0).toUpperCase() + t().qc.minPartApplied.slice(1) + ' (' + pcMoney(P.print.minPart) + ').');
+    if (+P.minHours > 0) a.push(x.nMinH.replace('{n}', fitFmt(+P.minHours)));
+    a.push(x.nHalf);
+    if (+P.hourly.build > 0 && L(P.buildNote)) a.push(L(bgSvc('build').title) + ': ' + L(P.buildNote));
+    a.push(x.nQuote);
+    return a;
+  }
+  function bgAlone(r) { // [covers, costs] of one "whole budget on one service" row
+    var x = t().bg;
+    if (r.k === 'print') return r.need ? [x.needPart, '—'] : r.q ? [srPcs(r.q), '≈ ' + pcMoney(r.plan.after, 2)] : [x.none.replace('{c}', pcMoney(r.plan.after, 2)), '—'];
+    return r.h ? [fitFmt(r.h) + ' h', '≈ ' + pcMoney(r.plan.after, 2)] : [x.none.replace('{c}', pcMoney(r.plan.after, 2)), '—'];
+  }
+  function bgBody(c) {
+    var x = t().bg, h = ''; if (!c) return '';
+    if (c.plan) {
+      var pl = c.plan;
+      h += '<div class="bg-fig">' + bgSvg(c) + '</div><p class="nk-label">' + esc(x.plan) + '</p><dl class="nk-specs qc-rows bg-rows">' +
+        pl.rows.map(function (r, i) { return '<div><dt><span class="bg-n" aria-hidden="true">' + (i + 1) + '</span>' + esc(r.t) + '</dt><dd>' + esc(pcMoney(r.c, 2)) + '</dd></div>'; }).join('') +
+        (pl.disc ? '<div><dt>' + esc(x.disc.replace('{n}', pl.pm.pct)) + '</dt><dd>−' + esc(pcMoney(pl.disc, 2)) + '</dd></div>' : '') + '</dl>' +
+        '<p class="qc-total"><span class="nk-label">' + esc(x.total) + '</span><b>' + esc('≈ ' + pcMoney(pl.after, 2)) + '</b><span class="qc-was">' + esc(x.left + ': ' + pcMoney(bgLeft(c), 2)) + '</span></p>';
+    }
+    h += '<p class="nk-label">' + esc(x.alone) + '</p><div class="bg-scroll"><table class="bg-table"><caption class="vh">' + esc(x.caption) + '</caption><thead><tr><th scope="col">' + esc(x.cWhat) + '</th><th scope="col">' + esc(x.cCovers) + '</th><th scope="col">' + esc(x.cCost) + '</th></tr></thead><tbody>' +
+      c.alone.map(function (r) { var v = bgAlone(r); return '<tr><th scope="row">' + esc(r.t) + '</th><td>' + esc(v[0]) + '</td><td>' + esc(v[1]) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+      '<ul class="bg-notes">' + bgNotes(c).map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+    return h;
+  }
+  function bgLine(c) { // one line for the brief
+    var x = t().bg, s = x.brief + ': ' + pcMoney(c.B) + ' ' + x.exVat;
+    if (c.plan) s += ' → ' + c.plan.rows.map(function (r) { return r.t + ' ' + pcMoney(r.c, 2); }).join('; ') + (c.plan.disc ? '; ' + x.disc.replace('{n}', c.plan.pm.pct) + ' −' + pcMoney(c.plan.disc, 2) : '') + ' → ≈ ' + pcMoney(c.plan.after, 2) + ' (' + x.sumLeft.replace('{l}', pcMoney(bgLeft(c), 2)) + ')';
+    return s + '.';
+  }
+  function bgText(c) {
+    var x = t().bg, out = [x.label.split(' · ')[0].toUpperCase() + ' NK-B — nacekepa.work', x.budget + ': ' + pcMoney(c.B) + ' ' + x.exVat];
+    if (c.over) out.push(bgSum(c));
+    if (c.plan) {
+      out.push('', x.plan + ':'); c.plan.rows.forEach(function (r) { out.push('- ' + r.t + ': ' + pcMoney(r.c, 2)); });
+      if (c.plan.disc) out.push('- ' + x.disc.replace('{n}', c.plan.pm.pct) + ': −' + pcMoney(c.plan.disc, 2));
+      out.push(x.total + ': ≈ ' + pcMoney(c.plan.after, 2) + ' · ' + x.left + ': ' + pcMoney(bgLeft(c), 2));
+    }
+    out.push('', x.alone + ':'); c.alone.forEach(function (r) { var v = bgAlone(r); out.push('- ' + r.t + ': ' + v[0] + (v[1] !== '—' ? ' (' + v[1] + ')' : '')); });
+    out.push(''); bgNotes(c).forEach(function (n) { out.push('- ' + n); });
+    out.push('', t().qc.note.replace('{vat}', L(PRICE.vatNote) || '').trim());
+    var u = clUrl('budget'); if (u) out.push(u);
+    return out.join('\n');
+  }
+  function bgLinks(c) {
+    var x = t().bg, a = [];
+    if (c && c.plan) a.push('<a href="#services?tool=quote" data-bg-qc>' + esc(x.toQuote) + ' →</a>');
+    if (c && c.p && srOn()) a.push('<a href="#services?tool=series" data-bg-sr>' + esc(x.toSeries) + ' →</a>');
+    a.push('<a href="#services?tool=prices">' + esc(x.toPrices) + ' →</a>');
+    return a.join('<span aria-hidden="true"> · </span>');
+  }
+  function bgBox() {
+    var x = t().bg, s = state.bg, P = PRICE, c = bgCalc(), pm = promo();
+    var num = function (k, id, label, unit, attrs, hint) { return '<div class="nk-field"><label class="nk-field__label" for="bg-' + id + '">' + esc(label) + (unit ? ' · ' + esc(unit) : '') + '</label><input class="nk-input" id="bg-' + id + '" data-bg-f="' + k + '" type="number" inputmode="decimal" min="0" ' + attrs + ' value="' + esc(s[k]) + '">' + (hint ? '<span class="nk-field__hint">' + esc(hint) + '</span>' : '') + '</div>'; };
+    var hrs = BG_HR.filter(function (k) { return +P.hourly[k] > 0; });
+    return '<section class="block bg">' + head(x.label, x.title, x.lead) + '<div class="fit-grid"><div class="fit-form">' + num('amt', 'amt', x.amount, '€', 'step="10" max="1000000"', x.amountHint) +
+      (pm ? '<label class="ad-check qc-check"><input type="checkbox" data-bg-k="first"' + (s.first ? ' checked' : '') + '> ' + esc(t().qc.first.replace('{n}', pm.pct)) + '</label>' : '') +
+      (hrs.length ? '<div class="bg-group" role="group" aria-labelledby="bg-work-l"><p class="nk-label" id="bg-work-l">' + esc(x.work) + '</p><div class="qc-print bg-form">' + hrs.map(function (k) { return num(k + 'H', k, L(bgSvc(k).title), t().qc.h, 'step="0.5"'); }).join('') + '</div><p class="bg-hint">' + esc(bgPrintOn() ? x.workHint : x.workHintNoPrint) + '</p></div>' : '') +
+      (bgPrintOn() ? '<div class="bg-group" role="group" aria-labelledby="bg-part-l"><p class="nk-label" id="bg-part-l">' + esc(x.part) + '</p><div class="qc-print bg-form">' +
+        (pcMats().length ? '<div class="nk-field"><label class="nk-field__label" for="bg-mat">' + esc(t().pc.material) + '</label><select class="nk-input" id="bg-mat" data-bg-f="mat">' + pcMats().map(function (m) { return '<option value="' + esc(m.key) + '"' + (pcMat(s.mat) === m ? ' selected' : '') + '>' + esc(m.name) + '</option>'; }).join('') + '</select></div>' + num('g', 'g', t().qc.weight, t().qc.grams, 'step="1"') : '') +
+        (+P.print.machineHour > 0 ? num('h', 'h', t().qc.printHours, t().qc.h, 'step="0.25"') : '') +
+        (+P.print.rushPct > 0 ? '<label class="ad-check qc-check"><input type="checkbox" data-bg-k="rush"' + (s.rush ? ' checked' : '') + '> ' + esc(t().qc.rush.replace('{n}', P.print.rushPct)) + '</label>' : '') + '</div></div>' : '') +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-bg-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-bg-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><span class="copy-msg" id="bg-msg" role="status"></span></div>' +
+      '<p class="fit-note">' + esc(t().qc.note.replace('{vat}', L(P.vatNote) || '')) + '</p><p class="pl-open" id="bg-links">' + bgLinks(c) + '</p></div>' +
+      '<div class="pl-sheet bg-sheet"><div class="pl-head"><span class="nk-label">' + esc(x.sheet) + '</span><span class="nk-label">NK-B</span></div><div class="bg-out"><p class="bg-sum' + (c && (c.plan || c.over) ? '' : ' is-empty') + (c && c.over ? ' is-over' : '') + '" id="bg-sum" role="status" aria-live="polite">' + esc(bgSum(c)) + '</p><div id="bg-body">' + bgBody(c) + '</div></div></div></div></section>';
+  }
+  function bgUpdate() {
+    var c = bgCalc(), sum = document.getElementById('bg-sum'), body = document.getElementById('bg-body'), ln = document.getElementById('bg-links'); if (!sum || !body) return;
+    sum.textContent = bgSum(c); sum.classList.toggle('is-empty', !(c && (c.plan || c.over))); sum.classList.toggle('is-over', !!(c && c.over)); body.innerHTML = bgBody(c);
+    if (ln) ln.innerHTML = bgLinks(c);
+    ['data-bg-go', 'data-bg-copy'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !c; });
+  }
+  function bgCopy() {
+    var c = bgCalc(), msg = document.getElementById('bg-msg'), x = t().bg; if (!c || !msg) return;
+    var fail = function () { msg.textContent = t().qc.copyFail; };
+    try { navigator.clipboard.writeText(bgText(c)).then(function () { msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+  }
+  function bgToOrder() {
+    var c = bgCalc(), o = state.order, x = t().bg; if (!c) return;
+    if (c.plan) {
+      c.plan.rows.forEach(function (r) { if (r.k !== 'setup' && o.services.indexOf(r.k) < 0) o.services.push(r.k); });
+      if (c.plan.q) { var mm = c.p.m && MP_MATS.filter(function (v) { return v.id === c.p.m.key; })[0]; if (mm) o.mat = mm.o; o.qty = String(c.plan.q); }
+    }
+    var line = bgLine(c);
+    if (o.what.indexOf(x.brief + ':') < 0) o.what = o.what ? o.what + '\n' + line : line;
+    else o.what = o.what.split('\n').map(function (l) { return l.indexOf(x.brief + ':') === 0 ? line : l; }).join('\n');
+    state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+  function bgToQc() { // the link itself opens the estimate
+    var c = bgCalc(), s = state.bg, q = state.qc; if (!c || !c.plan) return;
+    BG_HR.forEach(function (k) { q[k] = c.hrs[k] ? 1 : 0; q[k + 'H'] = c.hrs[k] ? String(c.hrs[k]) : ''; });
+    q.print = c.plan.q ? 1 : 0; if (c.plan.q) { q.mat = s.mat; q.g = s.g; q.h = s.h; q.qty = String(c.plan.q); q.rush = s.rush ? 1 : 0; q.postH = ''; }
+    q.first = s.first ? 1 : 0; q.src = '';
+  }
+  function bgFromQc() { // "Have a fixed budget?" in the quote estimate: the hours and the part come along, the amount stays the visitor's
+    var s = state.bg, q = state.qc;
+    BG_HR.forEach(function (k) { s[k + 'H'] = q[k] && qcNum(q[k + 'H']) ? q[k + 'H'] : ''; });
+    if (q.print && (qcNum(q.g) || qcNum(q.h))) { s.mat = q.mat; s.g = q.g; s.h = q.h; s.rush = q.rush ? 1 : 0; }
+    s.first = q.first ? 1 : 0;
+  }
+  function bgToSr() { var c = bgCalc(), s = state.bg, r = state.sr; if (!c || !c.p) return; r.mat = s.mat; r.g = s.g; r.h = s.h; r.rush = s.rush ? 1 : 0; if (c.q > 0) r.qty = String(c.q); r.seeded = 0; }
+
+  // ---------- Calculation links (2026-11-17, improvement package) ----------
+  // "Copy link to this tool" under the quote estimate, the series price and the budget tool copies the address WITH the numbers
+  // typed into the tool (#services?tool=series&m=petg&g=40&h=2&q=25), and such an address fills the tool again — so a client can
+  // send a calculation, and Nace can answer with one. Only numbers and a material key from the price list are read; nothing is
+  // stored. The copied text of the three tools ends with the same link.
+  // To remove: clNum() … clRead(), the clRead line in page(), the data-tl-k part of tlWrap() / tlCopy(), the clUrl() lines in
+  // qcCopy() / srCopy() / bgText() and tl.copiedCalc in content.js.
+  function clNum(v) { var n = qcNum(v); return n ? String(Math.round(Math.min(n, 1000000) * 100) / 100) : ''; }
+  function clUrl(k) { // '' when nothing is typed into the tool
+    var a = [], s, m, add = function (n, v) { if (v !== '' && v != null) a.push(n + '=' + encodeURIComponent(v)); };
+    var part = function () { m = pcMat(s.mat); add('m', m ? m.key : ''); add('g', clNum(s.g)); add('h', clNum(s.h)); };
+    if (!PRICE) return '';
+    if (k === 'quote') {
+      s = state.qc; BG_HR.forEach(function (h) { if (s[h]) add(h, clNum(s[h + 'H'])); });
+      if (s.print && (qcNum(s.g) || qcNum(s.h))) { part(); if (qcNum(s.qty) > 1) add('q', clNum(Math.round(qcNum(s.qty)))); add('post', clNum(s.postH)); if (s.rush) add('r', 1); }
+      if (a.length && !s.first) add('f', 0);
+    } else if (k === 'series') {
+      s = state.sr; if (qcNum(s.g) || qcNum(s.h)) { part(); add('q', srQty() || ''); if (s.rush) add('r', 1); }
+    } else if (k === 'budget') {
+      s = state.bg; if (bgAmt()) { add('b', clNum(s.amt)); BG_HR.forEach(function (h) { add(h, clNum(s[h + 'H'])); }); if (qcNum(s.g) || qcNum(s.h)) { part(); if (s.rush) add('r', 1); } if (!s.first) add('f', 0); }
+    }
+    return a.length ? tlUrl(k) + '&' + a.join('&') : '';
+  }
+  function clRead(k, qs) { // fills the tool the address names from its numbers; an address without numbers changes nothing
+    if (!PRICE || !/^(quote|series|budget)$/.test(k)) return;
+    var o = {}; qs.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) { try { o[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)).slice(0, 12); } catch (e) {} } });
+    var n = function (key) { return clNum(o[key]); }, mat = function () { var m = pcMats().filter(function (v) { return v.key === o.m; })[0]; return m ? m.key : ''; }, s;
+    if (k === 'quote' && (n('cad') || n('iot') || n('build') || n('g') || n('h'))) {
+      s = state.qc; BG_HR.forEach(function (h) { s[h] = n(h) ? 1 : 0; s[h + 'H'] = n(h); });
+      s.print = n('g') || n('h') ? 1 : 0; if (s.print) { s.mat = mat(); s.g = n('g'); s.h = n('h'); s.qty = String(Math.max(1, Math.round(+n('q') || 1))); s.postH = n('post'); s.rush = o.r === '1' ? 1 : 0; }
+      s.first = o.f === '0' ? 0 : 1; s.src = '';
+    } else if (k === 'series' && (n('g') || n('h'))) {
+      s = state.sr; s.mat = mat(); s.g = n('g'); s.h = n('h'); s.rush = o.r === '1' ? 1 : 0; s.seeded = 0; if (n('q')) s.qty = String(Math.min(10000, Math.max(1, Math.round(+n('q')))));
+    } else if (k === 'budget' && n('b')) {
+      s = state.bg; s.amt = n('b'); BG_HR.forEach(function (h) { s[h + 'H'] = n(h); }); s.mat = mat(); s.g = n('g'); s.h = n('h'); s.rush = o.r === '1' ? 1 : 0; s.first = o.f === '0' ? 0 : 1;
+    }
   }
 
   // ---------- Parts list / "Kosovnica" NK-L (#services?tool=parts, T-10; 2026-11-05) ----------
@@ -3220,9 +3467,9 @@
   // Added 2026-10-29 (#services tools package). Only links and scrolling; the tools themselves are unchanged.
   // To remove: TL_TOOLS … tlGo(), the tlIndex() / tlWrap() calls in views.services, tlHome() in views.home, the state.tool
   // line in page(), the tlGo line in render(), tl: in both languages in content.js and the "Tools index" rules in page.css.
-  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']].concat(pcOn() ? [['prices', 'pc', 'prices'], ['quote', 'qc', 'quote']] : []).concat([['parts', 'bm', 'parts']]).concat(srOn() ? [['series', 'sr', 'series']] : []); // 'series': Series price NK-R (2026-11-15), only with print prices // 'parts': the parts list NK-L (2026-11-05) // [link name, content key, section id]; the two pricing tools only with a price list in settings.json
+  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']].concat(pcOn() ? [['prices', 'pc', 'prices'], ['quote', 'qc', 'quote']] : []).concat([['parts', 'bm', 'parts']]).concat(srOn() ? [['series', 'sr', 'series']] : []).concat(bgOn() ? [['budget', 'bg', 'budget']] : []); // 'budget': Budget NK-B (2026-11-17), only with a price list // // 'series': Series price NK-R (2026-11-15), only with print prices // 'parts': the parts list NK-L (2026-11-05) // [link name, content key, section id]; the two pricing tools only with a price list in settings.json
   function tlHash(k) { return '#services?tool=' + k; }
-  function tlNo(i) { return 'T-' + String(i).padStart(2, '0'); } // T-01 … T-10 (two digits from the tenth tool on)
+  function tlNo(i) { return 'T-' + String(i).padStart(2, '0'); } // T-01 … T-12 (two digits from the tenth tool on)
   function tlIndex() {
     var x = t().tl;
     var n = TL_TOOLS.length + 1; // the tools on this page + the Part studio
@@ -3235,14 +3482,14 @@
     var d = TL_TOOLS.filter(function (v) { return v[0] === k; })[0], n = TL_TOOLS.indexOf(d) + 1;
     html = html.replace(/^<section class="block ([a-z-]+)"(?: id="[^"]*")?/, '<section class="block $1 tl-tool' + (state.tool === k ? ' tl-on' : '') + '" id="' + d[2] + '" data-tl="' + tlNo(n) + '"'); // tl-on: the tool the address names — the one that prints alone (Print package, 2026-11-02, evening run)
     // SEO package (2026-11-02): every tool has a shareable address (https://nacekepa.work/#services?tool=<name>); the footer copies it.
-    return html.replace(/<\/section>$/, '<p class="tl-back"><a href="#services?tool=index">↑ ' + esc(t().tl.back) + '</a><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-copy="' + esc(tlUrl(k)) + '">' + esc(t().tl.copy) + '</button><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-print="' + k + '">' + esc(t().tl.print) + '</button><span class="tl-msg" role="status" aria-live="polite"></span></p>' +
+    return html.replace(/<\/section>$/, '<p class="tl-back"><a href="#services?tool=index">↑ ' + esc(t().tl.back) + '</a><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-k="' + k + '" data-tl-copy="' + esc(tlUrl(k)) + '">' + esc(t().tl.copy) + '</button><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-print="' + k + '">' + esc(t().tl.print) + '</button><span class="tl-msg" role="status" aria-live="polite"></span></p>' +
       '<div class="print-only print-url tl-print"><span>' + esc(t().tl.printed) + '</span> ' + esc(tlUrl(k)) + ' · ' + esc(new Date().toISOString().slice(0, 10)) + qrBox(tlUrl(k), t().qr.scanTool, { px: 72, cls: 'print-qr' }) + '</div></section>'); // print-only footer line of a tool printed alone (Print package)
   }
   function tlUrl(k) { return 'https://nacekepa.work/' + (lang === 'sl' ? 'sl/' : '') + tlHash(k); }
   function tlCopy(btn) {
-    var url = btn.getAttribute('data-tl-copy'), msg = btn.nextElementSibling, x = t().tl;
+    var calc = clUrl(btn.getAttribute('data-tl-k')), url = calc || btn.getAttribute('data-tl-copy'), msg = btn.parentNode.querySelector('.tl-msg'), x = t().tl; // msg: the status line of the row (was the aria-hidden separator after the button, fixed 2026-11-17) // calc: the address with the typed numbers (Calculation links, 2026-11-17)
     var fail = function () { if (msg) msg.textContent = x.copyFail; };
-    try { navigator.clipboard.writeText(url).then(function () { if (msg) msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+    try { navigator.clipboard.writeText(url).then(function () { if (msg) msg.textContent = calc ? x.copiedCalc : x.copied; }, fail); } catch (e) { fail(); }
   }
   // Print package (2026-11-02, evening run): a tool prints on its own — from its address (#services?tool=<name>, Ctrl+P) or
   // its "Print this tool" button — with the tool's address and the date as a footer line (`.tl-print`, print only). tlMark(k)
@@ -3726,6 +3973,11 @@
     if (el.hasAttribute('data-bm-st')) { var bs = stSrc(); if (bs) { var bd = stDims(bs), bc = mpChosen(); bmAdd({ name: String(state.st.name || '').trim() || (bs.kind === 'file' ? String(bs.name || '').replace(/\.[a-z0-9]+$/i, '') : ''), l: bd[0], w: bd[1], h: bd[2], mat: bc ? bc.id : '', qty: Math.max(1, Math.round(+state.st.qty || 1)) }); location.hash = 'services?tool=parts'; } return; }
     if (el.hasAttribute('data-qc-go')) { qcToOrder(); return; } // Pricing package (2026-11-02)
     if (el.dataset.srQ) { srPick(+el.dataset.srQ); return; } // Series price NK-R (2026-11-15)
+    if (el.hasAttribute('data-bg-go')) { bgToOrder(); return; } // Budget NK-B (2026-11-17)
+    if (el.hasAttribute('data-bg-copy')) { bgCopy(); return; }
+    if (el.hasAttribute('data-bg-qc')) { bgToQc(); } // the links themselves open the tools
+    if (el.hasAttribute('data-bg-sr')) { bgToSr(); }
+    if (el.hasAttribute('data-qc-bg')) { bgFromQc(); }
     if (el.hasAttribute('data-sr-go')) { srToOrder(); return; }
     if (el.hasAttribute('data-sr-copy')) { srCopy(); return; }
     if (el.hasAttribute('data-sr-qc')) { srToQc(); } // the link itself opens the estimate
@@ -3872,6 +4124,8 @@
   app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.qcK) { state.qc[d.qcK] = ev.target.checked ? 1 : 0; qcUpdate(true); } else if (d.qcF === 'mat') { state.qc.mat = ev.target.value; qcUpdate(); } });
   app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.srF; if (k && ev.target.tagName !== 'SELECT') { state.sr[k] = ev.target.value; if (k !== 'qty') state.sr.seeded = 0; srUpdate(); } }); // Series price NK-R (2026-11-15)
   app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.srF === 'mat') { state.sr.mat = ev.target.value; srUpdate(); } else if (ev.target.hasAttribute('data-sr-rush')) { state.sr.rush = ev.target.checked ? 1 : 0; srUpdate(); } });
+  app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.bgF; if (k && ev.target.tagName !== 'SELECT') { state.bg[k] = ev.target.value; bgUpdate(); } }); // Budget NK-B (2026-11-17)
+  app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.bgF === 'mat') { state.bg.mat = ev.target.value; bgUpdate(); } else if (d.bgK) { state.bg[d.bgK] = ev.target.checked ? 1 : 0; bgUpdate(); } });
   app.addEventListener('input', function (ev) { if (ev.target.hasAttribute('data-st-sp-deg')) { state.sp.deg = ev.target.value; spUpdate(); } }); // Support check (2026-10-31)
   app.addEventListener('input', function (ev) { if (ev.target.hasAttribute('data-st-wt-lim')) { state.wt.limit = ev.target.value; wtUpdate(); } }); // Wall thickness (2026-11-02)
   // File check: drop a file on the box; the views follow the light/dark theme.

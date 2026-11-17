@@ -26,6 +26,55 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-17
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=quote`, `?tool=parts`, `?tool=prices`, `?tool=series`), #work, #work?view=list,
+#p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about, #contact, #studio, #mine, #compare, #gift, #order (steps 1–2 on
+the local build in EN + SL through the new hand-off, nothing sent), `/news/`, `/portfolio/famfive/`, /admin/ sign-in — 1280 + 390 px,
+light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in the cloud, as always), no horizontal scroll, no CSP
+violations, no broken images. Live site from the laptop (`check-live.ps1`): all addresses 200, an unknown address 404, the live
+inline-script hash equals the CSP hash; last Actions run (df89c3b) succeeded. (No run on 2026-11-16.)
+**Fixed:** "Copy link to this tool" under every #services tool wrote its "Link copied." message into the `aria-hidden` " · " separator
+next to the button instead of the row's status line (`tlCopy()` used `nextElementSibling`) — screen readers never heard it and the
+separator disappeared. Now it goes to `.tl-msg` (`role="status"`).
+
+**Improvement — calculation links package (`clNum()` … `clRead()` in `app.js`, `tl.copiedCalc` in `content.js`):** a calculation can now be
+sent as a link. (a) "Copy link to this tool" under the **quote estimate**, the **Series price** and the new **Budget** tool copies the
+address *with the numbers typed into the tool* — e.g. `https://nacekepa.work/#services?tool=series&m=petg&g=40&h=2&q=25` — and says
+"Link copied — it opens this calculation."; an empty tool still copies the plain tool address; (b) opening such an address fills the tool
+again (hours, material, weight, print time, quantity, rush, first-order tick, budget) — only numbers and a material key that exists in the
+price list are read, anything else is ignored, nothing is stored; (c) "Copy estimate", the Series price "Copy" and "Copy plan" end the
+copied text with the same link, so whoever receives the text can open the calculation. Useful both ways: a client sends Nace the
+calculation, Nace answers with one.
+Tested in Playwright (EN 1280 light, SL 390 dark): link copied → opened in a new page → same fields and same total for all three tools,
+`/sl/` links, a tool without numbers copies the plain address, a link with rubbish (`b=<script>`, unknown material, negative weight)
+changes nothing.
+*To remove:* see the comment above `clNum()` in `app.js`.
+
+**Innovation — Budget / "Proračun" NK-B (`BG_HR` … `bgToSr()` in `app.js`, `bg:` in `content.js`, "Budget NK-B" rules in `page.css`):**
+a new tool **T-11** on #services — `https://nacekepa.work/#services?tool=budget` (`/sl/#services?tool=budget`). The quote estimate run
+backwards: the visitor types **the amount they want to spend** and, optionally, the hours of work they already expect (CAD / embedded /
+build) and one printed part (material, weight, print time, rush). The sheet shows: the **plan** the budget covers — the hours as typed plus
+as many whole pieces as still fit — with every row, the first-order discount, the plan total and what is left; a drawn **bar of the
+budget** (dimension line, one segment per row, the rest dashed); a table **"The whole budget on one service"** (hours in half-hour steps
+per hourly service, whole pieces of the part); and plain notes (minimum order, minimum hours, the build note, "every job gets a fixed
+quote"). Messages for a budget under the minimum order, hours that cost more than the budget and "not enough left for a piece".
+Hand-offs: **"Start a project with this budget"** ticks the services, sets material + quantity and adds a "Budget: …" line to the brief;
+"Open this plan in the quote estimate"; "Price by quantity" (Series price with the part and the quantity); "Have a fixed budget? See what
+it covers" in the quote estimate brings the hours and the part along; "Copy plan"; prints alone like every tool; Find anything finds it;
+the tools index now counts 12. Only `settings.json` prices and the quote estimate's own sums — without a price list the tool, its index
+entry and the links do not render. Nothing stored, nothing sent, no dependency.
+- Tested in Playwright (EN 1280 light, SL 390 dark): numbers against the price list by hand (150 €, 2 h CAD, PETG 40 g + 2 h: 10 pieces
+  with the promotion → 149.94 €; 6 pieces without → 141.84 €, 8.16 € left; rush → 5 pieces, 144 €; alone: 3.5 h / 3 h / 3 h / 16 pieces),
+  over budget, no piece left, under the minimum order, copied text, link round trip, budget ⇄ estimate, budget → series, order form
+  (services, quantity, brief line), keyboard order, Find anything in EN + SL, print alone, no English on `/sl/`, no overflow at 390 px.
+*To remove:* see the comment above `BG_HR` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: Budget — "Save in My corner", and a budget for a whole parts list (how many sets of NK-L fit).
+- Public: calculation links for the parts list (`#services?tool=parts&list=…`) and the plate tool; the printed tool footer + QR carry the calculation link.
+- Admin: Quote tab — "From a calculation link" (paste a client's `?tool=quote…` / `?tool=budget…` link → quote lines pre-filled).
+
 ## 2026-11-15
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=quote`, `?tool=parts`, `?tool=prices`, `?tool=series`), #work, #work?view=list,
@@ -2450,6 +2499,13 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: Series price — save in My corner + a shareable link with the part in the address.
 - Public: Series price for a whole parts list (sets) + plates / print days for the series.
 - Admin: "Quantity options" block on the NK-O quote.
+
+- (Built 2026-11-17: Budget NK-B `#services?tool=budget` — an amount → the plan of hours and whole printed pieces it covers, budget bar,
+  "whole budget on one service" table, hand-offs to the order form / estimate / series price; calculation links package as the
+  improvement — "Copy link to this tool" carries the typed numbers for the estimate, series price and budget, and the link fills the tool.)
+- Public: Budget — save in My corner; budget for a whole parts list (sets).
+- Public: calculation links for the parts list and the plate tool; calculation link + QR on the printed tool.
+- Admin: Quote tab — "From a calculation link".
 
 ## 2026-10-03 (second run)
 
