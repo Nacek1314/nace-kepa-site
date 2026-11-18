@@ -26,6 +26,56 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-18
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=schedule`, `?tool=matprice`, `?tool=quote`, `?tool=parts`, `?tool=fit`, `?tool=plate`),
+#work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about, #contact, #studio, #mine, #compare, #gift,
+#order (all 4 steps on the local build in EN + SL, nothing sent), `/news/`, `/portfolio/famfive/`, /admin/ sign-in — 1280 + 390 px, light +
+dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in the cloud, as always), no horizontal scroll, no CSP
+violations, no broken images. Live site from the laptop (`check-live.ps1`): all addresses 200, an unknown address 404, the live
+inline-script hash equals the CSP hash; last Actions run (efb2ced) succeeded.
+**Fixed:** nothing was broken.
+
+**Improvement — calculation links, part 2 (`clFreeUrl()` / `clFreeRead()`, `tlFoot()` / `tlFootFresh()` in `app.js`, `tl.scanCalc` in
+`content.js`):** the 2026-11-17 package covered the priced tools; now the rest follows. (a) "Copy link to this tool" under the **fit check**
+(`#services?tool=fit&l=120&w=80&h=40`), the **plate tool** (`…tool=plate&x=60&y=40&z=30&q=24&gap=3`) and the **material picker**
+(`…tool=material&n=23&p=asa` — n = numbers of the ticked needs, p = the chosen material) copies the address with what is typed / ticked,
+and such an address fills the tool again; (b) these three and the new schedule work without a price list (the old code returned early
+when `settings.json` had no prices); (c) a **printed tool** (Print this tool / Ctrl+P) now prints the address *with the numbers* in its
+footer line and its QR code opens the same calculation ("Scan to open this tool with these numbers") — refreshed at print time, so the
+sheet on paper always matches what was typed; an empty tool prints the plain address as before. Only numbers, need numbers and a
+material id of the picker are read from an address.
+*To remove:* see the comment above `clFreeUrl()` in `app.js`.
+
+**Innovation — Schedule / "Terminski plan" NK-T (`SC_KEY` … `dlScHand()` in `app.js`, `sc:` in `content.js`, "Schedule NK-T" rules in
+`page.css`):** a new tool **T-13** on #services — `https://nacekepa.work/#services?tool=schedule` (`/sl/#services?tool=schedule`). The
+visitor picks the services (the buttons show each published turnaround), a start date (empty = today) and, optionally, the date the job
+is needed by. The sheet shows: a drawn **schedule** — one row per stage with the fastest case and the longest case, dimension lines at
+both ends, the visitor's date as a red line; a **table** (stage, usual turnaround, earliest / latest day it is done, whole job); the
+**verdict** with a date — fits (N days to spare) / tight / too short (N days after) — and the day the job has to **start by** for the
+longest and the fastest case; plain notes. Rules, all from what the site already publishes: stages run one after another in calendar
+days (as in the deadline check); a full custom build covers the other services (its own text: "the whole product, end to end") and is
+counted once; a service without a published turnaround (IoT today) is listed as "quoted per project" and not counted; "+ post-processing"
+of printing is named as extra. Hand-offs: **"Start a project with this schedule"** ticks the services, sets the deadline and adds a
+"Schedule: …" line to the brief; "Copy schedule"; **"Add to calendar (.ics)"** (start, earliest, latest, needed-by as all-day events,
+made in the browser); "Save in My corner"; calculation link (`#services?tool=schedule&s=12&a=2026-11-20&d=2026-12-10`, s = service
+numbers S-0N); the order form's deadline check (step 2) links "The whole schedule for these services" with its services and date; a
+first visit takes the services of an unfinished brief; prints alone like every tool; Find anything finds it; the tools index counts 14.
+The turnarounds come from `SERVICES[].time` / the admin Settings through `dlRange()` — if Nace changes a turnaround in the admin, the
+schedule follows; a turnaround that is not "N–M days / weeks" counts as "quoted per project". Nothing stored, nothing sent, no dependency.
+- Tested in Playwright (EN 1280 light, SL 390 dark, 95 checks, clock fixed at 2026-11-18): CAD → 20–23 Nov, CAD + printing → 21–27 Nov
+  by hand; fits (13 days) / fits exactly / tight / too short (1 day) / date not after the start; start-by notes; build covers CAD +
+  printing (2 Dec – 30 Dec); IoT alone; start date; keyboard (Space / Enter on the service buttons, focus kept); copied text; .ics file
+  (4 events, dates, folded lines); link round trip, rubbish in the link ignored; My corner card + its link; order form (services,
+  deadline, brief line through to step 4); deadline check → schedule; printed footer + QR; Find anything EN + SL; no English on `/sl/`;
+  no overflow at 390 px (the "usual" column gives way on phones); whole-site sweep clean.
+*To remove:* see the comment above `SC_KEY` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: Schedule — working days / "not on weekends" switch and a holiday pause, once Nace says how he counts the days.
+- Public: Schedule on the printed brief and on the order "sent" screen (the client's own dates next to the tracking code).
+- Admin: Jobs — the job's schedule drawn on the job card NK-J from its start + due date (same turnarounds), and an .ics of all due dates.
+
 ## 2026-11-17 (second run)
 
 The scheduled run of the day (the morning run was the catch-up for 2026-11-16).
@@ -2558,6 +2608,13 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: Material price for a whole parts list; "price in every material" on the Part studio estimate.
 - Public: material picker — price column once a part is entered.
 - Admin: "Material options" block on the NK-O quote.
+
+- (Built 2026-11-18: Schedule NK-T `#services?tool=schedule` — services + start date (+ needed-by date) → drawn schedule from the published
+  turnarounds, verdict, start-by dates, order form / .ics / My corner / link; calculation links part 2 as the improvement — fit check,
+  plate tool and material picker links, printed tools carry the link with the numbers + QR.)
+- Public: Schedule — working-days switch / holiday pause (needs Nace's rule for counting days).
+- Public: Schedule on the printed brief and the order "sent" screen.
+- Admin: Jobs — schedule on the job card NK-J + .ics of all due dates.
 
 ## 2026-10-03 (second run)
 

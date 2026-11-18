@@ -74,6 +74,12 @@ in the material picker every row also says whether the material suits them. The 
 quote estimate (`mxBox()` in `src/site/app.js`). The series price, the budget and the material price have "Save in My corner": the saved
 calculation re-opens from `#mine` through its calculation link (`mnSaveCalc()`).
 
+**Schedule NK-T** (`#services?tool=schedule`): services + a start date (+ optionally the date the job is needed by) → the published
+turnarounds (`SERVICES[].time` / admin Settings) laid end to end as a drawn schedule with the earliest and latest day per stage, a
+fits / tight / too short verdict and the day to start by; hands services + deadline to the order form, downloads an `.ics`
+(`scBox()` in `src/site/app.js`). The fit check, the plate tool and the material picker also have calculation links
+(`clFreeUrl()`), and a printed tool carries the link with the typed numbers in its footer and QR (`tlFoot()`).
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,

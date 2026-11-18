@@ -153,7 +153,7 @@
         tlWrap('material', mpBox()) +
         tlWrap('prep', prepBox()) +
         tlWrap('plate', pbBox()) +
-        (pcOn() ? tlWrap('prices', pcList()) + tlWrap('quote', qcBox()) : '') + tlWrap('parts', bmBox()) + (srOn() ? tlWrap('series', srBox()) : '') + (bgOn() ? tlWrap('budget', bgBox()) : '') + (mxOn() ? tlWrap('matprice', mxBox()) : '') + faqBox() +
+        (pcOn() ? tlWrap('prices', pcList()) + tlWrap('quote', qcBox()) : '') + tlWrap('parts', bmBox()) + (srOn() ? tlWrap('series', srBox()) : '') + (bgOn() ? tlWrap('budget', bgBox()) : '') + (mxOn() ? tlWrap('matprice', mxBox()) : '') + (scOn() ? tlWrap('schedule', scBox()) : '') + faqBox() +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     work: function () {
@@ -3028,6 +3028,8 @@
   function clUrl(k) { // '' when nothing is typed into the tool
     var a = [], s, m, add = function (n, v) { if (v !== '' && v != null) a.push(n + '=' + encodeURIComponent(v)); };
     var part = function () { m = pcMat(s.mat); add('m', m ? m.key : ''); add('g', clNum(s.g)); add('h', clNum(s.h)); };
+    if (k === 'schedule') return scUrl(); // Schedule NK-T (2026-11-18)
+    if (k === 'fit' || k === 'plate' || k === 'material') return clFreeUrl(k); // Calculation links, part 2 (2026-11-18)
     if (!PRICE) return '';
     if (k === 'quote') {
       s = state.qc; BG_HR.forEach(function (h) { if (s[h]) add(h, clNum(s[h + 'H'])); });
@@ -3042,7 +3044,37 @@
     }
     return a.length ? tlUrl(k) + '&' + a.join('&') : '';
   }
+  // Calculation links, part 2 (2026-11-18, improvement package): the tools that need no price list — the fit check
+  // (#services?tool=fit&l=120&w=80&h=40), the plate tool (…tool=plate&x=60&y=40&z=30&q=24&gap=3) and the material picker
+  // (…tool=material&n=23&p=asa; n = numbers of the ticked needs in MP_NEEDS order) — get the same "address with what is typed",
+  // and the printed footer line + QR of every tool carry that address (tlFoot() / tlFootFresh()). Only numbers, need numbers
+  // and a material id of the picker are read. To remove: clFreeUrl() / clFreeRead(), their two lines in clUrl() / clRead(),
+  // tlFoot() / tlFootFresh() (put the plain footer back into tlWrap()), the beforeprint listener and the tlFootFresh() call in tlPrint().
+  function clFreeUrl(k) {
+    var a = [], s, add = function (n, v) { if (v !== '' && v != null) a.push(n + '=' + encodeURIComponent(v)); };
+    if (k === 'fit') { s = state.fit; ['l', 'w', 'h'].forEach(function (f) { add(f, fitNum(s[f]) || ''); }); if (a.length < 3) return ''; }
+    else if (k === 'plate') {
+      s = state.pb; if (!(pbNum(s.x) > 0 && pbNum(s.y) > 0)) return '';
+      add('x', pbNum(s.x)); add('y', pbNum(s.y)); if (pbNum(s.z) > 0) add('z', pbNum(s.z)); if (Math.round(pbNum(s.qty)) > 0) add('q', Math.round(pbNum(s.qty))); if (pbNum(s.gap) >= 0 && pbNum(s.gap) !== 5) add('gap', pbNum(s.gap));
+    } else if (k === 'material') {
+      var nd = MP_NEEDS.map(function (v, i) { return state.mp.needs[v] ? String(i + 1) : ''; }).join(''); if (!nd) return '';
+      add('n', nd); var ch = state.mp.pick && mpChosen(); if (ch && ch.id === state.mp.pick) add('p', ch.id);
+    }
+    return a.length ? tlUrl(k) + '&' + a.join('&') : '';
+  }
+  function clFreeRead(k, qs) {
+    var o = {}; qs.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) o[kv.slice(0, i)] = kv.slice(i + 1, i + 13); });
+    var f = function (key) { var n = fitNum(o[key]); return n ? String(n) : ''; };
+    if (k === 'fit' && f('l') && f('w') && f('h')) state.fit = { l: f('l'), w: f('w'), h: f('h') };
+    else if (k === 'plate' && f('x') && f('y')) { var q = Math.round(fitNum(o.q)), g = pbNum(o.gap); state.pb = { x: f('x'), y: f('y'), z: f('z'), qty: q > 0 ? String(Math.min(q, 100000)) : '', gap: o.gap != null && g >= 0 ? String(g) : '5', lay: '' }; }
+    else if (k === 'material' && /^[1-9]{1,9}$/.test(o.n || '')) {
+      var nd = {}; MP_NEEDS.forEach(function (v, i) { if (o.n.indexOf(String(i + 1)) >= 0) nd[v] = true; });
+      state.mp = { needs: nd, pick: MP_MATS.some(function (v) { return v.id === o.p; }) ? o.p : '' };
+    }
+  }
   function clRead(k, qs) { // fills the tool the address names from its numbers; an address without numbers changes nothing
+    if (k === 'schedule') { scRead(qs); return; } // Schedule NK-T (2026-11-18)
+    if (k === 'fit' || k === 'plate' || k === 'material') { clFreeRead(k, qs); return; } // Calculation links, part 2 (2026-11-18)
     if (!PRICE || !/^(quote|series|budget|matprice)$/.test(k)) return;
     var o = {}; qs.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) { try { o[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)).slice(0, 12); } catch (e) {} } });
     var n = function (key) { return clNum(o[key]); }, mat = function () { var m = pcMats().filter(function (v) { return v.key === o.m; })[0]; return m ? m.key : ''; }, s;
@@ -3214,6 +3246,192 @@
     location.hash = 'order';
   }
   function mpMxLink() { return mxOn() ? '<p class="pl-open mp-mx"><a href="#services?tool=' + MX_KEY + '">' + esc(t().mx.fromPicker) + ' →</a></p>' : ''; }
+
+  // ---------- Schedule / "Terminski plan" NK-T (#services?tool=schedule, the tool after the material price; 2026-11-18) ----------
+  // The published turnarounds laid end to end: the visitor picks the services, a start date (empty = today) and, optionally, the
+  // date the job is needed by. The sheet draws one row per stage (fastest case / longest case), gives the earliest and the latest
+  // day each stage is done and, with a date, a verdict (fits / tight / too short) and the day the job has to start by. Every number
+  // is a turnaround already on the site (SERVICES[].time in content.js or the admin Settings, read by dlRange() of the deadline
+  // check): stages run one after another in calendar days; a full custom build covers the other services (its own text says "the
+  // whole product, end to end"), a service without a published turnaround is listed as "quoted per project" and not counted.
+  // Hand-offs: order form (services, deadline, a "Schedule: …" line), copy as text, a calendar file (.ics, made in the browser),
+  // "Save in My corner", calculation link (#services?tool=schedule&s=12&a=2026-11-20&d=2026-12-10; s = service numbers S-0N).
+  // Nothing is stored or sent. Without any published turnaround the tool does not render.
+  // Self-contained: remove SC_KEY … dlScLink(), the 'schedule' entry in TL_TOOLS, tlWrap('schedule', scBox()) in views.services,
+  // the dlScLink() call in dlInner(), the data-sc-* / data-dl-sc lines in the click / input handlers, the 'schedule' branches of
+  // clUrl() / clRead() / mnSaveCalc() (+ 'schedule' in MN_CALC and in mnView()), sc: and tl.schedule in both languages in
+  // content.js and the "Schedule NK-T" rules at the end of page.css.
+  var SC_KEY = 'schedule';
+  state.sc = { svcs: [], from: '', due: '', seeded: 0 };
+  function scOn() { return SERVICES.some(function (s) { return !!dlRange(s); }); }
+  function scIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function scDate(v) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || '')); if (!m || +m[1] < 2020 || +m[1] > 2099) return null; var d = new Date(+m[1], +m[2] - 1, +m[3]); return d.getMonth() === +m[2] - 1 && d.getDate() === +m[3] ? d : null; }
+  function scAdd(iso, n) { var d = scDate(iso); d.setDate(d.getDate() + n); return scIso(d); }
+  function scDiff(a, b) { return Math.round((scDate(b) - scDate(a)) / 864e5); }
+  function scToday() { return scIso(new Date()); }
+  function scDays(n) { return n + ' ' + pbPlural(n, t().sc.days); }
+  function scD(iso) { try { return scDate(iso).toLocaleDateString(lang === 'sl' ? 'sl-SI' : 'en-GB', { day: 'numeric', month: 'short' }); } catch (e) { return iso; } } // short date for the drawing and the table
+  function scCalc() {
+    var s = state.sc, pk = SERVICES.filter(function (v) { return s.svcs.indexOf(v.key) >= 0; }); if (!pk.length) return null;
+    var build = pk.filter(function (v) { return v.key === 'build' && dlRange(v); })[0];
+    var c = { pk: pk, stages: [], open: [], inc: [], from: scDate(s.from) ? s.from : scToday(), lo: 0, hi: 0, due: '', d: null, v: '' };
+    pk.forEach(function (v) {
+      var r = dlRange(v);
+      if (build && v !== build) { c.inc.push(v); return; }
+      if (!r) { c.open.push(v); return; }
+      c.stages.push({ s: v, r: r, a0: c.lo, a1: c.lo + r[0], b0: c.hi, b1: c.hi + r[1] }); c.lo += r[0]; c.hi += r[1];
+    });
+    if (!c.stages.length) return c;
+    c.fast = scAdd(c.from, c.lo); c.slow = scAdd(c.from, c.hi);
+    if (scDate(s.due)) {
+      c.due = s.due; c.d = scDiff(c.from, c.due);
+      c.v = c.d <= 0 ? 'past' : c.d < c.lo ? 'short' : c.d < c.hi ? 'tight' : 'ok';
+      c.startSlow = scAdd(c.due, -c.hi); c.startFast = scAdd(c.due, -c.lo);
+    }
+    return c;
+  }
+  function scNames(a) { return a.map(function (v) { return L(v.title); }).join(' + '); }
+  function scSum(c) {
+    var x = t().sc; if (!c) return x.empty; if (!c.stages.length) return x.noneT;
+    var a = fmtDate(c.fast), b = fmtDate(c.slow);
+    if (c.v === 'past') return x.past;
+    if (c.v === 'ok') return c.d === c.hi ? x.ok0 : x.ok.replace('{b}', b).replace('{n}', scDays(c.d - c.hi));
+    if (c.v === 'tight') return x.tight.replace('{a}', a).replace('{b}', b).replace('{d}', fmtDate(c.due));
+    if (c.v === 'short') return x.short.replace('{a}', a).replace('{n}', scDays(c.lo - c.d));
+    return x.sum.replace('{a}', a).replace('{b}', b);
+  }
+  function scSvg(c) { // one row per stage: the fastest case above, the longest case below; dimension lines at both ends, the visitor's date in red
+    var x = t().sc, W = 320, l = 44, r = 12, pw = W - l - r, rh = 26, tp = 18, H = tp + c.stages.length * rh + 22, base = H - 18;
+    var span = Math.max(c.hi, c.d > 0 ? c.d : 0, 1) * 1.04, px = function (n) { return (Math.round((l + Math.min(n, span) / span * pw) * 10) / 10).toFixed(1); };
+    var s = '<svg class="sc-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(x.chartAria.replace('{f}', fmtDate(c.from)).replace('{a}', fmtDate(c.fast)).replace('{b}', fmtDate(c.slow))) + '">';
+    s += '<line class="sc-dim" x1="' + px(c.lo) + '" x2="' + px(c.lo) + '" y1="' + (tp - 2) + '" y2="' + (base + 4) + '"/><line class="sc-dim" x1="' + px(c.hi) + '" x2="' + px(c.hi) + '" y1="' + (tp - 2) + '" y2="' + (base + 4) + '"/>';
+    c.stages.forEach(function (g, n) {
+      var y = tp + n * rh;
+      s += '<text class="sc-tx sc-tx--n" x="' + (l - 6) + '" y="' + (y + 15) + '" text-anchor="end">' + esc(g.s.code) + '</text>' +
+        '<rect class="sc-bar" x="' + px(g.a0) + '" y="' + (y + 4) + '" width="' + Math.max(1, px(g.a1) - px(g.a0)).toFixed(1) + '" height="7"/>' +
+        '<rect class="sc-bar sc-bar--hi" x="' + px(g.b0) + '" y="' + (y + 13) + '" width="' + Math.max(1, px(g.b1) - px(g.b0)).toFixed(1) + '" height="7"/>';
+    });
+    s += '<line class="sc-ax" x1="' + l + '" x2="' + l + '" y1="' + (tp - 2) + '" y2="' + (base + 4) + '"/><line class="sc-ax" x1="' + l + '" x2="' + (W - r) + '" y1="' + base + '" y2="' + base + '"/>';
+    var xa = +px(c.lo), xb = +px(c.hi);
+    s += '<text class="sc-tx" x="' + l + '" y="' + (H - 3) + '">' + esc(scD(c.from)) + '</text>';
+    if (xb - l >= 84) s += '<text class="sc-tx sc-tx--d" x="' + xb + '" y="' + (H - 3) + '" text-anchor="end">' + esc(scD(c.slow)) + '</text>';
+    if (xa - l >= 50 && xb - xa >= 84) s += '<text class="sc-tx sc-tx--d" x="' + xa + '" y="' + (H - 3) + '" text-anchor="middle">' + esc(scD(c.fast)) + '</text>';
+    if (c.d > 0) { var xd = +px(c.d); s += '<line class="sc-due" x1="' + xd + '" x2="' + xd + '" y1="' + (tp - 6) + '" y2="' + (base + 4) + '"/><text class="sc-tx sc-tx--r" x="' + (xd > l + pw / 2 ? xd - 4 : xd + 4) + '" y="9" text-anchor="' + (xd > l + pw / 2 ? 'end' : 'start') + '">' + esc(x.lgDue + ' · ' + scD(c.due)) + '</text>'; }
+    return s + '</svg>';
+  }
+  function scNotes(c) {
+    var x = t().sc, a = [x.nSeq], today = scToday();
+    if (c.v && c.v !== 'past') a.push((c.startFast < today ? x.nStartGone : c.startSlow < today ? x.nStartLate : x.nStart).replace('{u}', fmtDate(c.startSlow)).replace('{f}', fmtDate(c.startFast)));
+    if (c.stages.some(function (g) { return g.s.key === 'print' && /\+/.test(g.s.time.en || ''); })) a.push(x.nPost);
+    c.open.forEach(function (v) { a.push(x.nOpen.replace('{s}', L(v.title))); });
+    if (c.inc.length) a.push(x.nInc.replace('{s}', c.inc.map(function (v) { return L(v.title); }).join(', ')));
+    if (c.v === 'short') a.push(x.nShort);
+    a.push(x.nQuote);
+    return a;
+  }
+  function scRows(c) { // [stage, usual turnaround, earliest done, latest done] — the same rows for the table and the copied text
+    var x = t().sc, rows = c.stages.map(function (g) { return [g.s.code + ' ' + L(g.s.title), L(g.s.time), scD(scAdd(c.from, g.a1)), scD(scAdd(c.from, g.b1))]; });
+    c.open.forEach(function (v) { rows.push([v.code + ' ' + L(v.title), t().dl.none, '—', '—']); });
+    c.inc.forEach(function (v) { rows.push([v.code + ' ' + L(v.title), x.incT, '—', '—']); });
+    return rows;
+  }
+  function scBody(c) {
+    var x = t().sc; if (!c) return '';
+    if (!c.stages.length) return '<ul class="sr-notes">' + c.open.map(function (v) { return '<li>' + esc(x.nOpen.replace('{s}', L(v.title))) + '</li>'; }).join('') + '</ul>';
+    var rows = scRows(c).map(function (r) { return '<tr><th scope="row">' + esc(r[0]) + '</th><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td><td>' + esc(r[3]) + '</td></tr>'; }).join('');
+    var whole = c.stages.length + c.open.length + c.inc.length > 1 ? '<tr class="is-on"><th scope="row">' + esc(x.whole) + '</th><td>' + esc(c.lo + '–' + scDays(c.hi)) + '</td><td>' + esc(scD(c.fast)) + '</td><td>' + esc(scD(c.slow)) + '</td></tr>' : '';
+    return '<div class="sr-fig sc-fig">' + scSvg(c) + '<p class="dl-legend sc-legend" aria-hidden="true"><span><i class="sc-k"></i>' + esc(x.lgFast) + '</span><span><i class="sc-k sc-k--hi"></i>' + esc(x.lgSlow) + '</span>' + (c.d > 0 ? '<span><i class="sc-k sc-k--due"></i>' + esc(x.lgDue) + '</span>' : '') + '</p></div>' +
+      '<div class="sr-scroll"><table class="sr-table sc-table"><caption class="vh">' + esc(x.caption) + '</caption><thead><tr><th scope="col">' + esc(x.cStage) + '</th><th scope="col">' + esc(x.cUsual) + '</th><th scope="col">' + esc(x.cFast) + '</th><th scope="col">' + esc(x.cSlow) + '</th></tr></thead><tbody>' + rows + whole + '</tbody></table></div>' +
+      '<ul class="sr-notes">' + scNotes(c).map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+  }
+  function scOk(c) { return !!(c && c.stages.length && c.v !== 'past'); }
+  function scLine(c) { // one line for the brief
+    var x = t().sc;
+    return x.brief + ': ' + scNames(c.pk) + ', ' + x.lStart.replace('{f}', fmtDate(c.from)) + ' — ' + x.lReady.replace('{a}', fmtDate(c.fast)).replace('{b}', fmtDate(c.slow)) + (c.due ? '; ' + x.lDue.replace('{d}', fmtDate(c.due)).replace('{v}', x.verdict[c.v] || '') : '') + '.';
+  }
+  function scText(c) {
+    var x = t().sc, out = [x.label.split(' · ')[0].toUpperCase() + ' NK-T — nacekepa.work', x.lStart.replace('{f}', fmtDate(c.from)) + (c.due ? ' · ' + x.lgDue + ' ' + fmtDate(c.due) : ''), ''];
+    out.push([x.cStage, x.cUsual, x.cFast, x.cSlow].join(' | '));
+    scRows(c).forEach(function (r) { out.push(r.join(' | ')); });
+    if (c.stages.length > 1) out.push([x.whole, c.lo + '–' + scDays(c.hi), scD(c.fast), scD(c.slow)].join(' | '));
+    out.push('', scSum(c), ''); scNotes(c).forEach(function (n) { out.push('- ' + n); });
+    if (clUrl(SC_KEY)) out.push('', clUrl(SC_KEY));
+    return out.join('\n');
+  }
+  function scSeed() { var s = state.sc, o = state.order; if (s.seeded || s.svcs.length || !o.services.length) return; s.svcs = o.services.slice(); if (scDate(o.deadline)) s.due = o.deadline; s.seeded = 1; }
+  function scLinks() {
+    var a = ['<a href="#services?tool=prep">' + esc(t().prep.title) + ' →</a>'];
+    if (pcOn()) a.push('<a href="#services?tool=quote">' + esc(t().qc.title) + ' →</a>');
+    return a.join('<span aria-hidden="true"> · </span>');
+  }
+  function scBox() {
+    scSeed();
+    var x = t().sc, s = state.sc, c = scCalc(), ok = scOk(c), dis = ok ? '' : ' disabled';
+    var date = function (k, label, hint) { return '<div class="nk-field"><label class="nk-field__label" for="sc-' + k + '">' + esc(label) + '</label><input class="nk-input" id="sc-' + k + '" data-sc-f="' + k + '" type="date" min="2020-01-01" max="2099-12-31" value="' + esc(scDate(s[k]) ? s[k] : '') + '">' + (hint ? '<span class="nk-field__hint">' + esc(hint) + '</span>' : '') + '</div>'; };
+    return '<section class="block sc">' + head(x.label, x.title, x.lead) + '<div class="fit-grid sr-grid"><div class="fit-form">' +
+      '<p class="nk-label" id="sc-pick">' + esc(x.pick) + '</p><div class="filters sc-svc" role="group" aria-labelledby="sc-pick">' + SERVICES.map(function (v) {
+        return '<button type="button" class="chip" data-sc-svc="' + v.key + '" aria-pressed="' + (s.svcs.indexOf(v.key) >= 0) + '">' + esc(L(v.title)) + ' <span>' + esc(v.time ? L(v.time) : t().dl.none) + '</span></button>';
+      }).join('') + '</div>' +
+      '<div class="qc-print sr-form sc-form">' + date('from', x.from, x.fromH) + date('due', x.due) + '</div>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-sc-go' + dis + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-sc-copy' + dis + '>' + esc(x.copy) + '</button><button type="button" class="nk-btn" data-sc-ics' + dis + '>' + esc(x.ics) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-mn-calc="' + SC_KEY + '"' + dis + '>' + esc(t().mn.calcSave) + '</button><span class="copy-msg" id="sc-msg" role="status"></span></div>' +
+      '<p class="fit-note">' + esc(x.note) + '</p><p class="pl-open">' + scLinks() + '</p></div>' +
+      '<div class="pl-sheet sr-sheet"><div class="pl-head"><span class="nk-label">' + esc(x.table) + '</span><span class="nk-label">NK-T</span></div><div class="sr-out"><p class="sr-sum' + (ok ? '' : ' is-empty') + '" id="sc-sum" role="status" aria-live="polite">' + esc(scSum(c)) + '</p><div id="sc-body" class="mx-body">' + scBody(c) + '</div></div></div></div></section>';
+  }
+  function scUpdate() {
+    var c = scCalc(), ok = scOk(c), sum = document.getElementById('sc-sum'), body = document.getElementById('sc-body'), msg = document.getElementById('sc-msg'); if (!sum || !body) return;
+    sum.textContent = scSum(c); sum.classList.toggle('is-empty', !ok); body.innerHTML = scBody(c); if (msg) msg.textContent = '';
+    ['data-sc-go', 'data-sc-copy', 'data-sc-ics', 'data-mn-calc="' + SC_KEY + '"'].forEach(function (a) { var b = document.querySelector('[' + a + ']'); if (b) b.disabled = !ok; });
+  }
+  function scToggle(btn) {
+    var s = state.sc, k = btn.getAttribute('data-sc-svc'), i = s.svcs.indexOf(k);
+    if (i >= 0) s.svcs.splice(i, 1); else s.svcs.push(k);
+    s.seeded = 0; btn.setAttribute('aria-pressed', String(i < 0)); scUpdate();
+  }
+  function scCopy() {
+    var c = scCalc(), msg = document.getElementById('sc-msg'); if (!scOk(c) || !msg) return;
+    var fail = function () { msg.textContent = t().qc.copyFail; };
+    try { navigator.clipboard.writeText(scText(c)).then(function () { msg.textContent = t().sc.copied; }, fail); } catch (e) { fail(); }
+  }
+  function scIcsText(c) { // an all-day event per date; plain iCalendar text, made in the browser
+    var x = t().sc, names = scNames(c.pk), z = function (iso) { return iso.replace(/-/g, ''); }, esc2 = function (v) { return String(v).replace(/([\;,])/g, '\\$1').replace(/\n/g, '\\n'); };
+    var stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''), url = clUrl(SC_KEY) || tlUrl(SC_KEY);
+    var ev = [[c.from, x.evStart], [c.fast, x.evFast], [c.slow, x.evSlow]]; if (c.fast === c.slow) ev.splice(1, 1); if (c.due) ev.push([c.due, x.evDue]);
+    var out = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//nacekepa.work//Schedule NK-T//' + (lang === 'sl' ? 'SL' : 'EN'), 'CALSCALE:GREGORIAN'];
+    ev.forEach(function (e, i) { out.push('BEGIN:VEVENT', 'UID:nk-t-' + stamp + '-' + i + '@nacekepa.work', 'DTSTAMP:' + stamp, 'DTSTART;VALUE=DATE:' + z(e[0]), 'DTEND;VALUE=DATE:' + z(scAdd(e[0], 1)), 'SUMMARY:' + esc2(e[1].replace('{s}', names)), 'DESCRIPTION:' + esc2(x.evNote + ' ' + url), 'TRANSP:TRANSPARENT', 'END:VEVENT'); });
+    out.push('END:VCALENDAR');
+    return out.map(function (ln) { var a = []; while (ln.length > 60) { a.push(ln.slice(0, 60)); ln = ' ' + ln.slice(60); } a.push(ln); return a.join('\r\n'); }).join('\r\n') + '\r\n';
+  }
+  function scIcs() {
+    var c = scCalc(), msg = document.getElementById('sc-msg'); if (!scOk(c)) return;
+    try {
+      var blob = new Blob([scIcsText(c)], { type: 'text/calendar;charset=utf-8' }), url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = 'nacekepa-' + (lang === 'sl' ? 'terminski-plan' : 'schedule') + '.ics'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      if (msg) msg.textContent = t().sc.icsDone;
+    } catch (e) { if (msg) msg.textContent = t().qc.copyFail; }
+  }
+  function scToOrder() {
+    var c = scCalc(), o = state.order, x = t().sc; if (!scOk(c)) return;
+    c.pk.forEach(function (v) { if (o.services.indexOf(v.key) < 0) o.services.push(v.key); });
+    if (c.due && c.due > scToday()) o.deadline = c.due;
+    var line = scLine(c);
+    if (o.what.indexOf(x.brief + ':') < 0) o.what = o.what ? o.what + '\n' + line : line;
+    else o.what = o.what.split('\n').map(function (l) { return l.indexOf(x.brief + ':') === 0 ? line : l; }).join('\n');
+    state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+  function scRead(qs) { // #services?tool=schedule&s=12&a=2026-11-20&d=2026-12-10 — only service numbers and real dates are read
+    var o = {}; qs.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) o[kv.slice(0, i)] = kv.slice(i + 1, i + 12); });
+    var sv = SERVICES.filter(function (v, i) { return /^[1-9]{1,9}$/.test(o.s || '') && o.s.indexOf(String(i + 1)) >= 0; }).map(function (v) { return v.key; }); if (!sv.length) return;
+    state.sc = { svcs: sv, from: scDate(o.a) ? o.a : '', due: scDate(o.d) ? o.d : '', seeded: 0 };
+  }
+  function scUrl() { // '' until a service is picked
+    var s = state.sc, n = SERVICES.map(function (v, i) { return s.svcs.indexOf(v.key) >= 0 ? String(i + 1) : ''; }).join(''); if (!n) return '';
+    return tlUrl(SC_KEY) + '&s=' + n + (scDate(s.from) ? '&a=' + s.from : '') + (scDate(s.due) ? '&d=' + s.due : '');
+  }
+  function dlScLink() { // order form, step 2: the deadline check hands its services and date to the schedule
+    return scOn() ? '<p class="pl-open dl-sc"><a href="#services?tool=' + SC_KEY + '" data-dl-sc>' + esc(t().sc.fromDl) + ' →</a></p>' : '';
+  }
+  function dlScHand() { var o = state.order; state.sc = { svcs: o.services.slice(), from: '', due: scDate(o.deadline) ? o.deadline : '', seeded: 0 }; }
 
   // ---------- Parts list / "Kosovnica" NK-L (#services?tool=parts, T-10; 2026-11-05) ----------
   // An order of several different parts on one sheet: every line is a part (name, L × W × H, material, quantity) and gets
@@ -3627,7 +3845,7 @@
   // Added 2026-10-29 (#services tools package). Only links and scrolling; the tools themselves are unchanged.
   // To remove: TL_TOOLS … tlGo(), the tlIndex() / tlWrap() calls in views.services, tlHome() in views.home, the state.tool
   // line in page(), the tlGo line in render(), tl: in both languages in content.js and the "Tools index" rules in page.css.
-  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']].concat(pcOn() ? [['prices', 'pc', 'prices'], ['quote', 'qc', 'quote']] : []).concat([['parts', 'bm', 'parts']]).concat(srOn() ? [['series', 'sr', 'series']] : []).concat(bgOn() ? [['budget', 'bg', 'budget']] : []).concat(mxOn() ? [['matprice', 'mx', 'matprice']] : []); // 'matprice': Material price NK-V (2026-11-17, second run), only with two or more priced materials // 'budget': Budget NK-B (2026-11-17), only with a price list // // 'series': Series price NK-R (2026-11-15), only with print prices // 'parts': the parts list NK-L (2026-11-05) // [link name, content key, section id]; the two pricing tools only with a price list in settings.json
+  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']].concat(pcOn() ? [['prices', 'pc', 'prices'], ['quote', 'qc', 'quote']] : []).concat([['parts', 'bm', 'parts']]).concat(srOn() ? [['series', 'sr', 'series']] : []).concat(bgOn() ? [['budget', 'bg', 'budget']] : []).concat(mxOn() ? [['matprice', 'mx', 'matprice']] : []).concat(scOn() ? [['schedule', 'sc', 'schedule']] : []); // 'schedule': Schedule NK-T (2026-11-18), only with a published turnaround // // 'matprice': Material price NK-V (2026-11-17, second run), only with two or more priced materials // 'budget': Budget NK-B (2026-11-17), only with a price list // // 'series': Series price NK-R (2026-11-15), only with print prices // 'parts': the parts list NK-L (2026-11-05) // [link name, content key, section id]; the two pricing tools only with a price list in settings.json
   function tlHash(k) { return '#services?tool=' + k; }
   function tlNo(i) { return 'T-' + String(i).padStart(2, '0'); } // T-01 … T-13 (two digits from the tenth tool on)
   function tlIndex() {
@@ -3643,8 +3861,13 @@
     html = html.replace(/^<section class="block ([a-z-]+)"(?: id="[^"]*")?/, '<section class="block $1 tl-tool' + (state.tool === k ? ' tl-on' : '') + '" id="' + d[2] + '" data-tl="' + tlNo(n) + '"'); // tl-on: the tool the address names — the one that prints alone (Print package, 2026-11-02, evening run)
     // SEO package (2026-11-02): every tool has a shareable address (https://nacekepa.work/#services?tool=<name>); the footer copies it.
     return html.replace(/<\/section>$/, '<p class="tl-back"><a href="#services?tool=index">↑ ' + esc(t().tl.back) + '</a><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-k="' + k + '" data-tl-copy="' + esc(tlUrl(k)) + '">' + esc(t().tl.copy) + '</button><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-print="' + k + '">' + esc(t().tl.print) + '</button><span class="tl-msg" role="status" aria-live="polite"></span></p>' +
-      '<div class="print-only print-url tl-print"><span>' + esc(t().tl.printed) + '</span> ' + esc(tlUrl(k)) + ' · ' + esc(new Date().toISOString().slice(0, 10)) + qrBox(tlUrl(k), t().qr.scanTool, { px: 72, cls: 'print-qr' }) + '</div></section>'); // print-only footer line of a tool printed alone (Print package)
+      '<div class="print-only print-url tl-print" data-tl-foot="' + k + '">' + tlFoot(k) + '</div></section>'); // print-only footer line of a tool printed alone (Print package)
   }
+  function tlFoot(k) { // the printed footer line + QR: the address with what is typed into the tool, when there is something (Calculation links, part 2, 2026-11-18)
+    var calc = clUrl(k), url = calc || tlUrl(k);
+    return '<span>' + esc(t().tl.printed) + '</span> ' + esc(url) + ' · ' + esc(new Date().toISOString().slice(0, 10)) + qrBox(url, calc ? t().tl.scanCalc : t().qr.scanTool, { px: calc ? 88 : 72, cls: 'print-qr' });
+  }
+  function tlFootFresh() { Array.prototype.forEach.call(document.querySelectorAll('[data-tl-foot]'), function (el) { el.innerHTML = tlFoot(el.getAttribute('data-tl-foot')); }); }
   function tlUrl(k) { return 'https://nacekepa.work/' + (lang === 'sl' ? 'sl/' : '') + tlHash(k); }
   function tlCopy(btn) {
     var calc = clUrl(btn.getAttribute('data-tl-k')), url = calc || btn.getAttribute('data-tl-copy'), msg = btn.parentNode.querySelector('.tl-msg'), x = t().tl; // msg: the status line of the row (was the aria-hidden separator after the button, fixed 2026-11-17) // calc: the address with the typed numbers (Calculation links, 2026-11-17)
@@ -3666,6 +3889,7 @@
     tlMark(k);
     var back = function () { tlMark(page() === 'services' ? state.tool : ''); };
     window.addEventListener('afterprint', back, { once: true });
+    tlFootFresh();
     printSheet();
     setTimeout(function () { document.addEventListener('click', back, { once: true }); document.addEventListener('keydown', back, { once: true }); }, 0);
   }
@@ -3716,7 +3940,7 @@
       return '<li class="dl-row"><div class="dl-top"><span class="dl-svc">' + esc(L(s.title)) + '</span><span class="dl-v">' + tag + '</span></div>' + bar + '</li>';
     }).join('');
     var legend = '<p class="dl-legend" aria-hidden="true"><span><i class="dl-k dl-k--today"></i>' + esc(x.today) + '</span><span><i class="dl-k dl-k--range"></i>' + esc(x.range) + '</span><span><i class="dl-k dl-k--due"></i>' + esc(x.due) + '</span></p>';
-    return head + when + '<ul class="dl-rows">' + rows + '</ul>' + legend + '<p class="dl-note">' + esc(x.note) + '</p>';
+    return head + when + '<ul class="dl-rows">' + rows + '</ul>' + legend + '<p class="dl-note">' + esc(x.note) + '</p>' + dlScLink(); // dlScLink: Schedule NK-T (2026-11-18)
   }
   // Earliest date the picker offers: tomorrow (local time), so phones can't pick today or a past date.
   function dlMin() { var d = new Date(); d.setDate(d.getDate() + 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -3982,11 +4206,11 @@
   // brief and the calculation link (clUrl) that opens the tool with the same numbers; saved quote estimates get the same link.
   // To remove: MN_CALC … mnOpen(), 'calc' in mnRead() / mnCount() / mnForget(), calcB + its sec() in mnView(), the calc lines in
   // mnText(), hash: in mnSaveQc(), the data-mn-calc buttons in srBox() / bgBox() / mxBox() + their click line, mn.calc… in content.js.
-  var MN_CALC = /^#services\?tool=(quote|series|budget|matprice)(&[a-z]{1,5}=[\w.%-]{0,16})*$/;
+  var MN_CALC = /^#services\?tool=(quote|series|budget|matprice|schedule)(&[a-z]{1,5}=[\w.%-]{0,16})*$/;
   function mnCalcHash(k) { var u = clUrl(k), h = u ? u.slice(u.indexOf('#')) : ''; return MN_CALC.test(h) ? h : ''; }
   function mnSaveCalc(k) {
-    var e = null, c, id = { series: 'sr', budget: 'bg', matprice: 'mx' }[k]; if (!id || !PRICE) return;
-    if (k === 'series' && (c = srCalc())) e = { sum: srPartText(c.p) + ' — ' + srSum(c), text: srLine(c), svcs: ['print'] };
+    var e = null, c, id = { series: 'sr', budget: 'bg', matprice: 'mx', schedule: 'sc' }[k]; if (!id || (!PRICE && k !== 'schedule')) return;
+    if (k === 'schedule') { c = scCalc(); if (scOk(c)) e = { sum: scNames(c.pk) + ' — ' + scSum(c), text: scLine(c), svcs: c.pk.map(function (v) { return v.key; }) }; } else /* ↑ Schedule NK-T (2026-11-18) */ if (k === 'series' && (c = srCalc())) e = { sum: srPartText(c.p) + ' — ' + srSum(c), text: srLine(c), svcs: ['print'] };
     else if (k === 'budget' && (c = bgCalc())) e = { sum: bgSum(c), text: bgLine(c), svcs: c.plan ? c.plan.rows.map(function (r) { return r.k; }).filter(function (v) { return v !== 'setup'; }) : [] };
     else if (k === 'matprice' && (c = mxCalc())) e = { sum: mxPart(c, c.ref) + ' — ' + mxSum(c), text: mxLine(c), svcs: ['print'] };
     if (!e) return;
@@ -4059,7 +4283,7 @@
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mn-brief="st" data-mn-at="' + e.at + '">' + esc(x.stBrief) + '</button>' + btn(x.stAgain, '#studio', 'ghost', 'sm') + rm('st', e) + '</div></details>'; }).join('') : '<p class="hint">' + esc(x.stEmpty) + '</p>';
     var qcB = m.qc.length ? m.qc.map(function (e) { return '<details class="mn-card"><summary><b>≈ ' + esc(e.total) + '</b> <span class="nk-label">' + esc(e.rows.map(function (r) { return r[0]; }).join(' · ')) + '</span>' + when(e) + '</summary><dl class="nk-specs mn-specs">' + e.rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('') + '</dl>' +
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mn-brief="qc" data-mn-at="' + e.at + '">' + esc(x.qcBrief) + '</button>' + mnOpen(e, [t().qc.title, '#services?tool=quote']) + rm('qc', e) + '</div></details>'; }).join('') : '<p class="hint">' + esc(x.qcEmpty) + '</p>';
-    var calcB = m.calc.length ? m.calc.map(function (e) { var tk = /^(series|budget|matprice)$/.test(e.tool) ? e.tool : 'series'; return '<details class="mn-card"><summary><b>' + esc(e.title || '') + '</b> <span class="nk-label mn-calc-sum">' + esc(e.sum || '') + '</span>' + when(e) + '</summary><p class="mn-pre mn-calc-text">' + esc(e.text || '') + '</p>' +
+    var calcB = m.calc.length ? m.calc.map(function (e) { var tk = /^(series|budget|matprice|schedule)$/.test(e.tool) ? e.tool : 'series'; return '<details class="mn-card"><summary><b>' + esc(e.title || '') + '</b> <span class="nk-label mn-calc-sum">' + esc(e.sum || '') + '</span>' + when(e) + '</summary><p class="mn-pre mn-calc-text">' + esc(e.text || '') + '</p>' +
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mn-brief="calc" data-mn-at="' + e.at + '">' + esc(x.qcBrief) + '</button>' + mnOpen(e, [e.title || x.calcT, tlHash(tk)]) + rm('calc', e) + '</div></details>'; }).join('') : '<p class="hint">' + esc(x.calcEmpty) + '</p>';
     var tools = '<div class="mn-tools"><div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-mn-print>' + psIco() + ' ' + esc(x.print) + '</button><button type="button" class="nk-btn nk-btn--sm" data-mn-dl>' + esc(x.download) + '</button>' +
       (mnAsk ? '<span class="mn-ask">' + esc(x.forgetAsk) + ' <button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-mn-forget="yes">' + esc(x.forgetYes) + '</button> <button type="button" class="nk-btn nk-btn--sm" data-mn-forget="no">' + esc(x.forgetNo) + '</button></span>' : '<button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-mn-forget="ask">' + esc(x.forget) + '</button>') + '</div>' +
@@ -4157,6 +4381,11 @@
     if (el.hasAttribute('data-bm-st')) { var bs = stSrc(); if (bs) { var bd = stDims(bs), bc = mpChosen(); bmAdd({ name: String(state.st.name || '').trim() || (bs.kind === 'file' ? String(bs.name || '').replace(/\.[a-z0-9]+$/i, '') : ''), l: bd[0], w: bd[1], h: bd[2], mat: bc ? bc.id : '', qty: Math.max(1, Math.round(+state.st.qty || 1)) }); location.hash = 'services?tool=parts'; } return; }
     if (el.hasAttribute('data-qc-go')) { qcToOrder(); return; } // Pricing package (2026-11-02)
     if (el.dataset.srQ) { srPick(+el.dataset.srQ); return; } // Series price NK-R (2026-11-15)
+    if (el.hasAttribute('data-sc-svc')) { scToggle(el); return; } // Schedule NK-T (2026-11-18)
+    if (el.hasAttribute('data-sc-go')) { scToOrder(); return; }
+    if (el.hasAttribute('data-sc-copy')) { scCopy(); return; }
+    if (el.hasAttribute('data-sc-ics')) { scIcs(); return; }
+    if (el.hasAttribute('data-dl-sc')) { dlScHand(); } // the link itself opens the tool
     if (el.dataset.mxM) { mxPick(el.dataset.mxM); return; } // Material price NK-V (2026-11-17, second run)
     if (el.hasAttribute('data-mx-go')) { mxToOrder(); return; }
     if (el.hasAttribute('data-mx-copy')) { mxCopy(); return; }
@@ -4316,6 +4545,7 @@
   app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.qcK) { state.qc[d.qcK] = ev.target.checked ? 1 : 0; qcUpdate(true); } else if (d.qcF === 'mat') { state.qc.mat = ev.target.value; qcUpdate(); } });
   app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.srF; if (k && ev.target.tagName !== 'SELECT') { state.sr[k] = ev.target.value; if (k !== 'qty') state.sr.seeded = 0; srUpdate(); } }); // Series price NK-R (2026-11-15)
   app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.srF === 'mat') { state.sr.mat = ev.target.value; srUpdate(); } else if (ev.target.hasAttribute('data-sr-rush')) { state.sr.rush = ev.target.checked ? 1 : 0; srUpdate(); } });
+  app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.scF; if (k === 'from' || k === 'due') { state.sc[k] = ev.target.value; state.sc.seeded = 0; scUpdate(); } }); // Schedule NK-T (2026-11-18)
   app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.mxF; if (k && ev.target.tagName !== 'SELECT') { state.mx[k] = ev.target.value; state.mx.seeded = 0; mxUpdate(); } }); // Material price NK-V (2026-11-17, second run)
   app.addEventListener('change', function (ev) { var d = ev.target.dataset || {}; if (d.mxF === 'mat') { state.mx.mat = ev.target.value; state.mx.pick = ''; mxUpdate(); } else if (ev.target.hasAttribute('data-mx-rush')) { state.mx.rush = ev.target.checked ? 1 : 0; mxUpdate(); } else if (ev.target.hasAttribute('data-mp-need')) { mxUpdate(); } }); // data-mp-need: the ● / ✕ marks follow the material picker
   app.addEventListener('input', function (ev) { var k = ev.target.dataset && ev.target.dataset.bgF; if (k && ev.target.tagName !== 'SELECT') { state.bg[k] = ev.target.value; bgUpdate(); } }); // Budget NK-B (2026-11-17)
@@ -4769,6 +4999,7 @@
     var to = KBD_GO[c]; if (!to || (to === 'news' && !NEWS.length) || (to === 'compare' && PROJECTS.length < 2)) return false;
     ev.preventDefault(); if (page() === to) window.scrollTo(0, 0); else location.hash = to; return true;
   }
+  window.addEventListener('beforeprint', tlFootFresh); // Calculation links, part 2 (2026-11-18): Ctrl+P prints the address with the typed numbers
   window.addEventListener('hashchange', kbdClose);
   window.addEventListener('hashchange', fxClose);
   window.addEventListener('hashchange', pzClose);

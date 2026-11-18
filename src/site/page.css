@@ -1505,3 +1505,27 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 .mn-calc-text { margin: var(--space-3) 0 0; font-size: 14px; line-height: 21px; overflow-wrap: anywhere; }
 @media (max-width: 600px) { .mx-typed { display: block; margin-left: 0; } .mx-w { display: none; } .mx-table thead th { white-space: normal; vertical-align: bottom; } .mx-table th, .mx-table td { padding-inline: 4px; } .mx-m { min-width: 56px; } } /* phone: the weight column gives way so the prices fit without sideways scrolling */
 @media print { .mx-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .mx-fig { break-inside: avoid; } }
+
+/* Schedule NK-T (2026-11-18): scBox() in app.js — the published turnarounds laid end to end (#services?tool=schedule); sheet, table and notes reuse the series price rules (.sr-*, .mx-body) */
+.sc-svc { margin: 0 0 var(--space-4); }
+.sc-form { margin-bottom: var(--space-4); }
+.sc-svg { display: block; width: 100%; height: auto; max-width: 560px; color: var(--ink); }
+.sc-ax { stroke: var(--ink); stroke-width: 1.2; }
+.sc-dim { stroke: var(--dimension); stroke-width: 1; stroke-dasharray: 5 4; }
+.sc-due { stroke: var(--redline); stroke-width: 1.6; }
+.sc-bar { fill: var(--ink); fill-opacity: .72; }
+.sc-bar--hi { fill-opacity: .26; }
+.sc-tx { font: 9px var(--font-mono); fill: var(--ink-muted); }
+.sc-tx--n { font-size: 10px; fill: var(--ink); }
+.sc-tx--d { fill: var(--dimension); }
+.sc-tx--r { fill: var(--redline); font-weight: 500; }
+.sc-legend { margin: var(--space-2) 0 0; padding: 0 var(--space-2); }
+.sc-k { display: inline-block; width: 16px; height: 7px; margin-right: 6px; background: var(--ink); opacity: .72; vertical-align: middle; }
+.sc-k--hi { opacity: .26; }
+.sc-k--due { width: 2px; height: 12px; background: var(--redline); opacity: 1; }
+.sc-table th:first-child { white-space: normal; font-weight: 500; }
+.sc-table td { vertical-align: top; }
+.sc-table td:last-child { color: var(--ink); }
+.dl-sc { margin: var(--space-3) 0 0; }
+@media (max-width: 600px) { .sc-table th:nth-child(2), .sc-table td:nth-child(2) { display: none; } /* phone: the usual turnaround is already on the service buttons */ .sc-table thead th { white-space: normal; vertical-align: bottom; } .sc-table th, .sc-table td { padding-inline: 4px; } .sc-table td:nth-child(2) { white-space: normal; } }
+@media print { .sc-bar, .sc-k { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .sc-fig { break-inside: avoid; } }
