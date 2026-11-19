@@ -80,6 +80,11 @@ fits / tight / too short verdict and the day to start by; hands services + deadl
 (`scBox()` in `src/site/app.js`). The fit check, the plate tool and the material picker also have calculation links
 (`clFreeUrl()`), and a printed tool carries the link with the typed numbers in its footer and QR (`tlFoot()`).
 
+**Draft hand-over** (under the order form, "Hand-over"): the unfinished brief as a link — `#order?draft=1.<base64url JSON>` — to copy,
+e-mail or scan as a QR code, for finishing on another device or for a colleague to check. The link opens a "Received draft" preview above
+the form and fills the form only after "Use this draft"; the data stays in the address after `#` and is validated like the saved draft
+(`dhPack()` / `dhRead()` in `src/site/app.js`).
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,

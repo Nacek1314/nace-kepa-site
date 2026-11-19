@@ -68,6 +68,7 @@
     var qi = h.indexOf('?'), qs = qi >= 0 ? h.slice(qi + 1) : ''; if (qi >= 0) { if (h.slice(0, qi) === 'work' && location.hash !== state.findHash) findRead(qs); h = h.slice(0, qi); }
     if (h === 'compare' && PROJECTS.length) { cmpRead(qs); return 'compare'; }
     if (h === 'services') { state.tool = (/(?:^|&)tool=([a-z]+)/.exec(qs) || [])[1] || ''; if (state.bg && location.hash !== state.clHash) { state.clHash = location.hash; clRead(state.tool, qs); } } // clRead: Calculation links (2026-11-17)
+    if (h === 'order' && state.dh && location.hash !== state.dh.hash) { state.dh.hash = location.hash; dhRead(qs); } // Draft hand-over (2026-11-19)
     if (h === 'contact') { state.ctGo = true; return 'about'; } // Contact package (2026-10-29): #contact opens the contact card on #about
     if (/^p-/.test(h) && bySlug(h.slice(2))) return 'project';
     if (/^n-/.test(h) && newsBySlug(h.slice(2))) return 'post';
@@ -1816,6 +1817,119 @@
     var c = document.querySelector('[data-svc]'); if (c) c.focus();
   }
 
+  // ---------- Draft hand-over / "Predaja osnutka" (order form, #order?draft=…; 2026-11-19) ----------
+  // "Hand this draft over" under the order form (every step until the brief is sent) turns the unfinished brief into a
+  // link — https://nacekepa.work/#order?draft=1.<base64url of a small JSON> — to finish on another device or to let a
+  // colleague check it: copy, e-mail (mailto:) or a QR code. Opening such a link shows a "Received draft" preview above
+  // the form; the form is filled in only after "Use this draft" (it then replaces this browser's own saved draft).
+  // Everything is in the address after # (browsers never send that part to a server). What is read from a link goes
+  // through the same checks as the saved draft (known service keys, capped strings, numbers, a date) and is only ever
+  // written with esc(). Nothing is stored or sent by this feature itself.
+  // Self-contained: remove DH_MAX … dhDone(), the dhRead line in page(), the dhIn() / dhOut() calls in orderView(), the
+  // data-dh lines in the click and change handlers, dh: in both languages in content.js and the "Draft hand-over" rules
+  // in page.css.
+  var DH_MAX = 16000, DH_MAIL = 1800, DH_QR = 900; // longest payload read · longest link put into a mailto: · longest link drawn as a QR code
+  state.dh = { inc: null, bad: false, hash: '', contact: true, msg: '' };
+  function dhEnc(s) { var b = new TextEncoder().encode(s), o = ''; for (var i = 0; i < b.length; i++) o += String.fromCharCode(b[i]); return btoa(o).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function dhDec(s) { var a = atob(s.replace(/-/g, '+').replace(/_/g, '/')), b = new Uint8Array(a.length); for (var i = 0; i < a.length; i++) b[i] = a.charCodeAt(i); return new TextDecoder('utf-8', { fatal: true }).decode(b); }
+  function dhNeed() { var ids = {}; SERVICES.forEach(function (s) { if (s.need) s.need.en.forEach(function (n) { ids[n] = 1; }); }); return ids; }
+  function dhPack(withContact) { // short keys keep the link (and its QR code) small; empty answers are left out
+    var o = state.order, d = { v: 1, at: Date.now(), st: Math.min(state.step, 2), s: o.services.slice() };
+    [['w', 'what'], ['d', 'deadline'], ['o', 'note']].concat(withContact ? [['n', 'name'], ['e', 'email'], ['p', 'phone']] : []).forEach(function (k) { var v = String(o[k[1]] || '').trim(); if (v) d[k[0]] = v; });
+    if (/^\d{1,6}$/.test(o.qty) && String(o.qty) !== '1') d.q = String(o.qty);
+    if (+o.files) d.f = +o.files;
+    if (+o.mat) d.m = +o.mat;
+    if (withContact && +o.reply === 1) d.r = 1;
+    var need = dhNeed(), h = Object.keys(state.prep.have).filter(function (k) { return state.prep.have[k] === true && need[k]; }); if (h.length) d.h = h;
+    return d;
+  }
+  function dhUrl(withContact) { return siteUrl('#order?draft=1.' + dhEnc(JSON.stringify(dhPack(withContact)))); }
+  function dhRead(qs) { // from page(), once per address
+    var m = /(?:^|&)draft=([^&]*)/.exec(qs), s = state.dh; if (!m) return;
+    s.inc = null; s.bad = true; s.msg = '';
+    var mm = /^1\.([A-Za-z0-9_-]{8,})$/.exec(m[1]); if (!mm || mm[1].length > DH_MAX) return;
+    var d; try { d = JSON.parse(dhDec(mm[1])); } catch (e) { return; }
+    if (!d || typeof d !== 'object' || Array.isArray(d) || d.v !== 1) return;
+    var keys = SERVICES.map(function (v) { return v.key; }), x = t(), need = dhNeed();
+    var str = function (v, n) { return typeof v === 'string' ? v.slice(0, n) : ''; }, idx = function (v, a) { return typeof v === 'number' && v > 0 && v < a.length ? v | 0 : 0; };
+    var r = { services: (Array.isArray(d.s) ? d.s : []).filter(function (k, i, a) { return keys.indexOf(k) >= 0 && a.indexOf(k) === i; }),
+      what: str(d.w, 5000), note: str(d.o, 5000), name: str(d.n, 300), email: str(d.e, 300), phone: str(d.p, 60),
+      qty: typeof d.q === 'string' && /^\d{1,6}$/.test(d.q) ? d.q : '1', deadline: typeof d.d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.d) ? d.d : '',
+      files: idx(d.f, x.fFilesO), mat: idx(d.m, x.fMatO), reply: d.r === 1 ? 1 : 0,
+      have: (Array.isArray(d.h) ? d.h : []).filter(function (k, i, a) { return typeof k === 'string' && need[k] === 1 && a.indexOf(k) === i; }),
+      at: typeof d.at === 'number' && d.at > 0 && d.at < Date.now() + 864e5 ? d.at : 0, step: d.st === 1 || d.st === 2 ? d.st : 0 };
+    if (!r.services.length && !(r.what + r.note + r.name + r.email + r.phone).trim()) return;
+    s.inc = r; s.bad = false;
+  }
+  function dhWhen(at) { try { return new Date(at).toLocaleString(lang === 'sl' ? 'sl-SI' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+  function dhCut(v) { return v.length > 600 ? v.slice(0, 600) + '…' : v; }
+  function dhRows(r) {
+    var x = t(), f = x.dh, svc = SERVICES.filter(function (v) { return r.services.indexOf(v.key) >= 0; }).map(function (v) { return L(v.title); }).join(', ');
+    return [[x.steps[0], svc], [x.fWhat, dhCut(r.what)], [x.fQty, r.qty !== '1' ? r.qty : ''], [x.fDeadline, r.deadline ? fmtDate(r.deadline) : ''], [x.fFiles, r.files ? x.fFilesO[r.files] : ''], [x.fMat, r.mat ? x.fMatO[r.mat] : ''],
+      [f.ready, r.have.length ? f.items.replace('{n}', r.have.length) : ''], [x.fName, r.name], [x.fEmail, r.email], [x.eq.phone, r.phone], [x.fNote, dhCut(r.note)]].filter(function (w) { return w[1]; });
+  }
+  function dhIn() { // above the order form: the preview of a received draft, a damaged-link note, or the "filled in" status
+    var s = state.dh, f = t().dh;
+    if (s.msg) return '<p class="dh-in dh-in--msg" id="dh-in" role="status" tabindex="-1">' + esc(s.msg) + '</p>';
+    if (s.bad) return '<div class="dh-in" id="dh-in"><p class="nk-label">' + esc(f.inLabel) + '</p><p class="dh-txt dh-bad" role="alert">' + esc(f.bad) + '</p><div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-dh="ignore">' + esc(f.close) + '</button></div></div>';
+    if (!s.inc) return '';
+    var r = s.inc;
+    return '<section class="dh-in" id="dh-in" aria-labelledby="dh-in-h"><p class="nk-label">' + esc(f.inLabel) + '</p><h2 class="sub dh-h" id="dh-in-h" tabindex="-1">' + esc(f.inT) + '</h2>' +
+      '<p class="dh-txt">' + esc((r.at ? f.inWhen.replace('{d}', dhWhen(r.at)) + ' ' : '') + f.inLead) + '</p>' +
+      '<dl class="nk-specs dh-rows">' + dhRows(r).map(function (w) { return '<div><dt>' + esc(w[0]) + '</dt><dd>' + esc(w[1]) + '</dd></div>'; }).join('') + '</dl>' +
+      (dr.at && drHas() ? '<p class="dh-txt dh-own">' + esc(f.inOwn) + '</p>' : '') +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--sm" data-dh="use">' + esc(f.use) + '</button><button type="button" class="nk-btn nk-btn--sm" data-dh="ignore">' + esc(f.ignore) + '</button></div></section>';
+  }
+  function dhOut() { // under the order form
+    if (state.send === 'sent' || state.send === 'sending') return '';
+    var f = t().dh;
+    return '<details class="dh" id="dh"><summary class="dh-sum"><span class="nk-label">' + esc(f.label) + '</span><span class="dh-sum-t">' + esc(f.sum) + '</span></summary><div class="dh-body">' +
+      '<p class="dh-txt">' + esc(f.lead) + '</p><p class="dh-txt">' + esc(f.priv) + '</p>' +
+      '<label class="dh-check"><input type="checkbox" data-dh-contact' + (state.dh.contact ? ' checked' : '') + '><span>' + esc(f.contact) + '</span></label>' +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--sm" data-dh="copy">' + esc(f.copy) + '</button><a class="nk-btn nk-btn--sm" href="mailto:" data-dh="mail">' + esc(f.mail) + '</a>' +
+      (qrOn() ? '<button type="button" class="nk-btn nk-btn--sm" data-dh="qr" aria-expanded="false" aria-controls="dh-qr">' + esc(f.qr) + '</button>' : '') + '</div>' +
+      '<p class="share-msg dh-msg" id="dh-msg" role="status" aria-live="polite"></p>' +
+      '<input class="nk-input dh-url" id="dh-url" readonly hidden aria-label="' + esc(f.urlLabel) + '"><div class="dh-qr" id="dh-qr" hidden></div></div></details>';
+  }
+  function dhAct(kind, el, ev) {
+    var s = state.dh, f = t().dh;
+    if (kind === 'use') { dhUse(); return; }
+    if (kind === 'ignore') { dhDone(''); return; }
+    var msg = document.getElementById('dh-msg'), u = document.getElementById('dh-url'), q = document.getElementById('dh-qr'), qb = document.querySelector('[data-dh="qr"]'); if (!msg || !u || !q) return;
+    var qrOff = function () { q.hidden = true; q.innerHTML = ''; if (qb) qb.setAttribute('aria-expanded', 'false'); };
+    if (kind === 'qr' && !q.hidden) { qrOff(); msg.textContent = ''; return; }
+    readForm();
+    if (!drHas()) { if (ev) ev.preventDefault(); u.hidden = true; qrOff(); msg.textContent = f.empty; return; }
+    var url = dhUrl(s.contact); u.value = url; u.hidden = false;
+    if (kind === 'fresh') { if (!q.hidden) { qrOff(); } msg.textContent = (s.contact ? f.withC : f.noC); return; } // the contact tick changed
+    if (kind === 'copy') {
+      var fail = function () { msg.textContent = f.copyFail; u.focus(); u.select(); };
+      try { navigator.clipboard.writeText(url).then(function () { msg.textContent = f.copied.replace('{n}', url.length); }, fail); } catch (e) { fail(); }
+    } else if (kind === 'mail') {
+      if (url.length > DH_MAIL) { if (ev) ev.preventDefault(); msg.textContent = f.mailLong; return; }
+      el.setAttribute('href', 'mailto:?subject=' + encodeURIComponent(f.mailSubj) + '&body=' + encodeURIComponent(f.mailBody + '\n\n' + url + '\n'));
+      msg.textContent = f.mailOpen;
+    } else if (kind === 'qr') {
+      var svg = url.length > DH_QR ? '' : qrSvg(url, 240, f.qrLabel, 'L');
+      if (!svg) { msg.textContent = f.qrLong; return; }
+      q.innerHTML = svg + '<p class="qr-cap">' + esc(f.qrCap) + '</p>'; q.hidden = false; if (qb) qb.setAttribute('aria-expanded', 'true'); msg.textContent = f.qrShown;
+    }
+  }
+  function dhUse() {
+    var r = state.dh.inc; if (!r) return;
+    state.order = { website: '', services: r.services.slice(), what: r.what, qty: r.qty, deadline: r.deadline, files: r.files, mat: r.mat, name: r.name, email: r.email, note: r.note, phone: r.phone, reply: r.reply };
+    state.prep.have = {}; r.have.forEach(function (k) { state.prep.have[k] = true; }); state.prep.svc = null;
+    state.step = r.step; state.errors = {}; state.send = 'idle'; dr.restored = false; dr.ask = false;
+    dhDone(t().dh.used);
+  }
+  function dhDone(m) { // leave the draft address (#order?draft=… → #order) so a reload or Back does not offer the draft again
+    var s = state.dh; s.inc = null; s.bad = false; s.msg = m || '';
+    try { history.replaceState(history.state, '', location.pathname + location.search + location.hash.replace(/\?.*$/, '')); } catch (e) {}
+    s.hash = location.hash; state.navHref = location.href;
+    render(true); s.msg = '';
+    var el = document.getElementById(m ? 'dh-in' : 'wiz-h'); if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'center' }); }
+  }
+
   function orderView() {
     var x = t(), o = state.order, e = state.errors, st = state.step, body = '';
     var keyMap = { cad: 0, print: 1, iot: 2, build: 3 };
@@ -1857,7 +1971,7 @@
     var steps = '<ol class="nk-process wiz" style="--steps:4" aria-label="' + esc(x.a11y.steps) + '">' + ofSteps(x, st) + '</ol>';
     var nav = '<div class="wiz-nav">' + (st > 0 ? '<button type="button" class="nk-btn" id="back">' + esc(st === 3 ? x.edit : x.back) + '</button>' : '<span></span>') +
       (st < 3 ? '<button type="button" class="nk-btn nk-btn--primary nk-btn--lg" id="next">' + esc(st === 2 ? x.finish : x.next) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' : '') + '</div>';
-    return '<section class="block first' + (st === 3 ? ' bp-page' : '') + '">' + head(x.orderLabel, x.orderTitle, x.orderLead, true) + steps + '<form class="wiz-body" id="wiz" novalidate>' + (st < 3 ? drBar() : '') + body + nav + '</form>' + (st === 3 ? bpSheet() : '') + '</section>';
+    return '<section class="block first' + (st === 3 ? ' bp-page' : '') + '">' + head(x.orderLabel, x.orderTitle, x.orderLead, true) + dhIn() + steps + '<form class="wiz-body" id="wiz" novalidate>' + (st < 3 ? drBar() : '') + body + nav + '</form>' + dhOut() + (st === 3 ? bpSheet() : '') + '</section>'; // dhIn / dhOut: Draft hand-over (2026-11-19)
   }
   // ---------- Part studio (#studio; 2026-10-29, 2nd run — "update 2.0") ----------
   // One page from file to order: the part (a client's STL / 3MF / OBJ read by the file check, or a typed size shown as a
@@ -4471,6 +4585,7 @@
     if (el.hasAttribute('data-dr-clear')) { dr.ask = true; var db = document.getElementById('dr'); if (db) { db.innerHTML = drInner(); var y = db.querySelector('[data-dr-keep]'); if (y) y.focus(); } return; }
     if (el.hasAttribute('data-dr-keep')) { dr.ask = false; var dk = document.getElementById('dr'); if (dk) { dk.innerHTML = drInner(); var cb = dk.querySelector('[data-dr-clear]'); if (cb) cb.focus(); } return; }
     if (el.hasAttribute('data-dr-yes')) { drClearAll(); return; }
+    if (el.hasAttribute('data-dh')) { dhAct(el.getAttribute('data-dh'), el, ev); return; } // Draft hand-over (2026-11-19)
     if (el.hasAttribute('data-sl-clear')) { slClear(); return; }
     if (el.hasAttribute('data-sx-copy')) { sxCopy(el.getAttribute('data-sx-copy')); return; } // Shared selection (2026-11-14)
     if (el.hasAttribute('data-sx-keep')) { sxKeep(); return; }
@@ -4516,6 +4631,7 @@
   });
   app.addEventListener('input', function (ev) { var v3 = ev.target.dataset && ev.target.dataset.v3Cut; if (v3) { v3Set(v3, 'cut', ev.target.value); return; } var sf = ev.target.dataset && ev.target.dataset.stF; if (sf) { state.st[sf] = ev.target.value; if (sf === 'l' || sf === 'w' || sf === 'h') stDims3d(); stSheetShow(); return; } var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); ofInput(ev.target, fk); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var pf = ev.target.dataset && ev.target.dataset.plF; if (pf && pf !== 'mat') { state.pl[pf] = ev.target.value; plUpdate(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
+    if (ev.target.hasAttribute('data-dh-contact')) { state.dh.contact = ev.target.checked; if (!document.getElementById('dh-url').hidden) dhAct('fresh'); return; } // Draft hand-over (2026-11-19)
     if (ev.target.hasAttribute('data-fc-file')) { if (ev.target.files && ev.target.files[0]) fcRead(ev.target.files[0]); return; }
     if (ev.target.hasAttribute('data-bm-files')) { if (ev.target.files && ev.target.files.length) bmFiles(ev.target.files); return; } // Files → parts list (2026-11-10)
     if (ev.target.hasAttribute('data-st-file')) { if (ev.target.files && ev.target.files[0]) fcRead(ev.target.files[0]); return; }

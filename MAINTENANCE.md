@@ -26,6 +26,60 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-19
+
+**Checked:** build (66 pages), home, #services (incl. every `?tool=…`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news,
+#n-bambu-lab-x2d, #skills, #about, #contact, #studio, #mine, #compare, #gift, #order (all 4 steps on the local build in EN + SL, nothing
+sent), `/news/`, `/portfolio/famfive/`, `/sl/portfolio/famfive/`, 404, /admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS
+errors, no failed requests (Google Fonts blocked in the cloud, as always), no CSP violations, no broken images; axe-core (test tool
+only, not in the repo) reports no violation on any view; own contrast measurement: every text ≥ 4.5 : 1 (disabled buttons aside). **New
+this run:** the same views also at 320, 360, 480–1100 and 1600 px with a script that looks for anything that leaves the sheet frame's
+column, and for link targets under 24 px. Live site + last Actions run checked from the laptop (see the report).
+**Fixed:**
+- **Home page scrolled sideways at 320 px (EN)** and, less visibly, on every page at 320–360 px the sections were wider than the sheet
+  (97 kinds of elements past the right margin, 56 of them past the frame line): `main { display: grid }` had an `auto` column, which takes
+  the width of the widest unbreakable row. Now `grid-template-columns: minmax(0, 1fr)`.
+- **#about, 740–1000 px:** "Download contact (.vcf)" left the contact card and gave the page a horizontal scrollbar (same on `/sl/`).
+- **Project sheets, ~900 px (SL):** the side column (share box, QR, buttons) was 40 px wider than its card — same `auto` column cause.
+- Promotion banner (EN home) and the two certificate cards on #skills no longer overflow at 320 px.
+
+**Improvement — small screens & touch package (`page.css` only: `main`, `.project-side`, `.promo`, `.cert`, `.qr-box--ct`, "Target size"
+block):** (a) the four layout fixes above, measured on 19 views × 2 languages × 13 widths (320 … 1600 px) — nothing leaves its column any
+more; (b) **WCAG 2.2 target size (2.5.8):** every stand-alone text link and link-style button is now at least 24 px tall — "Or write an
+e-mail" in the call-to-action band, "My corner" in the footer, "Price list →" on the service cards and under the tools, "Compare sheets
+side by side", the e-mail / LinkedIn lines of the contact card, skill links on project sheets, register titles, "Clear the form". Padding
+on inline links grows only the hit area, the text lines did not move. Checkboxes keep their 18 px box because the whole label row is the target.
+*To remove:* the "Target size" block in `page.css`; the layout fixes should stay.
+
+**Innovation — Draft hand-over / "Predaja osnutka" (`DH_MAX` … `dhDone()` in `app.js`, `dh:` in `content.js`, "Draft hand-over" rules in
+`page.css`):** under the order form (`https://nacekepa.work/#order`, every step until the brief is sent) a new fold-out **"Hand-over — Finish
+on another device or let a colleague check the draft"**. It turns the unfinished brief into a link,
+`https://nacekepa.work/#order?draft=1.<…>` (`/sl/#order?draft=…`): **Copy draft link**, **Send it by e-mail** (mailto: with the link),
+**Show QR code** (start on the computer, scan, finish on the phone), and a tick **"Include my contact details"** (off = services, project
+text, quantity, deadline, files, material, checklist ticks and note only). Whoever opens the link sees **"Received draft"** above the form —
+when it was saved and one row per answer — and chooses **"Use this draft"** (fills the form, jumps to the step the sender was on, becomes
+this browser's saved draft, the address goes back to `#order`) or **"Ignore it"**. If the browser already holds its own unfinished brief,
+the box says that using the received one replaces it. Why: a B2B client often needs a colleague or a boss to look at the request before
+it goes out, and people start on one device and finish on another — until now the draft lived in one browser only.
+- Privacy / safety: the draft is in the address after `#`, which browsers do not send to a server (the text under the buttons says so,
+  and that anyone with the link can read it). Nothing is filled in automatically. A link is read with the same checks as the saved draft
+  — known service keys only, strings capped (5000 / 300 / 60), quantity digits, a real date, option numbers in range, known checklist
+  items — and written only through `esc()`. A damaged link shows "incomplete or damaged" with Close. Links over 1800 characters are not
+  put into a mailto: and links over 900 characters get no QR code (the message says to copy the link instead). Nothing stored or sent by
+  the feature, no dependency, passes the CSP.
+- Tested in Playwright (EN 1280 light, SL 390 dark, 98 checks): empty form → "nothing to hand over"; keyboard (Enter on the fold-out,
+  the buttons); link shape + decoded payload (services, text with č š ž / quotes / `<b>`, quantity, deadline, files, material, reply
+  choice, checklist tick, contact); mailto; QR on / off, closed when the tick changes; without contact; second browser: preview, nothing
+  filled before the choice, Use → all three steps filled, saved as own draft, address cleaned, focus on the status line, no box after
+  reload; own-draft warning, Ignore keeps the own draft; six damaged links; a hostile payload (wrong types, `<img onerror>`, `<script>`,
+  9000-character note) → sanitised, nothing ran; EN ↔ SL link; step 4 has it, print hides it; no overflow at 390 px; axe clean.
+*To remove:* see the comment above `DH_MAX` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: Draft hand-over — "Hand over" on the unfinished-brief card of My corner; shorter links (CompressionStream) so long briefs still fit a QR code.
+- Public: Draft hand-over — "Comment for the sender" (the colleague adds a note and copies the link back).
+- Admin: "Brief link" — paste a client's draft link in the Quote / Jobs tab → the same pre-fill as "From a brief".
+
 ## 2026-11-18
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=schedule`, `?tool=matprice`, `?tool=quote`, `?tool=parts`, `?tool=fit`, `?tool=plate`),
@@ -2615,6 +2669,12 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: Schedule — working-days switch / holiday pause (needs Nace's rule for counting days).
 - Public: Schedule on the printed brief and the order "sent" screen.
 - Admin: Jobs — schedule on the job card NK-J + .ics of all due dates.
+
+- (Built 2026-11-19: Draft hand-over — `#order?draft=…`: the unfinished brief as a link / mailto / QR code, "Received draft" preview with
+  Use / Ignore; small screens & touch package as the improvement — nothing leaves the sheet column at 320–1600 px, link targets ≥ 24 px.)
+- Public: Draft hand-over from My corner; compressed links for long briefs.
+- Public: Draft hand-over — a note back to the sender.
+- Admin: "Brief link" → pre-filled quote / job.
 
 ## 2026-10-03 (second run)
 
