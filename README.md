@@ -85,6 +85,10 @@ e-mail or scan as a QR code, for finishing on another device or for a colleague 
 the form and fills the form only after "Use this draft"; the data stays in the address after `#` and is validated like the saved draft
 (`dhPack()` / `dhRead()` in `src/site/app.js`).
 
+**Services on the phone:** up to 720 px every tool on `#services` starts folded to its title and lead with an "Open the tool" button; a tool
+that is asked for (tool link, index, Find anything, a hand-off) opens by itself, and the index is a compact list with "Open all tools".
+Wider screens and print are unchanged (`tlSetFold()` in `src/site/app.js`, `tl-fold` rules in `page.css`).
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,
@@ -147,6 +151,9 @@ date (overdue / due in N days), services, a checklist of the workshop steps (the
 job's services), the parts and notes, and a printable A4 **job card NK-J** (the traveller that goes next to the printer). A job starts
 blank, from a pasted brief (*From a brief*) or from the quote on screen (*Start a job* in the Quote tab). Jobs are kept in the
 browser only (localStorage), like the quotes.
+Under the board, the **Jobs calendar NK-K** shows the due dates on a month sheet (ISO weeks, a chip per job, agenda list on phones),
+moves a job to another day (with Undo), saves the open due dates as an `.ics` file and e-mails the client from the job editor; the
+Overview tab shows a "Jobs" box with the next due dates (`jcBox()` … `jcOverview()` in `src/site/admin.js`).
 
 **Table:** the *Table* tab shows all projects as one spreadsheet (category, year, materials, featured, hidden): edit
 cells directly, tick rows to change them together, or copy the table to Excel and paste it back.

@@ -1468,7 +1468,7 @@
     state.fit = { l: String(s[0]), w: String(s[1]), h: String(s[2]) };
     ['l', 'w', 'h'].forEach(function (k, i) { var el = document.getElementById('fit-' + k); if (el) el.value = s[i]; });
     fitUpdate();
-    var fb = document.querySelector('.block.fit'); if (fb) fb.scrollIntoView({ block: 'start' });
+    tlSetFold('fit', true); var fb = document.querySelector('.block.fit'); if (fb) fb.scrollIntoView({ block: 'start' });
     var fl = document.getElementById('fit-l'); if (fl) fl.focus({ preventScroll: true });
   }
   function fcCopy() {
@@ -1588,7 +1588,7 @@
   }
   function plPrep() { // fill "What to prepare" below with the planned services and jump there
     state.prep.svc = plPlan().map(function (r) { return r.s.key; });
-    prepRefresh(); var b = document.getElementById('prep'); if (b) { b.scrollIntoView({ block: 'start' }); var c = b.querySelector('[data-prep-svc]'); if (c) c.focus({ preventScroll: true }); }
+    prepRefresh(); tlSetFold('prep', true); var b = document.getElementById('prep'); if (b) { b.scrollIntoView({ block: 'start' }); var c = b.querySelector('[data-prep-svc]'); if (c) c.focus({ preventScroll: true }); }
   }
   function plToOrder() {
     var s = state.pl, o = state.order, f = t().pl, plan = plPlan(); if (!plan.length) return;
@@ -3968,15 +3968,37 @@
     return '<section class="block tl" id="tools" aria-labelledby="tl-h"><div class="tl-head"><p class="nk-label">' + esc(x.label.replace('{n}', tlNo(n))) + '</p><h2 class="sub" id="tl-h" tabindex="-1">' + esc(x.title) + '</h2><p class="tl-lead">' + esc(x.lead.replace('{n}', n).replace('{m}', n - 1)) + '</p></div>' +
       '<ol class="tl-list">' + TL_TOOLS.map(function (d, i) {
         return '<li><a class="tl-item" href="' + tlHash(d[0]) + '"><span class="nk-label">' + tlNo(i + 1) + '</span><span class="tl-t">' + esc(t()[d[1]].title) + '</span><span class="tl-d">' + esc(x[d[0]]) + '</span><span class="tl-go" aria-hidden="true">↓</span></a></li>';
-      }).join('') + '<li><a class="tl-item tl-item--st" href="#studio"><span class="nk-label">' + tlNo(TL_TOOLS.length + 1) + '</span><span class="tl-t">' + esc(t().st.label.split(' · ')[0]) + '</span><span class="tl-d">' + esc(t().st.tlLine) + '</span><span class="tl-go" aria-hidden="true">→</span></a></li></ol></section>';
+      }).join('') + '<li><a class="tl-item tl-item--st" href="#studio"><span class="nk-label">' + tlNo(TL_TOOLS.length + 1) + '</span><span class="tl-t">' + esc(t().st.label.split(' · ')[0]) + '</span><span class="tl-d">' + esc(t().st.tlLine) + '</span><span class="tl-go" aria-hidden="true">→</span></a></li></ol><p class="tl-all"><button type="button" class="tb-copy" data-tl-all>' + esc(tlAllOpen() ? x.foldNone : x.foldAll) + '</button></p></section>';
   }
   function tlWrap(k, html) { // gives the tool section its id + a T-0N tag and ends it with "↑ All tools"
     var d = TL_TOOLS.filter(function (v) { return v[0] === k; })[0], n = TL_TOOLS.indexOf(d) + 1;
-    html = html.replace(/^<section class="block ([a-z-]+)"(?: id="[^"]*")?/, '<section class="block $1 tl-tool' + (state.tool === k ? ' tl-on' : '') + '" id="' + d[2] + '" data-tl="' + tlNo(n) + '"'); // tl-on: the tool the address names — the one that prints alone (Print package, 2026-11-02, evening run)
+    html = html.replace(/^<section class="block ([a-z-]+)"(?: id="[^"]*")?/, '<section class="block $1 tl-tool' + (state.tool === k ? ' tl-on' : '') + (tlIsOpen(k) ? '' : ' tl-fold') + '" id="' + d[2] + '" data-tl="' + tlNo(n) + '"'); // tl-on: the tool the address names — the one that prints alone (Print package, 2026-11-02, evening run)
+    html = html.replace('</header>', '</header>' + tlFoldRow(k)); // Services on the phone (2026-11-20): the "Open the tool" row under the tool's heading
     // SEO package (2026-11-02): every tool has a shareable address (https://nacekepa.work/#services?tool=<name>); the footer copies it.
     return html.replace(/<\/section>$/, '<p class="tl-back"><a href="#services?tool=index">↑ ' + esc(t().tl.back) + '</a><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-k="' + k + '" data-tl-copy="' + esc(tlUrl(k)) + '">' + esc(t().tl.copy) + '</button><span aria-hidden="true"> · </span><button type="button" class="tb-copy" data-tl-print="' + k + '">' + esc(t().tl.print) + '</button><span class="tl-msg" role="status" aria-live="polite"></span></p>' +
       '<div class="print-only print-url tl-print" data-tl-foot="' + k + '">' + tlFoot(k) + '</div></section>'); // print-only footer line of a tool printed alone (Print package)
   }
+  // Services on the phone (2026-11-20): on screens up to 720 px every tool on #services starts folded — its number, title and
+  // lead stay, the tool itself opens with "Open the tool" (or from the index, a tool link, Find anything, a hand-off). The page
+  // was 27 000 px long on a phone; the process steps, the FAQ and "Start a project" came after fourteen open tools. Wider
+  // screens and print are unchanged: the `tl-fold` class only has rules inside `@media screen and (max-width: 720px)`.
+  // To remove: tlOpen … tlAllFresh(), the tl-fold / tlFoldRow() parts of tlWrap(), the tl-all line in tlIndex(), the
+  // tlSetFold() calls (tlGo, fit check, prep, render), the data-tl-fold / data-tl-all click lines, tl.fold… in content.js
+  // and the "Services on the phone" rules in page.css.
+  var tlOpen = {};
+  function tlIsOpen(k) { return k in tlOpen ? tlOpen[k] : state.tool === k; }
+  function tlFoldRow(k) { var on = tlIsOpen(k); return '<p class="tl-foldrow"><button type="button" class="nk-btn nk-btn--sm tl-foldbtn" data-tl-fold="' + k + '" aria-expanded="' + on + '">' + esc(on ? t().tl.foldClose : t().tl.foldOpen) + '</button></p>'; }
+  function tlSetFold(k, open) {
+    var d = TL_TOOLS.filter(function (v) { return v[0] === k; })[0]; if (!d) return;
+    tlOpen[k] = !!open;
+    var sec = document.getElementById(d[2]); if (!sec) return;
+    sec.classList.toggle('tl-fold', !open);
+    var b = sec.querySelector('[data-tl-fold]'); if (b) { b.setAttribute('aria-expanded', !!open); b.textContent = open ? t().tl.foldClose : t().tl.foldOpen; }
+    tlAllFresh();
+  }
+  function tlAllOpen() { return TL_TOOLS.every(function (d) { return tlIsOpen(d[0]); }); }
+  function tlAllFresh() { var b = document.querySelector('[data-tl-all]'); if (b) b.textContent = tlAllOpen() ? t().tl.foldNone : t().tl.foldAll; }
+  function tlAll() { var open = !tlAllOpen(); TL_TOOLS.forEach(function (d) { tlSetFold(d[0], open); }); }
   function tlFoot(k) { // the printed footer line + QR: the address with what is typed into the tool, when there is something (Calculation links, part 2, 2026-11-18)
     var calc = clUrl(k), url = calc || tlUrl(k);
     return '<span>' + esc(t().tl.printed) + '</span> ' + esc(url) + ' · ' + esc(new Date().toISOString().slice(0, 10)) + qrBox(url, calc ? t().tl.scanCalc : t().qr.scanTool, { px: calc ? 88 : 72, cls: 'print-qr' });
@@ -4014,6 +4036,7 @@
   function tlGo(k) {
     var d = TL_TOOLS.filter(function (v) { return v[0] === k; })[0], el = document.getElementById(d ? d[2] : 'tools');
     if (!el) return;
+    if (d) tlSetFold(k, true); // Services on the phone (2026-11-20): a tool that is asked for is open
     var h = el.querySelector('h2'); if (!h) return;
     if (!h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1');
     el.scrollIntoView({ block: 'start' }); h.focus({ preventScroll: true });
@@ -4449,8 +4472,8 @@
     if (p === 'studio') stMount();
     tlMark(p === 'services' ? state.tool : ''); // Print package (2026-11-02, evening run)
     if (p === 'services' && state.tool && location.hash !== state.tlAt) { state.tlAt = location.hash; tlGo(state.tool); } else if (p !== 'services') state.tlAt = '';
-    if (p === 'services' && state.mpFocus) { state.mpFocus = false; var mb = document.getElementById('material'); if (mb) { mb.scrollIntoView({ block: 'start' }); var mi = mb.querySelector('input'); if (mi) mi.focus({ preventScroll: true }); } }
-    if (p === 'services' && state.plFocus) { state.plFocus = false; var pb = document.getElementById('plan'); if (pb) { pb.scrollIntoView({ block: 'start' }); var pr = pb.querySelector('input'); if (pr) pr.focus({ preventScroll: true }); } }
+    if (p === 'services' && state.mpFocus) { state.mpFocus = false; var mb = document.getElementById('material'); if (mb) { tlSetFold('material', true); mb.scrollIntoView({ block: 'start' }); var mi = mb.querySelector('input'); if (mi) mi.focus({ preventScroll: true }); } }
+    if (p === 'services' && state.plFocus) { state.plFocus = false; var pb = document.getElementById('plan'); if (pb) { tlSetFold('plan', true); pb.scrollIntoView({ block: 'start' }); var pr = pb.querySelector('input'); if (pr) pr.focus({ preventScroll: true }); } }
     if (p === 'about' && state.ctGo) { state.ctGo = false; var ct = document.getElementById('contact'); if (ct) { ct.scrollIntoView({ block: 'start' }); ct.focus({ preventScroll: true }); } }
     if (p === 'work') { findApply(); if (state.findFocus) { state.findFocus = false; var fq = document.getElementById('find-q'); if (fq) fq.focus(); } }
     if (p === 'work' && state.pzGo) { var pg = state.pzGo; state.pzGo = ''; pzOpen(state.sx && state.sx.length ? 'sx' : 'work', pg); } else state.pzGo = ''; // Presentation (2026-11-13)
@@ -4604,6 +4627,8 @@
     if (el.hasAttribute('data-rel-go')) { relToOrder(); return; }
     if (el.hasAttribute('data-share-copy')) { shareCopy(); return; }
     if (el.hasAttribute('data-share-no')) { shareCopy(true); return; } // Share & link package (2026-11-01): copy the sheet number
+    if (el.hasAttribute('data-tl-fold')) { tlSetFold(el.getAttribute('data-tl-fold'), el.getAttribute('aria-expanded') !== 'true'); return; } // Services on the phone (2026-11-20)
+    if (el.hasAttribute('data-tl-all')) { tlAll(); return; }
     if (el.hasAttribute('data-tl-copy')) { tlCopy(el); return; } // SEO package (2026-11-02): copy a tool's address
     if (el.hasAttribute('data-find-copy')) { findShareCopy(); return; }
     if (el.hasAttribute('data-rg-view')) { rgView(el.getAttribute('data-rg-view')); return; }

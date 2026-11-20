@@ -26,6 +26,61 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-20
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=schedule`, `?tool=prices`, `?tool=parts`), #work, #work?view=list, #p-famfive,
+#p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about, #contact, #studio, #mine, #compare, #gift, #order (all 4 steps on the local
+build in EN + SL, nothing sent), 404, /admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google
+Fonts blocked in the cloud, as always), no horizontal scroll, no CSP violations, no broken images. Live site from the laptop
+(`check-live.ps1`): all addresses 200, an unknown address 404, the live inline-script hash equals the CSP hash; last Actions run (f04b5af)
+succeeded.
+**Fixed:** nothing was broken. Measured, not a bug but the reason for today's package: `#services` was **27 383 px** long at 390 px —
+fourteen open tools stood between the four services and "How a job moves through the studio" / the FAQ / "Start a project".
+
+**Improvement — Services on the phone package (`tlOpen` … `tlAll()` in `app.js`, `tl.fold…` in `content.js`, "Services on the phone"
+rules in `page.css`):** on screens up to 720 px (a) every tool on #services starts **folded** to its label, title and lead with one
+full-width button **"Open the tool" / "Odpri orodje"** (44 px, `aria-expanded`, becomes "Close the tool"); (b) a tool that is asked for
+opens by itself — a tool link (`#services?tool=…`, with or without numbers), the index, "↑ All tools" neighbours, Find anything, the home
+page's tool links, "Price list →" on the service cards, the planner's "What to prepare", the order form's planner / schedule links, the
+file check → fit check hand-off; (c) the tools index is a compact numbered list (number · title · arrow, 48 px rows) because each folded
+tool shows its own lead right below, with **"Open all tools" / "Close all tools"** under it; (d) what was opened stays open while the page
+re-renders. Result: `#services` at 390 px is **11 071 px** instead of 27 383 px (EN; SL 11 016). Wider screens and print are unchanged —
+the `tl-fold` class only has rules inside `@media screen and (max-width: 720px)`, and a tool printed alone prints whole.
+Tested in Playwright (EN light + SL dark, 390 px): all 13 tools folded, each opened with Enter (height = the unfolded tool, focus kept,
+label switches), open all / close all, index link → open + focused + at the top, calculation link fills an open tool, planner → prep,
+order form → planner, service card → price list, home → tool, Find anything → schedule, print (tool alone, nothing folded), desktop
+identical (15 719 px, no fold buttons), order walk to step 4; axe: 0 violations folded and open, EN + SL, light + dark.
+*To remove:* see the comment above `tlOpen` in `app.js`.
+
+**Innovation — Jobs calendar NK-K (admin, Jobs tab; `JC` … `jcOverview()` in `admin.js`, `.jc-*` rules in `admin.css`):** the Jobs board
+knew every due date but showed them only as text on the cards — no way to see how the coming weeks fill up. Under the board there is now
+a **month sheet**: one row per week with its ISO week number (Monday first), every job on the day it is due as a chip (last part of the
+job number + client; **overdue in redline**, due within a week bold, delivered / declined struck through), today framed, weekends
+tinted, **← / Today / →** for the month; open jobs without a date are listed under the grid ("No due date · N"); on phones the chips
+shrink to the number and an **agenda list** of the month (date · client · reference · status · "Due in 3 days") appears below. A chip
+(or agenda row) selects the job like a card on the board; picking a job on the board or changing its due date turns the calendar to that
+month; typing in the editor updates the chips live. **"Move NK-J-… to another day"** puts a "+" on every day — one press sets the
+selected job's due date, with the old date in the message and **Undo**. **"Add due dates to my calendar (.ics)"** saves every open job's
+due date as an all-day event (job number, client, reference, status, steps done, tracking code; deliberately no e-mail or phone), made
+in the browser. **"E-mail the client"** in the job editor opens a mailto: with `[tracking code] reference` as the subject and a greeting
+in the client's language (asks for the address when it is missing). The **Overview** tab has a new **"Jobs"** box: the board's summary
+line and the next three due dates. Reads the jobs already kept in the browser (`nk-admin-jobs`) — nothing new is stored, nothing goes
+to the repository or the site; English like the rest of the admin; not printed with the job card.
+- Tested in Playwright (1280 light, 390 dark, mocked GitHub API, 91 checks): Overview box (counts, next dues, HTML in a client name
+  escaped); month title, 6 × 7 grid from Monday 26/10, weeks 44–49, today marked once; soon / late / closed chips on the right days;
+  undated list; summary line; agenda only on the phone; month navigation by keyboard with focus kept, job in the next month; chip →
+  editor with focus; typing keeps the caret and renames the chip; move mode (41 "+" buttons, Enter on a day → due date, localStorage,
+  message, focus on Undo), Undo; due-date field turns the month; .ics (3 events, CRLF, lines ≤ 75 octets, escaped `,` `;`, all-day
+  DTSTART / DTEND, no closed / undated job, no e-mail address); mailto SL + EN (read from the browser's navigation request); no e-mail
+  → message + focus; closed job cannot be moved; hidden in print; empty state; no overflow at 390 px; axe: 0 violations on Overview,
+  Jobs and move mode at both sizes in light + dark (first run flagged the faded out-of-month day numbers — now `--ink-muted`, no opacity).
+*To remove:* see the comment above `const JC` in `admin.js`.
+
+**Ideas for next time** (added to the list below)
+- Admin: Jobs calendar — the job's working span (started → due) as a bar across the days and a "load per week" count next to the week number; drag a chip to another day.
+- Admin: Jobs — "Quote this job" (job → new quote), and the calendar's .ics with the schedule stages from the published turnarounds.
+- Public: Services on the phone — remember which tools were open on the next visit; `hidden="until-found"` so the browser's find-in-page opens a folded tool.
+
 ## 2026-11-19
 
 **Checked:** build (66 pages), home, #services (incl. every `?tool=…`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news,
@@ -2675,6 +2730,13 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: Draft hand-over from My corner; compressed links for long briefs.
 - Public: Draft hand-over — a note back to the sender.
 - Admin: "Brief link" → pre-filled quote / job.
+
+- (Built 2026-11-20: Jobs calendar NK-K in the admin — month sheet of due dates under the Jobs board with ISO weeks, chips, agenda on
+  phones, "move to another day" + Undo, .ics of open due dates, "E-mail the client", Jobs box on the Overview; Services on the phone
+  package as the improvement — tools folded up to 720 px, compact index, #services 27 383 → 11 071 px at 390 px.)
+- Admin: Jobs calendar — started → due bars, load per week, drag a chip to another day.
+- Admin: Jobs — "Quote this job"; .ics with the schedule stages.
+- Public: Services on the phone — remembered open tools; find-in-page opens a folded tool.
 
 ## 2026-10-03 (second run)
 

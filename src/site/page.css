@@ -1566,3 +1566,19 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 .dl-sc { margin: var(--space-3) 0 0; }
 @media (max-width: 600px) { .sc-table th:nth-child(2), .sc-table td:nth-child(2) { display: none; } /* phone: the usual turnaround is already on the service buttons */ .sc-table thead th { white-space: normal; vertical-align: bottom; } .sc-table th, .sc-table td { padding-inline: 4px; } .sc-table td:nth-child(2) { white-space: normal; } }
 @media print { .sc-bar, .sc-k { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .sc-fig { break-inside: avoid; } }
+
+/* Services on the phone (2026-11-20): up to 720 px every tool on #services starts folded to its number, title and lead; the
+   tool opens with the button under the lead (tlSetFold() in app.js). Wider screens and print never fold. */
+.tl-foldrow, .tl-all { display: none; margin: 0; }
+@media screen and (max-width: 720px) {
+  .tl-foldrow { display: block; }
+  .tl-foldbtn { width: 100%; min-height: 44px; justify-content: center; }
+  .tl-foldbtn[aria-expanded="false"] { border-color: var(--ink); }
+  .tl-fold > :not(.sec-head):not(.tl-foldrow) { display: none !important; }
+  .tl-tool.tl-fold { gap: var(--space-4); }
+  /* the index becomes a compact numbered list: number · title · arrow (each folded tool shows its own lead just below) */
+  .tl-list .tl-item { grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: var(--space-3); padding-block: var(--space-3); min-height: 48px; box-sizing: border-box; }
+  .tl-list .tl-d { display: none; }
+  .tl-all { display: block; font: 12px/20px var(--font-mono); }
+  .tl-all .tb-copy { font: inherit; color: var(--ink-muted); min-height: 24px; padding-block: 2px; }
+}

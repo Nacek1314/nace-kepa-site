@@ -629,6 +629,7 @@ function ovView() {
   return `<div class="ad-editor ov">
     <div class="ad-editor__head"><div><p class="nk-label">Overview · ${P.length} projects · ${N.length} posts</p><h2 class="sub">How the site is doing</h2></div></div>
     <fieldset class="ad-sec" id="ov-content"><legend class="nk-label">Content health</legend>${content}</fieldset>
+    <fieldset class="ad-sec" id="ov-jobs"><legend class="nk-label">Jobs</legend>${jcOverview()}</fieldset>
     <fieldset class="ad-sec" id="ov-features"><legend class="nk-label">What the site shows (from Settings)</legend>${features}</fieldset>
     <fieldset class="ad-sec" id="ov-pages"><legend class="nk-label">Pages & search</legend>${pages}</fieldset>
     <fieldset class="ad-sec" id="ov-qr"><legend class="nk-label">QR codes</legend>${ovQr()}</fieldset>
@@ -2160,6 +2161,7 @@ root.addEventListener('click', (e) => {
   const p = cur();
   const act = b.dataset.act;
   if (b.dataset.tab) { S.tab = b.dataset.tab; S.query = ''; S.confirmDelete = false; render(); return; }
+  if (b.dataset.jcAct) { jcAct(b); return; } // Jobs calendar (2026-11-20)
   if (b.dataset.jbAct) { jbAct(b); return; } // Jobs tab (2026-11-11)
   if (b.dataset.todoF != null) { S.todoF = b.dataset.todoF; render(); return; }
   if (b.dataset.setAct) { stAct(b); return; }
@@ -2645,6 +2647,7 @@ function jbEditor(j) {
     <div class="cta-row jb-act">
       <button type="button" class="nk-btn nk-btn--primary" data-jb-act="print">Print the job card</button>
       <button type="button" class="nk-btn" data-jb-act="copy">Copy as text</button>
+      <button type="button" class="nk-btn" data-jc-act="mail">E-mail the client</button>
       ${j.quote && QT.saved.some((s) => s.q.no === j.quote) ? `<button type="button" class="nk-btn" data-jb-act="quote">Open quote ${esc(j.quote)}</button>` : ''}
       ${j.status !== 'done' ? '<button type="button" class="nk-btn" data-jb-act="done">Mark delivered</button>' : ''}
       ${JB.confirm === j.no ? `<span class="qt-confirm">Delete ${esc(j.no)}?<button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-jb-act="del-yes">Delete</button><button type="button" class="nk-btn nk-btn--sm" data-jb-act="del-no">Keep</button></span>` : '<button type="button" class="nk-btn nk-btn--ghost" data-jb-act="del">Delete</button>'}
@@ -2701,6 +2704,7 @@ function jbView() {
     <p class="ad-small jb-sum" id="jb-sum">${jbSummary()}</p>
     ${jbBriefBox()}
     ${jbBoard()}
+    ${jcBox()}
     ${j ? jbEditor(j) + jbSheet(j) : `<p class="ad-small">${JB.list.length ? 'Pick a job on the board to edit it or print its job card.' : 'Start the first job: “+ New job”, paste a brief above, or press “Start a job” under a quote in the Quote tab.'}</p>`}
   </div>`;
 }
@@ -2711,19 +2715,20 @@ function jbInput(el) { // every change is saved at once (the board has no "save"
   if (el.dataset.jbSvc) { const k = el.dataset.jbSvc, i = j.services.indexOf(k); if (el.checked && i < 0) j.services.push(k); if (!el.checked && i >= 0) j.services.splice(i, 1); redraw = true; }
   else if (el.dataset.jbStep) { if (el.checked) j.steps[el.dataset.jbStep] = today(); else delete j.steps[el.dataset.jbStep]; redraw = true; }
   else if (el.dataset.jb === 'status') { if (j.status !== el.value) { j.status = el.value; j.log.push({ at: today(), s: j.status }); } redraw = true; }
-  else if (el.dataset.jb) { j[el.dataset.jb] = el.value; redraw = el.tagName === 'SELECT' || el.type === 'date'; }
+  else if (el.dataset.jb) { j[el.dataset.jb] = el.value; if (el.dataset.jb === 'due') { jcShow(el.value); JC.undo = null; JC.msg = ''; } redraw = el.tagName === 'SELECT' || el.type === 'date'; }
   JB.msg = jbStore() ? 'Saved.' : 'Could not save — is storage blocked?'; JB.confirm = null;
   if (redraw) { render(); return; }
   const sheet = document.getElementById('jb-sheet'); if (sheet) sheet.outerHTML = jbSheet(j); // keep the caret while typing: only the sheet, the board and the list are redrawn
   const board = root.querySelector('.jb-board'); if (board) board.outerHTML = jbBoard();
   const list = root.querySelector('.ad-list'); if (list) list.outerHTML = jbListView();
   const sum = document.getElementById('jb-sum'); if (sum) sum.innerHTML = jbSummary();
+  const cal = document.getElementById('jc'); if (cal) cal.outerHTML = jcBox(); // Jobs calendar (2026-11-20)
   const msg = document.getElementById('jb-msg'); if (msg) msg.textContent = JB.msg;
 }
 function jbAct(b) {
   jbLoad(); const act = b.dataset.jbAct, j = jbCur();
   JB.msg = '';
-  if (act === 'sel') { JB.sel = b.dataset.jbNo; JB.confirm = null; render(); document.getElementById('jb-form')?.scrollIntoView({ block: 'start' }); document.getElementById('jb-client')?.focus({ preventScroll: true }); return; }
+  if (act === 'sel') { JB.sel = b.dataset.jbNo; JB.confirm = null; JC.move = false; jcShow(jbCur()?.due); render(); document.getElementById('jb-form')?.scrollIntoView({ block: 'start' }); document.getElementById('jb-client')?.focus({ preventScroll: true }); return; }
   if (act === 'new') { const n = jbNew({}); JB.msg = 'Job ' + n.no + ' started.'; render(); document.getElementById('jb-client')?.focus(); return; }
   if (act === 'from-quote') { jbFromQuote(); return; }
   if (act === 'brief') { jbFromBrief(); return; }
@@ -2735,6 +2740,131 @@ function jbAct(b) {
   if (act === 'quote') { const i = QT.saved.findIndex((s) => s.q.no === j.quote); if (i >= 0) { QT.q = JSON.parse(JSON.stringify(QT.saved[i].q)); QT.confirm = null; S.tab = 'quote'; render(); document.getElementById('qt-client')?.focus(); } return; }
   if (act === 'copy') { const txt = jbText(j); const done = () => { JB.msg = 'Copied.'; render(); }; const fail = () => { JB.msg = 'Copy failed — select the card and copy it by hand.'; render(); }; try { navigator.clipboard.writeText(txt).then(done, fail); } catch { fail(); } return; }
   if (act === 'print') { qtPrint(); return; } // the job card has the .qt-sheet class, so the quote's print mode prints it alone
+}
+
+// ---------- Jobs calendar NK-K (2026-11-20) ----------
+// The due dates of the Jobs board on a month sheet, under the board in the Jobs tab: one row per week (ISO week number,
+// Monday first), every job on the day it is due as a chip that selects it (overdue in redline, due within a week bold,
+// delivered / declined struck through), today framed, "← / Today / →" to change the month, open jobs without a due date
+// listed underneath, an agenda list of the month for phones. "Move … to another day" lets a click on a day set the
+// selected job's due date (with Undo). "Add due dates to my calendar (.ics)" saves every open job's due date as an
+// all-day event (made in the browser; no client e-mail or phone inside). "E-mail the client" in the job editor opens a
+// mailto: with the reference and the tracking code. The Overview tab gets a "Jobs" box (summary + the next due dates).
+// Reads JB.list only — nothing new is stored, nothing leaves the browser. Self-contained: remove JC … jcOverview(), the
+// jcBox() call in jbView(), the jcShow() / #jc lines in jbInput() / jbAct(), the data-jc-act line in the click handler,
+// the "mail" / "move" buttons in jbEditor(), the ov-jobs fieldset in ovView() and the .jc-* rules in admin.css.
+const JC = { ym: '', msg: '', undo: null, move: false };
+const JC_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const JC_DAYS = [['Mon', 'Monday'], ['Tue', 'Tuesday'], ['Wed', 'Wednesday'], ['Thu', 'Thursday'], ['Fri', 'Friday'], ['Sat', 'Saturday'], ['Sun', 'Sunday']];
+const jcIsDay = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') && !isNaN(new Date(s + 'T00:00:00Z'));
+function jcYm() { return /^\d{4}-(0[1-9]|1[0-2])$/.test(JC.ym) ? JC.ym : today().slice(0, 7); }
+function jcShow(day) { if (jcIsDay(day)) JC.ym = day.slice(0, 7); } // the calendar follows the job that is picked or re-dated
+function jcStep(n) { const [y, m] = jcYm().split('-').map(Number); JC.ym = new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 7); }
+function jcName(ym) { const [y, m] = ym.split('-').map(Number); return JC_MONTHS[m - 1] + ' ' + y; }
+function jcWeek(day) { // ISO 8601 week number (the week with the year's first Thursday is week 1)
+  const t = new Date(day + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() - (t.getUTCDay() + 6) % 7 + 3);
+  const first = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+  return 1 + Math.round(((t - first) / 864e5 - 3 + (first.getUTCDay() + 6) % 7) / 7);
+}
+function jcWeeks(ym) { // the weeks (Monday … Sunday, as ISO days) that hold a day of the month
+  const [y, m] = ym.split('-').map(Number), d = new Date(Date.UTC(y, m - 1, 1)), last = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10), rows = [];
+  d.setUTCDate(1 - (d.getUTCDay() + 6) % 7);
+  while (d.toISOString().slice(0, 10) <= last) { const row = []; for (let i = 0; i < 7; i++) { row.push(d.toISOString().slice(0, 10)); d.setUTCDate(d.getUTCDate() + 1); } rows.push(row); }
+  return rows;
+}
+function jcOn(day) { return JB.list.filter((j) => j.due === day).sort(jbSort); }
+function jcChip(j) {
+  const d = jbDue(j, true), cls = jbClosed(j) ? 'is-closed' : d.cls;
+  return `<button type="button" class="jc-chip${cls ? ' ' + cls : ''}${j.no === JB.sel ? ' is-sel' : ''}" data-jb-act="sel" data-jb-no="${esc(j.no)}" aria-pressed="${j.no === JB.sel}" title="${esc(j.no + ' · ' + jbStatusName(j.status))}"><span class="jc-chip__n">${esc(j.no.replace(/^NK-J-\d{6}-/, ''))}</span><span class="jc-chip__t">${esc(j.client || j.ref || 'No client yet')}</span><span class="vh"> · ${esc(j.no)} · ${esc(jbStatusName(j.status))} · ${esc(d.t)}</span></button>`;
+}
+function jcBox() {
+  jbLoad();
+  const ym = jcYm(), now = today(), sel = jbCur(), movable = sel && !jbClosed(sel), move = JC.move && movable;
+  const inMonth = JB.list.filter((j) => jcIsDay(j.due) && j.due.slice(0, 7) === ym).sort((a, b) => a.due.localeCompare(b.due) || jbSort(a, b));
+  const open = inMonth.filter((j) => !jbClosed(j)).length, undated = jbOpen().filter((j) => !jcIsDay(j.due)).sort(jbSort);
+  const cell = (day) => {
+    const jobs = jcOn(day), out = day.slice(0, 7) !== ym;
+    return `<td class="jc-day${out ? ' is-out' : ''}${day === now ? ' is-today' : ''}${day < now ? ' is-past' : ''}${(new Date(day + 'T00:00:00Z').getUTCDay() + 6) % 7 > 4 ? ' is-we' : ''}"${day === now ? ' aria-current="date"' : ''}><time class="jc-d" datetime="${day}">${+day.slice(8)}${day === now ? '<span class="vh"> · today</span>' : ''}</time>${jobs.map(jcChip).join('')}${move && sel.due !== day ? `<button type="button" class="jc-set" data-jc-act="due" data-jc-day="${day}"><span aria-hidden="true">+</span><span class="vh">Set the due date of ${esc(sel.no)} to ${esc(qtDate(day, 'en'))}</span></button>` : ''}</td>`;
+  };
+  return `<section class="ad-sec jc" id="jc" aria-labelledby="jc-h">
+    <div class="jc-head"><div><p class="nk-label">Calendar · NK-K</p><h3 class="jc-title" id="jc-h">${jcName(ym)}</h3></div>
+      <div class="jc-nav"><button type="button" class="nk-btn nk-btn--sm" data-jc-act="prev" aria-label="Previous month, ${jcName(new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5) - 2, 1)).toISOString().slice(0, 7))}">←</button><button type="button" class="nk-btn nk-btn--sm" data-jc-act="today"${ym === now.slice(0, 7) ? ' disabled' : ''}>Today</button><button type="button" class="nk-btn nk-btn--sm" data-jc-act="next" aria-label="Next month, ${jcName(new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5), 1)).toISOString().slice(0, 7))}">→</button></div></div>
+    <p class="ad-small jc-sum" id="jc-sum">${inMonth.length ? `${inMonth.length} ${inMonth.length === 1 ? 'job is' : 'jobs are'} due in ${jcName(ym)}${open !== inMonth.length ? ` · ${open} still open` : ''}` : `No job is due in ${jcName(ym)}`}.${move ? ` <b>Pick the new due day for ${esc(sel.no)} — press “+” on a day.</b>` : ''}</p>
+    <table class="jc-grid${move ? ' is-move' : ''}"><caption class="vh">Jobs by due date, ${jcName(ym)}</caption>
+      <thead><tr><th scope="col" class="jc-wk"><abbr title="ISO week">Wk</abbr></th>${JC_DAYS.map(([s, l]) => `<th scope="col"><abbr title="${l}">${s}</abbr></th>`).join('')}</tr></thead>
+      <tbody>${jcWeeks(ym).map((row) => `<tr><th scope="row" class="jc-wk"><span class="vh">Week </span>${jcWeek(row[0])}</th>${row.map(cell).join('')}</tr>`).join('')}</tbody></table>
+    ${inMonth.length ? `<ol class="jc-agenda" aria-label="Due in ${jcName(ym)}">${inMonth.map((j) => { const d = jbDue(j, true); return `<li><button type="button" class="jc-row${j.no === JB.sel ? ' is-sel' : ''}" data-jb-act="sel" data-jb-no="${esc(j.no)}"><span class="jc-row__d">${esc(qtDate(j.due, 'en').slice(0, 5))}</span><span class="jc-row__t">${esc(j.client || 'No client yet')}${j.ref ? ' · ' + esc(j.ref) : ''}</span><span class="jc-row__m">${esc(j.no)} · ${esc(jbStatusName(j.status))} · <span class="${jbClosed(j) ? '' : d.cls}">${esc(d.t)}</span></span></button></li>`; }).join('')}</ol>` : ''}
+    ${undated.length ? `<p class="jc-undated"><span class="nk-label">No due date · ${undated.length}</span>${undated.map(jcChip).join('')}</p>` : ''}
+    <div class="cta-row jc-act">
+      ${movable ? `<button type="button" class="nk-btn nk-btn--sm" data-jc-act="move" aria-pressed="${move}">${move ? 'Stop moving' : `Move ${esc(sel.no)} to another day`}</button>` : ''}
+      <button type="button" class="nk-btn nk-btn--sm" data-jc-act="ics"${jbOpen().some((j) => jcIsDay(j.due)) ? '' : ' disabled'}>Add due dates to my calendar (.ics)</button>
+      ${JC.undo ? '<button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-jc-act="undo">Undo</button>' : ''}
+      <span class="copy-msg" id="jc-msg" role="status" aria-live="polite">${esc(JC.msg)}</span>
+    </div>
+    <p class="ad-small">Jobs sit on the day they are due; the number is the last part of the job number. Overdue jobs are red, jobs due within a week bold, delivered and declined ones struck through. The .ics file holds the open jobs only — job number, client, reference, status and steps, no e-mail or phone.</p>
+  </section>`;
+}
+function jcIcs() { // every open job with a due date as an all-day event (RFC 5545: CRLF, lines folded at 75 octets, text escaped)
+  const jobs = jbOpen().filter((j) => jcIsDay(j.due)).sort(jbSort);
+  const txt = (s) => String(s).replace(/\\/g, '\\\\').replace(/([,;])/g, '\\$1').replace(/\r?\n/g, '\\n');
+  const day = (d) => d.replace(/-/g, ''), next = (d) => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + 1); return day(t.toISOString().slice(0, 10)); };
+  const te = new TextEncoder();
+  const fold = (l) => { let out = '', n = 0; for (const ch of l) { const b = te.encode(ch).length; if (n + b > 73) { out += '\r\n '; n = 1; } out += ch; n += b; } return out; };
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//nacekepa.work//Jobs NK-J//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Nace Kepa · jobs due'];
+  jobs.forEach((j) => {
+    const st = jbSteps(j), done = st.filter(([k]) => j.steps[k]).length;
+    lines.push('BEGIN:VEVENT', 'UID:' + j.no.toLowerCase() + '@nacekepa.work', 'DTSTAMP:' + stamp, 'DTSTART;VALUE=DATE:' + day(j.due), 'DTEND;VALUE=DATE:' + next(j.due),
+      'SUMMARY:' + txt('Due: ' + (j.client || 'No client yet') + (j.ref ? ' — ' + j.ref : '') + ' (' + j.no + ')'),
+      'DESCRIPTION:' + txt([j.no + ' · ' + jbStatusName(j.status), st.length ? 'Steps: ' + done + ' / ' + st.length : '', j.code ? 'Tracking code: ' + j.code : '', j.quote ? 'Quote: ' + j.quote : ''].filter(Boolean).join('\n')),
+      'TRANSP:TRANSPARENT', 'END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  return { n: jobs.length, text: lines.map(fold).join('\r\n') + '\r\n' };
+}
+function jcMail(j) { // "E-mail the client": reference + tracking code in the subject, a greeting in the client's language
+  const sl = j.lang === 'sl', subject = (j.code ? '[' + j.code + '] ' : '') + (j.ref || (sl ? 'Vaš projekt' : 'Your project'));
+  return 'mailto:' + encodeURIComponent(j.email.trim()).replace(/%40/g, '@') + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent((sl ? 'Pozdravljeni' : 'Hello') + ',\n\n');
+}
+function jcAct(b) {
+  jbLoad(); const act = b.dataset.jcAct, j = jbCur();
+  const again = (sel) => { render(); (root.querySelector(sel) || document.getElementById('jc-h'))?.focus(); };
+  if (act !== 'undo') JC.msg = '';
+  if (act === 'prev' || act === 'next') { jcStep(act === 'prev' ? -1 : 1); again(`[data-jc-act="${act}"]`); return; }
+  if (act === 'today') { JC.ym = ''; again('[data-jc-act="prev"]'); return; }
+  if (act === 'move') { JC.move = !JC.move; again('[data-jc-act="move"]'); return; }
+  if (act === 'due') {
+    const day = b.dataset.jcDay; if (!j || jbClosed(j) || !jcIsDay(day)) return;
+    JC.undo = { no: j.no, due: j.due }; const was = j.due; j.due = day; JC.move = false;
+    JC.msg = jbStore() ? `${j.no} is now due ${qtDate(day, 'en')}${was ? ` (was ${qtDate(was, 'en')})` : ''}.` : 'Could not save — is storage blocked?';
+    jcShow(day); again('[data-jc-act="undo"]'); return;
+  }
+  if (act === 'undo') {
+    const u = JC.undo, x = u && JB.list.find((k) => k.no === u.no); JC.undo = null;
+    if (x) { x.due = u.due; jbStore(); jcShow(u.due); JC.msg = `${x.no} is back ${u.due ? 'on ' + qtDate(u.due, 'en') : 'without a due date'}.`; }
+    again('[data-jc-act="ics"]'); return;
+  }
+  if (act === 'ics') {
+    const f = jcIcs(), name = 'nk-jobs-due-' + today() + '.ics';
+    try {
+      const url = URL.createObjectURL(new Blob([f.text], { type: 'text/calendar;charset=utf-8' })), a = document.createElement('a');
+      a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+      JC.msg = `Saved ${name} · ${f.n} ${f.n === 1 ? 'job' : 'jobs'}. Open it to add the dates to your calendar.`;
+    } catch (e) { JC.msg = 'Could not save the file: ' + e.message; }
+    const m = document.getElementById('jc-msg'); if (m) m.textContent = JC.msg; return;
+  }
+  if (act === 'mail') {
+    if (!j) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(j.email.trim())) { JB.msg = 'Add the client’s e-mail first.'; render(); document.getElementById('jb-email')?.focus(); return; }
+    location.href = jcMail(j); return;
+  }
+}
+function jcOverview() { // the "Jobs" box on the Overview tab
+  jbLoad();
+  const next = jbOpen().filter((j) => jcIsDay(j.due)).sort(jbSort).slice(0, 3);
+  return `<p class="ad-small jb-sum">${jbSummary()}</p>
+    ${next.length ? `<ul class="ov-feats jc-next">${next.map((j) => { const d = jbDue(j, true); return `<li class="ov-feat"><span class="nk-tag${d.cls === 'is-late' ? '' : ' nk-tag--ok'}">${d.cls === 'is-late' ? 'late' : 'due'}</span><b>${esc(j.client || 'No client yet')}${j.ref ? ' · ' + esc(j.ref) : ''}</b><span>${esc(j.no)} · ${esc(jbStatusName(j.status))} · <span class="${d.cls}">${esc(d.t)}</span>${d.cls ? ' · ' + esc(qtDate(j.due, 'en')) : ''}</span></li>`; }).join('')}</ul>` : ''}
+    <p class="ad-small">Jobs and their calendar are in the <button type="button" class="pl-link" data-tab="jobs">Jobs</button> tab. They stay in this browser.</p>`;
 }
 
 // ---------- start ----------
