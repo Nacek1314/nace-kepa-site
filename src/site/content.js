@@ -293,6 +293,13 @@ var T = {
     rel: { title: 'Similar projects', all: 'All {n} {c} projects', start: 'Start a project like this', brief: 'Similar to' },
     // Search on #work (findBox in app.js).
     toTop: 'Back to top',
+    // Sheet settings (2026-11-21): the display panel (vw…() in app.js).
+    vw: { btn: 'Sheet settings', label: 'Sheet settings · display', title: 'Read the sheet your way', lead: 'Colours, text size and lines for your eyes and your screen. Every change shows at once.',
+      rows: { theme: 'Colours', size: 'Text size', contrast: 'Lines and small text', grid: 'Drawing grid', motion: 'Motion' },
+      opts: { theme: { auto: 'As the device', light: 'Light', dark: 'Dark' }, size: { auto: 'As the browser', '100': '100 %', '112': '112 %', '125': '125 %' }, contrast: { auto: 'Standard', more: 'Stronger' }, grid: { on: 'Shown', off: 'Hidden' }, motion: { auto: 'As the device', reduce: 'Reduced' } },
+      hints: { theme: '“As the device” follows the light or dark mode of your phone or computer.', size: 'Enlarges text, drawings and buttons together. “As the browser” follows the font size set in your browser.', contrast: 'Stronger: higher-contrast small text and frame lines.', grid: 'The blueprint grid behind the page.', motion: 'Reduced: no transitions or smooth scrolling, 3D models do not turn by themselves.' },
+      reset: 'Back to the standard sheet', close: 'Close', note: 'Saved in this browser only — nothing is sent.', saved: 'Saved — {k}: {v}', resetDone: 'The standard sheet is back.', noStore: 'This browser does not allow saving — the setting lasts until you close the page.',
+      key: 'Sheet settings (colours, text size)', fxS: 'Light or dark, text size, contrast, grid, motion' },
     keys: { btn: 'Keyboard shortcuts', label: 'Shortcuts · keyboard', title: 'Get around without the mouse', help: 'Show or hide this list', find: 'Search projects and news', prevNext: 'Previous / next sheet (on a project or news post)', lang: 'Switch EN / SL', close: 'Close', note: 'Shortcuts are off while you type in a field.' },
     newTab: 'opens in a new tab',
     rd: { min: '{n} min read', nav: 'News posts', prev: 'Previous post', next: 'Next post' },
@@ -592,6 +599,13 @@ var T = {
       linkL: 'Povezava do te primerjave', from: 'Primerjaj s podobnim listom', open: 'Primerjaj liste drug ob drugem', slBtn: 'Primerjaj liste ({n})', few: 'Za primerjavo še ni dovolj projektnih listov.' },
     rel: { title: 'Podobni projekti', all: 'Vsi projekti: {c} ({n})', start: 'Začni podoben projekt', brief: 'Podobno kot' },
     toTop: 'Na vrh strani',
+    // Nastavitve lista (2026-11-21): plošča za prikaz (vw…() v app.js).
+    vw: { btn: 'Nastavitve lista', label: 'Nastavitve lista · prikaz', title: 'List po vaši meri', lead: 'Barve, velikost besedila in črte za vaše oči in vaš zaslon. Vsaka sprememba se pokaže takoj.',
+      rows: { theme: 'Barve', size: 'Velikost besedila', contrast: 'Črte in drobno besedilo', grid: 'Risalna mreža', motion: 'Gibanje' },
+      opts: { theme: { auto: 'Kot naprava', light: 'Svetlo', dark: 'Temno' }, size: { auto: 'Kot brskalnik', '100': '100 %', '112': '112 %', '125': '125 %' }, contrast: { auto: 'Običajno', more: 'Močneje' }, grid: { on: 'Prikazana', off: 'Skrita' }, motion: { auto: 'Kot naprava', reduce: 'Zmanjšano' } },
+      hints: { theme: '„Kot naprava“ sledi svetlemu ali temnemu načinu vašega telefona ali računalnika.', size: 'Poveča besedilo, risbe in gumbe hkrati. „Kot brskalnik“ sledi velikosti pisave, nastavljeni v brskalniku.', contrast: 'Močneje: bolj kontrastno drobno besedilo in črte okvirjev.', grid: 'Mreža tehnične risbe v ozadju strani.', motion: 'Zmanjšano: brez prehodov in gladkega drsenja, 3D modeli se ne vrtijo sami.' },
+      reset: 'Nazaj na običajni list', close: 'Zapri', note: 'Shranjeno samo v tem brskalniku — nič se ne pošilja.', saved: 'Shranjeno — {k}: {v}', resetDone: 'Običajni list je spet tu.', noStore: 'Ta brskalnik ne dovoli shranjevanja — nastavitev velja, dokler ne zaprete strani.',
+      key: 'Nastavitve lista (barve, velikost besedila)', fxS: 'Svetlo ali temno, velikost besedila, kontrast, mreža, gibanje' },
     keys: { btn: 'Bližnjice na tipkovnici', label: 'Bližnjice · tipkovnica', title: 'Po strani brez miške', help: 'Pokaži ali skrij ta seznam', find: 'Iskanje po projektih in novicah', prevNext: 'Prejšnji / naslednji list (na projektu ali novici)', lang: 'Preklop EN / SL', close: 'Zapri', note: 'Med tipkanjem v polje so bližnjice izklopljene.' },
     newTab: 'odpre se v novem zavihku',
     rd: { min: '{n} min branja', nav: 'Objave', prev: 'Prejšnja objava', next: 'Naslednja objava' },

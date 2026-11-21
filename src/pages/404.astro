@@ -10,6 +10,7 @@ import componentsCss from '../site/components.css?raw';
 import projects from '../data/projects.json';
 import news from '../data/news.json';
 import content from '../site/content.js?raw';
+import prefs from '../site/prefs.js?raw'; // Sheet settings (2026-11-21): the 404 page follows the visitor's display choice
 import { createHash } from 'node:crypto';
 
 const contactEmail = 'kepanace@gmail.com';
@@ -19,7 +20,8 @@ const data = { // [slug, EN title, SL title, EN category, SL category, year]
   n: (news as any[]).filter((n) => !n.hidden && !n.draft).map((n) => [n.slug, n.title?.en || '', n.title?.sl || '', 'News', 'Novica', String(n.date || '').slice(0, 4)])
 };
 let css = pageCss + '\n' + componentsCss;
-let script = `window.NK404 = ${JSON.stringify(data).replace(/</g, '\\u003c')};
+let script = prefs + `
+window.NK404 = ${JSON.stringify(data).replace(/</g, '\\u003c')};
 (function () {
   var D = window.NK404, path = '';
   try { path = decodeURIComponent(location.pathname); } catch (e) { path = location.pathname; }

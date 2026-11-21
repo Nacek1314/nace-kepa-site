@@ -1582,3 +1582,40 @@ th[aria-sort] .rg-arr { color: var(--redline); }
   .tl-all { display: block; font: 12px/20px var(--font-mono); }
   .tl-all .tb-copy { font: inherit; color: var(--ink-muted); min-height: 24px; padding-block: 2px; }
 }
+
+/* Sheet settings (2026-11-21): the visitor's display choice. prefs.js puts data-theme / data-size / data-contrast /
+   data-grid / data-motion on <html>; the panel is vwOpen() in app.js. data-theme itself is handled at the top of this file.
+   Also here: the system's "more contrast" setting (prefers-contrast) gets the same stronger lines without any choice.
+   To remove: this block (and prefs.js, see its first lines). */
+:root[data-size="112"] { --vw-z: 1.12; zoom: 1.12; }
+:root[data-size="125"] { --vw-z: 1.25; zoom: 1.25; }
+/* Viewport units are not scaled by zoom: dialogs sized with them are brought back inside the window, and the
+   full-screen presentation keeps its own 1:1 scale. */
+:root[data-size] dialog:not(.pz) { max-width: calc((100vw - 32px) / var(--vw-z, 1)); max-height: calc((100vh - 32px) / var(--vw-z, 1)); }
+:root[data-size] dialog.pz { zoom: calc(1 / var(--vw-z, 1)); }
+@media (max-width: 440px) { .vw-open { display: none; } } /* narrow phones: the footer's "Sheet settings" opens the panel */
+:root[data-grid="off"] .frame, :root[data-grid="off"] .kbd { background-image: none; }
+:root[data-motion="reduce"] { scroll-behavior: auto; }
+:root[data-motion="reduce"] *, :root[data-motion="reduce"] *::before, :root[data-motion="reduce"] *::after { transition: none !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+@media screen {
+  :root[data-contrast="more"] { --ink-muted:#34383d; --line:#8a9097; --line-strong:#2a2d31; --grid:#c4cdd7; }
+  :root[data-contrast="more"][data-theme="dark"] { --ink-muted:#d0d3d6; --line:#5d646b; --line-strong:#b9bec3; --grid:#2b3641; }
+}
+@media screen and (prefers-color-scheme: dark) { :root[data-contrast="more"]:not([data-theme="light"]) { --ink-muted:#d0d3d6; --line:#5d646b; --line-strong:#b9bec3; --grid:#2b3641; } }
+@media screen and (prefers-contrast: more) {
+  :root { --ink-muted:#34383d; --line:#8a9097; --line-strong:#2a2d31; --grid:#c4cdd7; }
+  :root[data-theme="dark"] { --ink-muted:#d0d3d6; --line:#5d646b; --line-strong:#b9bec3; --grid:#2b3641; }
+}
+@media screen and (prefers-contrast: more) and (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ink-muted:#d0d3d6; --line:#5d646b; --line-strong:#b9bec3; --grid:#2b3641; } }
+.vw-open svg { display: block; }
+.vw { width: min(520px, calc(100vw - 32px)); }
+.vw-lead { margin: 0 0 var(--space-4); font-size: 14px; line-height: 20px; color: var(--ink-muted); }
+.vw-row { display: grid; gap: 6px; padding: var(--space-3) 0; border-top: 1px solid var(--line); }
+.vw-row .nk-label, .vw-hint { margin: 0; }
+.vw-opts { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.vw-opts .chip { min-height: 40px; }
+.vw-hint { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+.vw-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--line-strong); }
+.vw-msg { margin: 0; min-height: 18px; font: 12px/18px var(--font-mono); color: var(--ok); }
+@media print { :root[data-size] { zoom: 1; } .vw-open, .vw-link { display: none !important; } }
+@media (hover: none) and (pointer: coarse) { .kbd-open.vw-link { display: inline-block; } .vw-link kbd { display: none; } }

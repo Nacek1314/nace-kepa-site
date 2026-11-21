@@ -26,6 +26,56 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-21
+
+**Checked:** build (66 pages), home, #services (incl. `?tool=prices`, `?tool=series`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
+#news, #n-bambu-lab-x2d, #skills, #about, #contact, #studio, #mine, #compare, #gift, #order (all 4 steps on the local build, nothing sent),
+404, /admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in the cloud, as
+always), no horizontal scroll, no CSP violations, no broken images. Extra probes this run, all clean: every focusable element shows a
+focus ring; page titles / `lang` / `aria-current` per view; the WCAG text-spacing test (1.4.12) on 14 views × 2 languages × 2 widths; a
+look at Windows high-contrast (forced colours). Live site from the laptop (`check-live.ps1`): all addresses 200, an unknown address 404,
+the live inline-script hash equals the CSP hash; last Actions run (273d7d5) succeeded.
+**Fixed:** nothing was broken. Found while measuring, and the reason for today's package: the whole site is sized in px, so a visitor who
+has set a **larger default font size in the browser** got no larger text at all, and the system setting **"more contrast"** changed nothing.
+
+**Improvement — "follows the device" accessibility package (`prefs.js`, the `prefers-contrast` rules in the "Sheet settings" block of
+`page.css`):** (a) **browser font size:** when the browser's default font size is 18 px or more the site is shown at 112 %, at 20 px or
+more at 125 % (text, drawings and buttons together; 16 px = unchanged) — WCAG 1.4.4; (b) **system "more contrast"**
+(`prefers-contrast: more`): small / muted text and frame lines get stronger tokens in light and dark (`--ink-muted` #34383d / #d0d3d6,
+`--line`, `--line-strong`, `--grid`); (c) both also on the **404 page and in the admin** (they share `page.css` and now load `prefs.js`);
+(d) the browser toolbar colour (`theme-color`) follows a forced light / dark choice; (e) dialogs sized with viewport units stay inside
+the window at 112 / 125 % and the full-screen presentation keeps its 1:1 scale; printing is always the light sheet at 1:1.
+Honest note: smaller than the usual package — three sweeps found nothing else to repair — and it shares its plumbing with today's innovation.
+*To remove:* the `prefers-contrast` rules in `page.css`; the `browserSize()` lines in `prefs.js`.
+
+**Innovation — Sheet settings / "Nastavitve lista" (`VW` … `vwKey()` in `app.js`, `vw:` in `content.js`, "Sheet settings" block in
+`page.css`, new file `src/site/prefs.js`):** a display panel on every page. Open it with the **half-disc button in the header** (next
+to the magnifier; on phones up to 440 px wide with **"Sheet settings" in the footer**), the **D** key, or Find anything ("dark",
+"temno", "text size", "kontrast" …). Five rows of buttons, each change shows at once behind the panel:
+**Colours** (As the device / Light / Dark — until now the site only followed the device), **Text size** (As the browser / 100 / 112 /
+125 %), **Lines and small text** (Standard / Stronger), **Drawing grid** (Shown / Hidden), **Motion** (As the device / Reduced: no
+transitions or smooth scrolling, 3D models do not turn by themselves). "Back to the standard sheet" resets everything. The choice is
+kept in this browser only (`localStorage` `nk-view`, only non-default values; nothing is sent), is applied in the `<head>` before the
+page is drawn (no flash of the wrong colours) and holds on every view, the landing pages, the 404 page and the admin; another open tab
+follows at once. Stored values are checked against the list of known options — anything else is ignored.
+- Security: `prefs.js` is a second inline script in the `<head>`; the Content-Security-Policy now pins **two** hashes (`prefs.js` first,
+  then the app), both computed at build. Nothing else in the policy changed. `check-live.ps1` on the laptop compares the first hash with
+  the first inline script, which is now `prefs.js`.
+- Tested in Playwright (EN 1280 light, SL 390 dark, 157 checks): open by keyboard from the header / footer, focus on the pressed
+  option, page shortcuts off while open, every option (attribute on `<html>`, computed colours, zoom, grid, transitions), status line,
+  stored value, toolbar colour, Esc → focus back, kept after reload on #services, a landing page, the 404 page and the admin, no
+  horizontal scroll on 14 views at 125 % (also at 390 px), D key (not while typing, not under another dialog), reset (focus, storage
+  cleared), Find anything → panel, the "D" row in the shortcut list, damaged / hostile storage ignored, system contrast in light / dark /
+  forced light, browser font 20 px → 125 % and an explicit 100 % wins, print stays light at 1:1, touch phone footer link, header at 320 /
+  360 px; order walk to step 4 at dark + 125 % on a phone; presentation and lightbox at 125 %; axe: 0 violations on the panel and on
+  10 views with forced dark / forced light + stronger contrast, EN + SL, both widths.
+*To remove:* see the first lines of `src/site/prefs.js` and the comment above `var VW` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: Sheet settings — a "Reading" row (wider line spacing for long posts) and a per-device hint when the device is in dark mode.
+- Admin: the same Sheet settings panel in the dashboard header (today the admin only follows the choice made on the site).
+- Public: 404 page — a "Sheet settings" link; Find anything — direct actions "Dark sheet" / "Light sheet".
+
 ## 2026-11-20
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=schedule`, `?tool=prices`, `?tool=parts`), #work, #work?view=list, #p-famfive,
@@ -2737,6 +2787,13 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Admin: Jobs calendar — started → due bars, load per week, drag a chip to another day.
 - Admin: Jobs — "Quote this job"; .ics with the schedule stages.
 - Public: Services on the phone — remembered open tools; find-in-page opens a folded tool.
+
+- (Built 2026-11-21: Sheet settings — display panel (colours as the device / light / dark, text size, stronger lines, drawing grid,
+  motion) from the header, the footer, the D key and Find anything, kept in the browser, applied before first paint on every page incl.
+  404 + admin; "follows the device" package as the improvement — browser font size → 112 / 125 %, system "more contrast".)
+- Public: Sheet settings — "Reading" row (line spacing); dark-device hint.
+- Admin: Sheet settings panel in the dashboard header.
+- Public: 404 "Sheet settings" link; Find anything "Dark sheet" / "Light sheet" actions.
 
 ## 2026-10-03 (second run)
 

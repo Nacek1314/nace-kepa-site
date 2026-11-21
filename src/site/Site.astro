@@ -9,6 +9,7 @@ import drawings from './drawings.js?raw';
 import qr from './qr.js?raw'; // QR package (2026-11-03): window.NK_QR — codes on sheets, posts, tools and the contact card
 import content from './content.js?raw';
 import app from './app.js?raw';
+import prefs from './prefs.js?raw'; // Sheet settings (2026-11-21): applied in the <head>, before the page is drawn
 import projects from '../data/projects.json';
 import news from '../data/news.json';
 import settings from '../data/settings.json'; // pricing, print parameters, promo, gift cards, FAQ — edited in /admin/ › Settings (2026-11-02)
@@ -57,7 +58,7 @@ let workerOrigin = '';
 try { workerOrigin = endpoint ? new URL(endpoint).origin : ''; } catch {}
 const csp = [
   "default-src 'self'",
-  `script-src 'self' ${hash(script)}`,
+  `script-src 'self' ${hash(prefs)} ${hash(script)}`, // the app + the small Sheet settings reader in the <head>, each pinned by its hash
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob:",
@@ -277,6 +278,7 @@ const ogAlt = item ? tl(item.title) + ' — nacekepa.work' : view === 'news' ? t
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <script is:inline set:html={prefs}></script>
     <style is:inline set:html={css}></style>
     <script is:inline type="application/ld+json" set:html={jsonLd}></script>
     {newsLd && <script is:inline type="application/ld+json" set:html={newsLd}></script>}

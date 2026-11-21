@@ -190,7 +190,7 @@ export async function mount(container, opts) {
   controls.minZoom = 0.2;
   controls.maxZoom = 25;
   controls.enableDamping = true;
-  controls.autoRotate = !opts.still && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  controls.autoRotate = !opts.still && !(window.NKView ? window.NKView.calm() : window.matchMedia('(prefers-reduced-motion: reduce)').matches); // NKView: Sheet settings (2026-11-21)
   controls.autoRotateSpeed = 1.2;
   controls.minDistance = radius * 0.3;
   controls.maxDistance = radius * 8;

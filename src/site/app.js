@@ -4434,13 +4434,13 @@
       '<div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div><div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>';
     var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="' + esc(x.aria.home) + '">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="' + esc(x.aria.main) + '">' +
       ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a href="#' + k + '"' + (p === k || ((p === 'project' || p === 'compare') && k === 'work') || (p === 'post' && k === 'news') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
-      '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '">' + ['en', 'sl'].map(function (l) { return '<a href="' + esc(langHref(l) + langLinkHash(l)) + '" hreflang="' + l + '" lang="' + l + '" data-lang="' + l + '" aria-current="' + (lang === l) + '">' + l.toUpperCase() + '</a>'; }).join('') + '</div>' + fxBtn() + mnLink() + btn(ctaText(), '#order', 'primary', 'sm') + '</div></header>';
+      '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '">' + ['en', 'sl'].map(function (l) { return '<a href="' + esc(langHref(l) + langLinkHash(l)) + '" hreflang="' + l + '" lang="' + l + '" data-lang="' + l + '" aria-current="' + (lang === l) + '">' + l.toUpperCase() + '</a>'; }).join('') + '</div>' + fxBtn() + vwBtn() + mnLink() + btn(ctaText(), '#order', 'primary', 'sm') + '</div></header>';
     var idx = PAGES.indexOf(p === 'project' || p === 'compare' ? 'work' : p === 'post' ? 'news' : p) + 1;
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
       cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '" id="tb-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-tb-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="tb-msg" role="status" aria-live="polite"></span> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span><span class="vh"> (' + esc(t().newTab) + ')</span></a>' + (qrOn() ? ' · <button type="button" class="tb-copy" data-qr-vcf>' + esc(t().eq.vcf) + '</button><span class="tb-msg qr-msg" role="status" aria-live="polite"></span>' : ''), 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(ctaText()) + ' →</a>' + (giftOn() ? ' · <a href="#gift">' + esc(t().gift.tbLink) + '</a>' : ''), 'wide', false, true) +
-      cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa' + kbdBtn() + '<a class="mine-foot" href="#mine">' + esc(x.mn.link) + '</a>' + '<button type="button" class="to-top" data-top>' + esc(x.toTop) + ' <span aria-hidden="true">↑</span></button></p></footer>';
+      cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa' + kbdBtn() + vwFoot() + '<a class="mine-foot" href="#mine">' + esc(x.mn.link) + '</a>' + '<button type="button" class="to-top" data-top>' + esc(x.toTop) + ' <span aria-hidden="true">↑</span></button></p></footer>';
     return '<div class="frame"><a class="skip" href="#main" data-skip>' + esc(x.skip) + '</a>' + zones + nav + '<main id="main" tabindex="-1">' + inner + '</main>' + tb + '</div>';
   }
   function cell(k, v, span, title, raw) {
@@ -4500,7 +4500,7 @@
     var el = ev.target.closest('button, a'); if (!el) return;
     if (el.hasAttribute('data-fx')) { fxOpen(el.getAttribute('data-fx')); return; } // Find anything (2026-11-12)
     if (el.hasAttribute('data-pz')) { pzOpen(el.getAttribute('data-pz')); return; } // Presentation (2026-11-13)
-    if (el.hasAttribute('data-top')) { window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); var tm = document.getElementById('main'); if (tm) tm.focus({ preventScroll: true }); return; }
+    if (el.hasAttribute('data-top')) { window.scrollTo({ top: 0, behavior: vwCalm() ? 'auto' : 'smooth' }); var tm = document.getElementById('main'); if (tm) tm.focus({ preventScroll: true }); return; }
     if (el.hasAttribute('data-skip')) { ev.preventDefault(); var mn = document.getElementById('main'); mn.focus({ preventScroll: true }); mn.scrollIntoView({ block: 'start' }); return; }
     var th = el.tagName === 'A' && /^#services\?tool=([a-z]+)$/.exec(el.getAttribute('href') || ''); // Tools index: same link again → jump again
     if (th && location.hash === th[0]) { ev.preventDefault(); tlGo(th[1]); return; }
@@ -4642,6 +4642,7 @@
     if (el.hasAttribute('data-bp-print')) { printSheet(); return; }
     if (el.hasAttribute('data-ps-print')) { psPrint(); return; }
     if (el.hasAttribute('data-kbd')) { kbdOpen(); return; }
+    if (el.hasAttribute('data-vw')) { vwOpen(); return; } // Sheet settings (2026-11-21)
     if (el.hasAttribute('data-share-more')) { var sb = el.closest('.share'); try { navigator.share({ title: sb.dataset.shareTitle, url: document.getElementById('share-url').value }).catch(function () {}); } catch (e) {} return; }
     if (el.dataset.lb != null) { var pr = page() === 'post' ? newsBySlug(currentSlug()) : bySlug(currentSlug()); if (pr && pr.photos && pr.photos.length) openLightbox(pr.photos, +el.dataset.lb, P(pr, 'title')); return; }
     if (el.dataset.ofStep) { ev.preventDefault(); ofGo(+el.dataset.ofStep); return; }
@@ -4825,6 +4826,7 @@
     (SET.faq || []).filter(function (q) { return q && q.q && L(q.q) && q.a && L(q.a); }).forEach(function (q, i) { add('faq', L(q.q), L(q.a).replace(/\s+/g, ' '), '#services', '', '', function () { fxFaq(i); }); });
     add('actions', lang === 'en' ? 'Slovenščina' : 'English', x.keys.lang, '', 'language jezik slovensko english anglesko', 'L', function () { lang = lang === 'en' ? 'sl' : 'en'; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); langPath(); render(true); });
     add('actions', x.keys.btn, x.keys.title, '', 'keyboard tipkovnica', '?', kbdOpen);
+    if (VW) add('actions', x.vw.btn, x.vw.fxS, '', 'theme dark light mode tema temno svetlo temni svetli nacin barve colours colors text size font velikost besedila pisava contrast kontrast grid mreza motion animation gibanje animacije display prikaz settings nastavitve accessibility dostopnost', 'D', vwOpen); // Sheet settings (2026-11-21)
     if (PROJECTS.length) add('actions', x.pz.fxT, x.pz.fxS, '', 'presentation present slideshow slides predstavitev predstavi diaprojekcija', '▶', function () { pzOpen('all'); }); // Presentation (2026-11-13)
     if (CONTACT_EMAIL) add('actions', f.mail, CONTACT_EMAIL, '', 'email e-mail mail e-posta posta pisi write', '', function () { location.href = 'mailto:' + CONTACT_EMAIL; });
     return a;
@@ -5100,10 +5102,72 @@
   // Self-contained: remove this block (KBD_GO … kbdKey()), kbdBtn() in frame(), the data-kbd line in the click handler,
   // the kbdKey(ev) line in the keydown handler, keys: in both languages in content.js and the "Keyboard shortcuts" rules in page.css.
   var KBD_GO = { h: 'home', s: 'services', w: 'work', n: 'news', p: 'studio', o: 'order', c: 'compare' };
+  // ── Sheet settings / "Nastavitve lista" (2026-11-21) ─────────────────────────────────────────────────────────────────
+  // A display panel: colours (as the device / light / dark), text size, stronger lines and small text, the drawing grid,
+  // motion. Opened from the half-disc button in the header, "Sheet settings" in the footer, the D key or Find anything.
+  // The choice is kept in this browser only (localStorage 'nk-view') and applied by src/site/prefs.js (window.NKView),
+  // which also runs in the <head>, on the 404 page and in the admin; the rules are the "Sheet settings" block in page.css.
+  // Self-contained. To remove: this block (VW … vwKey()), vwBtn() and vwFoot() in frame(), the data-vw line in the click
+  // handler, the vwKey(ev) line in the keydown handler, the vwClose hashchange listener, the 'D' row in kbdRows(), the
+  // Sheet settings line in fxIndex(), vwCalm() at the data-top line (put the matchMedia test back), vw: in both languages
+  // in content.js, the "Sheet settings" block in page.css and prefs.js with its imports (see the top of that file).
+  var VW = window.NKView || null, vwCur = null;
+  var VW_KEYS = ['theme', 'size', 'contrast', 'grid', 'motion'];
+  function vwCalm() { if (VW) return VW.calm(); try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
+  function vwIcon() { return '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"/></svg>'; }
+  function vwBtn() { if (!VW) return ''; var v = t().vw; return '<button type="button" class="fx-open vw-open" data-vw aria-haspopup="dialog" aria-keyshortcuts="D" aria-label="' + esc(v.btn) + '" title="' + esc(v.btn) + ' (D)">' + vwIcon() + '</button>'; }
+  function vwFoot() { return VW ? '<button type="button" class="kbd-open vw-link" data-vw aria-haspopup="dialog">' + esc(t().vw.btn) + ' <kbd>D</kbd></button>' : ''; }
+  function vwClose() { var d = document.getElementById('vw'); if (d && d.open) d.close(); }
+  function vwMark(d) {
+    var def = true;
+    VW_KEYS.forEach(function (k) { if (vwCur[k] !== VW.OPT[k][0]) def = false; });
+    Array.prototype.forEach.call(d.querySelectorAll('[data-vw-set]'), function (b) { var p = b.getAttribute('data-vw-set').split(':'); b.setAttribute('aria-pressed', String(vwCur[p[0]] === p[1])); });
+    var r = d.querySelector('[data-vw-reset]'); if (r) r.disabled = def;
+  }
+  function vwOpen() {
+    if (!VW || document.getElementById('vw')) return;
+    var v = t().vw, back = document.activeElement, d = document.createElement('dialog');
+    vwCur = VW.read();
+    d.id = 'vw'; d.className = 'kbd vw'; d.setAttribute('aria-labelledby', 'vw-t'); d.lang = lang;
+    d.innerHTML = '<div class="kbd-head"><div><p class="nk-label">' + esc(v.label) + '</p><h2 class="sub" id="vw-t">' + esc(v.title) + '</h2></div>' +
+      '<button type="button" class="chip kbd-x" data-vw-close aria-label="' + esc(v.close) + '">✕</button></div>' +
+      '<p class="vw-lead">' + esc(v.lead) + '</p>' +
+      VW_KEYS.map(function (k) {
+        return '<div class="vw-row" role="group" aria-labelledby="vw-l-' + k + '" aria-describedby="vw-h-' + k + '"><p class="nk-label" id="vw-l-' + k + '">' + esc(v.rows[k]) + '</p><div class="vw-opts">' +
+          VW.OPT[k].map(function (o) { return '<button type="button" class="chip" data-vw-set="' + k + ':' + o + '" aria-pressed="false">' + esc(v.opts[k][o]) + '</button>'; }).join('') +
+          '</div><p class="vw-hint" id="vw-h-' + k + '">' + esc(v.hints[k]) + '</p></div>';
+      }).join('') +
+      '<div class="vw-foot"><button type="button" class="nk-btn nk-btn--sm" data-vw-reset>' + esc(v.reset) + '</button><p class="vw-msg" id="vw-msg" role="status" aria-live="polite"></p></div>' +
+      '<p class="kbd-note">' + esc(v.note) + '</p>';
+    d.addEventListener('click', function (e) {
+      if (e.target === d || e.target.closest('[data-vw-close]')) { d.close(); return; }
+      var b = e.target.closest('[data-vw-set], [data-vw-reset]'); if (!b) return;
+      var msg = d.querySelector('#vw-msg'), text;
+      if (b.hasAttribute('data-vw-reset')) { vwCur = {}; text = v.resetDone; }
+      else { var p = b.getAttribute('data-vw-set').split(':'); vwCur[p[0]] = p[1]; text = v.saved.replace('{k}', v.rows[p[0]]).replace('{v}', v.opts[p[0]][p[1]]); }
+      vwCur = VW.apply(vwCur);
+      if (!VW.save(vwCur)) text = v.noStore;
+      vwMark(d);
+      if (b.disabled) { var first = d.querySelector('[data-vw-set]'); if (first) first.focus(); } // Reset switched itself off
+      msg.textContent = text;
+    });
+    d.addEventListener('close', function () { d.remove(); if (back && back.focus && document.contains(back)) back.focus(); else { var o = document.querySelector('.vw-open'); if (o) o.focus(); } });
+    document.body.appendChild(d);
+    vwMark(d);
+    try { d.showModal(); } catch (e) { d.setAttribute('open', ''); }
+    var x = d.querySelector('[data-vw-set][aria-pressed="true"]'); if (x) x.focus();
+  }
+  function vwKey(ev, typing) {
+    if (document.getElementById('vw')) return ev.key !== 'Escape' && ev.key !== 'Tab' && ev.key !== 'Enter' && ev.key !== ' '; // open: the page's own shortcuts stay off
+    if (!VW || typing || lb || ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey || ev.defaultPrevented || !ev.key || ev.key.toLowerCase() !== 'd') return false;
+    if (document.querySelector('dialog[open]') || (ev.target && ev.target.closest && ev.target.closest('.nk-viewer'))) return false;
+    ev.preventDefault(); vwOpen(); return true;
+  }
   function kbdBtn() { return '<button type="button" class="kbd-open" data-kbd aria-haspopup="dialog">' + esc(t().keys.btn) + ' <kbd>?</kbd></button>'; }
   function kbdRows() {
     var x = t(), k = x.keys, r = [['?', k.help], ['Ctrl K', x.fx.key], ['/', k.find], ['← →', k.prevNext]];
     Object.keys(KBD_GO).forEach(function (c) { var v = KBD_GO[c]; if ((v === 'news' && !NEWS.length) || (v === 'compare' && PROJECTS.length < 2)) return; r.push([c.toUpperCase(), v === 'order' ? x.cta : v === 'home' ? x.nav.home : x.nav[v]]); });
+    if (VW) r.push(['D', x.vw.key]); // Sheet settings (2026-11-21)
     return r.concat([['L', k.lang], ['Esc', k.close]]);
   }
   function kbdClose() { var d = document.getElementById('kbd'); if (d && d.open) d.close(); }
@@ -5144,6 +5208,7 @@
   window.addEventListener('hashchange', kbdClose);
   window.addEventListener('hashchange', fxClose);
   window.addEventListener('hashchange', pzClose);
+  window.addEventListener('hashchange', vwClose);
   // Search keys: "/" jumps to the search on #work from anywhere; Esc in the box clears it.
   document.addEventListener('keydown', function (ev) {
     var tg = ev.target, typing = tg && (/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName) || tg.isContentEditable);
@@ -5151,6 +5216,7 @@
     if (pzKey(ev)) return; // Presentation (2026-11-13)
     if (fxKey(ev)) return; // Find anything (2026-11-12)
     if (ofKey(ev)) return;
+    if (vwKey(ev, typing)) return; // Sheet settings (2026-11-21)
     if (kbdKey(ev, typing)) return;
     if (ev.key !== '/' || typing || lb || ev.ctrlKey || ev.metaKey || ev.altKey) return;
     ev.preventDefault();
