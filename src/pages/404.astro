@@ -65,6 +65,18 @@ window.NK404 = ${JSON.stringify(data).replace(/</g, '\\u003c')};
     out.hidden = false;
   }
   if (ask) { ask.setAttribute('href', home + '#work?q=' + encodeURIComponent(words.join(' '))); ask.querySelector('b').textContent = words.join(' '); ask.parentNode.hidden = false; }
+})();
+// Sheet settings everywhere package (2026-11-24): Colours — As the device / Light / Dark, the same stored choice as the site's panel.
+(function () {
+  var V = window.NKView, box = document.getElementById('nf-vw'); if (!V || !box) return;
+  var btns = box.querySelectorAll('[data-nf-theme]');
+  function mark() { var c = V.read(); for (var i = 0; i < btns.length; i++) btns[i].setAttribute('aria-pressed', String(btns[i].getAttribute('data-nf-theme') === c.theme)); }
+  box.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-nf-theme]') : null; if (!b) return;
+    var c = V.read(); c.theme = b.getAttribute('data-nf-theme'); V.save(V.apply(c)); mark();
+  });
+  try { window.addEventListener('storage', mark); } catch (e) {}
+  mark(); box.hidden = false;
 })();`;
 try {
   const { transform } = await import('esbuild');
@@ -110,6 +122,12 @@ const logo = '<svg class="nk-mark" viewBox="0 0 64 64" aria-hidden="true" focusa
       .nf-path { font: 13px/20px var(--font-mono); color: var(--ink-muted); overflow-wrap: anywhere; }
       .nf-foot { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); padding: var(--space-5) 0 var(--space-6); font: 12px/20px var(--font-mono); color: var(--ink-muted); }
       .nf-foot a { color: inherit; } .nf-foot a:hover { color: var(--redline); }
+      /* Sheet settings everywhere package (2026-11-24): the colours choice of the site's Sheet settings, here as three buttons. */
+      .nf-vw { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-4) 0 0; border-top: 1px solid var(--line); color: var(--ink); }
+      .nf-vw .nk-label { margin: 0 var(--space-2) 0 0; }
+      .nf-vw .chip { min-height: 40px; }
+      .nf-vw-note { margin: 0; flex-basis: 100%; font: 12px/18px var(--font-mono); color: var(--ink-muted); }
+      @media print { .nf-vw { display: none; } }
       @media (max-width: 720px) { .nf-list { grid-template-columns: 1fr; } .nf-list li + li { border-left: 0; border-top: 1px solid var(--line); } .nf-item { padding-bottom: var(--space-4); padding-right: var(--space-8); } .nf-go { left: auto; right: var(--space-4); top: var(--space-4); bottom: auto; } }
     </style>
   </head>
@@ -126,11 +144,11 @@ const logo = '<svg class="nk-mark" viewBox="0 0 64 64" aria-hidden="true" focusa
       <main class="nf-main">
         <section class="block first">
           <div data-lang="en">
-            <header class="sec-head"><div><p class="nk-label">ERR 404 · SHEET NOT FOUND</p><h1 class="page-title">This sheet is not in the register.</h1></div>
+            <header class="sec-head"><div><p class="nk-label">ERR 404 · SHEET NOT FOUND</p><h1 class="page-title">This sheet is not in the register</h1></div>
               <p class="lead">The address may be old or mistyped. Below are the closest sheets, a search for the words in the address, and the way to the studio.</p></header>
           </div>
           <div data-lang="sl" hidden lang="sl">
-            <header class="sec-head"><div><p class="nk-label">NAPAKA 404 · LIST NI NAJDEN</p><h1 class="page-title">Tega lista ni v seznamu risb.</h1></div>
+            <header class="sec-head"><div><p class="nk-label">NAPAKA 404 · LIST NI NAJDEN</p><h1 class="page-title">Tega lista ni v seznamu risb</h1></div>
               <p class="lead">Naslov je morda star ali napačno vpisan. Spodaj so najbližji listi, iskanje po besedah iz naslova in pot do studia.</p></header>
           </div>
           <div class="nf-sug" id="nf-sug" hidden></div>
@@ -147,7 +165,15 @@ const logo = '<svg class="nk-mark" viewBox="0 0 64 64" aria-hidden="true" focusa
           </div>
         </section>
       </main>
-      <footer class="nf-foot"><span>Nace Kepa · Škofja Loka, SI</span><a href={'mailto:' + contactEmail}>{contactEmail}</a><a href="https://www.linkedin.com/in/nace-kepa-82735038a" rel="noopener">LinkedIn ↗</a></footer>
+      <footer class="nf-foot"><span>Nace Kepa · Škofja Loka, SI</span><a href={'mailto:' + contactEmail}>{contactEmail}</a><a href="https://www.linkedin.com/in/nace-kepa-82735038a" rel="noopener">LinkedIn ↗</a>
+      <div class="nf-vw" id="nf-vw" role="group" aria-labelledby="nf-vw-l" hidden>
+        <p class="nk-label" id="nf-vw-l"><span data-lang="en">Colours</span><span data-lang="sl" hidden lang="sl">Barve</span></p>
+        <button type="button" class="chip" data-nf-theme="auto" aria-pressed="false"><span data-lang="en">As the device</span><span data-lang="sl" hidden lang="sl">Kot naprava</span></button>
+        <button type="button" class="chip" data-nf-theme="light" aria-pressed="false"><span data-lang="en">Light</span><span data-lang="sl" hidden lang="sl">Svetlo</span></button>
+        <button type="button" class="chip" data-nf-theme="dark" aria-pressed="false"><span data-lang="en">Dark</span><span data-lang="sl" hidden lang="sl">Temno</span></button>
+        <p class="nf-vw-note"><span data-lang="en">Saved in this browser only. Text size, contrast and more: “Sheet settings” on the site.</span><span data-lang="sl" hidden lang="sl">Shranjeno samo v tem brskalniku. Velikost besedila, kontrast in drugo: „Nastavitve lista“ na strani.</span></p>
+      </div>
+      </footer>
     </div>
     <script is:inline set:html={script}></script>
   </body>

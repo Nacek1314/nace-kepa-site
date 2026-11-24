@@ -70,14 +70,14 @@
     if (h === 'services') { state.tool = (/(?:^|&)tool=([a-z]+)/.exec(qs) || [])[1] || ''; if (state.bg && location.hash !== state.clHash) { state.clHash = location.hash; clRead(state.tool, qs); } } // clRead: Calculation links (2026-11-17)
     if (h === 'order' && state.dh && location.hash !== state.dh.hash) { state.dh.hash = location.hash; dhRead(qs); } // Draft hand-over (2026-11-19)
     if (h === 'contact') { state.ctGo = true; return 'about'; } // Contact package (2026-10-29): #contact opens the contact card on #about
-    if (/^p-/.test(h) && bySlug(h.slice(2))) return 'project';
+    if (/^p-/.test(h) && bySlug(h.slice(2))) { rlRead(h.slice(2), qs); return 'project'; } // rlRead: Redline notes (2026-11-24)
     if (/^n-/.test(h) && newsBySlug(h.slice(2))) return 'post';
     if (h === 'gift' && !giftOn()) return 'home';
     return PAGES.indexOf(h) >= 0 ? h : 'home'; }
   // A hash with a language prefix (#en-…, #sl-… from shared links and feeds) would switch the language back on render,
   // so the EN/SL buttons rewrite the prefix to the chosen language.
   function langHash() { var h = location.hash; if (/^#(en|sl)-?/.test(h)) try { history.replaceState(history.state, '', h.replace(/^#(en|sl)/, '#' + lang)); } catch (e) {} }
-  function currentSlug() { var h = hashPath().replace(/^(en|sl)-?/, ''); return h.slice(2); }
+  function currentSlug() { var h = hashPath().replace(/^(en|sl)-?/, '').replace(/\?.*$/, ''); return h.slice(2); } // a "?…" after the slug (Redline notes link) is not part of it
 
   function btn(label, href, variant, size, arrow) {
     return '<a class="nk-btn' + (variant ? ' nk-btn--' + variant : '') + (size ? ' nk-btn--' + size : '') + '" href="' + href + '">' + esc(label) + (arrow ? '<span class="nk-btn__arrow" aria-hidden="true">→</span>' : '') + '</a>';
@@ -290,7 +290,7 @@
     return '<section class="block first project">' +
       '<a class="back" href="#work">← ' + esc(x.allWork) + '</a>' +
       head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
-      '<div class="project-grid"><div class="project-stage">' + stage + '</div><div class="project-side">' + specs(rows).replace('</dl>', sdRows(p) + '</dl>') +
+      '<div class="project-grid"><div class="project-stage">' + (m ? stage : '<div class="rl-stage">' + stage + rlLayer() + '</div>') + rlBox() /* Redline notes (2026-11-24) */ + '</div><div class="project-side">' + specs(rows).replace('</dl>', sdRows(p) + '</dl>') +
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
       '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', null, true) + askLink(p) + '</div>' + slToggle(p) + cmpFrom(p) + shareBox('p', p) + printBox('p', p) + '</div></div>' +
       (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="' + esc(P(p, 'title') + ' · ' + (i + 1)) + '" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
@@ -4320,7 +4320,7 @@
   function mnSave() { try { localStorage.setItem(MN_KEY, JSON.stringify(mnMem)); } catch (e) {} }
   function mnAdd(kind, entry) { var m = mnRead(); entry.at = Date.now(); m[kind] = [entry].concat(m[kind]).slice(0, MN_MAX); mnSave(); return entry; }
   function mnDrop(kind, at) { var m = mnRead(); m[kind] = m[kind].filter(function (e) { return e.at !== +at; }); mnSave(); }
-  function mnCount() { var m = mnRead(); return slRead().length + (dr.at && state.send !== 'sent' ? 1 : 0) + m.cmp.length + m.st.length + m.qc.length + m.calc.length; }
+  function mnCount() { var m = mnRead(); return slRead().length + (dr.at && state.send !== 'sent' ? 1 : 0) + m.cmp.length + m.st.length + m.qc.length + m.calc.length + rlCount(); }
   function mnWhen(at) { try { return new Date(at).toLocaleString(lang === 'sl' ? 'sl-SI' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
   function mnLink() { var n = mnCount(), x = t().mn; return '<a class="mine-link" href="#mine" aria-label="' + esc(n ? x.linkN.replace('{n}', n) : x.link) + '" title="' + esc(x.link) + '"' + (page() === 'mine' ? ' aria-current="page"' : '') + '><span aria-hidden="true">★</span>' + (n ? '<b>' + n + '</b>' : '') + '</a>'; }
   function mnFlash(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
@@ -4378,7 +4378,7 @@
   }
   function mnForget() {
     mnMem = { v: 1, cmp: [], st: [], qc: [], calc: [] }; try { localStorage.removeItem(MN_KEY); localStorage.removeItem(SL_KEY); } catch (e) {}
-    slMem = []; mnAsk = false;
+    slMem = []; mnAsk = false; rlWipe(); // Redline notes (2026-11-24)
     try { localStorage.removeItem(DR_KEY); } catch (e) {}
     state.order = { website: '', services: [], what: '', qty: '1', deadline: '', files: 0, mat: 0, name: '', email: '', note: '', phone: '', reply: 0 };
     state.prep.have = {}; state.prep.svc = null; state.step = 0; state.errors = {}; state.send = 'idle'; dr.at = 0; dr.restored = false; dr.ask = false;
@@ -4426,7 +4426,7 @@
       (mnAsk ? '<span class="mn-ask">' + esc(x.forgetAsk) + ' <button type="button" class="nk-btn nk-btn--sm nk-btn--primary" data-mn-forget="yes">' + esc(x.forgetYes) + '</button> <button type="button" class="nk-btn nk-btn--sm" data-mn-forget="no">' + esc(x.forgetNo) + '</button></span>' : '<button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-mn-forget="ask">' + esc(x.forget) + '</button>') + '</div>' +
       '<p class="share-msg" id="mn-msg" role="status" aria-live="polite">' + esc(mnMsg) + '</p><p class="fit-note">' + esc(x.privacy) + ' ' + esc(x.max.replace('{n}', MN_MAX)) + '</p></div>';
     return '<section class="block first mine-page">' + head(x.label, x.title, x.lead, true) + (total ? '' : '<p class="mn-empty">' + esc(x.empty) + '</p>') +
-      sec(x.slT, slB, sl.length) + sec(x.drT, drB) + sec(x.cmpT, cmpB, m.cmp.length) + sec(x.stT, stB, m.st.length) + sec(x.qcT, qcB, m.qc.length) + sec(x.calcT, calcB, m.calc.length) + tools + '</section>' + ctaBand();
+      sec(x.slT, slB, sl.length) + sec(x.drT, drB) + sec(x.cmpT, cmpB, m.cmp.length) + sec(x.stT, stB, m.st.length) + sec(x.qcT, qcB, m.qc.length) + sec(x.calcT, calcB, m.calc.length) + rlMine() + tools + '</section>' + ctaBand();
   }
   function frame(inner) {
     var x = t(), p = page();
@@ -4827,6 +4827,15 @@
     add('actions', lang === 'en' ? 'Slovenščina' : 'English', x.keys.lang, '', 'language jezik slovensko english anglesko', 'L', function () { lang = lang === 'en' ? 'sl' : 'en'; try { localStorage.setItem('nk-lang', lang); } catch (e) {} langHash(); langPath(); render(true); });
     add('actions', x.keys.btn, x.keys.title, '', 'keyboard tipkovnica', '?', kbdOpen);
     if (VW) add('actions', x.vw.btn, x.vw.fxS, '', 'theme dark light mode tema temno svetlo temni svetli nacin barve colours colors text size font velikost besedila pisava contrast kontrast grid mreza motion animation gibanje animacije display prikaz settings nastavitve accessibility dostopnost', 'D', vwOpen); // Sheet settings (2026-11-21)
+    if (VW) { // Sheet settings everywhere package (2026-11-24): one-step display actions — only the ones that would change something
+      var vc = VW.read(), vf = x.vw.fx, vk = ' sheet settings nastavitve lista display prikaz ';
+      if (vc.theme !== 'dark') add('actions', vf.dark, vf.now, '', 'dark mode night theme temno temni nacin tema noc crno black' + vk, '', function () { vwSet('theme', 'dark'); });
+      if (vc.theme !== 'light') add('actions', vf.light, vf.now, '', 'light mode day theme svetlo svetli nacin tema dan belo white' + vk, '', function () { vwSet('theme', 'light'); });
+      if (vc.theme !== 'auto') add('actions', vf.auto, vf.now, '', 'device system auto theme colours colors barve naprava sistem samodejno tema' + vk, '', function () { vwSet('theme', 'auto'); });
+      if (vc.size !== '125') add('actions', vf.big, vf.now, '', 'larger bigger text size font zoom vecje besedilo velikost pisava povecaj crke' + vk, '', function () { vwSet('size', '125'); });
+      if (vc.spacing !== 'wide') add('actions', vf.wide, vf.now, '', 'line spacing reading wider razmik vrstic branje sirse' + vk, '', function () { vwSet('spacing', 'wide'); });
+      if (VW_KEYS.some(function (k) { return vc[k] !== VW.OPT[k][0]; })) add('actions', x.vw.reset, vf.now, '', 'reset standard default ponastavi obicajno privzeto' + vk, '', function () { vwSet(); });
+    }
     if (PROJECTS.length) add('actions', x.pz.fxT, x.pz.fxS, '', 'presentation present slideshow slides predstavitev predstavi diaprojekcija', '▶', function () { pzOpen('all'); }); // Presentation (2026-11-13)
     if (CONTACT_EMAIL) add('actions', f.mail, CONTACT_EMAIL, '', 'email e-mail mail e-posta posta pisi write', '', function () { location.href = 'mailto:' + CONTACT_EMAIL; });
     return a;
@@ -5102,6 +5111,157 @@
   // Self-contained: remove this block (KBD_GO … kbdKey()), kbdBtn() in frame(), the data-kbd line in the click handler,
   // the kbdKey(ev) line in the keydown handler, keys: in both languages in content.js and the "Keyboard shortcuts" rules in page.css.
   var KBD_GO = { h: 'home', s: 'services', w: 'work', n: 'news', p: 'studio', o: 'order', c: 'compare' };
+  // ── Redline notes / "Rdeči svinčnik" on project sheets (2026-11-24) ──────────────────────────────────────────────────
+  // "One like this, but different": on a project sheet the visitor marks the drawing (or the first photo) with numbered red
+  // marks — a click in "Mark on the drawing" mode, or "Add a note" and the arrow keys on the mark — and writes one line per
+  // mark. "Start a project with these notes" puts them into the brief with the sheet number, each mark's place (x / y in %
+  // of the drawing) and a link (#p-<slug>?rl=x.y_x.y) that opens the sheet with the same numbered marks, read-only, so the
+  // studio sees where every note points. A sheet with a 3D model has no flat drawing: notes there are a plain list.
+  // Kept in this browser only (localStorage 'nk-redline', up to 12 notes of 160 characters per sheet, read back through
+  // rlClean()); listed in My corner and wiped by its "forget everything". No studio data is used or invented.
+  // Self-contained. To remove: this block (RL_KEY … rlMine() and the two listeners), the rl-stage wrapper + rlLayer() +
+  // rlBox() in projectView(), the rlRead() call in page(), the rlKey(ev) line in the keydown handler, rlWipe() in
+  // mnForget(), rlCount() in mnCount(), rlMine() in mnView(), rl: in both languages in content.js and the "Redline notes"
+  // block in page.css. (currentSlug() ignoring a "?…" after the slug can stay.)
+  var RL_KEY = 'nk-redline', RL_MAX = 12, RL_LEN = 160, rlMem = null;
+  state.rl = { mode: false, got: null, undo: null };
+  function rlTxt(s) { return String(typeof s === 'string' ? s : '').replace(/[\u0000-\u001f\u007f]+/g, ' ').slice(0, RL_LEN); }
+  function rlPct(v) { v = Math.round(+v); return !isFinite(v) || v < 0 ? 0 : v > 100 ? 100 : v; }
+  function rlClean(a) { // [[x, y, text], …] from storage or a link → [{ x, y, t }]; x / y null = a note without a mark
+    if (!Array.isArray(a)) return [];
+    return a.slice(0, RL_MAX).filter(Array.isArray).map(function (n) {
+      var pin = typeof n[0] === 'number' && typeof n[1] === 'number' && isFinite(n[0]) && isFinite(n[1]);
+      return { x: pin ? rlPct(n[0]) : null, y: pin ? rlPct(n[1]) : null, t: rlTxt(n[2]) };
+    });
+  }
+  function rlAll() {
+    if (!rlMem) {
+      rlMem = {};
+      try { var o = JSON.parse(localStorage.getItem(RL_KEY) || '{}'); if (o && typeof o === 'object' && !Array.isArray(o)) PROJECTS.forEach(function (p) { if (Object.prototype.hasOwnProperty.call(o, p.slug)) { var a = rlClean(o[p.slug]); if (a.length) rlMem[p.slug] = a; } }); } catch (e) {}
+    }
+    return rlMem;
+  }
+  function rlStore() {
+    var all = rlAll(), o = {}, n = 0;
+    Object.keys(all).forEach(function (k) { if (all[k].length) { o[k] = all[k].map(function (v) { return [v.x, v.y, v.t]; }); n++; } else delete all[k]; });
+    try { if (n) localStorage.setItem(RL_KEY, JSON.stringify(o)); else localStorage.removeItem(RL_KEY); } catch (e) {}
+  }
+  function rlWipe() { rlMem = {}; state.rl.undo = null; try { localStorage.removeItem(RL_KEY); } catch (e) {} }
+  function rlCount() { var all = rlAll(); return Object.keys(all).filter(function (k) { return all[k].length; }).length; }
+  function rlCur() { // the sheet on screen and its notes: the visitor's own, or the marks that came with a link
+    var p = bySlug(currentSlug()); if (!p) return null;
+    var g = state.rl.got && state.rl.got.slug === p.slug ? state.rl.got : null;
+    return { p: p, got: !!g, list: g ? g.notes : (rlAll()[p.slug] || []), pins: !p.model };
+  }
+  function rlUrl(p, list) { return 'https://nacekepa.work/' + (lang === 'sl' ? 'sl/' : '') + '#p-' + p.slug + '?rl=' + list.map(function (n) { return n.x === null ? 'n' : n.x + '.' + n.y; }).join('_'); }
+  function rlRead(slug, qs) { // #p-<slug>?rl=20.25_40.60_n — only numbers are read; anything else in the address is ignored
+    var m = /(?:^|&)rl=([0-9n._]{1,120})(?:&|$)/.exec(qs || ''), g = state.rl.got;
+    if (!m) { state.rl.got = null; return; }
+    if (g && g.slug === slug && g.src === m[1]) return;
+    var a = m[1].split('_').slice(0, RL_MAX).map(function (v) { var q = /^(\d{1,3})\.(\d{1,3})$/.exec(v); return q ? [+q[1], +q[2], ''] : [null, null, '']; });
+    state.rl.got = { slug: slug, src: m[1], notes: rlClean(a) };
+  }
+  function rlPins() {
+    var c = rlCur(), x = t().rl; if (!c || !c.pins) return '';
+    return c.list.map(function (n, i) {
+      if (n.x === null) return '';
+      var at = ' style="left:' + n.x + '%;top:' + n.y + '%"';
+      return c.got ? '<span class="rl-pin" role="img"' + at + ' aria-label="' + esc(x.mk.replace('{n}', i + 1)) + '">' + (i + 1) + '</span>'
+        : '<button type="button" class="rl-pin" data-rl-pin="' + i + '"' + at + ' aria-label="' + esc(x.pin.replace('{n}', i + 1)) + '">' + (i + 1) + '</button>';
+    }).join('');
+  }
+  function rlLayer() { state.rl.mode = false; return '<div class="rl-layer" id="rl-layer">' + rlPins() + '</div>'; }
+  function rlInner() {
+    var c = rlCur(), x = t().rl; if (!c) return '';
+    var n = c.list.length, h = '<p class="nk-label" id="rl-t">' + esc(c.got ? x.gotT : x.label) + (n ? ' · ' + n : '') + '</p>';
+    if (c.got) return h + '<p class="rl-lead">' + esc(x.gotL.replace('{n}', n)) + '</p><div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-rl="use">' + esc(x.use) + '</button><button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-rl="close">' + esc(x.close) + '</button></div>';
+    h += '<p class="rl-lead">' + esc(x.lead) + '</p><div class="cta-row">' +
+      (c.pins ? '<button type="button" class="chip" data-rl="mode" aria-pressed="' + (state.rl.mode ? 'true' : 'false') + '">' + esc(state.rl.mode ? x.marking : x.mark) + '</button>' : '') +
+      '<button type="button" class="chip" data-rl="add">' + esc(x.add) + '</button></div>' + (state.rl.mode ? '<p class="rl-hint">' + esc(x.hint) + '</p>' : '');
+    if (n) h += '<ol class="rl-list">' + c.list.map(function (v, i) {
+      return '<li><span class="rl-no" aria-hidden="true">' + (i + 1) + '</span><input class="rl-in" type="text" maxlength="' + RL_LEN + '" data-rl-t="' + i + '" value="' + esc(v.t) + '" placeholder="' + esc(x.ph) + '" aria-label="' + esc(x.note.replace('{n}', i + 1)) + '" autocomplete="off">' +
+        '<button type="button" class="rl-del" data-rl="del" data-rl-i="' + i + '" aria-label="' + esc(x.del.replace('{n}', i + 1)) + '">✕</button></li>';
+    }).join('') + '</ol>' + (c.pins ? '<p class="rl-hint rl-move">' + esc(x.move) + '</p>' : '') +
+      '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--sm" data-rl="go">' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
+      '<button type="button" class="nk-btn nk-btn--sm" data-rl="copy">' + esc(x.copy) + '</button><button type="button" class="nk-btn nk-btn--sm nk-btn--ghost" data-rl="clear">' + esc(x.clear) + '</button></div>';
+    else if (state.rl.undo && state.rl.undo.slug === c.p.slug) h += '<div class="cta-row"><button type="button" class="nk-btn nk-btn--sm" data-rl="undo">' + esc(x.undo) + '</button></div>';
+    return h;
+  }
+  function rlBox() { return '<section class="rl-box" aria-labelledby="rl-t"><div id="rl-box">' + rlInner() + '</div><p class="share-msg" id="rl-msg" role="status" aria-live="polite"></p><p class="fit-note">' + esc(t().rl.keep) + '</p></section>'; }
+  function rlDraw(msg, focus) {
+    var b = document.getElementById('rl-box'), l = document.getElementById('rl-layer'), m = document.getElementById('rl-msg'); if (!b) return;
+    if (l) { l.innerHTML = rlPins(); l.classList.toggle('is-on', !!state.rl.mode); }
+    b.innerHTML = rlInner(); if (m) m.textContent = msg || '';
+    var f = focus && b.querySelector(focus); if (f) f.focus();
+  }
+  function rlAdd(x, y) {
+    var c = rlCur(), X = t().rl; if (!c || c.got) return;
+    var all = rlAll(), a = all[c.p.slug] || (all[c.p.slug] = []);
+    if (a.length >= RL_MAX) { rlDraw(X.full.replace('{n}', RL_MAX)); return; }
+    a.push({ x: c.pins ? rlPct(x) : null, y: c.pins ? rlPct(y) : null, t: '' }); state.rl.undo = null; rlStore();
+    rlDraw(X.added.replace('{n}', a.length), '[data-rl-t="' + (a.length - 1) + '"]');
+  }
+  function rlDel(i) {
+    var c = rlCur(); if (!c || c.got || !c.list[i]) return;
+    c.list.splice(i, 1); rlStore();
+    rlDraw(t().rl.gone, c.list.length ? '[data-rl-t="' + Math.min(i, c.list.length - 1) + '"]' : '[data-rl="add"]');
+  }
+  function rlItems(c) { return c.list.map(function (n, i) { return (i + 1) + ' – ' + (n.t.replace(/;/g, ',').trim() || '—') + (n.x === null ? '' : ' (' + n.x + ' / ' + n.y + ' %)'); }); }
+  function rlLine(c) { return t().rl.brief + ' ' + sheetNo(c.p) + ': ' + [P(c.p, 'title').replace(/;/g, ',')].concat(rlItems(c), c.pins ? [rlUrl(c.p, c.list)] : []).join('; '); }
+  function rlToOrder(c) {
+    var o = state.order, s = sdSvc(c.p), line = rlLine(c), had = false;
+    var pre = [T.en.rl.brief, T.sl.rl.brief].map(function (b) { return b + ' ' + sheetNo(c.p) + ':'; });
+    if (s && o.services.indexOf(s.key) < 0) o.services.push(s.key);
+    var lines = (o.what ? o.what.split('\n') : []).map(function (l) { if (l.indexOf(pre[0]) === 0 || l.indexOf(pre[1]) === 0) { had = true; return line; } return l; });
+    if (!had) lines.push(line);
+    o.what = lines.join('\n'); state.step = 0; state.errors = {}; state.send = 'idle';
+    location.hash = 'order';
+  }
+  function rlCopy(c) {
+    var X = t().rl, m = document.getElementById('rl-msg'), txt = [X.brief + ' ' + sheetNo(c.p) + ' · ' + P(c.p, 'title')].concat(rlItems(c), c.pins ? [rlUrl(c.p, c.list)] : []).join('\n');
+    var say = function (ok) { if (m) m.textContent = ok ? X.copied : X.copyFail; };
+    try { navigator.clipboard.writeText(txt).then(function () { say(true); }, function () { say(false); }); } catch (e) { say(false); }
+  }
+  function rlClick(ev) {
+    var tg = ev.target; if (!tg || !tg.closest || !document.getElementById('rl-box')) return;
+    var pin = tg.closest('[data-rl-pin]'), l = tg.closest('#rl-layer'), b = tg.closest('[data-rl]'), c = rlCur(); if (!c) return;
+    if (pin) { var inp = document.querySelector('[data-rl-t="' + pin.getAttribute('data-rl-pin') + '"]'); if (inp) inp.focus(); return; }
+    if (l) { var r = l.getBoundingClientRect(); if (state.rl.mode && !c.got && r.width && r.height) rlAdd((ev.clientX - r.left) / r.width * 100, (ev.clientY - r.top) / r.height * 100); return; }
+    if (!b) return;
+    var k = b.getAttribute('data-rl'), all = rlAll(), a = all[c.p.slug] || [], X = t().rl;
+    if (k === 'close') location.hash = 'p-' + c.p.slug;
+    else if (k === 'use') { all[c.p.slug] = a.concat(c.list.map(function (n) { return { x: n.x, y: n.y, t: '' }; })).slice(0, RL_MAX); rlStore(); location.hash = 'p-' + c.p.slug; }
+    else if (c.got) return;
+    else if (k === 'mode') { state.rl.mode = !state.rl.mode; rlDraw('', '[data-rl="mode"]'); }
+    else if (k === 'add') rlAdd(50 + (a.length % 5 - 2) * 9, 50 + (a.length % 3 - 1) * 12);
+    else if (k === 'del') rlDel(+b.getAttribute('data-rl-i'));
+    else if (k === 'clear') { state.rl.undo = { slug: c.p.slug, notes: a.slice() }; all[c.p.slug] = []; state.rl.mode = false; rlStore(); rlDraw(X.cleared, '[data-rl="undo"]'); }
+    else if (k === 'undo' && state.rl.undo) { all[c.p.slug] = state.rl.undo.notes; state.rl.undo = null; rlStore(); rlDraw('', '[data-rl="add"]'); }
+    else if (k === 'copy') rlCopy(c);
+    else if (k === 'go' && a.length) rlToOrder(c);
+  }
+  function rlInput(ev) {
+    var tg = ev.target; if (!tg || !tg.hasAttribute || !tg.hasAttribute('data-rl-t')) return;
+    var c = rlCur(), n = c && !c.got && c.list[+tg.getAttribute('data-rl-t')]; if (n) { n.t = rlTxt(tg.value); rlStore(); }
+  }
+  function rlKey(ev) {
+    var tg = ev.target; if (!tg || !tg.hasAttribute || !document.getElementById('rl-box')) return false;
+    if (ev.key === 'Escape' && state.rl.mode && !document.querySelector('dialog[open]')) { state.rl.mode = false; rlDraw('', '[data-rl="mode"]'); ev.preventDefault(); return true; }
+    if (!tg.hasAttribute('data-rl-pin') || ev.ctrlKey || ev.metaKey || ev.altKey) return false;
+    var c = rlCur(), i = +tg.getAttribute('data-rl-pin'), n = c && !c.got && c.list[i], d = ev.shiftKey ? 5 : 1; if (!n) return false;
+    var mv = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, -d], ArrowDown: [0, d] }[ev.key];
+    if (mv) { n.x = rlPct(n.x + mv[0]); n.y = rlPct(n.y + mv[1]); rlStore(); tg.style.left = n.x + '%'; tg.style.top = n.y + '%'; ev.preventDefault(); return true; }
+    if (ev.key === 'Delete' || ev.key === 'Backspace') { rlDel(i); ev.preventDefault(); return true; }
+    return false;
+  }
+  function rlMine() { // My corner: the sheets that carry notes
+    var all = rlAll(), x = t().rl, ks = Object.keys(all).filter(function (k) { return all[k].length && bySlug(k); }); if (!ks.length) return '';
+    return '<section class="mn-sec"><h2 class="sub">' + esc(x.label) + ' <span class="nk-label">' + ks.length + '</span></h2><ul class="mn-list">' + ks.map(function (k) {
+      var p = bySlug(k); return '<li><a href="#p-' + esc(k) + '"><b>' + esc(P(p, 'title')) + '</b> <span class="nk-label">' + esc(sheetNo(p) + ' · ' + x.count.replace('{n}', all[k].length)) + '</span></a></li>';
+    }).join('') + '</ul></section>';
+  }
+  app.addEventListener('click', rlClick);
+  app.addEventListener('input', rlInput);
   // ── Sheet settings / "Nastavitve lista" (2026-11-21) ─────────────────────────────────────────────────────────────────
   // A display panel: colours (as the device / light / dark), text size, stronger lines and small text, the drawing grid,
   // motion. Opened from the half-disc button in the header, "Sheet settings" in the footer, the D key or Find anything.
@@ -5112,7 +5272,8 @@
   // Sheet settings line in fxIndex(), vwCalm() at the data-top line (put the matchMedia test back), vw: in both languages
   // in content.js, the "Sheet settings" block in page.css and prefs.js with its imports (see the top of that file).
   var VW = window.NKView || null, vwCur = null;
-  var VW_KEYS = ['theme', 'size', 'contrast', 'grid', 'motion'];
+  var VW_KEYS = ['theme', 'size', 'contrast', 'grid', 'motion', 'spacing'];
+  function vwSet(k, v) { if (!VW) return; var c = k ? VW.read() : {}; if (k) c[k] = v; VW.save(VW.apply(c)); } // one-step change from Find anything (2026-11-24)
   function vwCalm() { if (VW) return VW.calm(); try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
   function vwIcon() { return '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"/></svg>'; }
   function vwBtn() { if (!VW) return ''; var v = t().vw; return '<button type="button" class="fx-open vw-open" data-vw aria-haspopup="dialog" aria-keyshortcuts="D" aria-label="' + esc(v.btn) + '" title="' + esc(v.btn) + ' (D)">' + vwIcon() + '</button>'; }
@@ -5213,6 +5374,7 @@
   document.addEventListener('keydown', function (ev) {
     var tg = ev.target, typing = tg && (/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName) || tg.isContentEditable);
     if (ev.key === 'Escape' && tg && tg.id === 'find-q' && state.q) { state.q = ''; tg.value = ''; findApply(); ev.preventDefault(); return; }
+    if (rlKey(ev)) return; // Redline notes (2026-11-24)
     if (pzKey(ev)) return; // Presentation (2026-11-13)
     if (fxKey(ev)) return; // Find anything (2026-11-12)
     if (ofKey(ev)) return;

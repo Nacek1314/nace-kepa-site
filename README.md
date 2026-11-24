@@ -90,6 +90,12 @@ the form and fills the form only after "Use this draft"; the data stays in the a
 that is asked for (tool link, index, Find anything, a hand-off) opens by itself, and the index is a compact list with "Open all tools".
 Wider screens and print are unchanged (`tlSetFold()` in `src/site/app.js`, `tl-fold` rules in `page.css`).
 
+**Redline notes** (on every project sheet, under the drawing): the visitor marks the drawing or the first photo with numbered red
+marks ("Mark on the drawing", or "Add a note" + arrow keys) and writes one line per mark; "Start a project with these notes" puts them
+into the brief with a link `#p-<slug>?rl=20.25_60.70` that opens the sheet with the same marks, read-only. Kept in the browser
+(localStorage `nk-redline`), listed in My corner (`RL_KEY` … `rlMine()` in `src/site/app.js`). Sheet settings also has a **Line spacing**
+row, Find anything has one-step display actions ("Dark sheet", "Larger text" …) and the 404 page has a Colours row.
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,

@@ -1,6 +1,6 @@
 // Sheet settings (2026-11-21): how the visitor wants to read the site — colours, text size, line contrast, the drawing
 // grid, motion. This small file only READS the choice (localStorage 'nk-view', this browser only, nothing is sent) and
-// puts it on <html> as data-theme / data-size / data-contrast / data-grid / data-motion before the page is drawn, so
+// puts it on <html> as data-theme / data-size / data-contrast / data-grid / data-motion / data-spacing before the page is drawn, so
 // there is no flash of the wrong colours. The panel that changes it is the vw…() block in app.js; the rules are the
 // "Sheet settings" block in page.css. Loaded in the <head> of Site.astro (own CSP hash) and at the start of the inline
 // script of 404.astro and admin.astro, so every page follows the same choice.
@@ -9,7 +9,7 @@
 (function () {
   var KEY = 'nk-view';
   // The first value of every list is the default (= attribute absent = the site as it always was).
-  var OPT = { theme: ['auto', 'light', 'dark'], size: ['auto', '100', '112', '125'], contrast: ['auto', 'more'], grid: ['on', 'off'], motion: ['auto', 'reduce'] };
+  var OPT = { theme: ['auto', 'light', 'dark'], size: ['auto', '100', '112', '125'], contrast: ['auto', 'more'], grid: ['on', 'off'], motion: ['auto', 'reduce'], spacing: ['auto', 'wide'] };
   var TC = { light: '#eef0ec', dark: '#131517' }; // --paper in both themes, for the browser's toolbar colour
   function clean(s) {
     var o = {};

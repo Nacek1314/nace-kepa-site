@@ -1619,3 +1619,28 @@ th[aria-sort] .rg-arr { color: var(--redline); }
 .vw-msg { margin: 0; min-height: 18px; font: 12px/18px var(--font-mono); color: var(--ok); }
 @media print { :root[data-size] { zoom: 1; } .vw-open, .vw-link { display: none !important; } }
 @media (hover: none) and (pointer: coarse) { .kbd-open.vw-link { display: inline-block; } .vw-link kbd { display: none; } }
+/* Sheet settings everywhere package (2026-11-24): "Line spacing: Wider" — running text only, labels and buttons untouched. */
+@media screen { :root[data-spacing="wide"] main p:not(.nk-label), :root[data-spacing="wide"] main li, :root[data-spacing="wide"] main dd { line-height: 1.8; } }
+
+/* ---------- Redline notes (2026-11-24): numbered marks on a project sheet's drawing + one line each (rl…() in app.js) ---------- */
+.rl-stage { position: relative; }
+.rl-layer { position: absolute; inset: 0; pointer-events: none; }
+.rl-layer.is-on { pointer-events: auto; cursor: crosshair; outline: 2px dashed var(--redline); outline-offset: -2px; }
+.rl-pin { position: absolute; transform: translate(-50%, -50%); box-sizing: border-box; width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid var(--paper-raised); background: var(--redline); color: var(--on-redline); font: 600 12px/24px var(--font-mono); text-align: center; cursor: pointer; pointer-events: auto; }
+span.rl-pin { cursor: default; }
+.rl-pin:focus-visible, .rl-del:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.rl-box { margin-top: var(--space-2); padding: var(--space-4); border: 1px dashed var(--line-strong); background: var(--paper-raised); }
+.rl-box .nk-label { margin: 0 0 var(--space-2); }
+.rl-lead, .rl-hint { margin: 0 0 var(--space-3); font-size: 14px; line-height: 20px; color: var(--ink-muted); }
+.rl-box .cta-row { margin: 0 0 var(--space-3); gap: var(--space-2); }
+.rl-box .chip { min-height: 40px; }
+.rl-list { list-style: none; margin: 0 0 var(--space-3); padding: 0; display: grid; gap: var(--space-2); }
+.rl-list li { display: grid; grid-template-columns: 28px minmax(0, 1fr) 40px; gap: var(--space-2); align-items: center; }
+.rl-no { width: 28px; height: 28px; border-radius: 50%; background: var(--redline); color: var(--on-redline); font: 600 12px/28px var(--font-mono); text-align: center; }
+.rl-in { min-width: 0; width: 100%; box-sizing: border-box; font: 16px/20px var(--font-sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--radius-xs); padding: 9px 10px; }
+.rl-in:focus-visible { outline: 2px solid var(--redline); outline-offset: 1px; }
+.rl-del { width: 40px; height: 40px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-xs); background: none; color: var(--ink-muted); font: 14px/1 var(--font-mono); cursor: pointer; }
+.rl-del:hover { border-color: var(--line-strong); color: var(--ink); }
+.rl-box .share-msg { color: var(--ok); }
+.rl-box .fit-note { margin: var(--space-2) 0 0; padding-top: var(--space-3); font-size: 13px; }
+@media (hover: none) and (pointer: coarse) { .rl-move { display: none; } } /* the arrow-key hint is for keyboards */

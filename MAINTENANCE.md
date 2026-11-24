@@ -26,6 +26,53 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-24
+
+**Checked:** build (66 pages); home, #services, #work, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about, #order,
+#studio, #mine, `/portfolio/famfive/`, 404, /admin/ sign-in — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests
+(Google Fonts blocked in the cloud, as always), no horizontal scroll, no CSP violations, no broken images. Live site from the laptop: all
+addresses 200, unknown address 404, both inline scripts equal the two pinned CSP hashes; last Actions run (86d0fbe) succeeded.
+**History note:** nothing was shipped on 2026-11-22 and 2026-11-23. The 11-23 run built its work but the patch transfer to the laptop
+stopped half-way (a truncated `daily.b64` was left in `C:\Users\kepan\Webiste`), so nothing was pushed. Today's run rebuilt the same
+plan in a smaller form. **Lesson for next runs: keep the patch small (`git diff -U1`, gzip + base64 under ~40 kB) — a big patch does not
+survive the chunked `write_file` transfer.** Also: `check-live.ps1` compares the last CSP hash with the first inline script, so its two
+hash lines differ by design since `prefs.js` exists; compare all inline scripts with all hashes instead.
+**Fixed:** (1) `currentSlug()` kept a `?…` that followed a sheet's slug, so `#p-famfive?x=1` opened a sheet view with no project behind
+it (JS error) — the query is now ignored. (2) The 404 headline ended with a period, against the 2026-11-08 rule for titles — removed (EN + SL).
+
+**Improvement — "Sheet settings everywhere" package (the follow-ups listed on 2026-11-21):** (a) **Line spacing** — a sixth row in the
+panel (Standard / Wider): running text inside `main` at line height 1.8, labels and buttons untouched (`spacing` in `prefs.js`,
+`data-spacing`, one rule in `page.css`). (b) **Find anything: one-step display actions** — "Dark sheet", "Light sheet", "Colours as the
+device", "Larger text (125 %)", "Wider line spacing", "Back to the standard sheet" (EN + SL words); only the ones that would change
+something are listed (`vwSet()` + the `if (VW) {…}` block in `fxIndex()`). (c) **404 page: Colours row** in the footer (As the device /
+Light / Dark) writing the same stored choice. Tested (86 checks, EN 1280 light + SL 390 dark): every action, storage, the panel row, line
+height, no horizontal scroll on 11 views at 125 % + wider spacing, reset, the 404 buttons by keyboard, the site following the 404 choice,
+bad stored value ignored, axe 0 violations on the panel and the 404 page. *To remove:* `spacing` in `prefs.js` + `VW_KEYS`, `vwSet()`
+and the block in `fxIndex()`, `vw.fx` / `spacing` texts in `content.js`, the `data-spacing` rule, the `nf-vw` parts of `404.astro`.
+
+**Innovation — Redline notes / "Rdeči svinčnik" (`RL_KEY` … `rlMine()` in `app.js`, `rl:` in `content.js`, "Redline notes" block at the
+end of `page.css`):** on every project sheet, under the drawing — "one like this, but different". **Mark on the drawing** → each click on
+the drawing (or first photo) drops a numbered red mark and opens its note line; **Add a note** does the same from the keyboard, and a
+focused mark moves with the arrow keys (Shift = bigger steps, Delete removes). Up to 12 notes of 160 characters per sheet. **Start a
+project with these notes** opens the order form with the sheet's service ticked and one brief line — "Redline notes NK-25-01: FamFive;
+1 – Wider base (20 / 25 %); …; https://nacekepa.work/#p-famfive?rl=20.25_60.70" — shown as a list on step 4 and in the e-mail. **The link
+in the brief opens the sheet with the same numbered marks** (read-only, "Marks from a link", with "Use as my notes" / "Close"), so Nace
+sees where each note points; the link carries positions only. "Copy notes" gives plain text; "Clear notes" has "Put the notes back".
+A sheet with a 3D model gets a plain list (no flat drawing). Kept in this browser only (`localStorage` `nk-redline`, validated on read),
+listed in My corner, wiped by "forget everything". Uses no studio data — nothing for Nace to fill in.
+- Tested in Playwright (EN 1280 light with mouse, SL 390 dark with touch; 98 checks): marking by click / tap, mark under the cursor (also
+  at 125 %), keyboard add / move / delete, Enter on a mark → its note, Esc ends marking, arrows on a mark do not turn the sheet, reload,
+  copy, My corner + forget, the brief line (replaced, not doubled), received link, malformed / out-of-range link, hostile storage, the
+  12-note limit, clear + undo, marks inside the drawing, no horizontal scroll, axe 0 violations (own, marking, received), no CSP violations.
+- Not in this version (next steps): dragging a mark, a link that also carries the texts, the notes on the printed sheet.
+*To remove:* see the comment above `var RL_KEY` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: Redline notes — drag a mark; a share link with the texts; marks + notes on "Print this sheet" and in the My corner export.
+- Admin: "Open the redline link" in Quote from a brief / on the job card NK-J.
+- Public: Redline marks on the Part studio drawing NK-D; a note count on #work cards.
+- Admin: Sheet settings panel in the dashboard header (carried over).
+
 ## 2026-11-21
 
 **Checked:** build (66 pages), home, #services (incl. `?tool=prices`, `?tool=series`), #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock,
@@ -2794,6 +2841,12 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: Sheet settings — "Reading" row (line spacing); dark-device hint.
 - Admin: Sheet settings panel in the dashboard header.
 - Public: 404 "Sheet settings" link; Find anything "Dark sheet" / "Light sheet" actions.
+- (Built 2026-11-24: Redline notes on project sheets — numbered red marks on the drawing with one note each, by click or keyboard,
+  into the brief with a link that opens the sheet with the same marks, My corner row; "Sheet settings everywhere" package as the
+  improvement — Line spacing row, one-step display actions in Find anything, Colours row on the 404 page.)
+- Public: Redline notes — drag, share link with texts, printed sheet, My corner export.
+- Admin: "Open the redline link" from a pasted brief / on the job card NK-J.
+- Public: Redline marks on the NK-D drawing; note count on #work cards.
 
 ## 2026-10-03 (second run)
 
