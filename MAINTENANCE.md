@@ -26,6 +26,52 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-25
+
+**Checked:** build (74 pages); home, #services, #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills,
+#about, #contact, #order (all 4 steps on the local build in EN + SL, nothing sent), #studio, #mine, #compare, #gift, 404, /admin/ sign-in —
+1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in the cloud, as always), no horizontal
+scroll, no CSP violations, no broken images. Page metadata of every built page read by script (title, description, canonical, hreflang,
+link preview, JSON-LD parses). Live site + last Actions run (4fea858, success) checked from the laptop.
+**Fixed:** nothing was broken today.
+
+**Improvement — "section pages" package (SEO):** `/services/`, `/portfolio/`, `/skills/`, `/about/` (+ `/sl/…`) were redirect stubs
+(`noindex`, a jump to `/#services` …), so search engines had one address for the whole studio besides the sheets and posts. They are now
+**real pages** like `/news/`: (a) own title and description per section and language (e.g. "Services: CAD, 3D printing, firmware, custom
+builds · Nace Kepa"; Work counts the sheets per discipline — all from `content.js` / the data files), canonical, hreflang EN ↔ SL;
+(b) a static snapshot of that section for crawlers and no-JavaScript visitors — Services with turnaround, published rate, "What you get" /
+"What I need" per service and the VAT note; Work with every sheet linked; Skills with every group; About with the studio facts and process;
+(c) a drawn link-preview card per section (`/og/services.png` …, `sectionCard()` in `src/og/card.ts`); (d) `BreadcrumbList` structured
+data on every section page, and the service offers / project list / sheet breadcrumbs now point at `/services/`, `/portfolio/`, `/news/`
+instead of `#…` addresses; the project list JSON-LD sits on home + Work, the posts on home + News; (e) all eight in the sitemap (64 → 72
+addresses); (f) in the app: the page opens its section, keeps its built title while that section is shown, the EN / SL switch goes to the
+twin page, and moving on continues at `/` or `/sl/` as on the other landing pages (`landingView()`, `langPath()`, `LAND_TITLE` in
+`app.js`). The snapshot header links go to the real section pages. `/order` stays a redirect.
+*To remove:* the eight `src/pages/**/(services|portfolio|skills|about)/index.astro` files, `SECTIONS` / `sec` in `Site.astro`,
+`sectionCard`, the paths in `astro.config.mjs` (and put the eight redirects back).
+
+**Innovation — Studio profile NK-A / "Profil studia" (`#profile`; `pfState()` … `pfAct()` in `app.js`, `pf:` in `content.js`, "Studio
+profile" block at the end of `page.css`):** the studio on **one A4 sheet** to forward to a colleague, a manager or purchasing — header
+with the mark and date, who (hero line, About text, studio facts), the services with turnaround, published rate and "What you get",
+skills and equipment (the #skills groups), selected work (the featured sheets with sheet numbers), contact + a QR code. The visitor ticks
+**which services**, **published prices** and **selected work** belong on it; the choice lives in the address
+(`#profile?s=cad,print&pr=0&w=0`), so the address bar, "Copy link" and the QR all open the same sheet. **Print / save as PDF** (one A4
+page in EN and SL, site chrome hidden), **Copy as text**, **Copy link**, **Send by e-mail** (mailto with the text). Entry points: the link
+under the studio facts on #about, Find anything ("profile", "one page", "profil", "nabava" …). Only text and numbers the site already
+publishes; with no price list in Settings the rates and the "Published prices" tick disappear. Nothing stored, nothing sent.
+- Tested in Playwright (EN 1280 light, SL 390 dark + touch; 130 checks with the section pages): content, language, ticks by keyboard
+  with focus kept, address following the choice, reload, link in, malformed link, copy link / text (clipboard read back), blocked
+  clipboard fallback, mailto, QR label, "no service" message, print media (chrome hidden, exactly one A4 page in both languages), nothing
+  leaving the sheet, no horizontal scroll, EN / SL link keeps the choice, Find anything, work links, axe 0 violations (profile, about).
+- Not in this version (next steps): the sheet per service as a `/services/<id>/` page; a client name line ("Prepared for …").
+*To remove:* see the comment above `function pfState` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: header / footer links as real addresses (`/services/` …) with in-app navigation, so the section pages get internal links too.
+- Public: one page per service (`/services/3d-printing/` …) with its tools, price rows and matching sheets.
+- Public: Studio profile — "Prepared for" line, profile in the portfolio set as page 2, PNG card of the profile.
+- Admin: Overview rows for the section pages (title / description length, card ↗).
+
 ## 2026-11-24
 
 **Checked:** build (66 pages); home, #services, #work, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills, #about, #order,
@@ -2847,6 +2893,12 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: Redline notes — drag, share link with texts, printed sheet, My corner export.
 - Admin: "Open the redline link" from a pasted brief / on the job card NK-J.
 - Public: Redline marks on the NK-D drawing; note count on #work cards.
+- (Built 2026-11-25: Studio profile NK-A `#profile` — the studio on one A4 sheet (services, turnaround, rates, skills, selected work,
+  contact + QR), ticks for what belongs on it kept in the address, print / PDF, copy as text, link, e-mail; "section pages" package as the
+  improvement — `/services/`, `/portfolio/`, `/skills/`, `/about/` (+ `/sl/`) as real pages with own title, description, snapshot, card.)
+- Public: real addresses in the header / footer navigation; one page per service (`/services/<id>/`).
+- Public: Studio profile — "Prepared for" line, in the portfolio set, PNG card.
+- Admin: Overview rows for the section pages.
 
 ## 2026-10-03 (second run)
 

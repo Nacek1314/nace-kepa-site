@@ -96,6 +96,14 @@ into the brief with a link `#p-<slug>?rl=20.25_60.70` that opens the sheet with 
 (localStorage `nk-redline`), listed in My corner (`RL_KEY` … `rlMine()` in `src/site/app.js`). Sheet settings also has a **Line spacing**
 row, Find anything has one-step display actions ("Dark sheet", "Larger text" …) and the 404 page has a Colours row.
 
+**Studio profile NK-A** (`#profile`, linked under the studio facts on `#about`): the studio on one A4 sheet to print, save as PDF, copy
+as text or forward — services with turnaround, published rate and deliverables, skills, selected work, contact + QR. Ticks choose what
+is on the sheet and live in the address (`#profile?s=cad,print&pr=0&w=0`) — `pfView()` in `src/site/app.js`.
+
+**Section pages:** `/services/`, `/portfolio/`, `/skills/`, `/about/` (and `/sl/…`) are real pages like `/news/` — own title, description,
+link-preview card, breadcrumb data and static snapshot, opening that section (`SECTIONS` in `src/site/Site.astro`,
+`src/pages/<section>/index.astro`). `/order` is still a redirect into the page.
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,
@@ -198,6 +206,7 @@ private repo needs a paid GitHub plan).
 ```
 src/site/Site.astro     the site (inlines src/site/*, projects from src/data/projects.json)
 src/pages/index.astro   English page (/) · src/pages/sl/index.astro Slovenian page (/sl/)
+src/pages/services/ skills/ about/ portfolio/index.astro   section pages (+ sl/ twins)
 src/pages/portfolio/    project landing pages /portfolio/<slug>/ · src/pages/news/ news landing pages /news/<slug>/ (+ sl/ twins)
 src/pages/admin.astro   the admin dashboard (src/site/admin.js)
 src/data/projects.json  all projects, edited by the dashboard

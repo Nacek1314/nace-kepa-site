@@ -7,7 +7,8 @@ import { readFileSync } from 'node:fs';
 // published news post at /news/<slug>/ and /sl/news/<slug>/ (src/pages/portfolio/[slug].astro, src/pages/news/[slug].astro
 // and the /sl/ twins). They go into the sitemap; the old-slug redirects below now point at them.
 const data = (f) => JSON.parse(readFileSync(new URL('./src/data/' + f, import.meta.url), 'utf8'));
-const landingPaths = new Set(['/news/', '/sl/news/'].concat(
+// Section pages (2026-11-25): /services/, /portfolio/, /skills/, /about/ (+ /sl/) are real pages too (see SECTIONS in Site.astro).
+const landingPaths = new Set(['/news/', '/sl/news/', '/services/', '/sl/services/', '/portfolio/', '/sl/portfolio/', '/skills/', '/sl/skills/', '/about/', '/sl/about/'].concat(
   ...data('projects.json').filter((p) => !p.hidden).map((p) => ['/portfolio/' + p.slug + '/', '/sl/portfolio/' + p.slug + '/']),
   ...data('news.json').filter((n) => !n.hidden && !n.draft && !(n.date && n.date > new Date().toISOString().slice(0, 10))).map((n) => ['/news/' + n.slug + '/', '/sl/news/' + n.slug + '/'])));
 
@@ -21,15 +22,7 @@ export default defineConfig({
   // Never inline built scripts into the HTML: the Content-Security-Policy only trusts files from this site.
   vite: { build: { assetsInlineLimit: 0 } },
   redirects: {
-    "/services": "/#services",
-    "/portfolio": "/#work",
-    "/skills": "/#skills",
-    "/about": "/#about",
     "/order": "/#order",
-    "/sl/services": "/#sl-services",
-    "/sl/portfolio": "/#sl-work",
-    "/sl/skills": "/#sl-skills",
-    "/sl/about": "/#sl-about",
     "/sl/order": "/#sl-order",
     "/portfolio/backpack-buckle": "/portfolio/engineered-backpack-buckle/",
     "/sl/portfolio/backpack-buckle": "/sl/portfolio/engineered-backpack-buckle/",

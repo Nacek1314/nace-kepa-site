@@ -12,9 +12,10 @@
   // Landing pages (2026-11-01): /portfolio/<slug>/ and /news/<slug>/ (+ /sl/…) are the same site with <meta name="nk-start">
   // naming the sheet / post to open when there is no hash. The first in-app navigation moves the address back to / or /sl/
   // (see the hashchange listener at the end), so every other view keeps its usual address.
-  function landingView() { var m = /^\/(?:sl\/)?(portfolio|news)\/([a-z0-9-]+)\/?$/.exec(location.pathname); if (m) return (m[1] === 'news' ? 'n-' : 'p-') + m[2]; return /^\/(?:sl\/)?news\/?$/.test(location.pathname) ? 'news' : ''; } // /news/ index (blog package, 2026-11-02)
+  function landingView() { var m = /^\/(?:sl\/)?(portfolio|news)\/([a-z0-9-]+)\/?$/.exec(location.pathname); if (m) return (m[1] === 'news' ? 'n-' : 'p-') + m[2]; var sv = /^\/(?:sl\/)?(news|services|portfolio|skills|about)\/?$/.exec(location.pathname); return sv ? (sv[1] === 'portfolio' ? 'work' : sv[1]) : ''; } // /news/ index (blog package, 2026-11-02) + section pages /services/, /portfolio/, /skills/, /about/ (2026-11-25)
   var START_VIEW = (function () { var m = document.querySelector('meta[name="nk-start"]'); return m ? String(m.getAttribute('content') || '') : landingView(); })();
   var LANDING = !!START_VIEW;
+  var LAND_TITLE = LANDING ? document.title : '', LAND_LANG = document.documentElement.lang === 'sl' ? 'sl' : 'en'; // Section pages (2026-11-25): a landing page keeps the title it was built with while it shows the view it opened with
   // EN/SL on a landing page: keep the address on the right language (/portfolio/… ↔ /sl/portfolio/…).
   // Language package (2026-11-09): the address follows the language on every view — / for English, /sl/ for Slovenian
   // (landing pages: /portfolio/<slug>/ ↔ /sl/portfolio/<slug>/, /news/ ↔ /sl/news/) — so a copied address, a bookmark or
@@ -22,7 +23,7 @@
   // language's address (right-click → copy, middle-click → new tab). Only the site's own paths are touched. To remove: put
   // landingLang() back (the LANDING-only replaceState: "/sl" + the path without it) and the two <button data-lang> elements in frame().
   function langPath() {
-    var p = location.pathname; if (!/^\/(?:sl\/?)?(?:(?:portfolio|news)\/[a-z0-9-]+\/?|news\/?)?$/.test(p)) return;
+    var p = location.pathname; if (!/^\/(?:sl\/?)?(?:(?:portfolio|news)\/[a-z0-9-]+\/?|(?:news|services|portfolio|skills|about)\/?)?$/.test(p)) return;
     var isSl = /^\/sl(?:\/|$)/.test(p), want = lang === 'sl'; if (isSl === want) return;
     var np = langHref(lang, p);
     try { history.replaceState(history.state, '', np + location.search + location.hash); state.navHref = location.href; } catch (e) {}
@@ -72,6 +73,7 @@
     if (h === 'contact') { state.ctGo = true; return 'about'; } // Contact package (2026-10-29): #contact opens the contact card on #about
     if (/^p-/.test(h) && bySlug(h.slice(2))) { rlRead(h.slice(2), qs); return 'project'; } // rlRead: Redline notes (2026-11-24)
     if (/^n-/.test(h) && newsBySlug(h.slice(2))) return 'post';
+    if (h === 'profile') { if (location.hash !== state.pfHash) { state.pfHash = location.hash; pfRead(qs); } return 'profile'; } // Studio profile NK-A (2026-11-25)
     if (h === 'gift' && !giftOn()) return 'home';
     return PAGES.indexOf(h) >= 0 ? h : 'home'; }
   // A hash with a language prefix (#en-…, #sl-… from shared links and feeds) would switch the language back on render,
@@ -101,11 +103,15 @@
   // Prices-on-the-service package (2026-11-15): the published rate of a service on its card (home + #services) — the hourly rate from
   // settings.json, for 3D printing how the price is built and the minimum order; on #services with a link to the price list.
   // Nothing without a price list. To remove: svcRate(), its call in service(), pc.rate… in content.js, .svc-rate in page.css.
-  function svcRate(s, full) {
+  function svcRateTxt(s) { // the published rate of a service as plain text ('' = none published)
     if (!pcOn()) return '';
     var x = t().pc, h = +PRICE.hourly[s.key], pr = PRICE.print, txt = '';
     if (s.key === 'print') { if (pcMats().length || +pr.machineHour > 0) txt = x.ratePrint + (+pr.minOrder > 0 ? ' · ' + x.rateMin.replace('{m}', pcMoney(pr.minOrder)) : ''); }
     else if (h > 0) txt = x.perHour.replace('{n}', pcMoney(h));
+    return txt;
+  }
+  function svcRate(s, full) {
+    var x = t().pc, txt = svcRateTxt(s);
     if (!txt) return '';
     return '<p class="svc-rate"><span class="nk-label">' + esc(x.rate) + '</span> <b>' + esc(txt) + '</b>' + (full ? ' <a href="#services?tool=prices">' + esc(x.rateLink) + ' →</a>' : '') + '</p>';
   }
@@ -180,7 +186,7 @@
     about: function () {
       var x = t();
       return '<section class="block first about-page">' + head(x.aboutLabel, x.aboutTitle, null, true) + '<div class="about-cols"><div><p class="lead">' + esc(x.aboutBody) + '</p>' + timelineDims() + '</div><div><p class="nk-label">' + esc(x.facts) + '</p>' +
-        specs([[lang === 'sl' ? 'Lokacija' : 'Location', lang === 'sl' ? 'Škofja Loka, Slovenija' : 'Škofja Loka, Slovenia'], [lang === 'sl' ? 'Šola' : 'School', 'Šolski center Kranj'], ['CAD', lang === 'sl' ? 'SolidWorks 4 leta · CSWA · CSWA-AM' : 'SolidWorks 4 yrs · CSWA · CSWA-AM']].concat(x.heroSpecs.slice(2))) + ctCard() + '</div></div></section>' +
+        specs(pfFacts()) + pfLink() + ctCard() + '</div></div></section>' +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     order: orderView,
@@ -194,6 +200,7 @@
     },
     post: postView,
     compare: function () { return cmpView(); },
+    profile: function () { return pfView(); }, // Studio profile NK-A (2026-11-25)
     studio: function () { return stView(); }
   };
 
@@ -330,6 +337,95 @@
     var x = t(), msg = document.getElementById('ct-msg'), el = document.getElementById('ct-mail'); if (!msg || !el) return;
     var fail = function () { msg.textContent = x.mailFail; var r = document.createRange(); r.selectNodeContents(el); var g = getSelection(); g.removeAllRanges(); g.addRange(r); };
     try { navigator.clipboard.writeText(CONTACT_EMAIL).then(function () { msg.textContent = x.tbCopied; }, fail); } catch (e) { fail(); }
+  }
+
+  // ---------- Studio profile NK-A (2026-11-25) ----------
+  // #profile — the studio on one A4 sheet to print, save as PDF, copy as text or forward by e-mail: who, the services with their
+  // turnaround, published rate and deliverables, skills and equipment, selected work, contact + QR. The visitor ticks which
+  // services, whether prices and whether selected work belong on the sheet; the choice lives in the address
+  // (#profile?s=cad,print&pr=0&w=0), so "Copy link" opens the same sheet. Only text and numbers the site already publishes
+  // (SERVICES, SKILLS, settings.json prices, featured projects) — nothing typed in here, nothing stored, nothing sent.
+  // Self-contained: remove this block, views.profile, the 'profile' line in page(), the pf lines in pageTitle(), frame() (two),
+  // the click + change handlers and fxIndex(), put the facts rows back into views.about (pfFacts() + pfLink()), pf: in
+  // content.js and the "Studio profile" block at the end of page.css.
+  function pfState() { if (!state.pf) state.pf = { s: SERVICES.map(function (s) { return s.key; }), pr: true, w: true }; return state.pf; }
+  function pfRead(qs) {
+    var f = pfState(), q = String(qs || ''), m = /(?:^|&)s=([a-z,]*)/.exec(q), all = SERVICES.map(function (s) { return s.key; });
+    f.s = m ? all.filter(function (k) { return m[1].split(',').indexOf(k) >= 0; }) : all;
+    f.pr = !/(?:^|&)pr=0(?:&|$)/.test(q); f.w = !/(?:^|&)w=0(?:&|$)/.test(q);
+  }
+  function pfQuery() { var f = pfState(), q = []; if (f.s.length !== SERVICES.length) q.push('s=' + f.s.join(',')); if (!f.pr && pcOn()) q.push('pr=0'); if (!f.w) q.push('w=0'); return q.length ? '?' + q.join('&') : ''; }
+  function pfUrl() { return siteUrl('#profile' + pfQuery()); }
+  function pfSvcs() { var f = pfState(); return SERVICES.filter(function (s) { return f.s.indexOf(s.key) >= 0; }); }
+  function pfFacts() { var x = t(); return [[lang === 'sl' ? 'Lokacija' : 'Location', lang === 'sl' ? 'Škofja Loka, Slovenija' : 'Škofja Loka, Slovenia'], [lang === 'sl' ? 'Šola' : 'School', 'Šolski center Kranj'], ['CAD', lang === 'sl' ? 'SolidWorks 4 leta · CSWA · CSWA-AM' : 'SolidWorks 4 yrs · CSWA · CSWA-AM']].concat(x.heroSpecs.slice(2)); } // the Studio facts of #about
+  function pfLink() { return '<p class="pl-open pf-open"><a href="#profile">' + esc(t().pf.link) + ' →</a></p>'; }
+  function pfName() { return 'Nace Kepa · ' + (lang === 'sl' ? 'Inženirski studio' : 'Engineering Studio'); }
+  function pfToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function pfSkill(g) { return g.items.map(function (it) { return L(it[0]) + ': ' + L(it[1]); }); }
+  function pfSheet() {
+    var x = t(), c = x.pf, f = pfState(), sv = pfSvcs(), showP = f.pr && pcOn(), work = f.w ? featured() : [];
+    var svc = sv.length ? '<div class="pf-svcs">' + sv.map(function (s) {
+      var r = showP ? svcRateTxt(s) : '';
+      return '<article class="pf-svc"><p class="pf-svc__top"><span class="nk-service__code">' + s.code + '</span><span class="nk-label">' + esc(x.turnaround + ': ' + (s.time ? L(s.time) : x.onRequest)) + '</span></p><h3>' + esc(L(s.title)) + '</h3><p>' + esc(L(s.body)) + '</p>' +
+        (r ? '<p class="pf-kv"><span class="nk-label">' + esc(x.pc.rate) + '</span> <b>' + esc(r) + '</b></p>' : '') + '<p class="pf-kv"><span class="nk-label">' + esc(x.deliverables) + '</span> ' + esc(L(s.get).join(' · ')) + '</p></article>';
+    }).join('') + '</div>' : '<p class="pf-none">' + esc(c.none) + '</p>';
+    var contact = [];
+    if (CONTACT_EMAIL) contact.push('<div><dt>' + esc(x.ct.email) + '</dt><dd><a href="mailto:' + esc(CONTACT_EMAIL) + '">' + esc(CONTACT_EMAIL) + '</a></dd></div>');
+    contact.push('<div><dt>LinkedIn</dt><dd><a href="' + LINKEDIN + '" target="_blank" rel="noopener">' + esc(LINKEDIN.replace(/^https?:\/\/(www\.)?/, '')) + '<span class="vh"> (' + esc(x.newTab) + ')</span></a></dd></div>');
+    contact.push('<div><dt>' + esc(c.web) + '</dt><dd>nacekepa.work</dd></div>');
+    return '<article class="pf-sheet" id="pf-sheet" aria-label="' + esc(c.label) + '">' +
+      '<header class="pf-top">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span><span class="nk-label">NK-A · ' + esc(fmtDate(pfToday())) + '</span></header>' +
+      '<div class="pf-who"><div><h2 class="pf-name">' + esc(pfName()) + '</h2><p class="pf-lead">' + esc(x.heroLead) + '</p><p class="pf-body">' + esc(x.aboutBody) + '</p></div>' + specs(pfFacts()) + '</div>' +
+      '<section class="pf-sec"><p class="nk-label">' + esc(c.svc) + (sv.length ? ' · ' + String(sv.length).padStart(2, '0') : '') + '</p>' + svc + (showP && sv.length && L(PRICE.vatNote) ? '<p class="pf-note">' + esc(L(PRICE.vatNote)) + '</p>' : '') + '</section>' +
+      '<section class="pf-sec"><p class="nk-label">' + esc(c.equip) + '</p><dl class="pf-skills">' + SKILLS.map(function (g) { return '<div><dt>' + esc(g[lang]) + '</dt><dd>' + pfSkill(g).map(esc).join('<span aria-hidden="true"> · </span><span class="vh">; </span>') + '</dd></div>'; }).join('') + '</dl></section>' +
+      (work.length ? '<section class="pf-sec"><p class="nk-label">' + esc(c.work) + '</p><ul class="pf-work">' + work.map(function (p) { return '<li><span class="nk-label">' + sheetNo(p) + '</span><span><a href="#p-' + esc(p.slug) + '">' + esc(P(p, 'title')) + '</a> — ' + esc(cat(p)) + ', ' + esc(p.year) + '. ' + esc(P(p, 'description')) + '</span></li>'; }).join('') + '</ul></section>' : '') +
+      '<footer class="pf-sec pf-contact"><div><p class="nk-label">' + esc(c.contact) + '</p><dl class="nk-specs">' + contact.join('') + '</dl></div>' + qrBox(pfUrl(), c.scan, { px: 96, cls: 'pf-qr', print: true }) + '</footer>' +
+      '<p class="pf-foot">' + esc(c.foot.replace('{d}', fmtDate(pfToday()))) + '</p></article>';
+  }
+  function pfText() {
+    var x = t(), c = x.pf, f = pfState(), sv = pfSvcs(), showP = f.pr && pcOn(), out = [];
+    out.push(pfName().toUpperCase() + ' — ' + c.label.split(' · ')[0] + ' (NK-A)', x.heroLead, '');
+    pfFacts().forEach(function (r) { out.push(r[0] + ': ' + r[1]); });
+    if (sv.length) { out.push('', c.svc.toUpperCase());
+      sv.forEach(function (s) { var r = showP ? svcRateTxt(s) : ''; out.push(s.code + ' ' + L(s.title) + ' — ' + x.turnaround + ': ' + (s.time ? L(s.time) : x.onRequest) + (r ? ' · ' + x.pc.rate + ': ' + r : ''), '  ' + L(s.body), '  ' + x.deliverables + ': ' + L(s.get).join(' · ')); });
+      if (showP && L(PRICE.vatNote)) out.push(L(PRICE.vatNote)); }
+    out.push('', c.equip.toUpperCase());
+    SKILLS.forEach(function (g) { out.push(g[lang] + ' — ' + pfSkill(g).join('; ')); });
+    if (f.w && featured().length) { out.push('', c.work.toUpperCase()); featured().forEach(function (p) { out.push(sheetNo(p) + ' ' + P(p, 'title') + ' — ' + cat(p) + ', ' + p.year + ' — ' + shareUrl('p', p)); }); }
+    out.push('', c.contact.toUpperCase());
+    if (CONTACT_EMAIL) out.push(CONTACT_EMAIL);
+    out.push(LINKEDIN, pfUrl());
+    return out.join('\n');
+  }
+  function pfMail() { var c = t().pf; return 'mailto:?subject=' + encodeURIComponent(c.subject) + '&body=' + encodeURIComponent(pfText()); }
+  function pfView() {
+    var x = t(), c = x.pf, f = pfState();
+    var ck = function (key, label, on) { return '<label class="pl-opt"><input type="checkbox" data-pf="' + key + '"' + (on ? ' checked' : '') + '><span>' + esc(label) + '</span></label>'; };
+    return '<section class="block first pf"><a class="back" href="#about">← ' + esc(x.nav.about) + '</a>' + head(c.label, c.title, c.lead, true) +
+      '<div class="pf-grid"><div class="pf-ctl"><fieldset class="pl-q"><legend class="nk-label">' + esc(c.show + ' · ' + c.svc) + '</legend><div class="pl-opts pf-opts">' + SERVICES.map(function (s) { return ck('s:' + s.key, L(s.title), f.s.indexOf(s.key) >= 0); }).join('') + '</div></fieldset>' +
+      '<fieldset class="pl-q"><legend class="nk-label">' + esc(c.show + ' · ' + c.more) + '</legend><div class="pl-opts pf-opts">' + (pcOn() ? ck('pr', c.prices, f.pr) : '') + ck('w', c.work, f.w) + '</div></fieldset>' +
+      '<div class="cta-row pf-act"><button type="button" class="nk-btn nk-btn--primary" data-pf-act="print">' + esc(c.print) + '</button><button type="button" class="nk-btn" data-pf-act="copy">' + esc(c.copy) + '</button><button type="button" class="nk-btn" data-pf-act="link">' + esc(c.copyLink) + '</button><a class="nk-btn" id="pf-mail" href="' + esc(pfMail()) + '">' + esc(c.mail) + '</a></div>' +
+      '<p class="copy-msg pf-msg" id="pf-msg" role="status" aria-live="polite"></p><pre class="brief pf-text" id="pf-text" tabindex="0" hidden></pre>' +
+      '<p class="fit-note">' + esc(c.note) + '</p></div>' + pfSheet() + '</div></section>' + ctaBand();
+  }
+  function pfToggle(el) {
+    var f = pfState(), k = el.getAttribute('data-pf');
+    if (k === 'pr') f.pr = el.checked; else if (k === 'w') f.w = el.checked;
+    else { var key = k.slice(2), on = {}; f.s.forEach(function (v) { on[v] = 1; }); on[key] = el.checked ? 1 : 0; f.s = SERVICES.map(function (s) { return s.key; }).filter(function (v) { return on[v]; }); }
+    // the address follows the choice, so the address bar, "Copy link" and the QR code all open the same sheet
+    var pre = (/^#((?:en|sl)-)/.exec(location.hash) || ['', ''])[1];
+    try { history.replaceState(history.state, '', location.pathname + location.search + '#' + pre + 'profile' + pfQuery()); } catch (e) {}
+    state.pfHash = location.hash; state.navHref = location.href;
+    var sh = document.getElementById('pf-sheet'), ml = document.getElementById('pf-mail'), msg = document.getElementById('pf-msg'), tx = document.getElementById('pf-text');
+    if (sh) sh.outerHTML = pfSheet(); if (ml) ml.setAttribute('href', pfMail()); if (msg) msg.textContent = ''; if (tx) tx.hidden = true;
+  }
+  function pfAct(what) {
+    var c = t().pf, msg = document.getElementById('pf-msg'), tx = document.getElementById('pf-text'); if (!msg || !tx) return;
+    if (what === 'print') { printSheet(); return; }
+    var text = what === 'link' ? pfUrl() : pfText();
+    var fail = function () { tx.textContent = text; tx.hidden = false; msg.textContent = t().copyFail; try { var r = document.createRange(); r.selectNodeContents(tx); var g = getSelection(); g.removeAllRanges(); g.addRange(r); } catch (e) {} };
+    msg.textContent = ''; tx.hidden = true;
+    try { navigator.clipboard.writeText(text).then(function () { msg.textContent = what === 'link' ? c.linkCopied : c.copied; }, fail); } catch (e) { fail(); }
   }
 
   // ---------- Share this sheet (project + news pages) ----------
@@ -4433,9 +4529,9 @@
     var zones = '<div class="zones zones-top" aria-hidden="true">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (n) { return '<span>' + n + '</span>'; }).join('') + '</div>' +
       '<div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div><div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>';
     var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="' + esc(x.aria.home) + '">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="' + esc(x.aria.main) + '">' +
-      ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a href="#' + k + '"' + (p === k || ((p === 'project' || p === 'compare') && k === 'work') || (p === 'post' && k === 'news') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
+      ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a href="#' + k + '"' + (p === k || ((p === 'project' || p === 'compare') && k === 'work') || (p === 'post' && k === 'news') || (p === 'profile' && k === 'about') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
       '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '">' + ['en', 'sl'].map(function (l) { return '<a href="' + esc(langHref(l) + langLinkHash(l)) + '" hreflang="' + l + '" lang="' + l + '" data-lang="' + l + '" aria-current="' + (lang === l) + '">' + l.toUpperCase() + '</a>'; }).join('') + '</div>' + fxBtn() + vwBtn() + mnLink() + btn(ctaText(), '#order', 'primary', 'sm') + '</div></header>';
-    var idx = PAGES.indexOf(p === 'project' || p === 'compare' ? 'work' : p === 'post' ? 'news' : p) + 1;
+    var idx = PAGES.indexOf(p === 'project' || p === 'compare' ? 'work' : p === 'post' ? 'news' : p === 'profile' ? 'about' : p) + 1;
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
@@ -4450,9 +4546,11 @@
   // Tab / history / screen-reader title for the current view, e.g. "FamFive · Nace Kepa".
   function pageTitle(p) {
     var x = t(), s = '';
+    if (LANDING && LAND_TITLE && !location.hash && lang === LAND_LANG && landingView() === START_VIEW && !/^[pn]-/.test(START_VIEW)) return LAND_TITLE;
     if (p === 'project') { var pr = bySlug(currentSlug()); s = pr ? P(pr, 'title') : ''; }
     else if (p === 'post') { var n = newsBySlug(currentSlug()); s = n ? P(n, 'title') : ''; }
     else if (p === 'order') s = x.cta + ' · ' + (state.step + 1) + '/4 ' + x.steps[state.step];
+    else if (p === 'profile') s = x.pf.label.split(' · ')[0];
     else if (p !== 'home') s = x.nav[p] || '';
     return s ? s + ' · Nace Kepa' : 'Nace Kepa · ' + (lang === 'sl' ? 'Inženirski studio' : 'Engineering Studio');
   }
@@ -4499,6 +4597,7 @@
   app.addEventListener('click', function (ev) {
     var el = ev.target.closest('button, a'); if (!el) return;
     if (el.hasAttribute('data-fx')) { fxOpen(el.getAttribute('data-fx')); return; } // Find anything (2026-11-12)
+    if (el.hasAttribute('data-pf-act')) { pfAct(el.getAttribute('data-pf-act')); return; } // Studio profile NK-A (2026-11-25)
     if (el.hasAttribute('data-pz')) { pzOpen(el.getAttribute('data-pz')); return; } // Presentation (2026-11-13)
     if (el.hasAttribute('data-top')) { window.scrollTo({ top: 0, behavior: vwCalm() ? 'auto' : 'smooth' }); var tm = document.getElementById('main'); if (tm) tm.focus({ preventScroll: true }); return; }
     if (el.hasAttribute('data-skip')) { ev.preventDefault(); var mn = document.getElementById('main'); mn.focus({ preventScroll: true }); mn.scrollIntoView({ block: 'start' }); return; }
@@ -4657,6 +4756,7 @@
   });
   app.addEventListener('input', function (ev) { var v3 = ev.target.dataset && ev.target.dataset.v3Cut; if (v3) { v3Set(v3, 'cut', ev.target.value); return; } var sf = ev.target.dataset && ev.target.dataset.stF; if (sf) { state.st[sf] = ev.target.value; if (sf === 'l' || sf === 'w' || sf === 'h') stDims3d(); stSheetShow(); return; } var fk = ev.target.dataset && ev.target.dataset.f; if (fk && fk !== 'website' && page() === 'order') { state.order[fk] = ev.target.value; drSave(); ofInput(ev.target, fk); } if (ev.target.id === 'f-deadline') { state.order.deadline = ev.target.value; dlUpdate(); return; } if (ev.target.id === 'find-q') { state.q = ev.target.value; findApply(); return; } var pf = ev.target.dataset && ev.target.dataset.plF; if (pf && pf !== 'mat') { state.pl[pf] = ev.target.value; plUpdate(); return; } var k = ev.target.dataset && ev.target.dataset.fit; if (k) { state.fit[k] = ev.target.value; fitUpdate(); } });
   app.addEventListener('change', function (ev) {
+    if (ev.target.hasAttribute('data-pf')) { pfToggle(ev.target); return; } // Studio profile NK-A (2026-11-25)
     if (ev.target.hasAttribute('data-dh-contact')) { state.dh.contact = ev.target.checked; if (!document.getElementById('dh-url').hidden) dhAct('fresh'); return; } // Draft hand-over (2026-11-19)
     if (ev.target.hasAttribute('data-fc-file')) { if (ev.target.files && ev.target.files[0]) fcRead(ev.target.files[0]); return; }
     if (ev.target.hasAttribute('data-bm-files')) { if (ev.target.files && ev.target.files.length) bmFiles(ev.target.files); return; } // Files → parts list (2026-11-10)
@@ -4805,6 +4905,7 @@
     function add(g, title, sub, href, kw, tag, act) { if (title) a.push({ g: g, t: String(title), s: sub || '', h: href, tag: tag || '', act: act, ft: findFold(title), fk: findFold([sub, kw, tag].join(' ')) }); }
     [['home', x.nav.home], ['services', x.nav.services], ['work', x.nav.work], ['news', NEWS.length ? x.nav.news : ''], ['skills', x.nav.skills], ['about', x.nav.about], ['contact', f.contact],
       ['order', x.cta], ['compare', PROJECTS.length > 1 ? x.nav.compare : ''], ['gift', giftOn() ? x.nav.gift : ''], ['mine', x.nav.mine]].forEach(function (p) { add('pages', p[1], '', '#' + p[0], [p[0], T.en.nav[p[0]], T.sl.nav[p[0]], p[0] === 'order' ? T.en.cta + ' ' + T.sl.cta : '', p[0] === 'contact' ? 'kontakt e-mail e-posta LinkedIn Škofja Loka' : ''].join(' ')); });
+    add('pages', x.pf.label.split(' · ')[0], x.pf.fx, '#profile', 'profile profil studio one page pager en list a4 pdf capability capabilities statement company predstavitev podjetja zmogljivosti nabava purchasing forward posreduj print natisni NK-A'); // Studio profile NK-A (2026-11-25)
     TL_TOOLS.forEach(function (d, i) { add('tools', x[d[1]].label.split(' · ')[0], x[d[1]].title + ' — ' + x.tl[d[0]], tlHash(d[0]), [d[0], T.en[d[1]].label, T.en[d[1]].title, T.sl[d[1]].label, T.sl[d[1]].title].join(' '), tlNo(i + 1)); });
     add('tools', x.st.label.split(' · ')[0], x.st.title + ' — ' + x.st.tlLine, '#studio', [T.en.st.label, T.en.st.title, T.sl.st.label, T.sl.st.title].join(' '), tlNo(TL_TOOLS.length + 1));
     SERVICES.forEach(function (s) { add('services', L(s.title), L(s.body), '#services', findBoth(s.title) + ' ' + L(s.get).join(' ') + ' ' + (s.time ? L(s.time) : ''), s.code); });

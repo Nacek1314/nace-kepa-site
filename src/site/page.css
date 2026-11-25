@@ -1644,3 +1644,64 @@ span.rl-pin { cursor: default; }
 .rl-box .share-msg { color: var(--ok); }
 .rl-box .fit-note { margin: var(--space-2) 0 0; padding-top: var(--space-3); font-size: 13px; }
 @media (hover: none) and (pointer: coarse) { .rl-move { display: none; } } /* the arrow-key hint is for keyboards */
+
+/* Studio profile NK-A (#profile, pfView in app.js, 2026-11-25): the studio on one A4 sheet. */
+.pf-open { margin-top: var(--space-4); }
+.pf-grid { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: var(--space-8); align-items: start; }
+.pf-ctl { display: grid; gap: var(--space-5); position: sticky; top: var(--space-6); min-width: 0; }
+.pf-opts { grid-template-columns: 1fr; }
+.pf-act { flex-wrap: wrap; }
+.pf-act .nk-btn { max-width: 100%; }
+.pf-msg { margin: 0; min-height: 16px; }
+.pf-text { max-height: 240px; overflow: auto; white-space: pre-wrap; margin: 0; }
+.pf-ctl .fit-note { margin: 0; }
+.pf-sheet { background: var(--paper-raised); border: 1px solid var(--line-strong); padding: var(--space-8); display: grid; gap: var(--space-6); min-width: 0; }
+.pf-top { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 2px solid var(--ink); }
+.pf-top .nk-mark { width: 32px; height: 32px; flex: none; }
+.pf-top .nk-label { margin-left: auto; text-align: right; }
+.pf-who { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: var(--space-8); align-items: start; }
+.pf-name { margin: 0 0 var(--space-3); font-size: 28px; line-height: 32px; font-weight: 600; letter-spacing: 0; }
+.pf-lead { margin: 0 0 var(--space-3); font-size: 17px; line-height: 24px; }
+.pf-body { margin: 0; font-size: 14px; line-height: 21px; color: var(--ink-muted); }
+.pf-sec { display: grid; gap: var(--space-3); min-width: 0; }
+.pf-sec > .nk-label { display: block; padding-bottom: var(--space-2); border-bottom: 1px solid var(--line-strong); }
+.pf-svcs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.pf-svc { border: 1px solid var(--line); padding: var(--space-4); display: grid; gap: var(--space-2); align-content: start; min-width: 0; }
+.pf-svc__top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-3); margin: 0; }
+.pf-svc__top .nk-label { white-space: normal; }
+.pf-svc h3 { margin: 0; font-size: 17px; line-height: 22px; font-weight: 500; }
+.pf-svc p { margin: 0; font-size: 14px; line-height: 20px; }
+.pf-kv .nk-label { margin-right: 6px; }
+.pf-note, .pf-foot, .pf-none { margin: 0; font: 12px/18px var(--font-mono); color: var(--ink-muted); }
+.pf-skills { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: var(--space-5); }
+.pf-skills > div { display: contents; }
+.pf-skills dt, .pf-skills dd { margin: 0; padding: var(--space-2) 0; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 19px; }
+.pf-skills dt { font-weight: 600; }
+.pf-work { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.pf-work li { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: var(--space-3); font-size: 14px; line-height: 20px; }
+.pf-work a { color: var(--ink); text-underline-offset: 3px; }
+.pf-work a:hover { color: var(--redline); }
+.pf-contact { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-6); border-top: 2px solid var(--ink); padding-top: var(--space-4); }
+.pf-contact .nk-label { display: block; margin-bottom: var(--space-2); }
+.pf-contact .nk-specs dd { overflow-wrap: anywhere; }
+.pf-qr { margin: 0; }
+@media (max-width: 1000px) { .pf-grid { grid-template-columns: minmax(0, 1fr); } .pf-ctl { position: static; } .pf-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .pf-sheet { padding: var(--space-4); } .pf-who, .pf-svcs, .pf-contact, .pf-opts, .pf-skills { grid-template-columns: minmax(0, 1fr); }
+  .pf-skills dt { border-bottom: 0; padding-bottom: 0; } .pf-skills dd { padding-top: 2px; } .pf-work li { grid-template-columns: minmax(0, 1fr); gap: 0; } .pf-name { font-size: 24px; line-height: 28px; }
+}
+@media print {
+  .frame:has(.pf) .top, .frame:has(.pf) .foot, .frame:has(.pf) .zones, .pf .sec-head, .pf .back, .pf-ctl, .pf-open { display: none !important; }
+  .pf { padding: 0 !important; border: 0; gap: 0; } .pf-grid { display: block; }
+  .pf-sheet { border: 0; padding: 0; gap: 3mm; background: none; }
+  .pf-top { padding-bottom: 2mm; } .pf-top .nk-mark { width: 24px; height: 24px; }
+  .pf-who { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 8mm; } .pf-svcs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.5mm; }
+  .pf-name { font-size: 18px; line-height: 22px; margin-bottom: 1.5mm; } .pf-lead { font-size: 12px; line-height: 16px; margin-bottom: 1.5mm; }
+  .pf-body, .pf-svc p, .pf-work li, .pf-skills dt, .pf-skills dd { font-size: 9.5px; line-height: 13.5px; }
+  .pf-sheet .nk-label, .pf-sheet .nk-service__code { font-size: 9px; line-height: 13px; }
+  .pf-sec { gap: 2mm; } .pf-sec > .nk-label { padding-bottom: 1mm; } .pf-work { gap: 1mm; } .pf-work li { grid-template-columns: 64px minmax(0, 1fr); }
+  .pf-skills dt, .pf-skills dd { padding: 2px 0; } .pf-svc { padding: 2.5mm; gap: 1mm; break-inside: avoid; } .pf-svc h3 { font-size: 12px; line-height: 16px; }
+  .pf-sheet .nk-specs dt, .pf-sheet .nk-specs dd { font-size: 9.5px; line-height: 14px; padding: 2px 0; } .pf-sheet .nk-specs dt { padding-right: 5mm; }
+  .pf-note, .pf-foot { font-size: 9px; line-height: 13px; } .pf-contact { padding-top: 2.5mm; }
+  .pf-sec, .pf-contact { break-inside: avoid; }
+}

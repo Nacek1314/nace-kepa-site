@@ -127,6 +127,21 @@ export function newsIndexCard(lang: Lang): string {
     titleBlock([[lang === 'sl' ? 'Rubrika' : 'Section', lang === 'sl' ? 'Novice' : 'News'], [lang === 'sl' ? 'Avtor' : 'Author', 'Nace Kepa'], ['RSS', lang === 'sl' ? '/news-sl.xml' : '/news.xml']], 470) + '</svg>';
 }
 
+// Section pages (2026-11-25): one card per section page (/services/, /portfolio/, /skills/, /about/) — page title, lead, three cells.
+export function sectionCard(lang: Lang, view: 'services' | 'work' | 'skills' | 'about', count: number): string {
+  const x = T[lang], sl = lang === 'sl';
+  const head = { services: x.servicesPageTitle, work: x.workPageTitle, skills: x.skillsPageTitle, about: x.aboutTitle }[view];
+  const lead = { services: x.servicesPageLead, work: x.workPageLead, skills: x.skillsPageLead, about: x.heroLead }[view];
+  const cells: [string, string][] = view === 'work' ? [[sl ? 'Listov' : 'Sheets', String(count)], [x.tb.drawn, 'N. Kepa'], [x.tb.loc, 'Škofja Loka, SI']]
+    : [[sl ? 'Razdelek' : 'Section', x.nav[view]], [x.tb.drawn, 'N. Kepa'], [x.tb.loc, 'Škofja Loka, SI']];
+  const title = wrap(head, 'bold', 72, 1040, 2);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${frame(lang)}` +
+    `<rect x="28" y="81" width="${W - 56}" height="${470 - 81}" fill="url(#g)"/>` +
+    label(x.heroLabel, 56, 128, C.dimension) +
+    textBlock(title, 56, 220, 'bold', 72, 78, C.ink) + textBlock(wrap(lead, 'med', 28, 1040, 3), 56, 220 + title.length * 78 + 10, 'med', 28, 36, C.muted) +
+    titleBlock(cells, 470) + '</svg>';
+}
+
 export function renderPng(svg: string): Buffer {
   const r = new Resvg(svg, { fitTo: { mode: 'width', value: W }, font: { fontFiles: FONT_FILES, loadSystemFonts: false, defaultFontFamily: 'Schibsted Grotesk' }, background: C.paper });
   return r.render().asPng();
