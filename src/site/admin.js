@@ -527,7 +527,7 @@ function stView() {
     <fieldset class="ad-sec" id="st-promo"><legend class="nk-label">Promotion · banner on the home page, price list, quote estimate and the brief</legend>
       <div class="form">${stTxt('promo.title.en', 'Title · EN')}${stTxt('promo.title.sl', 'Naslov · SL')}${stArea('promo.text.en', 'Text · EN')}${stArea('promo.text.sl', 'Besedilo · SL')}
         ${stNum('promo.pct', 'Discount · %', 'Empty or 0 = no promotion', 'step="1" min="0" max="100"')}
-        ${fld('set-promo-scope', 'Applies to', `<select class="nk-input" id="set-promo-scope" data-set="promo.scope">${[['first', 'First order (any service)'], ['print', '3D printing only'], ['all', 'Every order']].map(([v, l]) => `<option value="${v}"${o.promo.scope === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`)}
+        ${fld('set-promo-scope', 'Applies to', `<select class="nk-input" id="set-promo-scope" data-set="promo.scope">${[['first', 'First order (any service)'], ['print', '3D printing only'], ['cadprint', '3D design + 3D printing (comes off those rows, no first-order tick)'], ['all', 'Every order']].map(([v, l]) => `<option value="${v}"${o.promo.scope === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`)}
         ${stTxt('promo.until', 'Last day', 'The banner disappears after this date.', 'type="date"')}${stTxt('promo.code', 'Code (optional)', 'Shown in the banner, e.g. FIRST15')}</div>
     </fieldset>
     <fieldset class="ad-sec" id="st-gift"><legend class="nk-label">Gift cards · #gift (requests arrive by e-mail like a brief; no payments on the site)</legend>

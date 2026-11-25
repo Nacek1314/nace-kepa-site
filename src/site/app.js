@@ -2780,6 +2780,15 @@
     if (pr.until && /^\d{4}-\d{2}-\d{2}$/.test(pr.until) && new Date().toISOString().slice(0, 10) > pr.until) return null;
     return pr;
   }
+  // Promotion scope 'cadprint' (2026-11-25, Nace: "-20 % on 3D design and printing orders"): the discount comes off the 3D design
+  // and 3D printing rows only (hours of S-01, printed parts, setup, post-processing) and applies by itself — no "first order" tick.
+  // part = the sum of those rows, sum = all rows before the minimum order. The other scopes work as before.
+  function promoAuto(pm) { return !!pm && pm.scope === 'cadprint'; }
+  function promoDisc(pm, total, part, sum, first, hasPrint) {
+    if (!pm) return 0;
+    if (pm.scope === 'cadprint') return Math.round((part >= sum - 1e-9 ? total : Math.min(part, total)) * pm.pct) / 100;
+    return first && (pm.scope === 'all' || pm.scope === 'first' || (pm.scope === 'print' && hasPrint)) ? Math.round(total * pm.pct) / 100 : 0;
+  }
   function promoBand(cls) {
     var pr = promo(), x = t().promo; if (!pr) return '';
     return '<aside class="promo' + (cls ? ' ' + cls : '') + '" aria-label="' + esc(x.label) + '"><span class="nk-tag nk-tag--rev promo-tag">' + esc(x.label) + (pr.until ? ' · ' + esc(x.until.replace('{d}', pcDate(pr.until))) : '') + '</span>' +
@@ -2806,14 +2815,14 @@
   state.qc = { cad: 0, iot: 0, build: 0, print: 0, cadH: '', iotH: '', buildH: '', mat: '', g: '', h: '', qty: '1', postH: '', rush: 0, first: 1, src: '' };
   function qcNum(v) { var n = parseFloat(String(v).replace(',', '.')); return isFinite(n) && n > 0 ? n : 0; }
   function qcCalc() {
-    var q = state.qc, P = PRICE, x = t().qc, rows = [], total = 0, notes = [], pcsN = 0, hrN = 0;
+    var q = state.qc, P = PRICE, x = t().qc, rows = [], total = 0, notes = [], pcsN = 0, hrN = 0, part0 = 0;
     if (!P) return null;
     [['cad', 'cadH'], ['iot', 'iotH'], ['build', 'buildH']].forEach(function (k) {
       if (!q[k[0]] || !(+P.hourly[k[0]] > 0)) return;
       var hrs = qcNum(q[k[1]]); if (!hrs) return;
       if (+P.minHours > 0 && hrs < +P.minHours) hrs = +P.minHours;
       var c = hrs * +P.hourly[k[0]], sv = SERVICES.filter(function (s) { return s.key === k[0]; })[0];
-      rows.push([L(sv.title) + ' · ' + hrs + ' h', c]); total += c; hrN++;
+      rows.push([L(sv.title) + ' · ' + hrs + ' h', c]); total += c; hrN++; if (k[0] === 'cad') part0 += c;
     });
     if (q.print) {
       var m = pcMat(q.mat), g = qcNum(q.g), hh = qcNum(q.h), qty = Math.max(1, Math.round(qcNum(q.qty) || 1)), pr = P.print;
@@ -2822,15 +2831,15 @@
         if (+pr.minPart > 0 && part < +pr.minPart) { part = +pr.minPart; notes.push(x.minPartApplied); }
         var pc = part * qty, lbl = (m ? m.name + ' · ' : '') + (g ? g + ' g' : '') + (g && hh ? ' + ' : '') + (hh ? hh + ' h' : '') + (qty > 1 ? ' × ' + qty : '');
         if (q.rush && +pr.rushPct > 0) { pc *= 1 + pr.rushPct / 100; lbl += ' · +' + pr.rushPct + ' %'; }
-        rows.push([L(SERVICES[1].title) + ' · ' + lbl, pc]); total += pc; pcsN = qty;
-        if (+pr.setup > 0) { rows.push([t().pc.setup, +pr.setup]); total += +pr.setup; }
+        rows.push([L(SERVICES[1].title) + ' · ' + lbl, pc]); total += pc; pcsN = qty; part0 += pc;
+        if (+pr.setup > 0) { rows.push([t().pc.setup, +pr.setup]); total += +pr.setup; part0 += +pr.setup; }
       }
-      var ph = qcNum(q.postH); if (ph && +P.hourly.post > 0) { rows.push([t().pc.post + ' · ' + ph + ' h', ph * +P.hourly.post]); total += ph * +P.hourly.post; }
+      var ph = qcNum(q.postH); if (ph && +P.hourly.post > 0) { rows.push([t().pc.post + ' · ' + ph + ' h', ph * +P.hourly.post]); total += ph * +P.hourly.post; part0 += ph * +P.hourly.post; }
     }
     if (!rows.length) return null;
+    var sum0 = total;
     if (+P.print.minOrder > 0 && total < +P.print.minOrder) { total = +P.print.minOrder; notes.push(x.minApplied); }
-    var pm = promo(), disc = 0;
-    if (pm && q.first && (pm.scope === 'all' || pm.scope === 'first' || (pm.scope === 'print' && q.print))) disc = Math.round(total * pm.pct) / 100;
+    var pm = promo(), disc = promoDisc(pm, total, part0, sum0, q.first, q.print);
     return { rows: rows, total: Math.round(total * 100) / 100, disc: disc, after: Math.round((total - disc) * 100) / 100, notes: notes, promo: pm, pcs: pcsN > 1 && !hrN ? pcsN : 0 }; // pcs: printing only and more than one piece → the total also reads per piece (2026-11-15)
   }
   function qcOut(c) {
@@ -2854,7 +2863,7 @@
       else if (+P.hourly[s.key] > 0) svcs += chk(s.key, L(s.title), num(s.key + 'H', x.hours, x.h));
     });
     return '<section class="block qc">' + head(x.label, x.title, x.lead) + '<div class="fit-grid"><div class="fit-form"><p class="nk-label">' + esc(x.services) + '</p><div class="qc-svcs">' + svcs + '</div>' +
-      (pm ? '<label class="ad-check qc-check qc-first"><input type="checkbox" data-qc-k="first"' + (q.first ? ' checked' : '') + '> ' + esc(x.first.replace('{n}', pm.pct)) + '</label>' : '') +
+      (pm && !promoAuto(pm) ? '<label class="ad-check qc-check qc-first"><input type="checkbox" data-qc-k="first"' + (q.first ? ' checked' : '') + '> ' + esc(x.first.replace('{n}', pm.pct)) + '</label>' : '') +
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-qc-go' + (c ? '' : ' disabled') + '>' + esc(x.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-qc-copy' + (c ? '' : ' disabled') + '>' + esc(x.copy) + '</button><button type="button" class="nk-btn" data-tl-print="quote"' + (c ? '' : ' disabled') + '>' + psIco() + ' ' + esc(t().tl.printQuote) + '</button><button type="button" class="nk-btn nk-btn--ghost" data-mn-qc' + (c ? '' : ' disabled') + '>' + esc(t().mn.qcSave) + '</button><span class="copy-msg" id="qc-msg" role="status"></span></div>' +
       '<p class="fit-note">' + esc(x.note.replace('{vat}', L(P.vatNote) || '')) + '</p>' + (bgOn() ? '<p class="pl-open"><a href="#services?tool=budget" data-qc-bg>' + esc(t().bg.fromQuote) + ' →</a></p>' : '') + '</div>' +
       '<div class="fit-out qc-out" id="qc-out" role="status" aria-live="polite">' + qcOut(c) + '</div></div></section>';
@@ -3044,19 +3053,18 @@
   }
   function bgPartText(p) { return (p.m ? p.m.name + ' · ' : '') + (p.g ? fitFmt(p.g) + ' g' : '') + (p.g && p.h ? ' + ' : '') + (p.h ? fitFmt(p.h) + ' h' : '') + (p.rush ? ' · +' + PRICE.print.rushPct + ' %' : ''); }
   function bgPlan(hrs, p, q) { // the quote estimate's sums for these hours + q pieces of the part
-    var P = PRICE, pr = P.print, rows = [], total = 0, minH = false;
+    var P = PRICE, pr = P.print, rows = [], total = 0, minH = false, part0 = 0;
     BG_HR.forEach(function (k) {
       var h = hrs[k]; if (!h || !(+P.hourly[k] > 0)) return;
       if (+P.minHours > 0 && h < +P.minHours) { h = +P.minHours; minH = true; }
-      rows.push({ k: k, t: L(bgSvc(k).title) + ' · ' + fitFmt(h) + ' h', c: h * +P.hourly[k], h: h }); total += h * +P.hourly[k];
+      rows.push({ k: k, t: L(bgSvc(k).title) + ' · ' + fitFmt(h) + ' h', c: h * +P.hourly[k], h: h }); total += h * +P.hourly[k]; if (k === 'cad') part0 += h * +P.hourly[k];
     });
     if (p && q > 0) {
-      rows.push({ k: 'print', t: L(bgSvc('print').title) + ' · ' + bgPartText(p) + ' × ' + q, c: p.unit * q }); total += p.unit * q;
-      if (+pr.setup > 0) { rows.push({ k: 'setup', t: t().pc.setup, c: +pr.setup }); total += +pr.setup; }
+      rows.push({ k: 'print', t: L(bgSvc('print').title) + ' · ' + bgPartText(p) + ' × ' + q, c: p.unit * q }); total += p.unit * q; part0 += p.unit * q;
+      if (+pr.setup > 0) { rows.push({ k: 'setup', t: t().pc.setup, c: +pr.setup }); total += +pr.setup; part0 += +pr.setup; }
     }
-    var minO = +pr.minOrder > 0 && rows.length > 0 && total < +pr.minOrder; if (minO) total = +pr.minOrder;
-    var pm = promo(), disc = 0;
-    if (pm && state.bg.first && (pm.scope === 'all' || pm.scope === 'first' || (pm.scope === 'print' && p && q > 0))) disc = Math.round(total * pm.pct) / 100;
+    var sum0 = total, minO = +pr.minOrder > 0 && rows.length > 0 && total < +pr.minOrder; if (minO) total = +pr.minOrder;
+    var pm = promo(), disc = promoDisc(pm, total, part0, sum0, state.bg.first, p && q > 0);
     return { rows: rows, total: Math.round(total * 100) / 100, disc: disc, after: Math.round((total - disc) * 100) / 100, minO: minO, minH: minH, minPart: !!(p && q > 0 && p.minPart), q: p && q > 0 ? q : 0, pm: disc ? pm : null };
   }
   function bgFits(B, pl) { return pl.after <= B + 1e-9; }
@@ -3180,7 +3188,7 @@
     var num = function (k, id, label, unit, attrs, hint) { return '<div class="nk-field"><label class="nk-field__label" for="bg-' + id + '">' + esc(label) + (unit ? ' · ' + esc(unit) : '') + '</label><input class="nk-input" id="bg-' + id + '" data-bg-f="' + k + '" type="number" inputmode="decimal" min="0" ' + attrs + ' value="' + esc(s[k]) + '">' + (hint ? '<span class="nk-field__hint">' + esc(hint) + '</span>' : '') + '</div>'; };
     var hrs = BG_HR.filter(function (k) { return +P.hourly[k] > 0; });
     return '<section class="block bg">' + head(x.label, x.title, x.lead) + '<div class="fit-grid"><div class="fit-form">' + num('amt', 'amt', x.amount, '€', 'step="10" max="1000000"', x.amountHint) +
-      (pm ? '<label class="ad-check qc-check"><input type="checkbox" data-bg-k="first"' + (s.first ? ' checked' : '') + '> ' + esc(t().qc.first.replace('{n}', pm.pct)) + '</label>' : '') +
+      (pm && !promoAuto(pm) ? '<label class="ad-check qc-check"><input type="checkbox" data-bg-k="first"' + (s.first ? ' checked' : '') + '> ' + esc(t().qc.first.replace('{n}', pm.pct)) + '</label>' : '') +
       (hrs.length ? '<div class="bg-group" role="group" aria-labelledby="bg-work-l"><p class="nk-label" id="bg-work-l">' + esc(x.work) + '</p><div class="qc-print bg-form">' + hrs.map(function (k) { return num(k + 'H', k, L(bgSvc(k).title), t().qc.h, 'step="0.5"'); }).join('') + '</div><p class="bg-hint">' + esc(bgPrintOn() ? x.workHint : x.workHintNoPrint) + '</p></div>' : '') +
       (bgPrintOn() ? '<div class="bg-group" role="group" aria-labelledby="bg-part-l"><p class="nk-label" id="bg-part-l">' + esc(x.part) + '</p><div class="qc-print bg-form">' +
         (pcMats().length ? '<div class="nk-field"><label class="nk-field__label" for="bg-mat">' + esc(t().pc.material) + '</label><select class="nk-input" id="bg-mat" data-bg-f="mat">' + pcMats().map(function (m) { return '<option value="' + esc(m.key) + '"' + (pcMat(s.mat) === m ? ' selected' : '') + '>' + esc(m.name) + '</option>'; }).join('') + '</select></div>' + num('g', 'g', t().qc.weight, t().qc.grams, 'step="1"') : '') +

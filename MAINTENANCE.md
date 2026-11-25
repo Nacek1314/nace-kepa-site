@@ -26,6 +26,17 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-25 (second change — Nace, live: "daj akcijo -20% na naročila 3d modeliranje in printanje")
+
+**Promotion changed in `settings.json`:** −20 % on 3D design and 3D printing, until 2026-12-31 (the date the previous promotion had); it
+replaces "−15 % on your first order" (the site shows one promotion). **New promotion scope `cadprint`** (`promoAuto()` / `promoDisc()` in
+`app.js`, option "3D design + 3D printing" in admin › Settings › Promotion): the discount comes off the 3D design hours, printed parts,
+setup and post-processing rows only (not embedded / full builds) and applies by itself, so the "My first order" tick is hidden in the
+quote estimate and the budget tool while this scope runs. The admin Quote tab still takes the discount by hand, on the whole quote —
+for a mixed quote enter the amount as a custom line instead. Tested: banner EN + SL, price-list row, estimate (CAD + IoT 132 → −16,80;
+IoT only → none; small print → minimum order 18 − 3,60; print + build 188,40 → −18,48), budget tool, full sweep. Do not "fix" the
+promotion back; Nace changes it in the admin.
+
 ## 2026-11-25
 
 **Checked:** build (74 pages); home, #services, #work, #work?view=list, #p-famfive, #p-rfid-drawer-lock, #news, #n-bambu-lab-x2d, #skills,

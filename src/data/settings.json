@@ -83,15 +83,15 @@
   },
   "promo": {
     "title": {
-      "en": "−15 % on your first order",
-      "sl": "−15 % na prvo naročilo"
+      "en": "−20 % on 3D design and 3D printing",
+      "sl": "−20 % na 3D modeliranje in 3D tisk"
     },
     "text": {
-      "en": "New clients get 15 % off the first job — any service. Mention it in the brief.",
-      "sl": "Nove stranke dobijo 15 % popusta na prvo naročilo — katera koli storitev. Omenite ga v povzetku."
+      "en": "20 % off orders for 3D design & CAD and 3D printing. The discount comes off those two services in the quote.",
+      "sl": "20 % popusta na naročila 3D modeliranja in 3D tiska. Popust se v ponudbi odšteje pri teh dveh storitvah."
     },
-    "pct": 15,
-    "scope": "first",
+    "pct": 20,
+    "scope": "cadprint",
     "until": "2026-12-31"
   },
   "gift": {
