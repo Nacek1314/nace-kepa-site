@@ -133,6 +133,11 @@ var T = {
       nPromo: 'The first-order discount ({n} %) is already taken off the plan, so the budget reaches further.', nMinO: 'The minimum order is {m}.', nMinH: 'Work is charged from {n} h.', nHalf: 'Hours are counted in half-hour steps; pieces are whole.', nQuote: 'Every job gets a fixed quote after a look at your files — this plan only shows what the published prices allow.',
       go: 'Start a project with this budget', copy: 'Copy plan', copied: 'Plan copied.', brief: 'Budget', toQuote: 'Open this plan in the quote estimate', toSeries: 'Price by quantity', toPrices: 'Price list', fromQuote: 'Have a fixed budget? See what it covers' },
     // Material price NK-V (2026-11-17, second run): the same printed part priced in every material of the price list (mxBox() in app.js)
+    // Home for orders (views.home / hmQuick in app.js, 2026-11-26): assurances, quick start and the three steps — only what the site already states.
+    hm: { ok: ['Quote within 48 hours', 'Fixed price or hourly estimate', 'EU-wide shipping · free pickup in Škofja Loka'], est: 'Estimate the price', micro: 'About two minutes · reply within 48 hours',
+      qsLabel: 'Start here', qsTitle: 'What do you need?', qsHint: 'Pick one — the form opens with it ticked. You can add the others there.', qsNot: 'Not sure? Three questions', qsMail: 'Or write an e-mail',
+      howLabel: 'How it works · 03 steps', howTitle: 'Three steps to a finished part', howMore: 'The whole process · 8 steps', svcMore: 'Details',
+      how: [['Describe it', 'About two minutes in the order form. At the end you have a written brief.'], ['Get the quote', 'A fixed-price quote or an hourly estimate within 48 hours.'], ['Made and delivered', 'Designed, printed and assembled in Škofja Loka. Shipping EU-wide or free pickup.']] },
     // Studio profile NK-A (#profile, pfView in app.js, 2026-11-25): the studio on one A4 sheet to print or forward.
     pf: { label: 'Studio profile · NK-A', title: 'The studio on one sheet', lead: 'One A4 page to forward to a colleague, a manager or purchasing: what I do, how long it takes, what it costs and how to reach me. Tick what belongs on it.',
       link: 'Studio profile — one page to forward', fx: 'One A4 page about the studio to print or forward', show: 'On the sheet', svc: 'Services', more: 'Also', prices: 'Published prices', work: 'Selected work',
@@ -462,6 +467,11 @@ var T = {
       nPromo: 'Popust na prvo naročilo ({n} %) je v načrtu že odštet, zato proračun seže dlje.', nMinO: 'Najmanjše naročilo je {m}.', nMinH: 'Delo se obračuna od {n} h naprej.', nHalf: 'Ure se štejejo po pol ure, kosi so celi.', nQuote: 'Vsako naročilo dobi fiksno ponudbo po pregledu vaših datotek — načrt pokaže samo, kaj omogočajo objavljene cene.',
       go: 'Začni projekt s tem proračunom', copy: 'Kopiraj načrt', copied: 'Načrt je kopiran.', brief: 'Proračun', toQuote: 'Odpri ta načrt v oceni ponudbe', toSeries: 'Cena glede na količino', toPrices: 'Cenik', fromQuote: 'Imate določen proračun? Poglejte, kaj pokrije' },
     // Cena po materialih NK-V (2026-11-17, drugi zagon): isti natisnjen del v vsakem materialu iz cenika (mxBox() v app.js)
+    // Domača stran za naročila (views.home / hmQuick v app.js, 2026-11-26).
+    hm: { ok: ['Ponudba v 48 urah', 'Fiksna cena ali urna ocena', 'Dostava po vsej EU · brezplačen prevzem v Škofji Loki'], est: 'Ocenite ceno', micro: 'Približno dve minuti · odgovor v 48 urah',
+      qsLabel: 'Začnite tukaj', qsTitle: 'Kaj potrebujete?', qsHint: 'Izberite eno — obrazec se odpre z označeno storitvijo. Tam lahko dodate še druge.', qsNot: 'Niste prepričani? Tri vprašanja', qsMail: 'Ali pišite po e-pošti',
+      howLabel: 'Kako poteka · 03 koraki', howTitle: 'Trije koraki do izdelanega dela', howMore: 'Celoten postopek · 8 korakov', svcMore: 'Podrobnosti',
+      how: [['Opišite', 'Približno dve minuti v obrazcu za naročilo. Na koncu imate pisni opis projekta.'], ['Prejmete ponudbo', 'Ponudba s fiksno ceno ali urna ocena v 48 urah.'], ['Izdelava in dostava', 'Zasnovano, natisnjeno in sestavljeno v Škofji Loki. Dostava po vsej EU ali brezplačen prevzem.']] },
     // Profil studia NK-A (#profile, pfView v app.js, 2026-11-25): studio na enem listu A4 za tisk ali posredovanje.
     pf: { label: 'Profil studia · NK-A', title: 'Studio na enem listu', lead: 'En list A4, ki ga posredujete sodelavcu, vodji ali nabavi: kaj delam, koliko časa traja, koliko stane in kako me dosežete. Označite, kaj naj bo na njem.',
       link: 'Profil studia — en list za posredovanje', fx: 'En list A4 o studiu za tisk ali posredovanje', show: 'Na listu', svc: 'Storitve', more: 'Še', prices: 'Objavljene cene', work: 'Izbrani projekti',

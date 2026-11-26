@@ -26,6 +26,25 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-26 (Nace, live: "prenovi home z najboljšim order ratingom")
+
+**Home page rebuilt as a path to the order form** (same drawing-sheet look, only facts the site already states; `views.home`,
+`hmQuick()` / `hmGo()` in `app.js`, `hm:` in `content.js`, "Home for orders" block at the end of `page.css`). **Do not move it back** —
+this layout is Nace's request:
+- **Hero, all on the first screen** (1280 × 720 and up; headline 66 px, two lines in EN and SL): three assurances with ticks (quote
+  within 48 hours · fixed price or hourly estimate · EU-wide shipping / free pickup), "Start a project" + "Estimate the price" (the
+  quote tool; "See all work" when no price list), "About two minutes · reply within 48 hours", and the running promotion as one line.
+- **Quick start card** in place of the project sheet + facts table: "What do you need?" — one button per service with turnaround and
+  published rate; a click ticks that service and opens the order form at step 2. Under it: the planner ("Not sure? Three questions") and e-mail.
+- **Order of sections:** How it works in three steps (describe → quote in 48 h → made and delivered; link to the 8-step process on
+  #about) → selected work → services (promotion band above the cards; each card has its own "Request a quote" that ticks the
+  service, + "Details") → news → about → final call. The 8-step process block left the home page (it is on #about).
+- **Phones:** an order bar ("Quote within 48 hours" + "Start a project") stays at the bottom of the screen once the hero buttons scroll away.
+- Tested (67 checks at 320 / 390 / 768 / 1280 / 1650 px, light + dark, EN + SL): parts present, one h1, nothing leaves the column,
+  axe 0 violations, quick start by keyboard → order step 2 with only that service ticked, service-card buttons, estimate / planner
+  links, phone bar; full sweep + yesterday's 130 checks still pass.
+*To remove:* see the comment above `function hmQuick` in `app.js`.
+
 ## 2026-11-25 (second change — Nace, live: "daj akcijo -20% na naročila 3d modeliranje in printanje")
 
 **Promotion changed in `settings.json`:** −20 % on 3D design and 3D printing, until 2026-12-31 (the date the previous promotion had); it

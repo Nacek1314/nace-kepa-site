@@ -121,12 +121,27 @@
       (full ? '<h2' : '<h3') + ' class="nk-service__title">' + esc(L(s.title)) + (full ? '</h2>' : '</h3>') + '<p>' + esc(L(s.body)) + '</p>' +
       (full ? '<div class="svc-cols"><div><p class="nk-label">' + esc(x.deliverables) + '</p><ul>' + L(s.get).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div><div><p class="nk-label">' + esc(x.needs) + '</p><ul>' + L(s.need).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div></div>'
         : '<ul>' + L(s.get).slice(0, 3).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>') + svcRate(s, full) +
-      '<div class="svc-act">' + btn(full ? x.quote : x.allServices, full ? '#order' : '#services', null, 'sm', true) + '</div></article>';
+      '<div class="svc-act">' + (full ? btn(x.quote, '#order', null, 'sm', true) : '<button type="button" class="nk-btn nk-btn--sm" data-hm-go="' + s.key + '">' + esc(x.quote) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><a class="svc-more" href="#services">' + esc(x.hm.svcMore) + '<span class="vh"> — ' + esc(L(s.title)) + '</span></a>') + '</div></article>';
   }
   // labelHtml (optional) replaces the escaped label, e.g. to wrap a date in <time>.
   function head(label, title, lead, h1, labelHtml) {
     var tag = h1 ? 'h1' : 'h2';
     return '<header class="sec-head"><div><p class="nk-label">' + (labelHtml || esc(label)) + '</p><' + tag + ' class="' + (h1 ? 'page-title' : 'sec-title') + '">' + esc(title) + '</' + tag + '></div>' + (lead ? '<p class="lead">' + esc(lead) + '</p>' : '') + '</header>';
+  }
+  // Home for orders (2026-11-26): the quick-start card in the hero — one button per service with its turnaround and published rate;
+  // hmGo() ticks that service in the order form and opens the form at the next step ("What should it do?"). To remove: hmQuick(),
+  // hmGo(), the data-hm-go line in the click handler, hm: in content.js, the "Home for orders" block at the end of page.css, and put
+  // views.home / the home button in service() back from git (commit before 2026-11-26).
+  function hmQuick() {
+    var x = t(), h = x.hm;
+    return '<div class="hm-qs"><div class="hm-qs__head"><span class="nk-label">' + esc(h.qsLabel) + '</span><span class="nk-label">' + esc(x.orderLabel.split(' · ')[1] || '') + '</span></div><h2 class="hm-qs__t">' + esc(h.qsTitle) + '</h2><div class="hm-qs__opts">' +
+      SERVICES.map(function (s) { var r = svcRateTxt(s); return '<button type="button" class="hm-qs__opt" data-hm-go="' + s.key + '"><span class="nk-service__code">' + s.code + '</span><span class="hm-qs__n">' + esc(L(s.title)) + '</span><span class="hm-qs__m">' + esc((s.time ? L(s.time) : x.onRequest) + (r ? ' · ' + r : '')) + '</span><span class="hm-qs__a" aria-hidden="true">→</span></button>'; }).join('') +
+      '</div><p class="hm-qs__hint">' + esc(h.qsHint) + '</p><p class="hm-qs__alt"><a href="' + tlHash('plan') + '">' + esc(h.qsNot) + ' →</a>' + (CONTACT_EMAIL ? '<a href="' + ctMail(x.ct.subject) + '">' + esc(h.qsMail) + ' →</a>' : '') + '</p></div>';
+  }
+  function hmGo(k) {
+    var o = state.order; if (state.send === 'sent') { location.hash = 'order'; return; }
+    if (k && o.services.indexOf(k) < 0) o.services.push(k);
+    state.step = o.services.length ? 1 : 0; state.errors = {}; location.hash = 'order';
   }
   function process(active) {
     return '<ol class="nk-process" style="--steps:8">' + t().process.map(function (s, i) { return '<li' + (i === active ? ' class="is-active"' : '') + '><span class="nk-process__n">' + String(i + 1).padStart(2, '0') + '</span><span class="nk-process__t">' + esc(s) + '</span></li>'; }).join('') + '</ol>';
@@ -138,17 +153,24 @@
 
   var views = {
     home: function () {
-      var x = t();
-      return '<section class="hero"><div class="hero-text"><p class="nk-label"><b>' + esc(x.status) + ' · </b>' + esc(x.heroLabel) + '</p>' +
+      // Home for orders (2026-11-26, Nace: "prenovi home z najboljšim order ratingom"): the page is ordered as a path to the order form —
+      // hero with the three assurances + quick start (pick a service → the form opens with it ticked), how it works in three steps,
+      // proof (selected work), services with rates and their own "Request a quote", news, about, final call. On phones the order
+      // button stays at the bottom of the screen (.hm-bar). Only facts the site already states. hmQuick() / hmGo() below.
+      var x = t(), h = x.hm, pm = promo();
+      return '<section class="hero hm-hero"><div class="hero-text"><p class="nk-label"><b>' + esc(x.status) + ' · </b>' + esc(x.heroLabel) + '</p>' +
         '<h1 class="display">' + esc(x.heroA) + '<br>' + esc(x.heroB) + '<em>' + esc(x.heroEm) + '</em></h1><p class="lead">' + esc(x.heroLead) + '</p>' +
-        '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', 'lg', true) + btn(x.seeWork, '#work', null, 'lg') + '</div></div>' +
-        '<div class="hero-sheet">' + (PROJECTS.length ? sheetH2(featured()[0]) : '') + specs([x.heroSpecs[0], [x.heroSpecs[1][0], String(PROJECTS.length)]].concat(x.heroSpecs.slice(2))) + '</div></section>' + promoBand('promo--home') +
-        '<section class="block">' + head(x.servicesLabel, x.servicesTitle, x.servicesLead) + '<div class="grid-4">' + SERVICES.map(function (s) { return service(s, false); }).join('') + '</div>' + tlHome() + '</section>' +
-        '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' +
-        '<section class="block">' + head(x.workLabel, x.workTitle) + '<div class="grid-4 sheets">' + featured().map(sheet).join('') + '</div><div class="more">' + btn(x.seeWork, '#work', null, null, true) + '</div></section>' +
+        '<ul class="hm-ok">' + h.ok.map(function (v) { return '<li>' + esc(v) + '</li>'; }).join('') + '</ul>' +
+        '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', 'lg', true) + (pcOn() ? btn(h.est, tlHash('quote'), null, 'lg') : btn(x.seeWork, '#work', null, 'lg')) + '</div><p class="hm-micro">' + esc(h.micro) + '</p>' +
+        (pm ? '<a class="hm-promo" href="#order"><span class="nk-tag nk-tag--rev">' + esc(x.promo.label) + (pm.until ? ' · ' + esc(x.promo.until.replace('{d}', pcDate(pm.until))) : '') + '</span><b>' + esc(L(pm.title)) + '</b><span aria-hidden="true">→</span></a>' : '') + '</div>' +
+        hmQuick() + '</section>' +
+        '<section class="block hm-how">' + head(h.howLabel, h.howTitle) + '<ol class="hm-steps">' + h.how.map(function (st, i) { return '<li><span class="hm-n">' + String(i + 1).padStart(2, '0') + '</span><h3>' + esc(st[0]) + '</h3><p>' + esc(st[1]) + '</p></li>'; }).join('') + '</ol>' +
+        '<div class="hm-act">' + btn(ctaText(), '#order', 'primary', null, true) + '<a class="hm-link" href="#about">' + esc(h.howMore) + ' →</a></div></section>' +
+        '<section class="block">' + head(x.workLabel, x.workTitle) + '<div class="grid-4 sheets">' + featured().map(sheet).join('') + '</div><div class="more">' + btn(x.seeWork + ' · ' + PROJECTS.length, '#work', null, null, true) + '</div></section>' +
+        '<section class="block">' + head(x.servicesLabel, x.servicesTitle, x.servicesLead) + promoBand('promo--home') + '<div class="grid-4">' + SERVICES.map(function (s) { return service(s, false); }).join('') + '</div>' + tlHome() + '</section>' +
         (NEWS.length ? '<section class="block">' + head(x.newsLabel, x.newsTitle, x.newsLead) + '<div class="news-list">' + NEWS.slice(0, 3).map(newsCard).join('') + '</div>' + '<div class="more">' + btn(x.allNews + ' · ' + NEWS.length, '#news', null, null, true) + '</div>' + '</section>' : '') +
         '<section class="block about-strip"><div>' + '<p class="nk-label">' + esc(x.aboutLabel) + '</p><h2 class="sec-title">' + esc(x.aboutTitle) + '</h2></div><div><p class="lead">' + esc(x.aboutBody) + '</p>' + timelineDims() + '</div></section>' +
-        ctaBand();
+        ctaBand() + '<div class="hm-bar"><span>' + esc(h.ok[0]) + '</span>' + btn(ctaText(), '#order', 'primary', null, true) + '</div>';
     },
     services: function () {
       var x = t();
@@ -4605,6 +4627,7 @@
   app.addEventListener('click', function (ev) {
     var el = ev.target.closest('button, a'); if (!el) return;
     if (el.hasAttribute('data-fx')) { fxOpen(el.getAttribute('data-fx')); return; } // Find anything (2026-11-12)
+    if (el.hasAttribute('data-hm-go')) { hmGo(el.getAttribute('data-hm-go')); return; } // Home for orders (2026-11-26)
     if (el.hasAttribute('data-pf-act')) { pfAct(el.getAttribute('data-pf-act')); return; } // Studio profile NK-A (2026-11-25)
     if (el.hasAttribute('data-pz')) { pzOpen(el.getAttribute('data-pz')); return; } // Presentation (2026-11-13)
     if (el.hasAttribute('data-top')) { window.scrollTo({ top: 0, behavior: vwCalm() ? 'auto' : 'smooth' }); var tm = document.getElementById('main'); if (tm) tm.focus({ preventScroll: true }); return; }
@@ -5506,6 +5529,7 @@
     state.navHref = location.href;
     render(false); navFocus();
   }
+  window.addEventListener('scroll', function () { var hb = document.querySelector('.hm-bar'); if (hb) hb.classList.toggle('is-on', window.scrollY > 420); }, { passive: true }); // Home for orders (2026-11-26): the phone order bar appears once the hero buttons scroll away
   window.addEventListener('hashchange', onNav);
   window.addEventListener('popstate', onNav);
   drLoad();
