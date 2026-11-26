@@ -142,6 +142,20 @@ export function sectionCard(lang: Lang, view: 'services' | 'work' | 'skills' | '
     titleBlock(cells, 470) + '</svg>';
 }
 
+// Service sheets (2026-11-26): one card per service page (/services/<id>/) — code, title, text, turnaround and published rate.
+export function serviceCard(lang: Lang, s: any, rate: string): string {
+  const x = T[lang];
+  const title = wrap(tl(s.title, lang), 'bold', 72, 1040, 2);
+  const cells: [string, string][] = [[x.turnaround, s.time ? tl(s.time, lang) : x.onRequest]];
+  if (rate) cells.push([x.pc.rate, rate]);
+  if (width(cells[0][1], 'mono', 22) <= (W - 56) / (cells.length + 1) - 40) cells.push([x.tb.loc, 'Škofja Loka, SI']); // a long turnaround gets the room instead
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${frame(lang)}` +
+    `<rect x="28" y="81" width="${W - 56}" height="${470 - 81}" fill="url(#g)"/>` +
+    label(s.code + ' · ' + x.sv.label, 56, 128, C.dimension) +
+    textBlock(title, 56, 220, 'bold', 72, 78, C.ink) + textBlock(wrap(tl(s.body, lang), 'med', 28, 1040, 3), 56, 220 + title.length * 78 + 10, 'med', 28, 36, C.muted) +
+    titleBlock(cells, 470) + '</svg>';
+}
+
 export function renderPng(svg: string): Buffer {
   const r = new Resvg(svg, { fitTo: { mode: 'width', value: W }, font: { fontFiles: FONT_FILES, loadSystemFonts: false, defaultFontFamily: 'Schibsted Grotesk' }, background: C.paper });
   return r.render().asPng();

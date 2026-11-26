@@ -22,7 +22,7 @@ import { createHash } from 'node:crypto';
 // app.js to open that sheet; the app then carries on as usual (its links move the address back to / or /sl/).
 // To remove: delete those four page files, this block and the `landing`-conditional parts below, the START_VIEW lines in
 // app.js and the landing entries in astro.config.mjs (sitemap filter + redirects).
-const { lang = 'en', project = null, post = null, view = '' } = Astro.props as { lang?: 'en' | 'sl'; project?: any; post?: any; view?: string }; // view: 'news' = the /news/ index page (blog package, 2026-11-02); 'services' | 'work' | 'skills' | 'about' = section pages (2026-11-25)
+const { lang = 'en', project = null, post = null, view = '', service = '' } = Astro.props as { lang?: 'en' | 'sl'; project?: any; post?: any; view?: string; service?: string }; // service: a service id = the service sheet page /services/<id>/ (2026-11-26) // view: 'news' = the /news/ index page (blog package, 2026-11-02); 'services' | 'work' | 'skills' | 'about' = section pages (2026-11-25)
 const SL = lang === 'sl';
 const home = SL ? 'https://nacekepa.work/sl/' : 'https://nacekepa.work/';
 const item: any = project || post;
@@ -30,10 +30,10 @@ const item: any = project || post;
 // description, link preview, breadcrumb and static snapshot, opening that section (src/pages/<section>/index.astro pass `view`).
 // To remove: those eight page files, SECTIONS / `sec` here, sectionCard in src/og/, the paths in astro.config.mjs (put the redirects back).
 const SECTIONS: Record<string, string> = { news: '/news/', services: '/services/', work: '/portfolio/', skills: '/skills/', about: '/about/' };
-const sec = !item && SECTIONS[view] ? view : '';
+const sec = !item && !service && SECTIONS[view] ? view : '';
 const secUrl = (v: string, sl = SL) => 'https://nacekepa.work' + (sl ? '/sl' : '') + SECTIONS[v];
-const landing = item ? (SL ? '/sl' : '') + (project ? '/portfolio/' : '/news/') + item.slug + '/' : sec ? (SL ? '/sl' : '') + SECTIONS[sec] : '';
-const startView = project ? 'p-' + project.slug : post ? 'n-' + post.slug : view;
+const landing = service ? (SL ? '/sl' : '') + '/services/' + service + '/' : item ? (SL ? '/sl' : '') + (project ? '/portfolio/' : '/news/') + item.slug + '/' : sec ? (SL ? '/sl' : '') + SECTIONS[sec] : '';
+const startView = service ? 's-' + service : project ? 'p-' + project.slug : post ? 'n-' + post.slug : view;
 const pageUrl = landing ? 'https://nacekepa.work' + landing : home; // canonical address of this page
 const altEn = landing ? 'https://nacekepa.work' + landing.replace(/^\/sl/, '') : 'https://nacekepa.work/';
 const altSl = landing ? 'https://nacekepa.work/sl' + landing.replace(/^\/sl/, '') : 'https://nacekepa.work/sl/';
@@ -117,8 +117,8 @@ const secDesc: Record<string, string> = SL ? {
   skills: T.en.skillsPageLead.replace(/\.$/, '') + ': ' + SKILLS.map((g) => g.en).join(', ') + '.',
   about: T.en.aboutTitle + '. ' + String(T.en.aboutBody).split(/(?<=\.)\s/)[0]
 };
-const title = item ? tl(item.title) + ' · Nace Kepa' : sec ? secTitle[sec] : siteTitle;
-const description = project
+let title = item ? tl(item.title) + ' · Nace Kepa' : sec ? secTitle[sec] : siteTitle;
+let description = project
   ? [tl(project.description), (SL ? 'List ' : 'Sheet ') + sheetNo(project) + ' · ' + catName(project) + ' · ' + project.year + (project.materials ? ' · ' + project.materials : '') + ' — Nace Kepa, ' + (SL ? 'inženirski studio, Škofja Loka.' : 'engineering studio, Škofja Loka.')].filter(Boolean).join(' ')
   : post ? (tl(post.summary) || siteDescription) : sec ? secDesc[sec] : siteDescription;
 const photoUrl = (ph: string) => 'https://nacekepa.work/' + String(ph).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/');
@@ -135,6 +135,18 @@ const services: any[] = new Function(content + '\nreturn SERVICES;')();
 (() => { const ov: any = (settings as any).services || {}; services.forEach((s: any) => { const o = ov[s.key]; if (!o) return;
   if (o.time && (o.time.en || o.time.sl)) s.time = { en: o.time.en || o.time.sl, sl: o.time.sl || o.time.en };
   ['need', 'get'].forEach((k) => { if (o[k]) ['en', 'sl'].forEach((l) => { const alt = l === 'en' ? 'sl' : 'en'; if (Array.isArray(o[k][l]) && o[k][l].length) s[k][l] = o[k][l]; else if (Array.isArray(o[k][alt]) && o[k][alt].length) s[k][l] = o[k][alt]; }); }); }); })();
+// Service sheets (2026-11-26): /services/<id>/ (+ /sl/…) — one real page per service with its own title, description, link preview,
+// Service + breadcrumb structured data and snapshot, opening #s-<id> (svView() in app.js). Only text and numbers from content.js /
+// settings.json. To remove: src/pages/services/[id].astro (+ /sl/), every `svc` / `service` part of this file, serviceCard in src/og/card.ts.
+const svc: any = service ? services.find((s: any) => s.id === service) : null;
+const svcUrl = (s: any, sl = SL) => 'https://nacekepa.work' + (sl ? '/sl' : '') + '/services/' + s.id + '/';
+const svcMoney = (n: number) => String(n).replace('.', SL ? ',' : '.') + ' €';
+const svcRate = (s: any) => { const pc: any = priced ? (settings as any).pricing : null; if (!pc) return '';
+  return s.key === 'print' ? (+pc.print.minOrder > 0 ? T[lang].pc.ratePrint + ' · ' + T[lang].pc.rateMin.replace('{m}', svcMoney(+pc.print.minOrder)) : '') : +pc.hourly[s.key] > 0 ? T[lang].pc.perHour.replace('{n}', svcMoney(+pc.hourly[s.key])) : ''; };
+if (svc) {
+  title = tl(svc.title) + ' · Nace Kepa, ' + (SL ? 'inženirski studio, Škofja Loka' : 'engineering studio, Škofja Loka');
+  description = tl(svc.body) + ' ' + T[lang].turnaround + ': ' + (svc.time ? tl(svc.time) : T[lang].onRequest) + '. Nace Kepa, ' + (SL ? 'inženirski studio, Škofja Loka.' : 'engineering studio, Škofja Loka.');
+}
 // Structured data for search engines (a data block, not executed, so the CSP script hash doesn't apply).
 // Only facts already on the page: name, place, contact, services, LinkedIn.
 // Prices-on-the-service package (2026-11-15): the published rates from settings.json on each service offer — hourly rate (EUR / h,
@@ -166,7 +178,7 @@ const jsonLd = JSON.stringify({
   hasOfferCatalog: {
     '@type': 'OfferCatalog',
     name: SL ? 'Storitve' : 'Services',
-    itemListElement: services.map((s: any) => ({ '@type': 'Offer', ...offerPrice(s.key), itemOffered: { '@type': 'Service', name: tl(s.title), description: tl(s.body), url: secUrl('services'), provider: { '@type': 'Person', name: 'Nace Kepa' } } }))
+    itemListElement: services.map((s: any) => ({ '@type': 'Offer', ...offerPrice(s.key), itemOffered: { '@type': 'Service', name: tl(s.title), description: tl(s.body), url: svcUrl(s), provider: { '@type': 'Person', name: 'Nace Kepa' } } }))
   }
 }).replace(/</g, '\\u003c');
 // One news post as BlogPosting and one project as CreativeWork (data blocks, not executed). Text, dates, years, categories
@@ -222,7 +234,15 @@ const itemLd = item ? JSON.stringify({
       { '@type': 'ListItem', position: 3, name: tl(item.title), item: pageUrl }
     ] }
   ]
-}).replace(/</g, '\\u003c') : sec ? JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+}).replace(/</g, '\\u003c') : svc ? JSON.stringify({ '@context': 'https://schema.org', '@graph': [
+  { '@type': 'Service', name: tl(svc.title), serviceType: tl(svc.title), description: tl(svc.body), url: pageUrl, mainEntityOfPage: pageUrl, inLanguage: lang, areaServed: 'EU',
+    provider: { '@type': 'ProfessionalService', name: siteTitle, url: home }, offers: { '@type': 'Offer', url: pageUrl, ...offerPrice(svc.key) } },
+  { '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Nace Kepa', item: home },
+    { '@type': 'ListItem', position: 2, name: T[lang].nav.services, item: secUrl('services') },
+    { '@type': 'ListItem', position: 3, name: tl(svc.title), item: pageUrl }
+  ] }
+] }).replace(/</g, '\\u003c') : sec ? JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
   { '@type': 'ListItem', position: 1, name: 'Nace Kepa', item: home },
   { '@type': 'ListItem', position: 2, name: T[lang].nav[sec], item: pageUrl }
 ] }).replace(/</g, '\\u003c') : '';
@@ -255,11 +275,24 @@ const snapshot = (() => {
     const photos = (n.photos || []).map((ph: string, i: number) => `<img src="${ex('/' + String(ph).replace(/^\/+/, ''))}" alt="${ex(tl(n.title) + ' · ' + (i + 1))}" loading="lazy" decoding="async">`).join('');
     return header + `<main><p><a href="${secUrl('news')}">← ${ex(x.nav.news)}</a></p><h1>${ex(tl(n.title))}</h1><p><time datetime="${ex(n.date)}">${ex(n.date)}</time></p><p>${ex(tl(n.summary))}</p>${rich(tl(n.body))}${photos}` + foot;
   }
+  if (svc) { // Service sheet (2026-11-26): the same facts svView() shows
+    const s = svc, pc: any = priced ? (settings as any).pricing : null;
+    const ul = (a: string[]) => '<ul>' + a.map((v) => '<li>' + ex(v) + '</li>').join('') + '</ul>';
+    const cats: string[] = s.key === 'cad' ? ['CAD', 'Mechanical'] : s.key === 'iot' ? ['IoT', 'Embedded'] : []; // SK_MAP in app.js
+    const work = shown.filter((p) => cats.includes(p.category));
+    return header + `<main><p><a href="${secUrl('services')}">← ${ex(x.sv.back)}</a></p><p>${ex(s.code)} · ${ex(x.sv.label)}</p><h1>${ex(tl(s.title))}</h1><p>${ex(tl(s.body))}</p>` +
+      `<dl><dt>${ex(x.turnaround)}</dt><dd>${ex(s.time ? tl(s.time) : x.onRequest)}</dd>${svcRate(s) ? `<dt>${ex(x.pc.rate)}</dt><dd>${ex(svcRate(s))}</dd>` : ''}</dl>` +
+      `<h2>${ex(x.deliverables)}</h2>${ul(tl(s.get))}<h2>${ex(x.needs)}</h2>${ul(tl(s.need))}` +
+      (pc && tl(pc.vatNote) ? `<p>${ex(tl(pc.vatNote))}</p>` : '') +
+      `<h2>${ex(x.sv.how)}</h2><ol>${x.hm.how.map((st: string[]) => `<li>${ex(st[0])} — ${ex(st[1])}</li>`).join('')}</ol>` +
+      (work.length ? `<h2>${ex(x.sv.work)}</h2><ul>${work.map((p) => `<li><a href="${ex(landingOf('p', p.slug))}">${ex(tl(p.title))}</a> — ${ex(catName(p))}, ${ex(p.year)}. ${ex(tl(p.description))}</li>`).join('')}</ul>` : '') +
+      `<h2>${ex(x.sv.other)}</h2><ul>${services.filter((o: any) => o !== s).map((o: any) => `<li><a href="${svcUrl(o)}">${ex(o.code)} · ${ex(tl(o.title))}</a></li>`).join('')}</ul>` + foot;
+  }
   if (view === 'news') {
     const list = posts.filter((n) => !n.draft).sort((a, b) => String(b.date).localeCompare(String(a.date)));
     return header + `<main><h1>${ex(x.newsPageTitle)}</h1><p>${ex(x.newsLead)}</p><ul>${list.map((n) => `<li><a href="${ex(landingOf('n', n.slug))}">${ex(tl(n.title))}</a> (<time datetime="${ex(n.date)}">${ex(n.date)}</time>) — ${ex(tl(n.summary))}</li>`).join('')}</ul>` + foot;
   }
-  const svc = services.map((s: any) => `<li><h3>${ex(s.code)} · ${ex(tl(s.title))}</h3><p>${ex(tl(s.body))}</p><p>${ex(x.turnaround)}: ${ex(s.time ? tl(s.time) : x.onRequest)}</p></li>`).join('');
+  const svcList = services.map((s: any) => `<li><h3><a href="${svcUrl(s)}">${ex(s.code)} · ${ex(tl(s.title))}</a></h3><p>${ex(tl(s.body))}</p><p>${ex(x.turnaround)}: ${ex(s.time ? tl(s.time) : x.onRequest)}</p></li>`).join('');
   const work = shown.map((p) => `<li><a href="${ex(landingOf('p', p.slug))}">${ex(tl(p.title))}</a> — ${ex(catName(p))}, ${ex(p.year)}. ${ex(tl(p.description))}</li>`).join('');
   const faqHtml = faqs.length ? `<h2>${ex(x.faq.title)}</h2><dl>${faqs.map((f: any) => `<dt>${ex(tl(f.q))}</dt><dd>${ex(tl(f.a))}</dd>`).join('')}</dl>` : '';
   const facts: [string, string][] = [[SL ? 'Lokacija' : 'Location', SL ? 'Škofja Loka, Slovenija' : 'Škofja Loka, Slovenia'], [SL ? 'Šola' : 'School', 'Šolski center Kranj'], ['CAD', SL ? 'SolidWorks 4 leta · CSWA · CSWA-AM' : 'SolidWorks 4 yrs · CSWA · CSWA-AM']].concat(x.heroSpecs.slice(2)); // same rows as #about
@@ -269,7 +302,7 @@ const snapshot = (() => {
     const rate = (s: any) => !pc ? '' : s.key === 'print' ? (+pc.print.minOrder > 0 ? `<p>${ex(x.pc.rate)}: ${ex(x.pc.ratePrint)} · ${ex(x.pc.rateMin.replace('{m}', money(+pc.print.minOrder)))}</p>` : '') : +pc.hourly[s.key] > 0 ? `<p>${ex(x.pc.rate)}: ${ex(x.pc.perHour.replace('{n}', money(+pc.hourly[s.key])))}</p>` : '';
     const ul = (a: string[]) => '<ul>' + a.map((v) => '<li>' + ex(v) + '</li>').join('') + '</ul>';
     return header + `<main><h1>${ex(x.servicesPageTitle)}</h1><p>${ex(x.servicesPageLead)}</p>` +
-      services.map((s: any) => `<section id="${ex(s.id)}"><h2>${ex(s.code)} · ${ex(tl(s.title))}</h2><p>${ex(tl(s.body))}</p><p>${ex(x.turnaround)}: ${ex(s.time ? tl(s.time) : x.onRequest)}</p>${rate(s)}<h3>${ex(x.deliverables)}</h3>${ul(tl(s.get))}<h3>${ex(x.needs)}</h3>${ul(tl(s.need))}</section>`).join('') +
+      services.map((s: any) => `<section id="${ex(s.id)}"><h2><a href="${svcUrl(s)}">${ex(s.code)} · ${ex(tl(s.title))}</a></h2><p>${ex(tl(s.body))}</p><p>${ex(x.turnaround)}: ${ex(s.time ? tl(s.time) : x.onRequest)}</p>${rate(s)}<h3>${ex(x.deliverables)}</h3>${ul(tl(s.get))}<h3>${ex(x.needs)}</h3>${ul(tl(s.need))}</section>`).join('') +
       (pc && tl(pc.vatNote) ? `<p>${ex(tl(pc.vatNote))}</p>` : '') + faqHtml + foot;
   }
   if (sec === 'work') return header + `<main><h1>${ex(x.workPageTitle)} · ${shown.length}</h1><p>${ex(x.workPageLead)}</p><ul>${work}</ul>` + foot;
@@ -281,13 +314,13 @@ const snapshot = (() => {
   const newsHtml = posts2.length ? `<h2>${ex(x.newsPageTitle)}</h2><ul>${posts2.map((n) => `<li><a href="${ex(landingOf('n', n.slug))}">${ex(tl(n.title))}</a> (<time datetime="${ex(n.date)}">${ex(n.date)}</time>) — ${ex(tl(n.summary))}</li>`).join('')}</ul>` : '';
   return header +
     `<main><h1>${ex(x.heroA)} ${ex(x.heroB)}${ex(x.heroEm)}</h1><p>${ex(x.heroLead)}</p>` +
-    `<h2>${ex(x.servicesPageTitle)}</h2><p>${ex(x.servicesPageLead)}</p><ul>${svc}</ul>` +
+    `<h2>${ex(x.servicesPageTitle)}</h2><p>${ex(x.servicesPageLead)}</p><ul>${svcList}</ul>` +
     `<h2>${ex(x.nav.work)} · ${shown.length}</h2><ul>${work}</ul>${newsHtml}` +
     faqHtml +
     `<h2>${ex(x.nav.about)}</h2><p>${ex(x.aboutBody)}</p>` + foot;
 })();
 // Alt text of the link-preview image: the sheet / post title on a landing page with a photo, else the hero line.
-const ogAlt = item ? tl(item.title) + ' — nacekepa.work' : sec ? title : 'nacekepa.work — ' + T[lang].heroA + ' ' + T[lang].heroB + T[lang].heroEm;
+const ogAlt = item ? tl(item.title) + ' — nacekepa.work' : sec || svc ? title : 'nacekepa.work — ' + T[lang].heroA + ' ' + T[lang].heroB + T[lang].heroEm;
 ---
 <!doctype html>
 <html lang={lang}>

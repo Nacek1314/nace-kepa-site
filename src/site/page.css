@@ -1755,3 +1755,35 @@ span.rl-pin { cursor: default; }
   .hm-bar:not(.is-on) { visibility: hidden; }
 }
 @media print { .hm-bar, .hm-qs__alt, .hm-micro { display: none !important; } }
+
+/* ---------- Service sheets (#s-<id>, /services/<id>/; 2026-11-26) — svView() in app.js. Remove with the feature. ---------- */
+.sv-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--space-8); align-items: start; }
+.sv-main { display: grid; gap: var(--space-8); min-width: 0; }
+.sv-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); padding: var(--space-6); border: 1px solid var(--line-strong); background: var(--paper-raised); }
+.sv-cols h2, .sv-price h2 { margin: 0 0 var(--space-3); }
+.sv-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); font-size: 16px; line-height: 24px; }
+.sv-list li { display: grid; grid-template-columns: 16px 1fr; gap: var(--space-2); }
+.sv-list li::before { content: "+"; font-family: var(--font-mono); color: var(--ink-muted); }
+.sv-price { min-width: 0; }
+.sv-links { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin: var(--space-4) 0 0; font: 13px/20px var(--font-mono); }
+.sv-links a, .sv-tl { color: var(--ink); text-underline-offset: 3px; padding-block: 2px; }
+.sv-links a:hover, .sv-tl:hover { color: var(--redline); }
+.sv-tl { text-decoration: none; padding: 0; }
+.sv-tl:hover { text-decoration: underline; }
+.sv-side { display: grid; gap: var(--space-4); padding: var(--space-6); border: 1.5px solid var(--ink); background: var(--paper-raised); min-width: 0; }
+.sv-side > .nk-label, .sv-side .hm-ok, .sv-share { margin: 0; }
+.sv-side .hm-ok { font-size: 14px; line-height: 20px; }
+.sv-side .cta-row { margin: 0; }
+.sv-share { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-3); font-size: 13px; line-height: 20px; color: var(--ink-muted); }
+.sv-more { gap: var(--space-3); flex-wrap: wrap; }
+.sv-skills .skill-group { max-width: 760px; }
+.sv-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line-strong); background: var(--paper-raised); }
+.sv-o { display: grid; gap: var(--space-1); align-content: start; padding: var(--space-4); color: var(--ink); text-decoration: none; min-width: 0; transition: background-color .15s var(--ease); }
+.sv-o + .sv-o { border-left: 1px solid var(--line); }
+.sv-o__t { font-size: 18px; line-height: 24px; font-weight: 500; overflow-wrap: anywhere; }
+.sv-o__m { font: 12px/18px var(--font-mono); color: var(--ink-muted); }
+.sv-o:hover { background: var(--redline-soft); } .sv-o:hover .sv-o__t { color: var(--redline); }
+.sv-o:focus-visible { outline: 2px solid var(--redline); outline-offset: -2px; }
+@media (max-width: 860px) { .sv-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .sv-cols { grid-template-columns: minmax(0, 1fr); padding: var(--space-4); } .sv-side { padding: var(--space-4); } .sv-nav { grid-template-columns: minmax(0, 1fr); } .sv-o + .sv-o { border-left: 0; border-top: 1px solid var(--line); } }
+@media print { .sv .back, .sv-side .cta-row, .sv-share, .sv-links, .sv-more, .sv-tools, .sv-other { display: none !important; } .sv-grid { display: block; } .sv-side { margin-top: var(--space-6); } }

@@ -26,6 +26,56 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-26 (daily run)
+
+**Checked** (rebased on Nace's commit e68cd74 "prices: none on the home page, price-list tool switched off", which arrived during the run): build (74 → 82 pages); home, #services, #work, #p-famfive, #news, #n-<newest>, #skills, #about, #contact, #order (all 4 steps
+on the local build, nothing sent), #profile, #mine, #studio, #gift, the section pages, a project / post landing page, 404, /admin/ sign-in —
+1280 + 390 px, light + dark, `/` + `/sl/`: no JS errors, no failed requests (Google Fonts blocked in the cloud, as always), no horizontal
+scroll, no CSP violations, no broken images, no "undefined" text, one h1 per view. Live site + last Actions run (success) checked
+from the laptop (GitHub's API is not reachable from the cloud session).
+**Fixed:** nothing was broken today. (Today's home rebuild by Nace's request was left as it is.)
+
+**Improvement — "real addresses" package (SEO + sharing):** every link of the running app was a `#…` address, so the section pages
+built on 2026-11-25 and the project / post pages had no links from the page a search engine renders, and "copy link address" on a card
+gave an address without its own preview. Now (a) the **header navigation** points at `/services/`, `/portfolio/`, `/news/`, `/skills/`,
+`/about/` and the wordmark at `/` (`/sl/…` in Slovenian); (b) every **project card** (`sheet()`: home, #work, similar projects, service
+sheets) points at `/portfolio/<slug>/` and every **news card** at `/news/<slug>/`; (c) the "← All work" link on a sheet and all links to a
+service point at their pages; (d) the service offers in the structured data point at the service pages; the snapshot links each service.
+A plain click or Enter still moves inside the app exactly as before (the link carries the hash in `data-ra`; the click handler sets it),
+Ctrl / middle click, "copy link address" and "open in new tab" get the real page with its own title and link preview. The #work search
+and "back to the card you opened" read `data-ra`. (e) On #services each card's "Request a quote" now ticks that service (as on home). No rates were added anywhere on the home page.
+*To remove:* see the comment above `function raPath` in `app.js`.
+
+**Innovation — Service sheets / "Listi storitev" (`#s-<id>`, real pages `/services/<id>/` + `/sl/services/<id>/`; `svById()` … `svCopy()` in
+`app.js`, `sv:` in `content.js`, "Service sheets" block at the end of `page.css`, `service` in `Site.astro`, `src/pages/services/[id].astro`
+(+ `/sl/`), `serviceCard` in `src/og/card.ts`):** one sheet per service (S-01 … S-04) with everything the site already says about it in
+one place — what you get / what I need, an "At a glance" box (code, turnaround, published rate, the three assurances, **Request a quote**
+which ticks the service and opens the order form at step 2, "Write an e-mail", "Copy link to this sheet"), the running promotion when
+it covers the service + "Estimate the price" (the quote tool), "How an order goes" (the three home steps), **the project
+sheets behind it** (S-01: CAD + Mechanical, S-03: IoT + Embedded — the same mapping as the Service row on project sheets; S-02: sheets
+whose text mentions 3D printing or a printing material; S-04: none, so no block), its **skills group**, the **tools that go with it**
+and the other services. Each sheet is also a **real page** with its own title, description, canonical + hreflang, drawn link-preview
+card (`/og/services/<id>.png`), `Service` + `BreadcrumbList` structured data, static snapshot, and it is in the sitemap (72 → 80 addresses).
+Entry points: service cards on home ("Details") and #services (title + "Service sheet →"), the Service row on project sheets, the
+Skills page group footers, Find anything. Only text and numbers already in `content.js` / `settings.json` / `projects.json`.
+**Prices (Nace's rule of 2026-11-26, same day):** the price list stays off — the sheet shows only the service's one rate line, exactly as
+its card on #services does, and no price rows; the description, the link-preview card and the "other services" row carry no prices. The
+price rows of a service (`svPrice()`) appear on its sheet by themselves only if `PRICE_LIST` is ever set back to `true`. If Nace wants
+no rate on the sheets either: drop the `rate ?` part of `glance` in `svView()`. Nothing stored, nothing sent.
+- Tested in Playwright (112 checks: EN 1280 light / dark, SL 390 dark + touch, 320 / 768 / 1650 px): all four sheets in both languages,
+  rate line and promotion per service, no price rows / no price-list link, quote by keyboard → order step 2 with only that service ticked, copy link (clipboard read back) and
+  blocked clipboard, tool links, other-service links by keyboard, unknown id → home, landing page title / JSON-LD / card / snapshot /
+  sitemap, EN ↔ SL on the landing page, leaving and returning with Back, Ctrl-click → real page in a new tab, #work search and back-focus,
+  order form 4 steps, print media, no horizontal scroll, axe 0 violations (sheets, #services, home, #work, project); full sweep again.
+- Not in this version (next steps): a printable A4 layout of the sheet with QR; the tools pre-set to the service (calculation links);
+  FAQ answers per service once Nace writes FAQ in Settings; admin Overview rows for the service pages.
+*To remove:* see the comment above `var SV_TOOLS` in `app.js`.
+
+**Ideas for next time** (added to the list below)
+- Public: Service sheet — print / PDF layout with QR, "Prepared for" line; tools opened pre-set to the service.
+- Public: real addresses for the remaining in-app links (buttons "See all work", prev / next sheet, register rows, Find anything results).
+- Admin: Overview rows for the service pages (title / description length, card ↗) and a per-service FAQ field in Settings.
+
 ## 2026-11-26 (Nace, live: "prenovi home z najboljšim order ratingom")
 
 **Home page rebuilt as a path to the order form** (same drawing-sheet look, only facts the site already states; `views.home`,
@@ -2941,6 +2991,12 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: real addresses in the header / footer navigation; one page per service (`/services/<id>/`).
 - Public: Studio profile — "Prepared for" line, in the portfolio set, PNG card.
 - Admin: Overview rows for the section pages.
+- (Built 2026-11-26: Service sheets `#s-<id>` + real pages `/services/<id>/` (+ `/sl/`) — one sheet per service with what you get / need,
+  turnaround, its price rows, promotion, order steps, project sheets, skills, tools, own title / description / card / structured data;
+  "real addresses" package as the improvement — navigation, project cards, news cards and service links carry real page addresses.)
+- Public: Service sheet — print / PDF layout with QR; tools pre-set to the service; per-service FAQ.
+- Public: real addresses for the remaining in-app links (buttons, prev / next, register rows, Find anything).
+- Admin: Overview rows for the service pages; per-service FAQ field in Settings.
 
 ## 2026-10-03 (second run)
 

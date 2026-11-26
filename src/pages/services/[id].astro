@@ -1,0 +1,13 @@
+---
+// Service sheets (2026-11-26): one real HTML page per service at /services/<id>/ (English) — the same site with the service's own title,
+// description, link preview, structured data and static snapshot (content.js + settings.json), opening #s-<id> (svView() in app.js).
+// Slovenian twin: src/pages/sl/services/[id].astro. To remove: see the "Service sheets" note in src/site/Site.astro.
+import Site from '../../site/Site.astro';
+import content from '../../site/content.js?raw';
+export function getStaticPaths() {
+  const SERVICES: any[] = new Function(content + '\nreturn SERVICES;')();
+  return SERVICES.filter((s) => /^[a-z0-9-]+$/.test(String(s.id))).map((s) => ({ params: { id: s.id } }));
+}
+const { id } = Astro.params;
+---
+<Site lang="en" service={id} />

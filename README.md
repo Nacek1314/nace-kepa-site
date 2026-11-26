@@ -104,6 +104,14 @@ is on the sheet and live in the address (`#profile?s=cad,print&pr=0&w=0`) — `p
 link-preview card, breadcrumb data and static snapshot, opening that section (`SECTIONS` in `src/site/Site.astro`,
 `src/pages/<section>/index.astro`). `/order` is still a redirect into the page.
 
+**Service sheets** (`#s-<id>`, real pages `/services/3d-design/`, `/services/3d-printing/`, `/services/embedded-iot/`, `/services/full-builds/`
++ `/sl/…`): one sheet per service — what you get / what I need, turnaround, the price rows of that service, the running promotion when it
+covers the service, how an order goes, the project sheets behind it, its skills group, its tools and the other services; "Request a quote"
+ticks the service and opens the order form (`svView()` in `src/site/app.js`, `service` in `src/site/Site.astro`,
+`src/pages/services/[id].astro`). **Real addresses:** the header navigation, the wordmark, project cards, news cards and service links
+carry the page's real address in `href` (copy link / new tab / search engines) and the in-app hash in `data-ra`; a plain click still
+moves inside the app (`ra()` in `app.js`).
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,

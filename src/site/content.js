@@ -321,6 +321,11 @@ var T = {
     sx: { label: 'Shared selection', title: 'A selection of sheets sent to you', lead: 'Someone picked these project sheets for you. Open one, present them on the whole screen, or start a project with them as references. Nothing is saved in this browser until you add them to your shortlist.', keep: 'Add all to my shortlist', link: 'Copy link', close: 'Close the selection',
       copied: 'Link copied — it opens these {n} sheets on any device.', copyFail: 'Could not copy — the link:', kept: 'Added to your shortlist: {n}.', have: 'All of these are already on your shortlist.' },
     sd: { svc: 'Service', skills: 'Skills', all: 'All skills' },
+    // Service sheets (2026-11-26): one sheet per service at #s-<id> / /services/<id>/ — svView() in app.js
+    sv: { label: 'Service sheet', back: 'All services', more: 'Service sheet', glance: 'At a glance', price: 'Published price', list: 'Full price list', how: 'How an order goes',
+      work: 'Work behind this service', workCats: 'Project sheets filed under {c}. The first four are below.', workMats: 'Project sheets that mention 3D printing or a printing material. The first four are below.',
+      tools: 'Tools for this service', toolsLead: 'Check the size, the material, the price or the dates yourself before you write. Nothing is sent until it goes into a brief.',
+      other: 'Other services', copy: 'Copy link to this sheet', subject: 'Question about a service' },
     // Redline notes (2026-11-24): numbered marks + one line each on a project sheet, handed to the order form.
     rl: { label: 'Redline notes', lead: 'One like this, but different? Mark what should change and write a line for each mark.', mark: 'Mark on the drawing', marking: 'Marking — click the drawing', add: 'Add a note', note: 'Note {n}', ph: 'What should be different here?', del: 'Remove note {n}',
       pin: 'Mark {n} — the arrow keys move it, Delete removes it', mk: 'Mark {n}', go: 'Start a project with these notes', copy: 'Copy notes', clear: 'Clear notes', undo: 'Put the notes back', keep: 'Kept in this browser only — nothing is sent until you send a brief.',
@@ -644,6 +649,11 @@ var T = {
     sx: { label: 'Poslani izbor', title: 'Izbor listov, poslan vam', lead: 'Nekdo je za vas izbral te projektne liste. Odprite katerega, predstavite jih čez ves zaslon ali začnite projekt z njimi kot zgledom. V tem brskalniku se nič ne shrani, dokler jih ne dodate v svoj izbor.', keep: 'Dodaj vse v moj izbor', link: 'Kopiraj povezavo', close: 'Zapri poslani izbor',
       copied: 'Povezava je kopirana — na vsaki napravi odpre te liste ({n}).', copyFail: 'Kopiranje ni uspelo — povezava:', kept: 'Dodano v vaš izbor: {n}.', have: 'Vsi ti listi so že v vašem izboru.' },
     sd: { svc: 'Storitev', skills: 'Znanja', all: 'Vsa znanja' },
+    // Listi storitev (2026-11-26): en list na storitev na #s-<id> / /sl/services/<id>/ — svView() v app.js
+    sv: { label: 'List storitve', back: 'Vse storitve', more: 'List storitve', glance: 'Na kratko', price: 'Objavljena cena', list: 'Celoten cenik', how: 'Kako poteka naročilo',
+      work: 'Projekti za to storitvijo', workCats: 'Projektni listi s področij: {c}. Spodaj so prvi štirje.', workMats: 'Projektni listi, ki omenjajo 3D tisk ali material za tisk. Spodaj so prvi štirje.',
+      tools: 'Orodja za to storitev', toolsLead: 'Velikost, material, ceno ali roke preverite sami, še preden pišete. Nič se ne pošlje, dokler ne gre v povpraševanje.',
+      other: 'Druge storitve', copy: 'Kopiraj povezavo do lista', subject: 'Vprašanje o storitvi' },
     rl: { label: 'Rdeči svinčnik', lead: 'Tak, a malo drugačen? Označite, kaj naj se spremeni, in k vsaki oznaki napišite vrstico.', mark: 'Označi na risbi', marking: 'Označevanje — kliknite risbo', add: 'Dodaj opombo', note: 'Opomba {n}', ph: 'Kaj naj bo tu drugače?', del: 'Odstrani opombo {n}',
       pin: 'Oznaka {n} — premik s puščicami, Delete jo odstrani', mk: 'Oznaka {n}', go: 'Začni projekt s temi opombami', copy: 'Kopiraj opombe', clear: 'Počisti opombe', undo: 'Vrni opombe', keep: 'Shranjeno samo v tem brskalniku — nič se ne pošlje, dokler ne pošljete povpraševanja.',
       hint: 'Kliknite risbo, da postavite oznako. Esc konča označevanje.', move: 'Oznako, ki ima fokus, premikate s puščicami (Shift: večji koraki); Delete jo odstrani.', full: 'To je meja: {n} opomb na list.', copied: 'Opombe so kopirane.', copyFail: 'Kopiranje ni uspelo — opombe označite ročno.', cleared: 'Opombe so počiščene.', added: 'Oznaka {n} je postavljena — napišite opombo.', gone: 'Opomba je odstranjena.',

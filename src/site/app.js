@@ -12,7 +12,7 @@
   // Landing pages (2026-11-01): /portfolio/<slug>/ and /news/<slug>/ (+ /sl/…) are the same site with <meta name="nk-start">
   // naming the sheet / post to open when there is no hash. The first in-app navigation moves the address back to / or /sl/
   // (see the hashchange listener at the end), so every other view keeps its usual address.
-  function landingView() { var m = /^\/(?:sl\/)?(portfolio|news)\/([a-z0-9-]+)\/?$/.exec(location.pathname); if (m) return (m[1] === 'news' ? 'n-' : 'p-') + m[2]; var sv = /^\/(?:sl\/)?(news|services|portfolio|skills|about)\/?$/.exec(location.pathname); return sv ? (sv[1] === 'portfolio' ? 'work' : sv[1]) : ''; } // /news/ index (blog package, 2026-11-02) + section pages /services/, /portfolio/, /skills/, /about/ (2026-11-25)
+  function landingView() { var m = /^\/(?:sl\/)?(portfolio|news)\/([a-z0-9-]+)\/?$/.exec(location.pathname); if (m) return (m[1] === 'news' ? 'n-' : 'p-') + m[2]; var ss = /^\/(?:sl\/)?services\/([a-z0-9-]+)\/?$/.exec(location.pathname); if (ss) return 's-' + ss[1]; /* Service sheets (2026-11-26) */ var sv = /^\/(?:sl\/)?(news|services|portfolio|skills|about)\/?$/.exec(location.pathname); return sv ? (sv[1] === 'portfolio' ? 'work' : sv[1]) : ''; } // /news/ index (blog package, 2026-11-02) + section pages /services/, /portfolio/, /skills/, /about/ (2026-11-25)
   var START_VIEW = (function () { var m = document.querySelector('meta[name="nk-start"]'); return m ? String(m.getAttribute('content') || '') : landingView(); })();
   var LANDING = !!START_VIEW;
   var LAND_TITLE = LANDING ? document.title : '', LAND_LANG = document.documentElement.lang === 'sl' ? 'sl' : 'en'; // Section pages (2026-11-25): a landing page keeps the title it was built with while it shows the view it opened with
@@ -23,7 +23,7 @@
   // language's address (right-click → copy, middle-click → new tab). Only the site's own paths are touched. To remove: put
   // landingLang() back (the LANDING-only replaceState: "/sl" + the path without it) and the two <button data-lang> elements in frame().
   function langPath() {
-    var p = location.pathname; if (!/^\/(?:sl\/?)?(?:(?:portfolio|news)\/[a-z0-9-]+\/?|(?:news|services|portfolio|skills|about)\/?)?$/.test(p)) return;
+    var p = location.pathname; if (!/^\/(?:sl\/?)?(?:(?:portfolio|news|services)\/[a-z0-9-]+\/?|(?:news|services|portfolio|skills|about)\/?)?$/.test(p)) return;
     var isSl = /^\/sl(?:\/|$)/.test(p), want = lang === 'sl'; if (isSl === want) return;
     var np = langHref(lang, p);
     try { history.replaceState(history.state, '', np + location.search + location.hash); state.navHref = location.href; } catch (e) {}
@@ -73,6 +73,7 @@
     if (h === 'contact') { state.ctGo = true; return 'about'; } // Contact package (2026-10-29): #contact opens the contact card on #about
     if (/^p-/.test(h) && bySlug(h.slice(2))) { rlRead(h.slice(2), qs); return 'project'; } // rlRead: Redline notes (2026-11-24)
     if (/^n-/.test(h) && newsBySlug(h.slice(2))) return 'post';
+    if (/^s-/.test(h) && svById(h.slice(2))) return 'service'; // Service sheets (2026-11-26)
     if (h === 'profile') { if (location.hash !== state.pfHash) { state.pfHash = location.hash; pfRead(qs); } return 'profile'; } // Studio profile NK-A (2026-11-25)
     if (h === 'gift' && !giftOn()) return 'home';
     return PAGES.indexOf(h) >= 0 ? h : 'home'; }
@@ -80,6 +81,25 @@
   // so the EN/SL buttons rewrite the prefix to the chosen language.
   function langHash() { var h = location.hash; if (/^#(en|sl)-?/.test(h)) try { history.replaceState(history.state, '', h.replace(/^#(en|sl)/, '#' + lang)); } catch (e) {} }
   function currentSlug() { var h = hashPath().replace(/^(en|sl)-?/, '').replace(/\?.*$/, ''); return h.slice(2); } // a "?…" after the slug (Redline notes link) is not part of it
+
+  // ---------- Real addresses package (2026-11-26) ----------
+  // The header navigation, the wordmark, every project card, news card and service-sheet link carry the real address of
+  // their page (/services/, /portfolio/<slug>/, /news/<slug>/, /services/<id>/ — /sl/… in Slovenian) in href, so "copy link
+  // address", "open in a new tab", the status bar and search engines get the page with its own title and link preview.
+  // A plain click still moves inside the app: the click handler reads data-ra (the in-app hash) and sets it, exactly as the
+  // old href="#…" did. To remove: raPath() / ra(), the data-ra block at the top of the click handler, and turn every
+  // ' + ra('#x') + ' back into href="#x" (the two data-ra selectors in findApply() and render() fall back to href by themselves).
+  var RA_SEC = { services: '/services/', work: '/portfolio/', news: '/news/', skills: '/skills/', about: '/about/' };
+  function raPath(h) { // '#services' → '/services/' ('' = the view has no page of its own)
+    var pre = lang === 'sl' ? '/sl' : '', m, n; h = String(h).replace(/^#/, '');
+    if (h === 'home') return pre + '/';
+    if (RA_SEC[h]) return pre + RA_SEC[h];
+    if ((m = /^p-([a-z0-9-]+)$/.exec(h)) && bySlug(m[1])) return pre + '/portfolio/' + m[1] + '/';
+    if ((m = /^n-([a-z0-9-]+)$/.exec(h)) && (n = newsBySlug(m[1])) && !n.draft) return pre + '/news/' + m[1] + '/';
+    if ((m = /^s-([a-z0-9-]+)$/.exec(h)) && svById(m[1])) return pre + '/services/' + m[1] + '/';
+    return '';
+  }
+  function ra(h) { var p = raPath(h); return p ? 'href="' + p + '" data-ra="' + esc(h) + '"' : 'href="' + esc(h) + '"'; }
 
   function btn(label, href, variant, size, arrow) {
     return '<a class="nk-btn' + (variant ? ' nk-btn--' + variant : '') + (size ? ' nk-btn--' + size : '') + '" href="' + href + '">' + esc(label) + (arrow ? '<span class="nk-btn__arrow" aria-hidden="true">→</span>' : '') + '</a>';
@@ -95,7 +115,7 @@
   // hl = heading tag for the title ('h2' where the card sits right under the page h1, else h3). Not positional from .map().
   function sheet(p, hl) {
     var h = hl === 'h2' ? 'h2' : 'h3';
-    return '<a class="nk-sheet" href="#p-' + esc(p.slug) + '" data-cat="' + esc(p.category) + '"><div class="nk-sheet__head"><span class="nk-label">' + sheetNo(p) + '</span><span class="nk-label">' + (slRead().indexOf(p.slug) >= 0 ? '<b class="sl-mark" title="' + esc(t().sl.on) + '"><span aria-hidden="true">★ </span><span class="vh">' + esc(t().sl.on) + ' · </span></b>' : '') + (p.model ? '<b class="has3d">3D · </b>' : '') + esc(cat(p)) + ' · ' + esc(p.year) + '</span></div>' +
+    return '<a class="nk-sheet" ' + ra('#p-' + p.slug) + ' data-cat="' + esc(p.category) + '"><div class="nk-sheet__head"><span class="nk-label">' + sheetNo(p) + '</span><span class="nk-label">' + (slRead().indexOf(p.slug) >= 0 ? '<b class="sl-mark" title="' + esc(t().sl.on) + '"><span aria-hidden="true">★ </span><span class="vh">' + esc(t().sl.on) + ' · </span></b>' : '') + (p.model ? '<b class="has3d">3D · </b>' : '') + esc(cat(p)) + ' · ' + esc(p.year) + '</span></div>' +
       '<div class="nk-sheet__art">' + art(p, hl === 'h2') + '</div><div class="nk-sheet__foot"><' + h + ' class="nk-sheet__title">' + esc(P(p, 'title')) + '</' + h + '><p class="nk-sheet__desc">' + esc(P(p, 'description')) + '</p></div></a>';
   }
   function sheetH2(p) { return sheet(p, 'h2'); }
@@ -118,10 +138,10 @@
   function service(s, full) {
     var x = t();
     return '<article class="nk-service" id="' + s.id + '"><div class="nk-service__top"><span class="nk-service__code">' + s.code + '</span><span class="nk-label">' + esc(s.time ? L(s.time) : x.onRequest) + '</span></div>' +
-      (full ? '<h2' : '<h3') + ' class="nk-service__title">' + esc(L(s.title)) + (full ? '</h2>' : '</h3>') + '<p>' + esc(L(s.body)) + '</p>' +
+      (full ? '<h2' : '<h3') + ' class="nk-service__title">' + (full ? '<a class="sv-tl" ' + ra('#s-' + s.id) + '>' + esc(L(s.title)) + '</a>' : esc(L(s.title))) + (full ? '</h2>' : '</h3>') + '<p>' + esc(L(s.body)) + '</p>' +
       (full ? '<div class="svc-cols"><div><p class="nk-label">' + esc(x.deliverables) + '</p><ul>' + L(s.get).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div><div><p class="nk-label">' + esc(x.needs) + '</p><ul>' + L(s.need).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div></div>'
         : '<ul>' + L(s.get).slice(0, 3).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>') + (full ? svcRate(s, full) : '') + // no rates on the home page (2026-11-26)
-      '<div class="svc-act">' + (full ? btn(x.quote, '#order', null, 'sm', true) : '<button type="button" class="nk-btn nk-btn--sm" data-hm-go="' + s.key + '">' + esc(x.quote) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><a class="svc-more" href="#services">' + esc(x.hm.svcMore) + '<span class="vh"> — ' + esc(L(s.title)) + '</span></a>') + '</div></article>';
+      '<div class="svc-act">' + (full ? '<button type="button" class="nk-btn nk-btn--sm" data-hm-go="' + s.key + '">' + esc(x.quote) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><a class="svc-more" ' + ra('#s-' + s.id) + '>' + esc(x.sv.more) + '<span class="vh"> — ' + esc(L(s.title)) + '</span> →</a>' : '<button type="button" class="nk-btn nk-btn--sm" data-hm-go="' + s.key + '">' + esc(x.quote) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><a class="svc-more" ' + ra('#s-' + s.id) + '>' + esc(x.hm.svcMore) + '<span class="vh"> — ' + esc(L(s.title)) + '</span></a>') + '</div></article>';
   }
   // labelHtml (optional) replaces the escaped label, e.g. to wrap a date in <time>.
   function head(label, title, lead, h1, labelHtml) {
@@ -223,6 +243,7 @@
     post: postView,
     compare: function () { return cmpView(); },
     profile: function () { return pfView(); }, // Studio profile NK-A (2026-11-25)
+    service: function () { return svView(); }, // Service sheets (2026-11-26)
     studio: function () { return stView(); }
   };
 
@@ -249,7 +270,7 @@
 
   function newsCard(n) {
     var x = t();
-    return '<a class="news-card" href="#n-' + esc(n.slug) + '">' +
+    return '<a class="news-card" ' + ra('#n-' + n.slug) + '>' +
       (n.photos && n.photos.length ? '<span class="news-card__img"><' + 'img src="' + esc(asset(n.photos[0])) + '" alt="" loading="lazy" decoding="async" draggable="false"></span>' : '<span class="news-card__img news-card__img--none" aria-hidden="true">' + logo() + '</span>') +
       '<span class="news-card__body"><span class="nk-label">' + (n.pinned ? '<b>' + esc(x.pinned) + ' · </b>' : '') + timeTag(n.date) + ' · ' + esc(rdMin(n)) + '</span>' +
       '<span class="news-card__title">' + esc(P(n, 'title')) + '</span><span class="news-card__sum">' + esc(P(n, 'summary')) + '</span>' +
@@ -317,7 +338,7 @@
     if (m) rows.push([x.pModel, x.interactive]);
     var details = P(p, 'details');
     return '<section class="block first project">' +
-      '<a class="back" href="#work">← ' + esc(x.allWork) + '</a>' +
+      '<a class="back" ' + ra('#work') + '>← ' + esc(x.allWork) + '</a>' +
       head(sheetNo(p) + ' · ' + cat(p) + ' · ' + p.year, P(p, 'title'), P(p, 'description'), true) +
       '<div class="project-grid"><div class="project-stage">' + (m ? stage : '<div class="rl-stage">' + stage + rlLayer() + '</div>') + rlBox() /* Redline notes (2026-11-24) */ + '</div><div class="project-side">' + specs(rows).replace('</dl>', sdRows(p) + '</dl>') +
       (details ? '<div class="project-details">' + details.split(/\n{2,}/).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
@@ -982,7 +1003,7 @@
     var grid = document.getElementById('find-grid'); if (!grid) return;
     var f = t().find, q = state.q.trim(), shown = 0;
     Array.prototype.forEach.call(grid.querySelectorAll('.nk-sheet'), function (a) {
-      var p = bySlug(a.getAttribute('href').slice(3)), hit = !q || (p && findHit(findProjectText(p), q));
+      var p = bySlug((a.getAttribute('data-ra') || a.getAttribute('href')).slice(3)), hit = !q || (p && findHit(findProjectText(p), q));
       a.hidden = !hit; if (hit) shown++;
     });
     var news = q ? NEWS.filter(function (n) { return findHit(findNewsText(n), q); }) : [];
@@ -2820,9 +2841,8 @@
     return '<aside class="promo' + (cls ? ' ' + cls : '') + '" aria-label="' + esc(x.label) + '"><span class="nk-tag nk-tag--rev promo-tag">' + esc(x.label) + (pr.until ? ' · ' + esc(x.until.replace('{d}', pcDate(pr.until))) : '') + '</span>' +
       '<p class="promo-t">' + esc(L(pr.title)) + '</p><p class="promo-x">' + esc(L(pr.text)) + (pr.code ? ' <b>' + esc(pr.code) + '</b>' : '') + '</p>' + btn(x.cta, '#order', 'primary', 'sm', true) + '</aside>';
   }
-  function pcList() {
-    var x = t().pc, P = PRICE, h = P.hourly, pr = P.print, rows = [], pros = [];
-    SERVICES.forEach(function (s) { if (s.key !== 'print' && +h[s.key] > 0) rows.push([L(s.title), x.perHour.replace('{n}', pcMoney(h[s.key])) + (s.key === 'build' && L(P.buildNote) ? ' · ' + L(P.buildNote) : '')]); });
+  function pcPrintRows() { // the 3D-printing rows of the price list (also on the 3D printing service sheet, 2026-11-26)
+    var x = t().pc, h = PRICE.hourly, pr = PRICE.print, pros = [];
     pcMats().forEach(function (m) { pros.push([m.name, x.perGram.replace('{n}', pcMoney(m.perGram, 3)) + (+m.density > 0 ? ' · ' + x.density.replace('{d}', String(m.density).replace('.', lang === 'sl' ? ',' : '.')) : '')]); });
     if (+pr.machineHour > 0) pros.push([x.machine, x.perHour.replace('{n}', pcMoney(pr.machineHour))]);
     if (+pr.setup > 0) pros.push([x.setup, pcMoney(pr.setup) + ' ' + x.perOrder]);
@@ -2830,6 +2850,12 @@
     if (+pr.minOrder > 0) pros.push([x.minOrder, pcMoney(pr.minOrder)]);
     if (+h.post > 0) pros.push([x.post, x.perHour.replace('{n}', pcMoney(h.post))]);
     if (+pr.rushPct > 0) pros.push([x.rush, '+' + pr.rushPct + ' %']);
+    return pros;
+  }
+  function pcList() {
+    var x = t().pc, P = PRICE, h = P.hourly, pr = P.print, rows = [], pros = [];
+    SERVICES.forEach(function (s) { if (s.key !== 'print' && +h[s.key] > 0) rows.push([L(s.title), x.perHour.replace('{n}', pcMoney(h[s.key])) + (s.key === 'build' && L(P.buildNote) ? ' · ' + L(P.buildNote) : '')]); });
+    pros = pcPrintRows();
     var pm = promo();
     return '<section class="block pc">' + head(x.label, x.title, x.lead) + '<div class="pc-grid">' +
       '<div class="pc-col"><p class="nk-label">' + esc(x.hourly) + '</p>' + specs(rows) + (+P.minHours > 0 ? '<p class="pc-how">' + esc(x.minHours.replace('{n}', P.minHours)) + '</p>' : '') + (pm ? '<p class="pc-promo"><span class="nk-tag nk-tag--rev">' + esc(x.promoRow) + '</span> ' + esc(L(pm.title)) + (pm.until ? ' · ' + esc(t().promo.until.replace('{d}', pcDate(pm.until))) : '') + '</p>' : '') + '</div>' +
@@ -4562,10 +4588,10 @@
     var x = t(), p = page();
     var zones = '<div class="zones zones-top" aria-hidden="true">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (n) { return '<span>' + n + '</span>'; }).join('') + '</div>' +
       '<div class="zones zones-side zl" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div><div class="zones zones-side zr" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>';
-    var nav = '<header class="top"><a class="wordmark" href="#home" aria-label="' + esc(x.aria.home) + '">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="' + esc(x.aria.main) + '">' +
-      ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a href="#' + k + '"' + (p === k || ((p === 'project' || p === 'compare') && k === 'work') || (p === 'post' && k === 'news') || (p === 'profile' && k === 'about') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
+    var nav = '<header class="top"><a class="wordmark" ' + ra('#home') + ' aria-label="' + esc(x.aria.home) + '">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span></a><nav aria-label="' + esc(x.aria.main) + '">' +
+      ['services', 'work', 'news', 'skills', 'about'].filter(function (k) { return k !== 'news' || NEWS.length; }).map(function (k) { return '<a ' + ra('#' + k) + (p === k || ((p === 'project' || p === 'compare') && k === 'work') || (p === 'post' && k === 'news') || (p === 'profile' && k === 'about') || (p === 'service' && k === 'services') ? ' aria-current="page"' : '') + '>' + esc(x.nav[k]) + '</a>'; }).join('') +
       '</nav><div class="top-act"><div class="lang" role="group" aria-label="' + esc(x.aria.lang) + '">' + ['en', 'sl'].map(function (l) { return '<a href="' + esc(langHref(l) + langLinkHash(l)) + '" hreflang="' + l + '" lang="' + l + '" data-lang="' + l + '" aria-current="' + (lang === l) + '">' + l.toUpperCase() + '</a>'; }).join('') + '</div>' + fxBtn() + vwBtn() + mnLink() + btn(ctaText(), '#order', 'primary', 'sm') + '</div></header>';
-    var idx = PAGES.indexOf(p === 'project' || p === 'compare' ? 'work' : p === 'post' ? 'news' : p === 'profile' ? 'about' : p) + 1;
+    var idx = PAGES.indexOf(p === 'project' || p === 'compare' ? 'work' : p === 'post' ? 'news' : p === 'profile' ? 'about' : p === 'service' ? 'services' : p) + 1;
     var d = new Date().toISOString().slice(0, 10);
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
@@ -4585,6 +4611,7 @@
     else if (p === 'post') { var n = newsBySlug(currentSlug()); s = n ? P(n, 'title') : ''; }
     else if (p === 'order') s = x.cta + ' · ' + (state.step + 1) + '/4 ' + x.steps[state.step];
     else if (p === 'profile') s = x.pf.label.split(' · ')[0];
+    else if (p === 'service') { var sv = svById(currentSlug()); s = sv ? L(sv.title) : ''; } // Service sheets (2026-11-26)
     else if (p !== 'home') s = x.nav[p] || '';
     return s ? s + ' · Nace Kepa' : 'Nace Kepa · ' + (lang === 'sl' ? 'Inženirski studio' : 'Engineering Studio');
   }
@@ -4612,7 +4639,7 @@
     // Back from a project sheet / news post to its list: scroll to and focus the card the visitor opened, not the top.
     var came = state.from; state.from = p === 'project' ? '#p-' + currentSlug() : p === 'post' ? '#n-' + currentSlug() : '';
     if (came && !keepScroll && (p === 'work' || p === 'news')) {
-      var card = app.querySelector((p === 'work' ? (rgOn() ? '#rg' : '#find-grid') : '.news-list') + ' a[href="' + came + '"]');
+      var card = app.querySelector((p === 'work' ? (rgOn() ? '#rg' : '#find-grid') : '.news-list') + ' a[data-ra="' + came + '"], ' + (p === 'work' ? (rgOn() ? '#rg' : '#find-grid') : '.news-list') + ' a[href="' + came + '"]');
       if (card && !card.hidden) { card.scrollIntoView({ block: 'center' }); card.focus({ preventScroll: true }); }
     }
   }
@@ -4630,6 +4657,11 @@
 
   app.addEventListener('click', function (ev) {
     var el = ev.target.closest('button, a'); if (!el) return;
+    if (el.tagName === 'A' && el.hasAttribute('data-ra')) { // Real addresses package (2026-11-26): a plain click moves inside the app; Ctrl / middle click and "copy link" get the real page
+      if (ev.button || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+      ev.preventDefault(); var rah = el.getAttribute('data-ra'); if (location.hash !== rah) location.hash = rah;
+    }
+    if (el.hasAttribute('data-sv-copy')) { svCopy(el); return; } // Service sheets (2026-11-26)
     if (el.hasAttribute('data-fx')) { fxOpen(el.getAttribute('data-fx')); return; } // Find anything (2026-11-12)
     if (el.hasAttribute('data-hm-go')) { hmGo(el.getAttribute('data-hm-go')); return; } // Home for orders (2026-11-26)
     if (el.hasAttribute('data-pf-act')) { pfAct(el.getAttribute('data-pf-act')); return; } // Studio profile NK-A (2026-11-25)
@@ -4892,7 +4924,7 @@
   function skFoot(i) {
     var m = SK_MAP[i] || {}, k = t().sk, a = [];
     var s = SERVICES.filter(function (v) { return v.key === m.svc; })[0];
-    if (s) a.push('<a href="#services"><span class="nk-label">' + esc(s.code) + '</span> ' + esc(L(s.title)) + (s.time ? ' · ' + esc(L(s.time)) : '') + ' →</a>');
+    if (s) a.push('<a ' + ra('#s-' + s.id) + '><span class="nk-label">' + esc(s.code) + '</span> ' + esc(L(s.title)) + (s.time ? ' · ' + esc(L(s.time)) : '') + ' →</a>');
     (m.cats || []).forEach(function (c) { var n = PROJECTS.filter(function (p) { return p.category === c; }).length; if (n && CATS[c]) a.push('<a href="#work?cat=' + encodeURIComponent(c) + '">' + esc(k.cat.replace('{c}', CATS[c][lang]).replace('{n}', n)) + ' →</a>'); });
     (m.tools || []).forEach(function (tk) { var d = TL_TOOLS.filter(function (v) { return v[0] === tk; })[0]; if (d) a.push('<a href="' + tlHash(tk) + '">' + esc(t()[d[1]].title) + ' →</a>'); });
     return a.length ? '<p class="sk-foot"><span class="nk-label">' + esc(m.tools ? k.tools : k.proof) + '</span>' + a.join('') + '</p>' : '';
@@ -4917,10 +4949,82 @@
   }
   function sdRows(p) {
     var x = t().sd, s = sdSvc(p), a = sdTerms(p), h = '';
-    if (s) h += '<div><dt>' + esc(x.svc) + '</dt><dd><a class="sk-term" href="#services">' + esc(s.code + ' ' + L(s.title)) + '</a>' + (s.time ? ' · ' + esc(L(s.time)) : '') + '</dd></div>';
+    if (s) h += '<div><dt>' + esc(x.svc) + '</dt><dd><a class="sk-term" ' + ra('#s-' + s.id) + '>' + esc(s.code + ' ' + L(s.title)) + '</a>' + (s.time ? ' · ' + esc(L(s.time)) : '') + '</dd></div>';
     if (a.length) h += '<div><dt>' + esc(x.skills) + '</dt><dd>' + a.map(function (term) { return skCount(term) > 1 ? skTerms(term) : esc(term); }).join(' · ') + ' · <a class="sk-term" href="#skills">' + esc(x.all) + ' →</a></dd></div>';
     skAny = false;
     return h;
+  }
+
+  // ---------- Service sheets / "Listi storitev" (#s-<id>, real pages /services/<id>/ + /sl/…; 2026-11-26) ----------
+  // One sheet per service (S-01 … S-04) that puts everything the site already says about it in one place: what it is, what
+  // the client gets and has to bring, turnaround, its one rate line (as on its #services card; the price rows only while PRICE_LIST is on), the running
+  // promotion when it covers the service, how an order goes, the project sheets behind it (by discipline; for 3D printing
+  // the sheets whose text mentions printing or a printing material), the skills group, the tools that go with it and the
+  // other services. "Request a quote" ticks the service and opens the order form (hmGo). Every sheet is also a real page
+  // with its own title, description, link preview and structured data (src/pages/services/[id].astro, `service` in Site.astro).
+  // No prices in settings.json → no rate; no matching sheets → no work block. Nothing is stored or sent.
+  // Self-contained: remove svById() … svCopy(), the 'service' lines in page() / pageTitle() / frame() / views, the data-sv-copy
+  // line in the click handler, the ra('#s-…') links in service() / skFoot() / sdRows() / fxIndex() (back to '#services'),
+  // sv: in content.js, the "Service sheets" block at the end of page.css, src/pages/services/[id].astro (+ /sl/), the
+  // `service` parts of Site.astro, serviceCard in src/og/card.ts and the service paths in astro.config.mjs.
+  var SV_TOOLS = { cad: ['plan', 'quote', 'budget', 'schedule'], print: ['fit', 'file', 'material', 'prep', 'plate', 'parts', 'series', 'matprice', 'quote', 'schedule'], iot: ['plan', 'quote', 'budget', 'schedule'], build: ['plan', 'quote', 'budget', 'schedule'] };
+  function svById(id) { for (var i = 0; i < SERVICES.length; i++) if (SERVICES[i].id === id) return SERVICES[i]; return null; }
+  function svMap(s) { var out = { cats: [], grp: -1 }; SK_MAP.forEach(function (m, i) { if (m.svc === s.key) { out.cats = m.cats || []; out.grp = i; } }); return out; }
+  function svWork(s) { // the project sheets behind a service — only what the sheets themselves say
+    var c = svMap(s).cats;
+    if (c.length) return PROJECTS.filter(function (p) { return c.indexOf(p.category) >= 0; });
+    if (s.key === 'print') return PROJECTS.filter(function (p) { return /(^|[^a-z0-9])(3d[- ]?print\w*|printed|natisnjen\w*|pla|petg|tpu|abs|asa|pa-cf|nylon|najlon\w*)($|[^a-z0-9])/.test(findProjectText(p)); });
+    return [];
+  }
+  function svPromo(s) { var pm = promo(); if (!pm) return null; return pm.scope === 'cadprint' ? (s.key === 'cad' || s.key === 'print' ? pm : null) : pm.scope === 'print' ? (s.key === 'print' ? pm : null) : pm; }
+  function svPrice(s) { // the rows of the price list that belong to this service ([] = nothing published, or the price list is switched off)
+    if (!pcOn() || !PRICE_LIST) return []; // 2026-11-26 (Nace): the price list is off, so the sheet shows the service's one rate line (as its card on #services does) and no price rows
+    var x = t().pc, h = PRICE.hourly, rows = [];
+    if (s.key === 'print') return pcPrintRows();
+    if (+h[s.key] > 0) rows.push([L(s.title), x.perHour.replace('{n}', pcMoney(h[s.key]))]);
+    return rows;
+  }
+  function svView() {
+    var x = t(), v = x.sv, s = svById(currentSlug()), mp = svMap(s), work = svWork(s), price = svPrice(s), pm = svPromo(s), rate = svcRateTxt(s);
+    var li = function (a) { return '<ul class="sv-list">' + a.map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>'; };
+    var glance = [[x.sd.svc, s.code], [x.turnaround, s.time ? L(s.time) : x.onRequest]].concat(rate ? [[x.pc.rate, rate]] : []);
+    var tools = (SV_TOOLS[s.key] || []).map(function (k) { return TL_TOOLS.filter(function (d) { return d[0] === k; })[0]; }).filter(Boolean);
+    var grp = mp.grp >= 0 ? SKILLS[mp.grp] : null, url = siteUrl('services/' + s.id + '/');
+    var notes = [];
+    if (price.length) {
+      if (s.key !== 'print' && +PRICE.minHours > 0) notes.push(x.pc.minHours.replace('{n}', PRICE.minHours));
+      if (s.key === 'build' && L(PRICE.buildNote)) notes.push(L(PRICE.buildNote));
+      if (s.key === 'print') notes.push(x.pc.printHow);
+      if (L(PRICE.vatNote)) notes.push(L(PRICE.vatNote));
+    }
+    return '<section class="block first sv">' +
+      '<a class="back" ' + ra('#services') + '>← ' + esc(v.back) + '</a>' +
+      head(s.code + ' · ' + v.label, L(s.title), L(s.body), true) +
+      '<div class="sv-grid"><div class="sv-main">' +
+        '<div class="sv-cols"><div><h2 class="nk-label">' + esc(x.deliverables) + '</h2>' + li(L(s.get)) + '</div><div><h2 class="nk-label">' + esc(x.needs) + '</h2>' + li(L(s.need)) + '</div></div>' +
+        (price.length || pm ? '<div class="sv-price">' + (price.length ? '<h2 class="nk-label">' + esc(v.price) + '</h2>' + specs(price) : '') +
+          (pm ? '<p class="pc-promo"><span class="nk-tag nk-tag--rev">' + esc(x.pc.promoRow) + '</span> ' + esc(L(pm.title)) + (pm.until ? ' · ' + esc(x.promo.until.replace('{d}', pcDate(pm.until))) : '') + '</p>' : '') +
+          notes.map(function (n) { return '<p class="pc-how">' + esc(n) + '</p>'; }).join('') +
+          (pcOn() ? '<p class="sv-links"><a href="' + tlHash('quote') + '">' + esc(x.hm.est) + ' →</a>' + (PRICE_LIST ? '<a href="' + tlHash('prices') + '">' + esc(v.list) + ' →</a>' : '') + '</p>' : '') + '</div>' : '') +
+      '</div><aside class="sv-side" aria-label="' + esc(v.glance) + '"><p class="nk-label">' + esc(v.glance) + '</p>' + specs(glance) +
+        '<ul class="hm-ok">' + x.hm.ok.map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') + '</ul>' +
+        '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-hm-go="' + s.key + '">' + esc(x.quote) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
+        (CONTACT_EMAIL ? '<a class="nk-btn" href="' + ctMail(v.subject + ': ' + s.code + ' ' + L(s.title)) + '">' + esc(x.ct.write) + '</a>' : '') + '</div>' +
+        '<p class="sv-share"><button type="button" class="tb-copy" data-sv-copy="' + esc(url) + '">' + esc(v.copy) + '</button><span class="tl-msg" role="status" aria-live="polite"></span></p></aside></div></section>' +
+      '<section class="block sv-how">' + head(x.hm.howLabel, v.how) + '<ol class="hm-steps">' + x.hm.how.map(function (st, i) { return '<li><span class="hm-n">' + String(i + 1).padStart(2, '0') + '</span><h3>' + esc(st[0]) + '</h3><p>' + esc(st[1]) + '</p></li>'; }).join('') + '</ol></section>' +
+      (work.length ? '<section class="block sv-work">' + head((work.length === 1 ? x.sk.one : x.sk.many).replace('{n}', work.length), v.work, mp.cats.length ? v.workCats.replace('{c}', mp.cats.map(function (c) { return CATS[c][lang]; }).join(', ')) : v.workMats) +
+        '<div class="grid-4 sheets">' + work.slice(0, 4).map(sheet).join('') + '</div><div class="more sv-more">' +
+        (mp.cats.length ? mp.cats.map(function (c) { var n = PROJECTS.filter(function (p) { return p.category === c; }).length; return n ? btn(x.sk.cat.replace('{c}', CATS[c][lang]).replace('{n}', n), '#work?cat=' + encodeURIComponent(c), null, null, true) : ''; }).join('') : btn(x.seeWork + ' · ' + PROJECTS.length, '#work', null, null, true)) + '</div></section>' : '') +
+      (grp ? '<section class="block sv-skills">' + head(x.nav.skills, grp[lang]) + '<div class="skill-group">' + skSpecs(grp.items) + '<p class="sk-foot"><a ' + ra('#skills') + '>' + esc(x.sd.all) + ' →</a></p></div>' + skLegend() + '</section>' : '') +
+      (tools.length ? '<section class="block sv-tools">' + head(x.tl.home, v.tools, v.toolsLead) + '<ol class="tl-list sv-tl-list">' + tools.map(function (d) { return '<li><a class="tl-item" href="' + tlHash(d[0]) + '"><span class="nk-label">' + tlNo(TL_TOOLS.indexOf(d) + 1) + '</span><span class="tl-t">' + esc(x[d[1]].title) + '</span><span class="tl-d">' + esc(x.tl[d[0]]) + '</span><span class="tl-go" aria-hidden="true">→</span></a></li>'; }).join('') + '</ol></section>' : '') +
+      '<section class="block sv-other">' + head('S-01 … S-0' + SERVICES.length, v.other) + '<nav class="sv-nav" aria-label="' + esc(v.other) + '">' + SERVICES.filter(function (o) { return o !== s; }).map(function (o) { var r = '';
+        return '<a class="sv-o" ' + ra('#s-' + o.id) + '><span class="nk-service__code">' + o.code + '</span><span class="sv-o__t">' + esc(L(o.title)) + '</span><span class="sv-o__m">' + esc((o.time ? L(o.time) : x.onRequest) + (r ? ' · ' + r : '')) + '</span></a>'; }).join('') + '</nav></section>' +
+      ctaBand();
+  }
+  function svCopy(b) {
+    var url = b.getAttribute('data-sv-copy'), msg = b.parentNode.querySelector('.tl-msg'), x = t().tl;
+    var fail = function () { if (msg) msg.textContent = x.copyFail; };
+    try { navigator.clipboard.writeText(url).then(function () { if (msg) msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
   }
 
   // ---------- Find anything / "Poišči karkoli" (Ctrl / Cmd + K or the magnifier in the header; 2026-11-12) ----------
@@ -4943,7 +5047,7 @@
     add('pages', x.pf.label.split(' · ')[0], x.pf.fx, '#profile', 'profile profil studio one page pager en list a4 pdf capability capabilities statement company predstavitev podjetja zmogljivosti nabava purchasing forward posreduj print natisni NK-A'); // Studio profile NK-A (2026-11-25)
     TL_TOOLS.forEach(function (d, i) { add('tools', x[d[1]].label.split(' · ')[0], x[d[1]].title + ' — ' + x.tl[d[0]], tlHash(d[0]), [d[0], T.en[d[1]].label, T.en[d[1]].title, T.sl[d[1]].label, T.sl[d[1]].title].join(' '), tlNo(i + 1)); });
     add('tools', x.st.label.split(' · ')[0], x.st.title + ' — ' + x.st.tlLine, '#studio', [T.en.st.label, T.en.st.title, T.sl.st.label, T.sl.st.title].join(' '), tlNo(TL_TOOLS.length + 1));
-    SERVICES.forEach(function (s) { add('services', L(s.title), L(s.body), '#services', findBoth(s.title) + ' ' + L(s.get).join(' ') + ' ' + (s.time ? L(s.time) : ''), s.code); });
+    SERVICES.forEach(function (s) { add('services', L(s.title), L(s.body), '#s-' + s.id, findBoth(s.title) + ' ' + T.en.sv.label + ' ' + T.sl.sv.label + ' ' + L(s.get).join(' ') + ' ' + (s.time ? L(s.time) : ''), s.code); });
     PROJECTS.forEach(function (p) { add('projects', P(p, 'title'), P(p, 'description'), '#p-' + p.slug, [findBoth(p.title), findBoth(p.description), findBoth(p.details), p.category, cat(p), p.materials, p.year].join(' '), sheetNo(p)); });
     NEWS.forEach(function (n) { add('news', P(n, 'title'), P(n, 'summary'), '#n-' + n.slug, [findBoth(n.title), findBoth(n.summary), findBoth(n.body)].join(' '), fmtDate(n.date)); });
     SKILLS.forEach(function (g) { g.items.forEach(function (it) { add('skills', L(it[0]), L(it[1]), '#skills', g[lang] + ' ' + findBoth(it[0]) + ' ' + findBoth(it[1]), ''); }); });
