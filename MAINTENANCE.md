@@ -48,6 +48,15 @@ this layout is Nace's request:
   links, phone bar; full sweep + yesterday's 130 checks still pass.
 *To remove:* see the comment above `function hmQuick` in `app.js`.
 
+## 2026-11-26 (Nace, live: "cene skrij na prvi strani in cenik ukini")
+
+**No prices on the home page:** the quick-start card shows the turnaround only, the service cards on home have no rate line, the second
+hero button is "See all work" again (was "Estimate the price"). The promotion line stays (a discount, not a price).
+**Price list switched off** (`PRICE_LIST = false` in `app.js`): the tool `#services?tool=prices` is gone from #services, the tools
+index, Find anything (tool + price rows), the "full price list" link on the service cards, the budget tool's link, the gift page's back
+link and the admin QR tile. The prices themselves stay in `settings.json`: the estimate tools, the rate line on the #services cards,
+the Studio profile and the admin quote still use them. **Do not switch the price list back on or put rates on the home page.**
+
 ## 2026-11-25 (second change — Nace, live: "daj akcijo -20% na naročila 3d modeliranje in printanje")
 
 **Promotion changed in `settings.json`:** −20 % on 3D design and 3D printing, until 2026-12-31 (the date the previous promotion had); it

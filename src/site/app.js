@@ -113,14 +113,14 @@
   function svcRate(s, full) {
     var x = t().pc, txt = svcRateTxt(s);
     if (!txt) return '';
-    return '<p class="svc-rate"><span class="nk-label">' + esc(x.rate) + '</span> <b>' + esc(txt) + '</b>' + (full ? ' <a href="#services?tool=prices">' + esc(x.rateLink) + ' →</a>' : '') + '</p>';
+    return '<p class="svc-rate"><span class="nk-label">' + esc(x.rate) + '</span> <b>' + esc(txt) + '</b>' + (full && PRICE_LIST ? ' <a href="#services?tool=prices">' + esc(x.rateLink) + ' →</a>' : '') + '</p>';
   }
   function service(s, full) {
     var x = t();
     return '<article class="nk-service" id="' + s.id + '"><div class="nk-service__top"><span class="nk-service__code">' + s.code + '</span><span class="nk-label">' + esc(s.time ? L(s.time) : x.onRequest) + '</span></div>' +
       (full ? '<h2' : '<h3') + ' class="nk-service__title">' + esc(L(s.title)) + (full ? '</h2>' : '</h3>') + '<p>' + esc(L(s.body)) + '</p>' +
       (full ? '<div class="svc-cols"><div><p class="nk-label">' + esc(x.deliverables) + '</p><ul>' + L(s.get).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div><div><p class="nk-label">' + esc(x.needs) + '</p><ul>' + L(s.need).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div></div>'
-        : '<ul>' + L(s.get).slice(0, 3).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>') + svcRate(s, full) +
+        : '<ul>' + L(s.get).slice(0, 3).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>') + (full ? svcRate(s, full) : '') + // no rates on the home page (2026-11-26)
       '<div class="svc-act">' + (full ? btn(x.quote, '#order', null, 'sm', true) : '<button type="button" class="nk-btn nk-btn--sm" data-hm-go="' + s.key + '">' + esc(x.quote) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><a class="svc-more" href="#services">' + esc(x.hm.svcMore) + '<span class="vh"> — ' + esc(L(s.title)) + '</span></a>') + '</div></article>';
   }
   // labelHtml (optional) replaces the escaped label, e.g. to wrap a date in <time>.
@@ -135,7 +135,7 @@
   function hmQuick() {
     var x = t(), h = x.hm;
     return '<div class="hm-qs"><div class="hm-qs__head"><span class="nk-label">' + esc(h.qsLabel) + '</span><span class="nk-label">' + esc(x.orderLabel.split(' · ')[1] || '') + '</span></div><h2 class="hm-qs__t">' + esc(h.qsTitle) + '</h2><div class="hm-qs__opts">' +
-      SERVICES.map(function (s) { var r = svcRateTxt(s); return '<button type="button" class="hm-qs__opt" data-hm-go="' + s.key + '"><span class="nk-service__code">' + s.code + '</span><span class="hm-qs__n">' + esc(L(s.title)) + '</span><span class="hm-qs__m">' + esc((s.time ? L(s.time) : x.onRequest) + (r ? ' · ' + r : '')) + '</span><span class="hm-qs__a" aria-hidden="true">→</span></button>'; }).join('') +
+      SERVICES.map(function (s) { var r = ''; /* no rates on the home page (2026-11-26) */ return '<button type="button" class="hm-qs__opt" data-hm-go="' + s.key + '"><span class="nk-service__code">' + s.code + '</span><span class="hm-qs__n">' + esc(L(s.title)) + '</span><span class="hm-qs__m">' + esc((s.time ? L(s.time) : x.onRequest) + (r ? ' · ' + r : '')) + '</span><span class="hm-qs__a" aria-hidden="true">→</span></button>'; }).join('') +
       '</div><p class="hm-qs__hint">' + esc(h.qsHint) + '</p><p class="hm-qs__alt"><a href="' + tlHash('plan') + '">' + esc(h.qsNot) + ' →</a>' + (CONTACT_EMAIL ? '<a href="' + ctMail(x.ct.subject) + '">' + esc(h.qsMail) + ' →</a>' : '') + '</p></div>';
   }
   function hmGo(k) {
@@ -161,7 +161,7 @@
       return '<section class="hero hm-hero"><div class="hero-text"><p class="nk-label"><b>' + esc(x.status) + ' · </b>' + esc(x.heroLabel) + '</p>' +
         '<h1 class="display">' + esc(x.heroA + ' ' + x.heroB + x.heroEm) + '</h1><p class="lead">' + esc(x.heroLead) + '</p>' +
         '<ul class="hm-ok">' + h.ok.map(function (v) { return '<li>' + esc(v) + '</li>'; }).join('') + '</ul>' +
-        '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', 'lg', true) + (pcOn() ? btn(h.est, tlHash('quote'), null, 'lg') : btn(x.seeWork, '#work', null, 'lg')) + '</div><p class="hm-micro">' + esc(h.micro) + '</p>' +
+        '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', 'lg', true) + btn(x.seeWork, '#work', null, 'lg') + '</div><p class="hm-micro">' + esc(h.micro) + '</p>' +
         (pm ? '<a class="hm-promo" href="#order"><span class="nk-tag nk-tag--rev">' + esc(x.promo.label) + (pm.until ? ' · ' + esc(x.promo.until.replace('{d}', pcDate(pm.until))) : '') + '</span><b>' + esc(L(pm.title)) + '</b><span aria-hidden="true">→</span></a>' : '') + '</div>' +
         hmQuick() + '</section>' +
         '<section class="block hm-how">' + head(h.howLabel, h.howTitle) + '<ol class="hm-steps">' + h.how.map(function (st, i) { return '<li><span class="hm-n">' + String(i + 1).padStart(2, '0') + '</span><h3>' + esc(st[0]) + '</h3><p>' + esc(st[1]) + '</p></li>'; }).join('') + '</ol>' +
@@ -182,7 +182,7 @@
         tlWrap('material', mpBox()) +
         tlWrap('prep', prepBox()) +
         tlWrap('plate', pbBox()) +
-        (pcOn() ? tlWrap('prices', pcList()) + tlWrap('quote', qcBox()) : '') + tlWrap('parts', bmBox()) + (srOn() ? tlWrap('series', srBox()) : '') + (bgOn() ? tlWrap('budget', bgBox()) : '') + (mxOn() ? tlWrap('matprice', mxBox()) : '') + (scOn() ? tlWrap('schedule', scBox()) : '') + faqBox() +
+        (pcOn() ? (PRICE_LIST ? tlWrap('prices', pcList()) : '') + tlWrap('quote', qcBox()) : '') + tlWrap('parts', bmBox()) + (srOn() ? tlWrap('series', srBox()) : '') + (bgOn() ? tlWrap('budget', bgBox()) : '') + (mxOn() ? tlWrap('matprice', mxBox()) : '') + (scOn() ? tlWrap('schedule', scBox()) : '') + faqBox() +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
     work: function () {
@@ -2785,6 +2785,10 @@
     if (o.time && (o.time.en || o.time.sl)) s.time = { en: o.time.en || o.time.sl, sl: o.time.sl || o.time.en };
     ['need', 'get'].forEach(function (k) { if (o[k]) ['en', 'sl'].forEach(function (l) { if (Array.isArray(o[k][l]) && o[k][l].length) s[k][l] = o[k][l]; else if (Array.isArray(o[k][l === 'en' ? 'sl' : 'en']) && o[k][l === 'en' ? 'sl' : 'en'].length) s[k][l] = o[k][l === 'en' ? 'sl' : 'en']; }); }); }); })();
   var PRICE = SET.pricing && SET.pricing.hourly && SET.pricing.print ? SET.pricing : null;
+  // 2026-11-26 (Nace: "cene skrij na prvi strani in cenik ukini"): the price-list tool (#services?tool=prices) is switched off —
+  // no tool, no links to it, no price rows in Find anything — and the home page shows no rates. The prices stay in settings.json
+  // for the estimate tools and the admin quote. To bring the price list back: set PRICE_LIST to true.
+  var PRICE_LIST = false;
   function pcOn() { return !!(PRICE && (PRICE.hourly.cad || PRICE.hourly.iot || PRICE.print.machineHour || (PRICE.print.materials || []).length)); }
   function pcMats() { return PRICE ? (PRICE.print.materials || []).filter(function (m) { return m && m.name && +m.perGram > 0; }) : []; }
   function pcMat(key) { var ms = pcMats(); return ms.filter(function (m) { return m.key === key; })[0] || ms[0] || null; }
@@ -3202,7 +3206,7 @@
     var x = t().bg, a = [];
     if (c && c.plan) a.push('<a href="#services?tool=quote" data-bg-qc>' + esc(x.toQuote) + ' →</a>');
     if (c && c.p && srOn()) a.push('<a href="#services?tool=series" data-bg-sr>' + esc(x.toSeries) + ' →</a>');
-    a.push('<a href="#services?tool=prices">' + esc(x.toPrices) + ' →</a>');
+    if (PRICE_LIST) a.push('<a href="#services?tool=prices">' + esc(x.toPrices) + ' →</a>');
     return a.join('<span aria-hidden="true"> · </span>');
   }
   function bgBox() {
@@ -4053,7 +4057,7 @@
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--lg" data-gift-send' + (g.send === 'sending' ? ' disabled' : '') + '>' + esc(g.send === 'sending' ? x.sending : x.send) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><button type="button" class="nk-btn" data-gift-print>' + esc(x.print) + '</button></div>' +
       '<p class="fit-note">' + esc(L(GIFT.note) || '') + (PRICE && L(PRICE.vatNote) ? ' ' + esc(L(PRICE.vatNote)) : '') + '</p></div>';
     var done = '<div class="fit-form gift-form"><div class="sent" role="status"><span class="nk-tag nk-tag--ok">' + esc(x.sent) + '</span><p class="hint">' + esc(x.sentBody.replace('{c}', CODE)) + '</p></div><pre class="brief" tabindex="0">' + esc(giftText()) + '</pre><div class="cta-row"><button type="button" class="nk-btn" data-gift-print>' + esc(x.print) + '</button><button type="button" class="nk-btn" data-gift-reset>' + esc(x.another) + '</button></div></div>';
-    return '<section class="block first gift-page"><a class="back" href="#services?tool=prices">← ' + esc(t().pc.title) + '</a>' + head(x.label, x.title, x.lead, true) +
+    return '<section class="block first gift-page"><a class="back" href="' + (PRICE_LIST ? '#services?tool=prices' : '#services') + '">← ' + esc(PRICE_LIST ? t().pc.title : t().nav.services) + '</a>' + head(x.label, x.title, x.lead, true) +
       '<div class="fit-grid gift-grid">' + (sent ? done : form) + '<div class="gift-side"><p class="nk-label">' + esc(x.preview) + '</p>' + giftCard(false) +
       '<p class="nk-label gift-how">' + esc(x.how) + '</p><ol class="gift-steps">' + [x.how1, x.how2, x.how3, x.how4].map(function (h) { return '<li>' + esc(h) + '</li>'; }).join('') + '</ol></div></div>' + giftCard(true) + '</section>' + ctaBand();
   }
@@ -4085,7 +4089,7 @@
   // Added 2026-10-29 (#services tools package). Only links and scrolling; the tools themselves are unchanged.
   // To remove: TL_TOOLS … tlGo(), the tlIndex() / tlWrap() calls in views.services, tlHome() in views.home, the state.tool
   // line in page(), the tlGo line in render(), tl: in both languages in content.js and the "Tools index" rules in page.css.
-  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']].concat(pcOn() ? [['prices', 'pc', 'prices'], ['quote', 'qc', 'quote']] : []).concat([['parts', 'bm', 'parts']]).concat(srOn() ? [['series', 'sr', 'series']] : []).concat(bgOn() ? [['budget', 'bg', 'budget']] : []).concat(mxOn() ? [['matprice', 'mx', 'matprice']] : []).concat(scOn() ? [['schedule', 'sc', 'schedule']] : []); // 'schedule': Schedule NK-T (2026-11-18), only with a published turnaround // // 'matprice': Material price NK-V (2026-11-17, second run), only with two or more priced materials // 'budget': Budget NK-B (2026-11-17), only with a price list // // 'series': Series price NK-R (2026-11-15), only with print prices // 'parts': the parts list NK-L (2026-11-05) // [link name, content key, section id]; the two pricing tools only with a price list in settings.json
+  var TL_TOOLS = [['plan', 'pl', 'plan'], ['fit', 'fit', 'fit'], ['file', 'fc', 'file-check'], ['material', 'mp', 'material'], ['prep', 'prep', 'prep'], ['plate', 'pb', 'plate']].concat(pcOn() ? (PRICE_LIST ? [['prices', 'pc', 'prices']] : []).concat([['quote', 'qc', 'quote']]) : []).concat([['parts', 'bm', 'parts']]).concat(srOn() ? [['series', 'sr', 'series']] : []).concat(bgOn() ? [['budget', 'bg', 'budget']] : []).concat(mxOn() ? [['matprice', 'mx', 'matprice']] : []).concat(scOn() ? [['schedule', 'sc', 'schedule']] : []); // 'schedule': Schedule NK-T (2026-11-18), only with a published turnaround // // 'matprice': Material price NK-V (2026-11-17, second run), only with two or more priced materials // 'budget': Budget NK-B (2026-11-17), only with a price list // // 'series': Series price NK-R (2026-11-15), only with print prices // 'parts': the parts list NK-L (2026-11-05) // [link name, content key, section id]; the two pricing tools only with a price list in settings.json
   function tlHash(k) { return '#services?tool=' + k; }
   function tlNo(i) { return 'T-' + String(i).padStart(2, '0'); } // T-01 … T-13 (two digits from the tenth tool on)
   function tlIndex() {
@@ -4948,7 +4952,7 @@
       var pm = pcOn() ? pcMats().filter(function (v) { return v.key === m.id; })[0] : null;
       add('materials', m.name, (pm ? x.pc.perGram.replace('{n}', pcMoney(pm.perGram, 3)) + ' · ' : '') + x.mp.notes[m.id], tlHash('material'), [T.en.mp.label, T.sl.mp.label, T.en.mp.title, T.sl.mp.title, T.en.mp.notes[m.id], T.sl.mp.notes[m.id], 'material filament'].join(' '), '', function () { state.mp.pick = m.id; /* pre-selected once the visitor ticks what the part must cope with */ if (location.hash === tlHash('material')) { render(true); tlGo('material'); } else location.hash = tlHash('material').slice(1); });
     });
-    if (pcOn()) {
+    if (pcOn() && PRICE_LIST) {
       var pk = 'price prices cost rate cena cene cenik postavka koliko stane ', pr = PRICE.print, ph = PRICE.hourly, vat = String(L(PRICE.vatNote) || '').split('. ')[0].replace(/\.$/, '');
       var prow = function (title, val, kw, tag) { add('prices', title, val + (vat ? ' · ' + vat : ''), tlHash('prices'), pk + kw, tag); };
       SERVICES.forEach(function (sv) { if (sv.key !== 'print' && +ph[sv.key] > 0) prow(L(sv.title), x.pc.perHour.replace('{n}', pcMoney(ph[sv.key])), findBoth(sv.title), sv.code); });

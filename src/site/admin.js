@@ -644,10 +644,9 @@ function ovVcard() { return window.NK_QR.vcard({ first: 'Nace', last: 'Kepa', or
 function ovQr() {
   if (!ovQrOn()) return '<p class="ad-small">QR codes are not available (qr.js missing).</p>';
   const tile = (svg, label, note, btns) => `<li class="ov-qr">${svg}<div><b>${label}</b><span class="ad-small">${note}</span><span class="ov-qr__act">${btns}</span></div></li>`;
-  return `<p class="ad-small">The same codes the site prints on sheets, tools and the contact card. SVG, black on white — put one on a sticker for delivered parts, a business card or the printed price list; “QR ↓” in the table above saves the code of any page.</p>
+  return `<p class="ad-small">The same codes the site prints on sheets, tools and the contact card. SVG, black on white — put one on a sticker for delivered parts, or a business card; “QR ↓” in the table above saves the code of any page.</p>
   <ul class="ov-qrs">
     ${tile(window.NK_QR.svg(SITE_URL + '/', { px: 96, label: 'QR code: nacekepa.work' }), 'Home page', 'nacekepa.work/ (opens in English; visitors switch with EN / SL)', `<button type="button" class="tb-copy" data-ov-qr="${SITE_URL}/" data-ov-qr-name="nacekepa-work">EN ↓</button> <button type="button" class="tb-copy" data-ov-qr="${SITE_URL}/sl/" data-ov-qr-name="nacekepa-work-sl">SL ↓</button>`)}
-    ${tile(window.NK_QR.svg(SITE_URL + '/#services?tool=prices', { px: 96, label: 'QR code: price list' }), 'Price list', 'nacekepa.work/#services?tool=prices — the tool prints alone from this address', `<button type="button" class="tb-copy" data-ov-qr="${SITE_URL}/#services?tool=prices" data-ov-qr-name="price-list">EN ↓</button> <button type="button" class="tb-copy" data-ov-qr="${SITE_URL}/sl/#services?tool=prices" data-ov-qr-name="cenik">SL ↓</button>`)}
     ${tile(window.NK_QR.svg(ovVcard(), { px: 96, ecl: 'L', label: 'QR code: contact card' }), 'Contact card (vCard)', 'name, e-mail, nacekepa.work, LinkedIn, Škofja Loka — scanning adds you to the phone’s contacts', `<button type="button" class="tb-copy" data-ov-qr="vcard" data-ov-qr-name="nace-kepa-contact">QR ↓</button> <button type="button" class="tb-copy" data-ov-vcf>.vcf ↓</button>`)}
   </ul>`;
 }
