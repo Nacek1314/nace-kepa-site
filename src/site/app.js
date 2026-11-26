@@ -159,7 +159,7 @@
       // button stays at the bottom of the screen (.hm-bar). Only facts the site already states. hmQuick() / hmGo() below.
       var x = t(), h = x.hm, pm = promo();
       return '<section class="hero hm-hero"><div class="hero-text"><p class="nk-label"><b>' + esc(x.status) + ' · </b>' + esc(x.heroLabel) + '</p>' +
-        '<h1 class="display">' + esc(x.heroA) + '<br>' + esc(x.heroB) + '<em>' + esc(x.heroEm) + '</em></h1><p class="lead">' + esc(x.heroLead) + '</p>' +
+        '<h1 class="display">' + esc(x.heroA + ' ' + x.heroB + x.heroEm) + '</h1><p class="lead">' + esc(x.heroLead) + '</p>' +
         '<ul class="hm-ok">' + h.ok.map(function (v) { return '<li>' + esc(v) + '</li>'; }).join('') + '</ul>' +
         '<div class="cta-row">' + btn(ctaText(), '#order', 'primary', 'lg', true) + (pcOn() ? btn(h.est, tlHash('quote'), null, 'lg') : btn(x.seeWork, '#work', null, 'lg')) + '</div><p class="hm-micro">' + esc(h.micro) + '</p>' +
         (pm ? '<a class="hm-promo" href="#order"><span class="nk-tag nk-tag--rev">' + esc(x.promo.label) + (pm.until ? ' · ' + esc(x.promo.until.replace('{d}', pcDate(pm.until))) : '') + '</span><b>' + esc(L(pm.title)) + '</b><span aria-hidden="true">→</span></a>' : '') + '</div>' +

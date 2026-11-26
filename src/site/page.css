@@ -1714,7 +1714,7 @@ span.rl-pin { cursor: default; }
 .hm-micro { margin: calc(-1 * var(--space-3)) 0 0; font: 12px/18px var(--font-mono); color: var(--ink-muted); }
 .hm-promo { justify-self: start; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--redline); border-left-width: 4px; background: var(--paper-raised); color: var(--ink); text-decoration: none; max-width: 100%; }
 .hm-hero .hero-text { grid-template-columns: minmax(0, 1fr); }
-.hm-hero .display { font-size: clamp(44px, 5.2vw, 66px); line-height: 1; } /* two lines in EN and SL, so the order buttons stay on the first screen */
+.hm-hero .display { font-size: clamp(40px, 5vw, 62px); line-height: 1.04; text-wrap: balance; } /* two lines in EN and SL, so the order buttons stay on the first screen */
 .hm-hero .hero-text { gap: var(--space-5); }
 .hm-promo .nk-tag { white-space: normal; }
 .hm-promo b { font-weight: 500; flex: 1 1 12ch; min-width: 0; }

@@ -39,6 +39,9 @@ this layout is Nace's request:
 - **Order of sections:** How it works in three steps (describe → quote in 48 h → made and delivered; link to the 8-step process on
   #about) → selected work → services (promotion band above the cards; each card has its own "Request a quote" that ticks the
   service, + "Details") → news → about → final call. The 8-step process block left the home page (it is on #about).
+- **Headline (Nace, same day: "po tem se vidi, da je cela stran AI"):** the slogan with one red word and a tilted underline is gone.
+  The h1 is plain ink and says what the studio does ("CAD, 3D tisk in elektronika po meri"); the slogan lives on as the end of the lead.
+  Do not bring back a coloured / underlined word in headlines.
 - **Phones:** an order bar ("Quote within 48 hours" + "Start a project") stays at the bottom of the screen once the hero buttons scroll away.
 - Tested (67 checks at 320 / 390 / 768 / 1280 / 1650 px, light + dark, EN + SL): parts present, one h1, nothing leaves the column,
   axe 0 violations, quick start by keyboard → order step 2 with only that service ticked, service-card buttons, estimate / planner
