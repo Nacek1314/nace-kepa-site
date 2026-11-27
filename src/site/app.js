@@ -120,27 +120,14 @@
   }
   function sheetH2(p) { return sheet(p, 'h2'); }
   function featured() { var f = PROJECTS.filter(function (p) { return p.featured; }); return (f.length ? f : PROJECTS).slice(0, 4); }
-  // Prices-on-the-service package (2026-11-15): the published rate of a service on its card (home + #services) — the hourly rate from
-  // settings.json, for 3D printing how the price is built and the minimum order; on #services with a link to the price list.
-  // Nothing without a price list. To remove: svcRate(), its call in service(), pc.rate… in content.js, .svc-rate in page.css.
-  function svcRateTxt(s) { // the published rate of a service as plain text ('' = none published)
-    if (!pcOn()) return '';
-    var x = t().pc, h = +PRICE.hourly[s.key], pr = PRICE.print, txt = '';
-    if (s.key === 'print') { if (pcMats().length || +pr.machineHour > 0) txt = x.ratePrint + (+pr.minOrder > 0 ? ' · ' + x.rateMin.replace('{m}', pcMoney(pr.minOrder)) : ''); }
-    else if (h > 0) txt = x.perHour.replace('{n}', pcMoney(h));
-    return txt;
-  }
-  function svcRate(s, full) {
-    var x = t().pc, txt = svcRateTxt(s);
-    if (!txt) return '';
-    return '<p class="svc-rate"><span class="nk-label">' + esc(x.rate) + '</span> <b>' + esc(txt) + '</b>' + (full && PRICE_LIST ? ' <a href="#services?tool=prices">' + esc(x.rateLink) + ' →</a>' : '') + '</p>';
-  }
+  // No published rates (Nace, 2026-11-27): the service cards, the service sheets and the Studio profile carry no rate line.
+  // The prices in settings.json are used only by the estimate tools and the admin.
   function service(s, full) {
     var x = t();
     return '<article class="nk-service" id="' + s.id + '"><div class="nk-service__top"><span class="nk-service__code">' + s.code + '</span><span class="nk-label">' + esc(s.time ? L(s.time) : x.onRequest) + '</span></div>' +
       (full ? '<h2' : '<h3') + ' class="nk-service__title">' + (full ? '<a class="sv-tl" ' + ra('#s-' + s.id) + '>' + esc(L(s.title)) + '</a>' : esc(L(s.title))) + (full ? '</h2>' : '</h3>') + '<p>' + esc(L(s.body)) + '</p>' +
       (full ? '<div class="svc-cols"><div><p class="nk-label">' + esc(x.deliverables) + '</p><ul>' + L(s.get).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div><div><p class="nk-label">' + esc(x.needs) + '</p><ul>' + L(s.need).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div></div>'
-        : '<ul>' + L(s.get).slice(0, 3).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>') + (full ? svcRate(s, full) : '') + // no rates on the home page (2026-11-26)
+        : '<ul>' + L(s.get).slice(0, 3).map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>') + 
       '<div class="svc-act">' + (full ? '<button type="button" class="nk-btn nk-btn--sm" data-hm-go="' + s.key + '">' + esc(x.quote) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><a class="svc-more" ' + ra('#s-' + s.id) + '>' + esc(x.sv.more) + '<span class="vh"> — ' + esc(L(s.title)) + '</span> →</a>' : '<button type="button" class="nk-btn nk-btn--sm" data-hm-go="' + s.key + '">' + esc(x.quote) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button><a class="svc-more" ' + ra('#s-' + s.id) + '>' + esc(x.hm.svcMore) + '<span class="vh"> — ' + esc(L(s.title)) + '</span></a>') + '</div></article>';
   }
   // labelHtml (optional) replaces the escaped label, e.g. to wrap a date in <time>.
@@ -148,7 +135,7 @@
     var tag = h1 ? 'h1' : 'h2';
     return '<header class="sec-head"><div><p class="nk-label">' + (labelHtml || esc(label)) + '</p><' + tag + ' class="' + (h1 ? 'page-title' : 'sec-title') + '">' + esc(title) + '</' + tag + '></div>' + (lead ? '<p class="lead">' + esc(lead) + '</p>' : '') + '</header>';
   }
-  // Home for orders (2026-11-26): the quick-start card in the hero — one button per service with its turnaround and published rate;
+  // Home for orders (2026-11-26): the quick-start card in the hero — one button per service with its turnaround (no rates);
   // hmGo() ticks that service in the order form and opens the form at the next step ("What should it do?"). To remove: hmQuick(),
   // hmGo(), the data-hm-go line in the click handler, hm: in content.js, the "Home for orders" block at the end of page.css, and put
   // views.home / the home button in service() back from git (commit before 2026-11-26).
@@ -384,20 +371,20 @@
 
   // ---------- Studio profile NK-A (2026-11-25) ----------
   // #profile — the studio on one A4 sheet to print, save as PDF, copy as text or forward by e-mail: who, the services with their
-  // turnaround, published rate and deliverables, skills and equipment, selected work, contact + QR. The visitor ticks which
-  // services, whether prices and whether selected work belong on the sheet; the choice lives in the address
-  // (#profile?s=cad,print&pr=0&w=0), so "Copy link" opens the same sheet. Only text and numbers the site already publishes
-  // (SERVICES, SKILLS, settings.json prices, featured projects) — nothing typed in here, nothing stored, nothing sent.
+  // turnaround and deliverables, skills and equipment, selected work, contact + QR. The visitor ticks which
+  // services and whether selected work belong on the sheet; the choice lives in the address
+  // (#profile?s=cad,print&w=0), so "Copy link" opens the same sheet. No rates (Nace, 2026-11-27). Only text the site already publishes
+  // (SERVICES, SKILLS, featured projects) — nothing typed in here, nothing stored, nothing sent.
   // Self-contained: remove this block, views.profile, the 'profile' line in page(), the pf lines in pageTitle(), frame() (two),
   // the click + change handlers and fxIndex(), put the facts rows back into views.about (pfFacts() + pfLink()), pf: in
   // content.js and the "Studio profile" block at the end of page.css.
-  function pfState() { if (!state.pf) state.pf = { s: SERVICES.map(function (s) { return s.key; }), pr: true, w: true }; return state.pf; }
+  function pfState() { if (!state.pf) state.pf = { s: SERVICES.map(function (s) { return s.key; }), w: true }; return state.pf; }
   function pfRead(qs) {
     var f = pfState(), q = String(qs || ''), m = /(?:^|&)s=([a-z,]*)/.exec(q), all = SERVICES.map(function (s) { return s.key; });
     f.s = m ? all.filter(function (k) { return m[1].split(',').indexOf(k) >= 0; }) : all;
-    f.pr = !/(?:^|&)pr=0(?:&|$)/.test(q); f.w = !/(?:^|&)w=0(?:&|$)/.test(q);
+    f.w = !/(?:^|&)w=0(?:&|$)/.test(q);
   }
-  function pfQuery() { var f = pfState(), q = []; if (f.s.length !== SERVICES.length) q.push('s=' + f.s.join(',')); if (!f.pr && pcOn()) q.push('pr=0'); if (!f.w) q.push('w=0'); return q.length ? '?' + q.join('&') : ''; }
+  function pfQuery() { var f = pfState(), q = []; if (f.s.length !== SERVICES.length) q.push('s=' + f.s.join(',')); if (!f.w) q.push('w=0'); return q.length ? '?' + q.join('&') : ''; }
   function pfUrl() { return siteUrl('#profile' + pfQuery()); }
   function pfSvcs() { var f = pfState(); return SERVICES.filter(function (s) { return f.s.indexOf(s.key) >= 0; }); }
   function pfFacts() { var x = t(); return [[lang === 'sl' ? 'Lokacija' : 'Location', lang === 'sl' ? 'Škofja Loka, Slovenija' : 'Škofja Loka, Slovenia'], [lang === 'sl' ? 'Šola' : 'School', 'Šolski center Kranj'], ['CAD', lang === 'sl' ? 'SolidWorks 4 leta · CSWA · CSWA-AM' : 'SolidWorks 4 yrs · CSWA · CSWA-AM']].concat(x.heroSpecs.slice(2)); } // the Studio facts of #about
@@ -406,11 +393,10 @@
   function pfToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function pfSkill(g) { return g.items.map(function (it) { return L(it[0]) + ': ' + L(it[1]); }); }
   function pfSheet() {
-    var x = t(), c = x.pf, f = pfState(), sv = pfSvcs(), showP = f.pr && pcOn(), work = f.w ? featured() : [];
+    var x = t(), c = x.pf, f = pfState(), sv = pfSvcs(), work = f.w ? featured() : [];
     var svc = sv.length ? '<div class="pf-svcs">' + sv.map(function (s) {
-      var r = showP ? svcRateTxt(s) : '';
       return '<article class="pf-svc"><p class="pf-svc__top"><span class="nk-service__code">' + s.code + '</span><span class="nk-label">' + esc(x.turnaround + ': ' + (s.time ? L(s.time) : x.onRequest)) + '</span></p><h3>' + esc(L(s.title)) + '</h3><p>' + esc(L(s.body)) + '</p>' +
-        (r ? '<p class="pf-kv"><span class="nk-label">' + esc(x.pc.rate) + '</span> <b>' + esc(r) + '</b></p>' : '') + '<p class="pf-kv"><span class="nk-label">' + esc(x.deliverables) + '</span> ' + esc(L(s.get).join(' · ')) + '</p></article>';
+        '<p class="pf-kv"><span class="nk-label">' + esc(x.deliverables) + '</span> ' + esc(L(s.get).join(' · ')) + '</p></article>';
     }).join('') + '</div>' : '<p class="pf-none">' + esc(c.none) + '</p>';
     var contact = [];
     if (CONTACT_EMAIL) contact.push('<div><dt>' + esc(x.ct.email) + '</dt><dd><a href="mailto:' + esc(CONTACT_EMAIL) + '">' + esc(CONTACT_EMAIL) + '</a></dd></div>');
@@ -419,19 +405,18 @@
     return '<article class="pf-sheet" id="pf-sheet" aria-label="' + esc(c.label) + '">' +
       '<header class="pf-top">' + logo() + '<span class="wm-text">nacekepa<span>.work</span></span><span class="nk-label">NK-A · ' + esc(fmtDate(pfToday())) + '</span></header>' +
       '<div class="pf-who"><div><h2 class="pf-name">' + esc(pfName()) + '</h2><p class="pf-lead">' + esc(x.heroLead) + '</p><p class="pf-body">' + esc(x.aboutBody) + '</p></div>' + specs(pfFacts()) + '</div>' +
-      '<section class="pf-sec"><p class="nk-label">' + esc(c.svc) + (sv.length ? ' · ' + String(sv.length).padStart(2, '0') : '') + '</p>' + svc + (showP && sv.length && L(PRICE.vatNote) ? '<p class="pf-note">' + esc(L(PRICE.vatNote)) + '</p>' : '') + '</section>' +
+      '<section class="pf-sec"><p class="nk-label">' + esc(c.svc) + (sv.length ? ' · ' + String(sv.length).padStart(2, '0') : '') + '</p>' + svc + '</section>' +
       '<section class="pf-sec"><p class="nk-label">' + esc(c.equip) + '</p><dl class="pf-skills">' + SKILLS.map(function (g) { return '<div><dt>' + esc(g[lang]) + '</dt><dd>' + pfSkill(g).map(esc).join('<span aria-hidden="true"> · </span><span class="vh">; </span>') + '</dd></div>'; }).join('') + '</dl></section>' +
       (work.length ? '<section class="pf-sec"><p class="nk-label">' + esc(c.work) + '</p><ul class="pf-work">' + work.map(function (p) { return '<li><span class="nk-label">' + sheetNo(p) + '</span><span><a href="#p-' + esc(p.slug) + '">' + esc(P(p, 'title')) + '</a> — ' + esc(cat(p)) + ', ' + esc(p.year) + '. ' + esc(P(p, 'description')) + '</span></li>'; }).join('') + '</ul></section>' : '') +
       '<footer class="pf-sec pf-contact"><div><p class="nk-label">' + esc(c.contact) + '</p><dl class="nk-specs">' + contact.join('') + '</dl></div>' + qrBox(pfUrl(), c.scan, { px: 96, cls: 'pf-qr', print: true }) + '</footer>' +
       '<p class="pf-foot">' + esc(c.foot.replace('{d}', fmtDate(pfToday()))) + '</p></article>';
   }
   function pfText() {
-    var x = t(), c = x.pf, f = pfState(), sv = pfSvcs(), showP = f.pr && pcOn(), out = [];
+    var x = t(), c = x.pf, f = pfState(), sv = pfSvcs(), out = [];
     out.push(pfName().toUpperCase() + ' — ' + c.label.split(' · ')[0] + ' (NK-A)', x.heroLead, '');
     pfFacts().forEach(function (r) { out.push(r[0] + ': ' + r[1]); });
     if (sv.length) { out.push('', c.svc.toUpperCase());
-      sv.forEach(function (s) { var r = showP ? svcRateTxt(s) : ''; out.push(s.code + ' ' + L(s.title) + ' — ' + x.turnaround + ': ' + (s.time ? L(s.time) : x.onRequest) + (r ? ' · ' + x.pc.rate + ': ' + r : ''), '  ' + L(s.body), '  ' + x.deliverables + ': ' + L(s.get).join(' · ')); });
-      if (showP && L(PRICE.vatNote)) out.push(L(PRICE.vatNote)); }
+      sv.forEach(function (s) { out.push(s.code + ' ' + L(s.title) + ' — ' + x.turnaround + ': ' + (s.time ? L(s.time) : x.onRequest), '  ' + L(s.body), '  ' + x.deliverables + ': ' + L(s.get).join(' · ')); }); }
     out.push('', c.equip.toUpperCase());
     SKILLS.forEach(function (g) { out.push(g[lang] + ' — ' + pfSkill(g).join('; ')); });
     if (f.w && featured().length) { out.push('', c.work.toUpperCase()); featured().forEach(function (p) { out.push(sheetNo(p) + ' ' + P(p, 'title') + ' — ' + cat(p) + ', ' + p.year + ' — ' + shareUrl('p', p)); }); }
@@ -446,14 +431,14 @@
     var ck = function (key, label, on) { return '<label class="pl-opt"><input type="checkbox" data-pf="' + key + '"' + (on ? ' checked' : '') + '><span>' + esc(label) + '</span></label>'; };
     return '<section class="block first pf"><a class="back" href="#about">← ' + esc(x.nav.about) + '</a>' + head(c.label, c.title, c.lead, true) +
       '<div class="pf-grid"><div class="pf-ctl"><fieldset class="pl-q"><legend class="nk-label">' + esc(c.show + ' · ' + c.svc) + '</legend><div class="pl-opts pf-opts">' + SERVICES.map(function (s) { return ck('s:' + s.key, L(s.title), f.s.indexOf(s.key) >= 0); }).join('') + '</div></fieldset>' +
-      '<fieldset class="pl-q"><legend class="nk-label">' + esc(c.show + ' · ' + c.more) + '</legend><div class="pl-opts pf-opts">' + (pcOn() ? ck('pr', c.prices, f.pr) : '') + ck('w', c.work, f.w) + '</div></fieldset>' +
+      '<fieldset class="pl-q"><legend class="nk-label">' + esc(c.show + ' · ' + c.more) + '</legend><div class="pl-opts pf-opts">' + ck('w', c.work, f.w) + '</div></fieldset>' +
       '<div class="cta-row pf-act"><button type="button" class="nk-btn nk-btn--primary" data-pf-act="print">' + esc(c.print) + '</button><button type="button" class="nk-btn" data-pf-act="copy">' + esc(c.copy) + '</button><button type="button" class="nk-btn" data-pf-act="link">' + esc(c.copyLink) + '</button><a class="nk-btn" id="pf-mail" href="' + esc(pfMail()) + '">' + esc(c.mail) + '</a></div>' +
       '<p class="copy-msg pf-msg" id="pf-msg" role="status" aria-live="polite"></p><pre class="brief pf-text" id="pf-text" tabindex="0" hidden></pre>' +
       '<p class="fit-note">' + esc(c.note) + '</p></div>' + pfSheet() + '</div></section>' + ctaBand();
   }
   function pfToggle(el) {
     var f = pfState(), k = el.getAttribute('data-pf');
-    if (k === 'pr') f.pr = el.checked; else if (k === 'w') f.w = el.checked;
+    if (k === 'w') f.w = el.checked;
     else { var key = k.slice(2), on = {}; f.s.forEach(function (v) { on[v] = 1; }); on[key] = el.checked ? 1 : 0; f.s = SERVICES.map(function (s) { return s.key; }).filter(function (v) { return on[v]; }); }
     // the address follows the choice, so the address bar, "Copy link" and the QR code all open the same sheet
     var pre = (/^#((?:en|sl)-)/.exec(location.hash) || ['', ''])[1];
@@ -4957,12 +4942,12 @@
 
   // ---------- Service sheets / "Listi storitev" (#s-<id>, real pages /services/<id>/ + /sl/…; 2026-11-26) ----------
   // One sheet per service (S-01 … S-04) that puts everything the site already says about it in one place: what it is, what
-  // the client gets and has to bring, turnaround, its one rate line (as on its #services card; the price rows only while PRICE_LIST is on), the running
+  // the client gets and has to bring, turnaround, the running
   // promotion when it covers the service, how an order goes, the project sheets behind it (by discipline; for 3D printing
   // the sheets whose text mentions printing or a printing material), the skills group, the tools that go with it and the
   // other services. "Request a quote" ticks the service and opens the order form (hmGo). Every sheet is also a real page
   // with its own title, description, link preview and structured data (src/pages/services/[id].astro, `service` in Site.astro).
-  // No prices in settings.json → no rate; no matching sheets → no work block. Nothing is stored or sent.
+  // No rate on the sheet (Nace, 2026-11-27); no matching sheets → no work block. Nothing is stored or sent.
   // Self-contained: remove svById() … svCopy(), the 'service' lines in page() / pageTitle() / frame() / views, the data-sv-copy
   // line in the click handler, the ra('#s-…') links in service() / skFoot() / sdRows() / fxIndex() (back to '#services'),
   // sv: in content.js, the "Service sheets" block at the end of page.css, src/pages/services/[id].astro (+ /sl/), the
@@ -4978,16 +4963,16 @@
   }
   function svPromo(s) { var pm = promo(); if (!pm) return null; return pm.scope === 'cadprint' ? (s.key === 'cad' || s.key === 'print' ? pm : null) : pm.scope === 'print' ? (s.key === 'print' ? pm : null) : pm; }
   function svPrice(s) { // the rows of the price list that belong to this service ([] = nothing published, or the price list is switched off)
-    if (!pcOn() || !PRICE_LIST) return []; // 2026-11-26 (Nace): the price list is off, so the sheet shows the service's one rate line (as its card on #services does) and no price rows
+    if (!pcOn() || !PRICE_LIST) return []; // 2026-11-26 (Nace): the price list is off, so the sheet shows no price rows
     var x = t().pc, h = PRICE.hourly, rows = [];
     if (s.key === 'print') return pcPrintRows();
     if (+h[s.key] > 0) rows.push([L(s.title), x.perHour.replace('{n}', pcMoney(h[s.key]))]);
     return rows;
   }
   function svView() {
-    var x = t(), v = x.sv, s = svById(currentSlug()), mp = svMap(s), work = svWork(s), price = svPrice(s), pm = svPromo(s), rate = svcRateTxt(s);
+    var x = t(), v = x.sv, s = svById(currentSlug()), mp = svMap(s), work = svWork(s), price = svPrice(s), pm = svPromo(s);
     var li = function (a) { return '<ul class="sv-list">' + a.map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>'; };
-    var glance = [[x.sd.svc, s.code], [x.turnaround, s.time ? L(s.time) : x.onRequest]].concat(rate ? [[x.pc.rate, rate]] : []);
+    var glance = [[x.sd.svc, s.code], [x.turnaround, s.time ? L(s.time) : x.onRequest]];
     var tools = (SV_TOOLS[s.key] || []).map(function (k) { return TL_TOOLS.filter(function (d) { return d[0] === k; })[0]; }).filter(Boolean);
     var grp = mp.grp >= 0 ? SKILLS[mp.grp] : null, url = siteUrl('services/' + s.id + '/');
     var notes = [];
@@ -5051,10 +5036,9 @@
     PROJECTS.forEach(function (p) { add('projects', P(p, 'title'), P(p, 'description'), '#p-' + p.slug, [findBoth(p.title), findBoth(p.description), findBoth(p.details), p.category, cat(p), p.materials, p.year].join(' '), sheetNo(p)); });
     NEWS.forEach(function (n) { add('news', P(n, 'title'), P(n, 'summary'), '#n-' + n.slug, [findBoth(n.title), findBoth(n.summary), findBoth(n.body)].join(' '), fmtDate(n.date)); });
     SKILLS.forEach(function (g) { g.items.forEach(function (it) { add('skills', L(it[0]), L(it[1]), '#skills', g[lang] + ' ' + findBoth(it[0]) + ' ' + findBoth(it[1]), ''); }); });
-    // Search package (2026-11-13): the materials of the material picker (with the published price per gram) and the rows of the price list.
+    // Search package (2026-11-13): the materials of the material picker (no price per gram — Nace, 2026-11-27) and, while PRICE_LIST is on, the rows of the price list.
     MP_MATS.forEach(function (m) {
-      var pm = pcOn() ? pcMats().filter(function (v) { return v.key === m.id; })[0] : null;
-      add('materials', m.name, (pm ? x.pc.perGram.replace('{n}', pcMoney(pm.perGram, 3)) + ' · ' : '') + x.mp.notes[m.id], tlHash('material'), [T.en.mp.label, T.sl.mp.label, T.en.mp.title, T.sl.mp.title, T.en.mp.notes[m.id], T.sl.mp.notes[m.id], 'material filament'].join(' '), '', function () { state.mp.pick = m.id; /* pre-selected once the visitor ticks what the part must cope with */ if (location.hash === tlHash('material')) { render(true); tlGo('material'); } else location.hash = tlHash('material').slice(1); });
+      add('materials', m.name, x.mp.notes[m.id], tlHash('material'), [T.en.mp.label, T.sl.mp.label, T.en.mp.title, T.sl.mp.title, T.en.mp.notes[m.id], T.sl.mp.notes[m.id], 'material filament'].join(' '), '', function () { state.mp.pick = m.id; /* pre-selected once the visitor ticks what the part must cope with */ if (location.hash === tlHash('material')) { render(true); tlGo('material'); } else location.hash = tlHash('material').slice(1); });
     });
     if (pcOn() && PRICE_LIST) {
       var pk = 'price prices cost rate cena cene cenik postavka koliko stane ', pr = PRICE.print, ph = PRICE.hourly, vat = String(L(PRICE.vatNote) || '').split('. ')[0].replace(/\.$/, '');

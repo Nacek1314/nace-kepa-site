@@ -36,9 +36,12 @@ npx astro preview      # serves dist/ on http://localhost:4321 for Playwright ch
   until he adds the data, and tell him.
 - **Nace owns the content.** Do not edit `projects.json` or `news.json` beyond an obvious typo; never delete entries.
   Promotion, prices, FAQ and service texts in `settings.json` are his (admin › Settings).
-- **Prices (Nace, 2026-11-26):** no rates anywhere on the home page; the price-list tool is switched off
-  (`PRICE_LIST = false` in `app.js`). Do not switch it back on. The estimate tools, the single rate line on the #services
-  cards / service sheets, the Studio profile and the admin quote may still use the prices.
+- **Prices (Nace, 2026-11-26 and 2026-11-27):** there is no price list. The price-list tool is switched off
+  (`PRICE_LIST = false` in `app.js`) — do not switch it back on. **No published rates anywhere:** not on the home page, the
+  #services cards, the service sheets, the Studio profile, Find anything, the static snapshots, the structured data
+  (no `priceSpecification`) or the link-preview cards. Never add a new place that shows a rate. The prices stay in
+  `settings.json` and are used only by the estimate tools (quote estimate, series price, budget, material price, parts
+  list) and the admin; leave those tools as they are. The promotion text stays. `scripts/checks/no-rates.cjs` checks this.
 - **Home page (Nace, 2026-11-26):** it is laid out as a path to the order form; the headline is plain ink and says what
   the studio does. No coloured or underlined word in headlines. Do not move it back.
 - **Design:** "workshop technical" drawing-sheet look — paper, graphite ink, blueprint grid, mono labels, one red accent

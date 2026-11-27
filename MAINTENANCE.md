@@ -26,6 +26,29 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-27 (Nace, live: "cenika ni več, odstrani objavljene postavke povsod")
+
+**No published rates anywhere on the site** — Nace's decision, the follow-up to "price list off" of 2026-11-26. **Do not bring any of
+these back and do not add a new place that shows a rate.** Removed:
+- the **rate line on the #services cards** (`svcRate()` / `svcRateTxt()` and `.svc-rate` are gone);
+- the **rate row in "At a glance" on the service sheets** (`glance` in `svView()` — service code + turnaround only);
+- the **rates, the VAT note and the "Published prices" tick in the Studio profile** (`#profile`; sheet, copied text, e-mail). The
+  `pr` flag left the address; an old link with `pr=0` still opens. The lead no longer says "what it costs";
+- the **price per gram on the material rows of Find anything**;
+- in `Site.astro`: the rate rows and VAT note in the **static snapshot** of `/services/` and `/services/<id>/` (+ `/sl/`), the
+  **`priceSpecification`** on every service offer in the structured data (home catalogue + service pages), and "published prices" in
+  the description of `/services/`; `serviceCard` in `src/og/card.ts` lost its rate cell (it was already empty);
+- the strings `pc.rate`, `rateLink`, `ratePrint`, `rateMin`, `pf.prices` in `content.js` (EN + SL).
+
+**Kept on purpose:** the promotion (−20 %), the estimate tools exactly as they were (quote estimate, series price, budget, material
+price, parts list — they still calculate from `settings.json`), the prices in `settings.json` (the admin needs them), "Estimate the
+price" links to the quote tool, and the price a project text itself mentions (Nace's content). The price-list code (`pcList()`,
+`svPrice()`) is still there behind `PRICE_LIST = false`.
+**Tested** (356 checks, `scripts/checks/no-rates.cjs`, EN + SL, 1280 light / dark + 390 dark): no € on the cards, the four sheets
+(glance has two rows; promotion only on S-01 / S-02), the profile (sheet, text, e-mail, address, old `pr=0` link), search results,
+the snapshots without JavaScript and the descriptions; no `priceSpecification` in any built page; quote → order form; the quote
+estimate still there; no JS errors; full sweep clean; build 82 pages.
+
 ## 2026-11-27 (Nace, live: move to Claude Code)
 
 No change to the site. Added for the move of the daily run to Claude Code: **`CLAUDE.md`** (project rules read at the start of

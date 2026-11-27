@@ -90,7 +90,6 @@ const sheetNo = (p: any) => 'NK-' + String(p.year).slice(2) + '-' + String(shown
 const T: any = new Function(content + '\nreturn T;')();
 const SKILLS: any[] = new Function(content + '\nreturn SKILLS;')();
 const catCount = Object.keys(CATS).map((c) => [CATS[c][lang], shown.filter((p) => p.category === c).length] as [string, number]).filter((c) => c[1]);
-const priced = !!((settings as any).pricing && (settings as any).pricing.hourly && (settings as any).pricing.print);
 const secTitle: Record<string, string> = SL ? {
   news: 'Novice · Nace Kepa',
   services: 'Storitve: CAD, 3D tisk, firmware, izdelki po meri · Nace Kepa',
@@ -106,13 +105,13 @@ const secTitle: Record<string, string> = SL ? {
 };
 const secDesc: Record<string, string> = SL ? {
   news: 'Novice iz delavnice Naceta Kepe: novi stroji, materiali in zaključeni projekti.',
-  services: 'CAD v SolidWorksu, FDM 3D tisk, firmware za ESP32 in celotni izdelki po meri v Škofji Loki — roki' + (priced ? ', objavljene cene' : '') + ' in kaj dobite pri vsaki storitvi.',
+  services: 'CAD v SolidWorksu, FDM 3D tisk, firmware za ESP32 in celotni izdelki po meri v Škofji Loki — roki in kaj dobite pri vsaki storitvi.',
   work: T.sl.workPageLead.replace(/\s*Filtrirajte.*$/, '') + ' ' + catCount.map((c) => c[0] + ' (' + c[1] + ')').join(', ') + ' — Nace Kepa, inženirski studio, Škofja Loka.',
   skills: T.sl.skillsPageLead.replace(/\.$/, '') + ': ' + SKILLS.map((g) => g.sl).join(', ') + '.',
   about: T.sl.aboutTitle + '. ' + String(T.sl.aboutBody).split(/(?<=\.)\s/)[0]
 } : {
   news: 'News from Nace Kepa\'s workshop: new machines, materials and finished jobs.',
-  services: 'SolidWorks CAD, FDM 3D printing, ESP32 firmware and full custom builds in Škofja Loka, Slovenia — turnarounds' + (priced ? ', published prices' : '') + ' and what you get with each service.',
+  services: 'SolidWorks CAD, FDM 3D printing, ESP32 firmware and full custom builds in Škofja Loka, Slovenia — turnarounds and what you get with each service.',
   work: T.en.workPageLead.replace(/\s*Filter.*$/, '') + ' ' + catCount.map((c) => c[0] + ' (' + c[1] + ')').join(', ') + ' — Nace Kepa, engineering studio, Škofja Loka.',
   skills: T.en.skillsPageLead.replace(/\.$/, '') + ': ' + SKILLS.map((g) => g.en).join(', ') + '.',
   about: T.en.aboutTitle + '. ' + String(T.en.aboutBody).split(/(?<=\.)\s/)[0]
@@ -140,21 +139,13 @@ const services: any[] = new Function(content + '\nreturn SERVICES;')();
 // settings.json. To remove: src/pages/services/[id].astro (+ /sl/), every `svc` / `service` part of this file, serviceCard in src/og/card.ts.
 const svc: any = service ? services.find((s: any) => s.id === service) : null;
 const svcUrl = (s: any, sl = SL) => 'https://nacekepa.work' + (sl ? '/sl' : '') + '/services/' + s.id + '/';
-const svcMoney = (n: number) => String(n).replace('.', SL ? ',' : '.') + ' €';
-const svcRate = (s: any) => { const pc: any = priced ? (settings as any).pricing : null; if (!pc) return '';
-  return s.key === 'print' ? (+pc.print.minOrder > 0 ? T[lang].pc.ratePrint + ' · ' + T[lang].pc.rateMin.replace('{m}', svcMoney(+pc.print.minOrder)) : '') : +pc.hourly[s.key] > 0 ? T[lang].pc.perHour.replace('{n}', svcMoney(+pc.hourly[s.key])) : ''; };
 if (svc) {
   title = tl(svc.title) + ' · Nace Kepa, ' + (SL ? 'inženirski studio, Škofja Loka' : 'engineering studio, Škofja Loka');
   description = tl(svc.body) + ' ' + T[lang].turnaround + ': ' + (svc.time ? tl(svc.time) : T[lang].onRequest) + '. Nace Kepa, ' + (SL ? 'inženirski studio, Škofja Loka.' : 'engineering studio, Škofja Loka.');
 }
 // Structured data for search engines (a data block, not executed, so the CSP script hash doesn't apply).
 // Only facts already on the page: name, place, contact, services, LinkedIn.
-// Prices-on-the-service package (2026-11-15): the published rates from settings.json on each service offer — hourly rate (EUR / h,
-// excl. VAT as the price list states) or, for 3D printing, the minimum order. No price list → no priceSpecification.
-const offerPrice = (key: string) => { const pc: any = (settings as any).pricing; if (!pc || !pc.hourly || !pc.print) return {};
-  const cur = pc.currency || 'EUR';
-  if (key === 'print') return +pc.print.minOrder > 0 ? { priceSpecification: { '@type': 'PriceSpecification', minPrice: +pc.print.minOrder, priceCurrency: cur, valueAddedTaxIncluded: false } } : {};
-  return +pc.hourly[key] > 0 ? { priceSpecification: { '@type': 'UnitPriceSpecification', price: +pc.hourly[key], priceCurrency: cur, unitCode: 'HUR', valueAddedTaxIncluded: false } } : {}; };
+// No published rates (Nace, 2026-11-27): the service offers carry no priceSpecification.
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'ProfessionalService',
@@ -178,7 +169,7 @@ const jsonLd = JSON.stringify({
   hasOfferCatalog: {
     '@type': 'OfferCatalog',
     name: SL ? 'Storitve' : 'Services',
-    itemListElement: services.map((s: any) => ({ '@type': 'Offer', ...offerPrice(s.key), itemOffered: { '@type': 'Service', name: tl(s.title), description: tl(s.body), url: svcUrl(s), provider: { '@type': 'Person', name: 'Nace Kepa' } } }))
+    itemListElement: services.map((s: any) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: tl(s.title), description: tl(s.body), url: svcUrl(s), provider: { '@type': 'Person', name: 'Nace Kepa' } } }))
   }
 }).replace(/</g, '\\u003c');
 // One news post as BlogPosting and one project as CreativeWork (data blocks, not executed). Text, dates, years, categories
@@ -236,7 +227,7 @@ const itemLd = item ? JSON.stringify({
   ]
 }).replace(/</g, '\\u003c') : svc ? JSON.stringify({ '@context': 'https://schema.org', '@graph': [
   { '@type': 'Service', name: tl(svc.title), serviceType: tl(svc.title), description: tl(svc.body), url: pageUrl, mainEntityOfPage: pageUrl, inLanguage: lang, areaServed: 'EU',
-    provider: { '@type': 'ProfessionalService', name: siteTitle, url: home }, offers: { '@type': 'Offer', url: pageUrl, ...offerPrice(svc.key) } },
+    provider: { '@type': 'ProfessionalService', name: siteTitle, url: home }, offers: { '@type': 'Offer', url: pageUrl } },
   { '@type': 'BreadcrumbList', itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Nace Kepa', item: home },
     { '@type': 'ListItem', position: 2, name: T[lang].nav.services, item: secUrl('services') },
@@ -276,14 +267,13 @@ const snapshot = (() => {
     return header + `<main><p><a href="${secUrl('news')}">← ${ex(x.nav.news)}</a></p><h1>${ex(tl(n.title))}</h1><p><time datetime="${ex(n.date)}">${ex(n.date)}</time></p><p>${ex(tl(n.summary))}</p>${rich(tl(n.body))}${photos}` + foot;
   }
   if (svc) { // Service sheet (2026-11-26): the same facts svView() shows
-    const s = svc, pc: any = priced ? (settings as any).pricing : null;
+    const s = svc;
     const ul = (a: string[]) => '<ul>' + a.map((v) => '<li>' + ex(v) + '</li>').join('') + '</ul>';
     const cats: string[] = s.key === 'cad' ? ['CAD', 'Mechanical'] : s.key === 'iot' ? ['IoT', 'Embedded'] : []; // SK_MAP in app.js
     const work = shown.filter((p) => cats.includes(p.category));
     return header + `<main><p><a href="${secUrl('services')}">← ${ex(x.sv.back)}</a></p><p>${ex(s.code)} · ${ex(x.sv.label)}</p><h1>${ex(tl(s.title))}</h1><p>${ex(tl(s.body))}</p>` +
-      `<dl><dt>${ex(x.turnaround)}</dt><dd>${ex(s.time ? tl(s.time) : x.onRequest)}</dd>${svcRate(s) ? `<dt>${ex(x.pc.rate)}</dt><dd>${ex(svcRate(s))}</dd>` : ''}</dl>` +
+      `<dl><dt>${ex(x.turnaround)}</dt><dd>${ex(s.time ? tl(s.time) : x.onRequest)}</dd></dl>` +
       `<h2>${ex(x.deliverables)}</h2>${ul(tl(s.get))}<h2>${ex(x.needs)}</h2>${ul(tl(s.need))}` +
-      (pc && tl(pc.vatNote) ? `<p>${ex(tl(pc.vatNote))}</p>` : '') +
       `<h2>${ex(x.sv.how)}</h2><ol>${x.hm.how.map((st: string[]) => `<li>${ex(st[0])} — ${ex(st[1])}</li>`).join('')}</ol>` +
       (work.length ? `<h2>${ex(x.sv.work)}</h2><ul>${work.map((p) => `<li><a href="${ex(landingOf('p', p.slug))}">${ex(tl(p.title))}</a> — ${ex(catName(p))}, ${ex(p.year)}. ${ex(tl(p.description))}</li>`).join('')}</ul>` : '') +
       `<h2>${ex(x.sv.other)}</h2><ul>${services.filter((o: any) => o !== s).map((o: any) => `<li><a href="${svcUrl(o)}">${ex(o.code)} · ${ex(tl(o.title))}</a></li>`).join('')}</ul>` + foot;
@@ -296,14 +286,10 @@ const snapshot = (() => {
   const work = shown.map((p) => `<li><a href="${ex(landingOf('p', p.slug))}">${ex(tl(p.title))}</a> — ${ex(catName(p))}, ${ex(p.year)}. ${ex(tl(p.description))}</li>`).join('');
   const faqHtml = faqs.length ? `<h2>${ex(x.faq.title)}</h2><dl>${faqs.map((f: any) => `<dt>${ex(tl(f.q))}</dt><dd>${ex(tl(f.a))}</dd>`).join('')}</dl>` : '';
   const facts: [string, string][] = [[SL ? 'Lokacija' : 'Location', SL ? 'Škofja Loka, Slovenija' : 'Škofja Loka, Slovenia'], [SL ? 'Šola' : 'School', 'Šolski center Kranj'], ['CAD', SL ? 'SolidWorks 4 leta · CSWA · CSWA-AM' : 'SolidWorks 4 yrs · CSWA · CSWA-AM']].concat(x.heroSpecs.slice(2)); // same rows as #about
-  if (sec === 'services') { // the service cards of #services: text, turnaround, published rate, both lists
-    const pc: any = priced ? (settings as any).pricing : null;
-    const money = (n: number) => String(n).replace('.', SL ? ',' : '.') + ' €';
-    const rate = (s: any) => !pc ? '' : s.key === 'print' ? (+pc.print.minOrder > 0 ? `<p>${ex(x.pc.rate)}: ${ex(x.pc.ratePrint)} · ${ex(x.pc.rateMin.replace('{m}', money(+pc.print.minOrder)))}</p>` : '') : +pc.hourly[s.key] > 0 ? `<p>${ex(x.pc.rate)}: ${ex(x.pc.perHour.replace('{n}', money(+pc.hourly[s.key])))}</p>` : '';
+  if (sec === 'services') { // the service cards of #services: text, turnaround, both lists (no rates — Nace, 2026-11-27)
     const ul = (a: string[]) => '<ul>' + a.map((v) => '<li>' + ex(v) + '</li>').join('') + '</ul>';
     return header + `<main><h1>${ex(x.servicesPageTitle)}</h1><p>${ex(x.servicesPageLead)}</p>` +
-      services.map((s: any) => `<section id="${ex(s.id)}"><h2><a href="${svcUrl(s)}">${ex(s.code)} · ${ex(tl(s.title))}</a></h2><p>${ex(tl(s.body))}</p><p>${ex(x.turnaround)}: ${ex(s.time ? tl(s.time) : x.onRequest)}</p>${rate(s)}<h3>${ex(x.deliverables)}</h3>${ul(tl(s.get))}<h3>${ex(x.needs)}</h3>${ul(tl(s.need))}</section>`).join('') +
-      (pc && tl(pc.vatNote) ? `<p>${ex(tl(pc.vatNote))}</p>` : '') + faqHtml + foot;
+      services.map((s: any) => `<section id="${ex(s.id)}"><h2><a href="${svcUrl(s)}">${ex(s.code)} · ${ex(tl(s.title))}</a></h2><p>${ex(tl(s.body))}</p><p>${ex(x.turnaround)}: ${ex(s.time ? tl(s.time) : x.onRequest)}</p><h3>${ex(x.deliverables)}</h3>${ul(tl(s.get))}<h3>${ex(x.needs)}</h3>${ul(tl(s.need))}</section>`).join('') + faqHtml + foot;
   }
   if (sec === 'work') return header + `<main><h1>${ex(x.workPageTitle)} · ${shown.length}</h1><p>${ex(x.workPageLead)}</p><ul>${work}</ul>` + foot;
   if (sec === 'skills') return header + `<main><h1>${ex(x.skillsPageTitle)}</h1><p>${ex(x.skillsPageLead)}</p>` +

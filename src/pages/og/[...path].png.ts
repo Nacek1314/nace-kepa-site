@@ -30,6 +30,6 @@ export function getStaticPaths() {
 
 export const GET: APIRoute = ({ props }) => {
   const { kind, lang, item, view } = props as { kind: string; lang: Lang; item?: any; view?: any };
-  const svg = kind === 'service' ? serviceCard(lang, item, '') : kind === 'project' ? projectCard(item, lang, sheetNo(item)) : kind === 'post' ? postCard(item, lang) : kind === 'section' ? sectionCard(lang, view, shown.length) : newsIndexCard(lang);
+  const svg = kind === 'service' ? serviceCard(lang, item) : kind === 'project' ? projectCard(item, lang, sheetNo(item)) : kind === 'post' ? postCard(item, lang) : kind === 'section' ? sectionCard(lang, view, shown.length) : newsIndexCard(lang);
   return new Response(new Uint8Array(renderPng(svg)), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' } });
 };

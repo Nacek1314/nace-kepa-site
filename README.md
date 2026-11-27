@@ -61,7 +61,7 @@ above the work (present, compare, add to the visitor's own shortlist, start a pr
 
 **Series price NK-R** (`#services?tool=series`): one printed part — material, weight, print time — priced at 1 … 100 pieces and the visitor's
 own quantity from the `settings.json` prices (the quote estimate's sums), with a chart and the reasons the price per piece falls; hands the
-quantity to the order form (`srBox()` in `src/site/app.js`). Service cards show their published rate (`svcRate()`).
+quantity to the order form (`srBox()` in `src/site/app.js`).
 
 **Budget NK-B** (`#services?tool=budget`): the quote estimate run backwards — an amount, optionally the hours already expected and one
 printed part → the plan it covers (hours + whole pieces), a bar of the budget and what the whole budget covers on one service, from the
@@ -97,15 +97,15 @@ into the brief with a link `#p-<slug>?rl=20.25_60.70` that opens the sheet with 
 row, Find anything has one-step display actions ("Dark sheet", "Larger text" …) and the 404 page has a Colours row.
 
 **Studio profile NK-A** (`#profile`, linked under the studio facts on `#about`): the studio on one A4 sheet to print, save as PDF, copy
-as text or forward — services with turnaround, published rate and deliverables, skills, selected work, contact + QR. Ticks choose what
-is on the sheet and live in the address (`#profile?s=cad,print&pr=0&w=0`) — `pfView()` in `src/site/app.js`.
+as text or forward — services with turnaround and deliverables, skills, selected work, contact + QR (no rates). Ticks choose what
+is on the sheet and live in the address (`#profile?s=cad,print&w=0`) — `pfView()` in `src/site/app.js`.
 
 **Section pages:** `/services/`, `/portfolio/`, `/skills/`, `/about/` (and `/sl/…`) are real pages like `/news/` — own title, description,
 link-preview card, breadcrumb data and static snapshot, opening that section (`SECTIONS` in `src/site/Site.astro`,
 `src/pages/<section>/index.astro`). `/order` is still a redirect into the page.
 
 **Service sheets** (`#s-<id>`, real pages `/services/3d-design/`, `/services/3d-printing/`, `/services/embedded-iot/`, `/services/full-builds/`
-+ `/sl/…`): one sheet per service — what you get / what I need, turnaround, the price rows of that service, the running promotion when it
++ `/sl/…`): one sheet per service — what you get / what I need, turnaround, the running promotion when it
 covers the service, how an order goes, the project sheets behind it, its skills group, its tools and the other services; "Request a quote"
 ticks the service and opens the order form (`svView()` in `src/site/app.js`, `service` in `src/site/Site.astro`,
 `src/pages/services/[id].astro`). **Real addresses:** the header navigation, the wordmark, project cards, news cards and service links

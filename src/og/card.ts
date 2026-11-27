@@ -142,12 +142,11 @@ export function sectionCard(lang: Lang, view: 'services' | 'work' | 'skills' | '
     titleBlock(cells, 470) + '</svg>';
 }
 
-// Service sheets (2026-11-26): one card per service page (/services/<id>/) — code, title, text, turnaround and published rate.
-export function serviceCard(lang: Lang, s: any, rate: string): string {
+// Service sheets (2026-11-26): one card per service page (/services/<id>/) — code, title, text and turnaround (no rate — Nace, 2026-11-27).
+export function serviceCard(lang: Lang, s: any): string {
   const x = T[lang];
   const title = wrap(tl(s.title, lang), 'bold', 72, 1040, 2);
   const cells: [string, string][] = [[x.turnaround, s.time ? tl(s.time, lang) : x.onRequest]];
-  if (rate) cells.push([x.pc.rate, rate]);
   if (width(cells[0][1], 'mono', 22) <= (W - 56) / (cells.length + 1) - 40) cells.push([x.tb.loc, 'Škofja Loka, SI']); // a long turnaround gets the room instead
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${frame(lang)}` +
     `<rect x="28" y="81" width="${W - 56}" height="${470 - 81}" fill="url(#g)"/>` +
