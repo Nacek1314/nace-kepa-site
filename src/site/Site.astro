@@ -29,7 +29,7 @@ const item: any = project || post;
 // Section pages (2026-11-25): /services/, /portfolio/, /skills/, /about/ (+ /sl/…) are real pages like /news/ — own title,
 // description, link preview, breadcrumb and static snapshot, opening that section (src/pages/<section>/index.astro pass `view`).
 // To remove: those eight page files, SECTIONS / `sec` here, sectionCard in src/og/, the paths in astro.config.mjs (put the redirects back).
-const SECTIONS: Record<string, string> = { news: '/news/', services: '/services/', work: '/portfolio/', skills: '/skills/', about: '/about/' };
+const SECTIONS: Record<string, string> = { news: '/news/', services: '/services/', work: '/portfolio/', skills: '/skills/', about: '/about/', glossary: '/glossary/' }; // glossary: Glossary NK-G (2026-11-27)
 const sec = !item && !service && SECTIONS[view] ? view : '';
 const secUrl = (v: string, sl = SL) => 'https://nacekepa.work' + (sl ? '/sl' : '') + SECTIONS[v];
 const landing = service ? (SL ? '/sl' : '') + '/services/' + service + '/' : item ? (SL ? '/sl' : '') + (project ? '/portfolio/' : '/news/') + item.slug + '/' : sec ? (SL ? '/sl' : '') + SECTIONS[sec] : '';
@@ -89,32 +89,38 @@ const sheetNo = (p: any) => 'NK-' + String(p.year).slice(2) + '-' + String(shown
 // A landing page is titled and described by its sheet / post (same title as app.js gives the tab); the home pages keep the studio text.
 const T: any = new Function(content + '\nreturn T;')();
 const SKILLS: any[] = new Function(content + '\nreturn SKILLS;')();
+const GLOSSARY: any[] = new Function(content + '\nreturn typeof GLOSSARY === "undefined" ? [] : GLOSSARY;')(); // Glossary NK-G (2026-11-27)
+const glNote = (g: any) => (g.m && T[lang].mp && T[lang].mp.notes && T[lang].mp.notes[g.m] ? ' ' + T[lang].mp.notes[g.m] : ''); // a material also carries the material picker's note, as on #glossary
 const catCount = Object.keys(CATS).map((c) => [CATS[c][lang], shown.filter((p) => p.category === c).length] as [string, number]).filter((c) => c[1]);
 const secTitle: Record<string, string> = SL ? {
   news: 'Novice · Nace Kepa',
   services: 'Storitve: CAD, 3D tisk, firmware, izdelki po meri · Nace Kepa',
   work: 'Projekti: vsi listi (' + shown.length + ') · Nace Kepa',
   skills: T.sl.skillsPageTitle + ' · Nace Kepa',
-  about: T.sl.nav.about + ' · Nace Kepa, inženirski studio, Škofja Loka'
+  about: T.sl.nav.about + ' · Nace Kepa, inženirski studio, Škofja Loka',
+  glossary: 'Slovar: STEP, STL, FDM, PETG, firmware … po domače · Nace Kepa'
 } : {
   news: 'News · Nace Kepa',
   services: 'Services: CAD, 3D printing, firmware, custom builds · Nace Kepa',
   work: 'Work: all project sheets (' + shown.length + ') · Nace Kepa',
   skills: T.en.skillsPageTitle + ' · Nace Kepa',
-  about: T.en.nav.about + ' · Nace Kepa, engineering studio, Škofja Loka'
+  about: T.en.nav.about + ' · Nace Kepa, engineering studio, Škofja Loka',
+  glossary: 'Glossary: STEP, STL, FDM, PETG, firmware … in plain language · Nace Kepa'
 };
 const secDesc: Record<string, string> = SL ? {
   news: 'Novice iz delavnice Naceta Kepe: novi stroji, materiali in zaključeni projekti.',
   services: 'CAD v SolidWorksu, FDM 3D tisk, firmware za ESP32 in celotni izdelki po meri v Škofji Loki — roki in kaj dobite pri vsaki storitvi.',
   work: T.sl.workPageLead.replace(/\s*Filtrirajte.*$/, '') + ' ' + catCount.map((c) => c[0] + ' (' + c[1] + ')').join(', ') + ' — Nace Kepa, inženirski studio, Škofja Loka.',
   skills: T.sl.skillsPageLead.replace(/\.$/, '') + ': ' + SKILLS.map((g) => g.sl).join(', ') + '.',
-  about: T.sl.aboutTitle + '. ' + String(T.sl.aboutBody).split(/(?<=\.)\s/)[0]
+  about: T.sl.aboutTitle + '. ' + String(T.sl.aboutBody).split(/(?<=\.)\s/)[0],
+  glossary: GLOSSARY.length + ' izrazov iz CAD-a, 3D tiska, materialov in elektronike, razloženih v stavku ali dveh: ' + GLOSSARY.slice(0, 6).map((g) => tl(g.t)).join(', ') + ' … — Nace Kepa, inženirski studio, Škofja Loka.'
 } : {
   news: 'News from Nace Kepa\'s workshop: new machines, materials and finished jobs.',
   services: 'SolidWorks CAD, FDM 3D printing, ESP32 firmware and full custom builds in Škofja Loka, Slovenia — turnarounds and what you get with each service.',
   work: T.en.workPageLead.replace(/\s*Filter.*$/, '') + ' ' + catCount.map((c) => c[0] + ' (' + c[1] + ')').join(', ') + ' — Nace Kepa, engineering studio, Škofja Loka.',
   skills: T.en.skillsPageLead.replace(/\.$/, '') + ': ' + SKILLS.map((g) => g.en).join(', ') + '.',
-  about: T.en.aboutTitle + '. ' + String(T.en.aboutBody).split(/(?<=\.)\s/)[0]
+  about: T.en.aboutTitle + '. ' + String(T.en.aboutBody).split(/(?<=\.)\s/)[0],
+  glossary: GLOSSARY.length + ' CAD, 3D printing, material and electronics terms explained in a sentence or two: ' + GLOSSARY.slice(0, 6).map((g) => tl(g.t)).join(', ') + ' … — Nace Kepa, engineering studio, Škofja Loka.'
 };
 let title = item ? tl(item.title) + ' · Nace Kepa' : sec ? secTitle[sec] : siteTitle;
 let description = project
@@ -233,6 +239,13 @@ const itemLd = item ? JSON.stringify({
     { '@type': 'ListItem', position: 2, name: T[lang].nav.services, item: secUrl('services') },
     { '@type': 'ListItem', position: 3, name: tl(svc.title), item: pageUrl }
   ] }
+] }).replace(/</g, '\\u003c') : sec === 'glossary' ? JSON.stringify({ '@context': 'https://schema.org', '@graph': [ // Glossary NK-G (2026-11-27)
+  { '@type': 'DefinedTermSet', '@id': pageUrl, name: T[lang].gl.title, description: T[lang].gl.lead, url: pageUrl, inLanguage: lang,
+    hasDefinedTerm: GLOSSARY.map((g) => ({ '@type': 'DefinedTerm', name: tl(g.t), alternateName: g.aka && g.aka.length ? g.aka : undefined, description: tl(g.d) + glNote(g), termCode: g.id, url: pageUrl + '#gl-' + g.id, inDefinedTermSet: pageUrl })) },
+  { '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Nace Kepa', item: home },
+    { '@type': 'ListItem', position: 2, name: T[lang].nav.glossary, item: pageUrl }
+  ] }
 ] }).replace(/</g, '\\u003c') : sec ? JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
   { '@type': 'ListItem', position: 1, name: 'Nace Kepa', item: home },
   { '@type': 'ListItem', position: 2, name: T[lang].nav[sec], item: pageUrl }
@@ -253,7 +266,7 @@ const snapshot = (() => {
   // On a landing page the language link goes to the same sheet / post in the other language.
   const other = SL ? `<a href="${ex(landing ? altEn : '/')}" hreflang="en" lang="en">English</a>` : `<a href="${ex(landing ? altSl : '/sl/')}" hreflang="sl" lang="sl">Slovenščina</a>`;
   const header = `<div class="ssr" lang="${lang}"><header><p><a href="${at('')}">nacekepa.work</a> · ${ex(x.heroLabel)}</p><nav aria-label="${SL ? 'Razdelki' : 'Sections'}"><a href="${secUrl('services')}">${ex(x.nav.services)}</a> · <a href="${secUrl('work')}">${ex(x.nav.work)}</a> · <a href="${secUrl('news')}">${ex(x.nav.news)}</a> · <a href="${secUrl('skills')}">${ex(x.nav.skills)}</a> · <a href="${secUrl('about')}">${ex(x.nav.about)}</a> · <a href="${at('#order')}">${ex(x.cta)}</a> · ${other}</nav></header>`;
-  const foot = `<p><a href="${at('#order')}">${ex(x.cta)}</a> · <a href="mailto:${contactEmail}">${contactEmail}</a> · <a href="https://www.linkedin.com/in/nace-kepa-82735038a">LinkedIn</a></p></main></div>`;
+  const foot = `<p><a href="${at('#order')}">${ex(x.cta)}</a> · <a href="mailto:${contactEmail}">${contactEmail}</a> · <a href="https://www.linkedin.com/in/nace-kepa-82735038a">LinkedIn</a>${GLOSSARY.length ? ` · <a href="${secUrl('glossary')}">${ex(x.nav.glossary)}</a>` : ''}</p></main></div>`;
   if (project) {
     const p = project;
     const rows = [[x.pCategory, catName(p)], [x.pYear, String(p.year)]].concat(p.materials ? [[x.pMaterials, p.materials]] : []);
@@ -290,6 +303,11 @@ const snapshot = (() => {
     const ul = (a: string[]) => '<ul>' + a.map((v) => '<li>' + ex(v) + '</li>').join('') + '</ul>';
     return header + `<main><h1>${ex(x.servicesPageTitle)}</h1><p>${ex(x.servicesPageLead)}</p>` +
       services.map((s: any) => `<section id="${ex(s.id)}"><h2><a href="${svcUrl(s)}">${ex(s.code)} · ${ex(tl(s.title))}</a></h2><p>${ex(tl(s.body))}</p><p>${ex(x.turnaround)}: ${ex(s.time ? tl(s.time) : x.onRequest)}</p><h3>${ex(x.deliverables)}</h3>${ul(tl(s.get))}<h3>${ex(x.needs)}</h3>${ul(tl(s.need))}</section>`).join('') + faqHtml + foot;
+  }
+  if (sec === 'glossary') { // Glossary NK-G (2026-11-27): every term with its definition, grouped as on #glossary
+    const groups = ['files', 'print', 'mat', 'cad', 'elec'].filter((k) => GLOSSARY.some((g) => g.g === k));
+    return header + `<main><h1>${ex(x.gl.title)}</h1><p>${ex(x.gl.lead)}</p>` +
+      groups.map((k) => `<h2>${ex(x.gl.groups[k])}</h2><dl>${GLOSSARY.filter((g) => g.g === k).map((g) => `<dt id="gl-${ex(g.id)}">${ex(tl(g.t))}</dt><dd>${ex(tl(g.d) + glNote(g))}</dd>`).join('')}</dl>`).join('') + foot;
   }
   if (sec === 'work') return header + `<main><h1>${ex(x.workPageTitle)} · ${shown.length}</h1><p>${ex(x.workPageLead)}</p><ul>${work}</ul>` + foot;
   if (sec === 'skills') return header + `<main><h1>${ex(x.skillsPageTitle)}</h1><p>${ex(x.skillsPageLead)}</p>` +

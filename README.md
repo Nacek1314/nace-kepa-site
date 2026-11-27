@@ -112,6 +112,13 @@ ticks the service and opens the order form (`svView()` in `src/site/app.js`, `se
 carry the page's real address in `href` (copy link / new tab / search engines) and the in-app hash in `data-ra`; a plain click still
 moves inside the app (`ra()` in `app.js`).
 
+**Glossary NK-G** (`#glossary`, real pages `/glossary/` + `/sl/glossary/`; key G, the footer, the Skills page, Find anything): the
+technical words a quote or a brief uses (STEP, STL, FDM, PETG, tolerance, firmware …) in a sentence or two each — search box, group
+chips, "On this site" links per term (tool, service sheet, project sheets that mention it), "Copy link to this term"
+(`#glossary?t=step`). The terms are `GLOSSARY` at the end of `src/site/content.js` (one line per term, EN + SL); a term in the
+"What you get" / "What I need" lists of a service sheet links to its entry (`glView()` … `glAuto()` in `src/site/app.js`). Buttons and
+prev / next links ("See all work", "All news", next sheet …) carry real page addresses like the cards do (`btn()` → `ra()`).
+
 `#mine` ("My corner") lists what a visitor saved in their browser — shortlist, unfinished brief, saved comparisons, Part
 studio sheets and price estimates (localStorage `nk-shortlist`, `nk-order-draft`, `nk-mine`) — with print and text export
 and a "forget everything" button. Nothing is sent to the studio until it goes into a brief. Old URLs (`/services`, `/portfolio/<old-slug>`,
@@ -214,7 +221,7 @@ private repo needs a paid GitHub plan).
 ```
 src/site/Site.astro     the site (inlines src/site/*, projects from src/data/projects.json)
 src/pages/index.astro   English page (/) · src/pages/sl/index.astro Slovenian page (/sl/)
-src/pages/services/ skills/ about/ portfolio/index.astro   section pages (+ sl/ twins)
+src/pages/services/ skills/ about/ portfolio/ glossary/index.astro   section pages (+ sl/ twins)
 src/pages/portfolio/    project landing pages /portfolio/<slug>/ · src/pages/news/ news landing pages /news/<slug>/ (+ sl/ twins)
 src/pages/admin.astro   the admin dashboard (src/site/admin.js)
 src/data/projects.json  all projects, edited by the dashboard

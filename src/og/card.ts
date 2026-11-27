@@ -128,10 +128,10 @@ export function newsIndexCard(lang: Lang): string {
 }
 
 // Section pages (2026-11-25): one card per section page (/services/, /portfolio/, /skills/, /about/) — page title, lead, three cells.
-export function sectionCard(lang: Lang, view: 'services' | 'work' | 'skills' | 'about', count: number): string {
+export function sectionCard(lang: Lang, view: 'services' | 'work' | 'skills' | 'about' | 'glossary', count: number): string {
   const x = T[lang], sl = lang === 'sl';
-  const head = { services: x.servicesPageTitle, work: x.workPageTitle, skills: x.skillsPageTitle, about: x.aboutTitle }[view];
-  const lead = { services: x.servicesPageLead, work: x.workPageLead, skills: x.skillsPageLead, about: x.heroLead }[view];
+  const head = { services: x.servicesPageTitle, work: x.workPageTitle, skills: x.skillsPageTitle, about: x.aboutTitle, glossary: x.gl.title }[view];
+  const lead = { services: x.servicesPageLead, work: x.workPageLead, skills: x.skillsPageLead, about: x.heroLead, glossary: x.gl.lead }[view];
   const cells: [string, string][] = view === 'work' ? [[sl ? 'Listov' : 'Sheets', String(count)], [x.tb.drawn, 'N. Kepa'], [x.tb.loc, 'Škofja Loka, SI']]
     : [[sl ? 'Razdelek' : 'Section', x.nav[view]], [x.tb.drawn, 'N. Kepa'], [x.tb.loc, 'Škofja Loka, SI']];
   const title = wrap(head, 'bold', 72, 1040, 2);

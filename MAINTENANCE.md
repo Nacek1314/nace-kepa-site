@@ -26,6 +26,70 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-27 (daily run)
+
+**Checked** (first daily run from Claude Code, on top of Nace's f042e2d "no published rates anywhere"): build (82 → 84 pages);
+`scripts/checks/sweep.cjs` on the local preview **and on the live site** (reachable from this session): home, #services, #work, two
+project sheets (one with a 3D model), #news, a post, #skills, #about, #contact, #order, two service sheets, #profile, #mine, #studio,
+#gift, the section / service / project / post landing pages, /admin/ sign-in, 404 — 1280 + 390 px, light + dark, `/` + `/sl/`: no JS
+errors, no failed requests (Google Fonts blocked in the cloud, as always), no horizontal scroll, no broken images, no "undefined" text,
+right page language, one h1 (404: two by design). Order form walked through all 4 steps in EN + SL at 390 px, nothing sent.
+`scripts/checks/no-rates.cjs` still passes. Last Actions run before this one (f042e2d): success (read from api.github.com).
+**Fixed:** (1) Find anything still advertised the switched-off price list — its placeholder said "e.g. ESP32, price list, PETG, deadline"
+("cenik" in SL) and its label listed "prices" ("cene"); both now name things that exist ("ESP32, STEP, PETG, deadline"; "materials,
+terms"). The hidden `prices` group stays in the code behind `PRICE_LIST`, as before.
+
+**Improvement — "real addresses, part 2" package (SEO + sharing; the follow-up listed on 2026-11-26):** the cards and the navigation got
+real page addresses yesterday, the buttons and the links between sheets did not. Now (a) **every button built by `btn()`** whose target
+has a page carries it — "See all work · N" (home hero, home selected work, final call) → `/portfolio/`, "All news · N" → `/news/`
+(`/sl/…` in Slovenian); (b) **previous / next** on project sheets and news posts → `/portfolio/<slug>/`, `/news/<slug>/`; (c) the sheet
+links in the **portfolio-set index, the compare columns, the planner's reference sheets, the #work search's news results, the My corner
+shortlist and the Presentation's "Open the sheet"**; (d) "How it works → the full process" on home and "← About" on the Studio profile →
+`/about/`; (e) the static snapshot's footer links the glossary page. 13 sheet / post links + the buttons, all through `ra()`: a plain
+click or Enter still moves inside the app (the hash sits in `data-ra`), Ctrl / middle click, "copy link address" and search engines get
+the real page. Buttons to views without a page of their own (`#order`, `#studio`, tools) are unchanged.
+*To remove:* in `btn()` put `href="' + href + '"` back; turn `' + ra('#p-' + x.slug) + '` back into `href="#p-' + esc(x.slug) + '"`.
+
+**Innovation — Glossary NK-G / "Slovar" (`#glossary`, real pages `/glossary/` + `/sl/glossary/`; `GL` … `glAuto()` in `app.js`,
+`GLOSSARY` + `gl:` in `content.js`, "Glossary" block at the end of `page.css`, `glossary` in `Site.astro`, `src/pages/glossary/` (+ `/sl/`)):**
+a client who gets a quote that says "STEP export, PETG, heat-set inserts, firmware + wiring diagram" often does not know the words, and
+people search for exactly these ("kaj je STEP datoteka"). The glossary explains **42 terms** the site itself uses, in a sentence or two
+of plain language, EN + SL, in five groups: files and formats (STL, STEP, IGES, 3MF, OBJ, native CAD file), 3D printing (FDM, filament,
+nozzle, heated chamber, build volume, build plate, support, wall thickness, slicer, post-processing), materials (PLA … PC — the full
+name plus **the note the material picker already shows**), design and drawings (CAD, 2D drawing, tolerance, FEA, prototype, BOM, heat-set
+insert), electronics and firmware (firmware, microcontroller, ESP32, IoT, BLE, MQTT, I²C · SPI, PCB, wiring diagram, PLC, HMI).
+- **On the page:** a search box (EN or SL words, with or without č š ž; Esc clears) and group chips filter the list in place with a live
+  count; each term shows its other abbreviations, the definition, **"On this site"** — the tool, service sheet, Part studio or Skills
+  page where the term matters and "N project sheets mention it" (counted from `projects.json` like the Skills → proof links, shown only
+  when the #work search finds the same sheets) — and **"Copy link to this term"** (`https://nacekepa.work/glossary/#glossary?t=step`
+  opens the page scrolled to that term, marked and focused). `?q=…` and `?g=<group>` links work too. Ends with "A word in my quote is
+  not here" (Start a project / e-mail).
+- **Entry points:** "Glossary" in the footer of every page, a link under the Skills page, the **G** key (in the `?` list), **Find
+  anything** (the page + every term: "what is mqtt" / "kaj je mqtt" → Enter opens the term), and the **service sheets**: in "What you
+  get" / "What I need" a term the glossary explains is a dotted-underlined link to its entry (STEP, IGES, FEA, STL, 3MF, firmware,
+  wiring diagram, bill of materials, slicer profiles …; `glAuto()` — capitals-only names must match in the same case).
+- **Real page:** `/glossary/` + `/sl/glossary/` with own title, description, canonical + hreflang, drawn link-preview card
+  (`/og/glossary.png`), `DefinedTermSet` + `BreadcrumbList` structured data, a static snapshot with every term (each `<dt>` has its id),
+  in the sitemap (80 → 82 addresses).
+- **Facts:** the definitions are general technical vocabulary, written for this page — nothing in them is a statement about the studio,
+  its machines or prices; the only studio text is the material picker's own notes, re-used. **Nace: read them once** (admin has no editor
+  for them yet) — to change, add or drop a term edit its line in `GLOSSARY` at the end of `src/site/content.js`.
+- Tested in Playwright (220 checks: EN 1280 light + 390 light touch, SL 390 dark touch + 1280 dark): landing title / h1 / lang, 42 terms
+  in 5 groups, typing (focus kept, diacritics), nothing found + clear, Esc, chips by keyboard, material notes, the links per term, copy
+  link (clipboard read back), term link → scrolled, marked, focused, `q` + `g` link, malformed link, EN ↔ SL on the landing page, footer /
+  Skills / G key / Find anything, the service-sheet links by keyboard → term → Back, the buttons' and prev / next real addresses + in-app
+  click, order form 4 steps, nothing leaving a card, no horizontal scroll, no JS errors; full sweep (now with `#glossary`,
+  `#glossary?t=step`, `/glossary/`).
+- Not in this version (next steps): an editor for the terms in admin › Settings; term links inside project texts and news articles;
+  a printable A4 glossary; a "term of this sheet" row on project sheets.
+*To remove:* see the comment above `var GL` in `app.js` (it lists every touched place).
+
+**Ideas for next time** (added to the list below)
+- Admin: Glossary editor in Settings (add / hide / reword a term, EN + SL) — today the terms live in `content.js`.
+- Public: glossary links inside project sheet details and news articles (first mention only), and a "Terms on this sheet" row.
+- Public: Glossary — printable A4 list with QR; a hover / focus preview of the definition on linked terms.
+- Public: real addresses for Find anything results and the register rows (the last in-app-only links to pages).
+
 ## 2026-11-27 (Nace, live: "cenika ni več, odstrani objavljene postavke povsod")
 
 **No published rates anywhere on the site** — Nace's decision, the follow-up to "price list off" of 2026-11-26. **Do not bring any of
@@ -3028,6 +3092,13 @@ Built: 2026-10-04 fit check (X2D build volume) on #services; 2026-10-04 search a
 - Public: Service sheet — print / PDF layout with QR; tools pre-set to the service; per-service FAQ.
 - Public: real addresses for the remaining in-app links (buttons, prev / next, register rows, Find anything).
 - Admin: Overview rows for the service pages; per-service FAQ field in Settings.
+- (Built 2026-11-27: Glossary NK-G `#glossary` + real pages `/glossary/` (+ `/sl/`) — 42 terms in plain language (files, printing,
+  materials, design, electronics), search + group chips, "On this site" links, link per term, DefinedTermSet data, terms linked from the
+  service sheets and Find anything; "real addresses, part 2" package as the improvement — buttons, prev / next and the remaining sheet /
+  post links carry real page addresses.)
+- Admin: Glossary editor in Settings; Public: glossary links in project texts and news, "Terms on this sheet" row.
+- Public: Glossary — printable A4 list with QR; definition preview on hover / focus.
+- Public: real addresses for Find anything results and the register rows.
 
 ## 2026-10-03 (second run)
 

@@ -1781,3 +1781,35 @@ span.rl-pin { cursor: default; }
 @media (max-width: 860px) { .sv-grid { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 640px) { .sv-cols { grid-template-columns: minmax(0, 1fr); padding: var(--space-4); } .sv-side { padding: var(--space-4); } .sv-nav { grid-template-columns: minmax(0, 1fr); } .sv-o + .sv-o { border-left: 0; border-top: 1px solid var(--line); } }
 @media print { .sv .back, .sv-side .cta-row, .sv-share, .sv-links, .sv-more, .sv-tools, .sv-other { display: none !important; } .sv-grid { display: block; } .sv-side { margin-top: var(--space-6); } }
+
+/* ---------- Glossary NK-G (#glossary, /glossary/; 2026-11-27) — glView() in app.js. Remove with the feature. ---------- */
+.gl { display: grid; gap: var(--space-8); }
+.gl-find { max-width: 760px; }
+.gl-filters { margin-top: var(--space-3); }
+.gl-grp { display: grid; gap: var(--space-4); min-width: 0; }
+.gl-grp[hidden], .gl-term[hidden], .gl-none[hidden] { display: none; }
+.gl-grp > .sub { margin: 0; }
+.gl-list { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.gl-term { display: grid; gap: var(--space-2); align-content: start; padding: var(--space-6); border: 1px solid var(--line-strong); background: var(--paper-raised); min-width: 0; scroll-margin-top: 96px; }
+.gl-term.is-on { border-color: var(--redline); box-shadow: inset 3px 0 0 var(--redline); }
+.gl-term:focus { outline: none; } .gl-term:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
+.gl-term dt { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-3); }
+.gl-t { font-size: 20px; line-height: 28px; font-weight: 500; overflow-wrap: anywhere; }
+.gl-aka { font: 12px/18px var(--font-mono); color: var(--ink-muted); }
+.gl-term dd { margin: 0; display: grid; gap: var(--space-3); }
+.gl-term dd p { margin: 0; }
+.gl-go { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-4); font: 13px/20px var(--font-mono); }
+.gl-go > .nk-label { flex-basis: 100%; }
+.gl-go a { color: var(--ink); text-underline-offset: 3px; padding-block: 2px; }
+.gl-go a:hover, .gl-in a:hover, .gl-ref:hover { color: var(--redline); }
+.gl-go a .nk-label { margin-right: 2px; }
+.gl-act { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-3); font-size: 13px; line-height: 20px; color: var(--ink-muted); }
+.gl-none { margin: 0; color: var(--ink-muted); }
+.gl-ask { display: grid; gap: var(--space-3); padding: var(--space-6); border: 1.5px solid var(--ink); background: var(--paper-raised); max-width: 760px; }
+.gl-ask > * { margin: 0; }
+.gl-in { margin: var(--space-4) 0 0; font: 13px/20px var(--font-mono); }
+.gl-in a { color: var(--ink); text-underline-offset: 3px; display: inline-block; padding-block: 2px; }
+.gl-ref { color: inherit; text-decoration: underline dotted; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+@media (max-width: 860px) { .gl-list { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .gl-term, .gl-ask { padding: var(--space-4); } }
+@media print { .gl-find, .gl-act, .gl-ask, .gl-foot, .gl-in { display: none !important; } .gl-term { break-inside: avoid; } .gl-ref { text-decoration: none; } }

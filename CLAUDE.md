@@ -15,7 +15,7 @@ repo stay in **English**.
 
 ```
 npm ci
-npx astro build        # must pass before anything is pushed (currently 82 pages)
+npx astro build        # must pass before anything is pushed (currently 84 pages)
 npx astro preview      # serves dist/ on http://localhost:4321 for Playwright checks
 ```
 
@@ -26,7 +26,7 @@ npx astro preview      # serves dist/ on http://localhost:4321 for Playwright ch
 - Data: `src/data/projects.json`, `src/data/news.json`, `src/data/settings.json` — edited by Nace in `/admin/`
   (`src/site/admin.js`, `admin.css`).
 - Real pages: `/`, `/sl/`, `/services/`, `/services/<id>/`, `/portfolio/`, `/portfolio/<slug>/`, `/news/`, `/news/<slug>/`,
-  `/skills/`, `/about/` (+ `/sl/…`), built from `src/pages/**`; link-preview cards from `src/og/card.ts`.
+  `/skills/`, `/about/`, `/glossary/` (+ `/sl/…`), built from `src/pages/**`; link-preview cards from `src/og/card.ts`.
 - 3D viewer `src/site/viewer.js`, protected preview format `src/site/nkm.js`, order relay Worker `cloudflare-worker/`.
 
 ## Rules that never change

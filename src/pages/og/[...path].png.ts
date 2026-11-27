@@ -20,7 +20,7 @@ export function getStaticPaths() {
   for (const lang of ['en', 'sl'] as Lang[]) {
     const pre = lang === 'sl' ? 'sl/' : '';
     out.push({ params: { path: pre + 'news' }, props: { kind: 'news', lang } });
-    ([['services', 'services'], ['portfolio', 'work'], ['skills', 'skills'], ['about', 'about']] as const).forEach(([dir, view]) => out.push({ params: { path: pre + dir }, props: { kind: 'section', lang, view } })); // section pages (2026-11-25)
+    ([['services', 'services'], ['portfolio', 'work'], ['skills', 'skills'], ['about', 'about'], ['glossary', 'glossary']] as const).forEach(([dir, view]) => out.push({ params: { path: pre + dir }, props: { kind: 'section', lang, view } })); // section pages (2026-11-25)
     SERVICES.filter((s) => /^[a-z0-9-]+$/.test(String(s.id))).forEach((s) => out.push({ params: { path: pre + 'services/' + s.id }, props: { kind: 'service', lang, item: s } }));
     shown.forEach((p) => out.push({ params: { path: pre + 'portfolio/' + p.slug }, props: { kind: 'project', lang, item: p } }));
     posts.forEach((n) => out.push({ params: { path: pre + 'news/' + n.slug }, props: { kind: 'post', lang, item: n } }));

@@ -10,7 +10,7 @@ const data = (f) => JSON.parse(readFileSync(new URL('./src/data/' + f, import.me
 // Service sheets (2026-11-26): /services/<id>/ (+ /sl/) — the ids come from SERVICES in src/site/content.js.
 const serviceIds = new Function(readFileSync(new URL('./src/site/content.js', import.meta.url), 'utf8') + '\nreturn SERVICES;')().map((s) => s.id).filter((id) => /^[a-z0-9-]+$/.test(id));
 // Section pages (2026-11-25): /services/, /portfolio/, /skills/, /about/ (+ /sl/) are real pages too (see SECTIONS in Site.astro).
-const landingPaths = new Set(['/news/', '/sl/news/', '/services/', '/sl/services/', '/portfolio/', '/sl/portfolio/', '/skills/', '/sl/skills/', '/about/', '/sl/about/'].concat(
+const landingPaths = new Set(['/news/', '/sl/news/', '/services/', '/sl/services/', '/portfolio/', '/sl/portfolio/', '/skills/', '/sl/skills/', '/about/', '/sl/about/', '/glossary/', '/sl/glossary/'].concat(
   ...serviceIds.map((id) => ['/services/' + id + '/', '/sl/services/' + id + '/']), // Service sheets (2026-11-26)
   ...data('projects.json').filter((p) => !p.hidden).map((p) => ['/portfolio/' + p.slug + '/', '/sl/portfolio/' + p.slug + '/']),
   ...data('news.json').filter((n) => !n.hidden && !n.draft && !(n.date && n.date > new Date().toISOString().slice(0, 10))).map((n) => ['/news/' + n.slug + '/', '/sl/news/' + n.slug + '/'])));

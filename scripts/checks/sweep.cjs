@@ -13,8 +13,8 @@ const B = process.env.BASE || 'http://localhost:4321';
 const projects = require(REPO + '/src/data/projects.json').filter(p=>!p.hidden);
 const news = require(REPO + '/src/data/news.json').filter(n=>!n.hidden);
 const withModel = projects.find(p=>p.model) || projects[0];
-const paths = ['', '#services', '#work', '#p-'+projects[0].slug, '#p-'+withModel.slug, '#news', '#n-'+news[0].slug, '#skills', '#about', '#order', '#s-3d-printing', '#s-full-builds', '#profile', '#mine', '#studio', '#gift', '#contact'];
-const extra = ['/services/3d-design/','/services/embedded-iot/','/services/','/portfolio/','/skills/','/about/','/news/','/portfolio/'+projects[0].slug+'/','/news/'+news[0].slug+'/','/admin/','/nope-404'];
+const paths = ['', '#services', '#work', '#p-'+projects[0].slug, '#p-'+withModel.slug, '#news', '#n-'+news[0].slug, '#skills', '#about', '#order', '#s-3d-printing', '#s-full-builds', '#profile', '#mine', '#studio', '#gift', '#contact', '#glossary', '#glossary?t=step'];
+const extra = ['/services/3d-design/','/services/embedded-iot/','/services/','/portfolio/','/skills/','/about/','/glossary/','/news/','/portfolio/'+projects[0].slug+'/','/news/'+news[0].slug+'/','/admin/','/nope-404'];
 (async () => {
   const br = await chromium.launch();
   const problems = [];

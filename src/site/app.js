@@ -12,7 +12,7 @@
   // Landing pages (2026-11-01): /portfolio/<slug>/ and /news/<slug>/ (+ /sl/…) are the same site with <meta name="nk-start">
   // naming the sheet / post to open when there is no hash. The first in-app navigation moves the address back to / or /sl/
   // (see the hashchange listener at the end), so every other view keeps its usual address.
-  function landingView() { var m = /^\/(?:sl\/)?(portfolio|news)\/([a-z0-9-]+)\/?$/.exec(location.pathname); if (m) return (m[1] === 'news' ? 'n-' : 'p-') + m[2]; var ss = /^\/(?:sl\/)?services\/([a-z0-9-]+)\/?$/.exec(location.pathname); if (ss) return 's-' + ss[1]; /* Service sheets (2026-11-26) */ var sv = /^\/(?:sl\/)?(news|services|portfolio|skills|about)\/?$/.exec(location.pathname); return sv ? (sv[1] === 'portfolio' ? 'work' : sv[1]) : ''; } // /news/ index (blog package, 2026-11-02) + section pages /services/, /portfolio/, /skills/, /about/ (2026-11-25)
+  function landingView() { var m = /^\/(?:sl\/)?(portfolio|news)\/([a-z0-9-]+)\/?$/.exec(location.pathname); if (m) return (m[1] === 'news' ? 'n-' : 'p-') + m[2]; var ss = /^\/(?:sl\/)?services\/([a-z0-9-]+)\/?$/.exec(location.pathname); if (ss) return 's-' + ss[1]; /* Service sheets (2026-11-26) */ var sv = /^\/(?:sl\/)?(news|services|portfolio|skills|about|glossary)\/?$/.exec(location.pathname); return sv ? (sv[1] === 'portfolio' ? 'work' : sv[1]) : ''; } // /news/ index (blog package, 2026-11-02) + section pages /services/, /portfolio/, /skills/, /about/ (2026-11-25)
   var START_VIEW = (function () { var m = document.querySelector('meta[name="nk-start"]'); return m ? String(m.getAttribute('content') || '') : landingView(); })();
   var LANDING = !!START_VIEW;
   var LAND_TITLE = LANDING ? document.title : '', LAND_LANG = document.documentElement.lang === 'sl' ? 'sl' : 'en'; // Section pages (2026-11-25): a landing page keeps the title it was built with while it shows the view it opened with
@@ -23,7 +23,7 @@
   // language's address (right-click → copy, middle-click → new tab). Only the site's own paths are touched. To remove: put
   // landingLang() back (the LANDING-only replaceState: "/sl" + the path without it) and the two <button data-lang> elements in frame().
   function langPath() {
-    var p = location.pathname; if (!/^\/(?:sl\/?)?(?:(?:portfolio|news|services)\/[a-z0-9-]+\/?|(?:news|services|portfolio|skills|about)\/?)?$/.test(p)) return;
+    var p = location.pathname; if (!/^\/(?:sl\/?)?(?:(?:portfolio|news|services)\/[a-z0-9-]+\/?|(?:news|services|portfolio|skills|about|glossary)\/?)?$/.test(p)) return;
     var isSl = /^\/sl(?:\/|$)/.test(p), want = lang === 'sl'; if (isSl === want) return;
     var np = langHref(lang, p);
     try { history.replaceState(history.state, '', np + location.search + location.hash); state.navHref = location.href; } catch (e) {}
@@ -42,7 +42,7 @@
   // News comes from src/data/news.json (also edited in the admin): pinned first, then newest.
   var TODAY = new Date().toISOString().slice(0, 10);
   var NEWS = (window.NK_NEWS || []).filter(function (n) { return !n.hidden && !(n.date && n.date > TODAY); }) // a post dated in the future is scheduled (blog package, 2026-11-02).sort(function (x, y) { return (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0) || String(y.date).localeCompare(String(x.date)); });
-  var PAGES = ['home', 'services', 'work', 'news', 'skills', 'about', 'studio', 'order', 'gift', 'mine'];
+  var PAGES = ['home', 'services', 'work', 'news', 'skills', 'about', 'studio', 'order', 'gift', 'mine', 'glossary'];
   var viewer = null;
 
   // NK monogram — the same N/K geometry as the original logo, redrawn as a drawing-sheet mark.
@@ -75,6 +75,7 @@
     if (/^n-/.test(h) && newsBySlug(h.slice(2))) return 'post';
     if (/^s-/.test(h) && svById(h.slice(2))) return 'service'; // Service sheets (2026-11-26)
     if (h === 'profile') { if (location.hash !== state.pfHash) { state.pfHash = location.hash; pfRead(qs); } return 'profile'; } // Studio profile NK-A (2026-11-25)
+    if (h === 'glossary') { if (!GL.length) return 'home'; if (location.hash !== state.glHash) { state.glHash = location.hash; glRead(qs); } return 'glossary'; } // Glossary NK-G (2026-11-27)
     if (h === 'gift' && !giftOn()) return 'home';
     return PAGES.indexOf(h) >= 0 ? h : 'home'; }
   // A hash with a language prefix (#en-…, #sl-… from shared links and feeds) would switch the language back on render,
@@ -89,7 +90,7 @@
   // A plain click still moves inside the app: the click handler reads data-ra (the in-app hash) and sets it, exactly as the
   // old href="#…" did. To remove: raPath() / ra(), the data-ra block at the top of the click handler, and turn every
   // ' + ra('#x') + ' back into href="#x" (the two data-ra selectors in findApply() and render() fall back to href by themselves).
-  var RA_SEC = { services: '/services/', work: '/portfolio/', news: '/news/', skills: '/skills/', about: '/about/' };
+  var RA_SEC = { services: '/services/', work: '/portfolio/', news: '/news/', skills: '/skills/', about: '/about/', glossary: '/glossary/' };
   function raPath(h) { // '#services' → '/services/' ('' = the view has no page of its own)
     var pre = lang === 'sl' ? '/sl' : '', m, n; h = String(h).replace(/^#/, '');
     if (h === 'home') return pre + '/';
@@ -102,7 +103,7 @@
   function ra(h) { var p = raPath(h); return p ? 'href="' + p + '" data-ra="' + esc(h) + '"' : 'href="' + esc(h) + '"'; }
 
   function btn(label, href, variant, size, arrow) {
-    return '<a class="nk-btn' + (variant ? ' nk-btn--' + variant : '') + (size ? ' nk-btn--' + size : '') + '" href="' + href + '">' + esc(label) + (arrow ? '<span class="nk-btn__arrow" aria-hidden="true">→</span>' : '') + '</a>';
+    return '<a class="nk-btn' + (variant ? ' nk-btn--' + variant : '') + (size ? ' nk-btn--' + size : '') + '" ' + (String(href).charAt(0) === '#' ? ra(href) : 'href="' + href + '"') + '>' + esc(label) + (arrow ? '<span class="nk-btn__arrow" aria-hidden="true">→</span>' : '') + '</a>';
   }
   function specs(items) { return '<dl class="nk-specs">' + items.map(function (i) { return '<div><dt>' + esc(L(i[0])) + '</dt><dd>' + esc(L(i[1])) + '</dd></div>'; }).join('') + '</dl>'; }
   // eager = the photo is the first thing on screen (home hero sheet, project page): load it at once with high priority
@@ -172,7 +173,7 @@
         (pm ? '<a class="hm-promo" href="#order"><span class="nk-tag nk-tag--rev">' + esc(x.promo.label) + (pm.until ? ' · ' + esc(x.promo.until.replace('{d}', pcDate(pm.until))) : '') + '</span><b>' + esc(L(pm.title)) + '</b><span aria-hidden="true">→</span></a>' : '') + '</div>' +
         hmQuick() + '</section>' +
         '<section class="block hm-how">' + head(h.howLabel, h.howTitle) + '<ol class="hm-steps">' + h.how.map(function (st, i) { return '<li><span class="hm-n">' + String(i + 1).padStart(2, '0') + '</span><h3>' + esc(st[0]) + '</h3><p>' + esc(st[1]) + '</p></li>'; }).join('') + '</ol>' +
-        '<div class="hm-act">' + btn(ctaText(), '#order', 'primary', null, true) + '<a class="hm-link" href="#about">' + esc(h.howMore) + ' →</a></div></section>' +
+        '<div class="hm-act">' + btn(ctaText(), '#order', 'primary', null, true) + '<a class="hm-link" ' + ra('#about') + '>' + esc(h.howMore) + ' →</a></div></section>' +
         '<section class="block">' + head(x.workLabel, x.workTitle) + '<div class="grid-4 sheets">' + featured().map(sheet).join('') + '</div><div class="more">' + btn(x.seeWork + ' · ' + PROJECTS.length, '#work', null, null, true) + '</div></section>' +
         '<section class="block">' + head(x.servicesLabel, x.servicesTitle, x.servicesLead) + promoBand('promo--home') + '<div class="grid-4">' + SERVICES.map(function (s) { return service(s, false); }).join('') + '</div>' + tlHome() + '</section>' +
         (NEWS.length ? '<section class="block">' + head(x.newsLabel, x.newsTitle, x.newsLead) + '<div class="news-list">' + NEWS.slice(0, 3).map(newsCard).join('') + '</div>' + '<div class="more">' + btn(x.allNews + ' · ' + NEWS.length, '#news', null, null, true) + '</div>' + '</section>' : '') +
@@ -209,7 +210,7 @@
     skills: function () {
       var x = t();
       return '<section class="block first">' + head(x.nav.skills, x.skillsPageTitle, x.skillsPageLead, true) + '<div class="grid-2 skills">' +
-        SKILLS.map(function (g, i) { return '<div class="skill-group"><h2 class="sub">' + esc(g[lang]) + '</h2>' + skSpecs(g.items) + skFoot(i) + '</div>'; }).join('') + '</div>' + skLegend() + '</section>' +
+        SKILLS.map(function (g, i) { return '<div class="skill-group"><h2 class="sub">' + esc(g[lang]) + '</h2>' + skSpecs(g.items) + skFoot(i) + '</div>'; }).join('') + '</div>' + skLegend() + glLink('sk') + '</section>' +
         '<section class="block"><p class="nk-label">' + esc(x.certs) + '</p><div class="certs"><div class="cert"><span class="nk-tag nk-tag--ok">CSWA</span><span>Certified SolidWorks Associate</span></div><div class="cert"><span class="nk-tag nk-tag--ok">CSWA-AM</span><span>Certified SolidWorks Associate — Additive Manufacturing</span></div></div></section>' + ctaBand();
     },
     about: function () {
@@ -218,6 +219,7 @@
         specs(pfFacts()) + pfLink() + ctCard() + '</div></div></section>' +
         '<section class="block">' + head(x.processLabel, x.processTitle) + process(-1) + '</section>' + ctaBand();
     },
+    glossary: glView, // Glossary NK-G (2026-11-27)
     order: orderView,
     gift: giftView,
     mine: mnView, // My corner (2026-11-02)
@@ -295,8 +297,8 @@
     var x = t(), i = NEWS.indexOf(n), prev = NEWS[i - 1], next = NEWS[i + 1];
     if (!prev && !next) return '';
     return '<nav class="sheet-nav" aria-label="' + esc(x.rd.nav) + '">' +
-      (prev ? '<a class="next-project prev-project" href="#n-' + esc(prev.slug) + '" rel="prev"><span class="nk-label">' + esc(x.rd.prev) + '</span><span class="sub">← ' + esc(P(prev, 'title')) + '</span></a>' : '<span></span>') +
-      (next ? '<a class="next-project" href="#n-' + esc(next.slug) + '" rel="next"><span class="nk-label">' + esc(x.rd.next) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '<span></span>') + '</nav>';
+      (prev ? '<a class="next-project prev-project" ' + ra('#n-' + prev.slug) + ' rel="prev"><span class="nk-label">' + esc(x.rd.prev) + '</span><span class="sub">← ' + esc(P(prev, 'title')) + '</span></a>' : '<span></span>') +
+      (next ? '<a class="next-project" ' + ra('#n-' + next.slug) + ' rel="next"><span class="nk-label">' + esc(x.rd.next) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a>' : '<span></span>') + '</nav>';
   }
   function postView() {
     var x = t(), n = newsBySlug(currentSlug()), photos = n.photos || [];
@@ -333,8 +335,8 @@
       (photos.length ? '<div class="gallery"><p class="nk-label">' + esc(x.photos) + ' · ' + photos.length + '</p><div class="photos">' + photos.map(function (ph, i) { return '<button type="button" data-lb="' + i + '" aria-label="' + esc(x.openPhoto + ' ' + (i + 1) + ' / ' + photos.length) + '"><' + 'img src="' + esc(asset(ph)) + '" alt="' + esc(P(p, 'title') + ' · ' + (i + 1)) + '" loading="lazy" decoding="async" draggable="false"></button>'; }).join('') + '</div></div>' : '') +
       relRow(p, next) +
       (next && next !== p ? '<nav class="sheet-nav" aria-label="' + esc(x.sheetNav) + '">' +
-        (prev !== next ? '<a class="next-project prev-project" href="#p-' + esc(prev.slug) + '" rel="prev"><span class="nk-label">' + esc(x.prevProject) + '</span><span class="sub">← ' + esc(P(prev, 'title')) + '</span></a>' : '<span></span>') +
-        '<a class="next-project" href="#p-' + esc(next.slug) + '" rel="next"><span class="nk-label">' + esc(x.nextProject) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a></nav>' : '') +
+        (prev !== next ? '<a class="next-project prev-project" ' + ra('#p-' + prev.slug) + ' rel="prev"><span class="nk-label">' + esc(x.prevProject) + '</span><span class="sub">← ' + esc(P(prev, 'title')) + '</span></a>' : '<span></span>') +
+        '<a class="next-project" ' + ra('#p-' + next.slug) + ' rel="next"><span class="nk-label">' + esc(x.nextProject) + '</span><span class="sub">' + esc(P(next, 'title')) + ' →</span></a></nav>' : '') +
       '</section>' + ctaBand();
   }
   // "Ask about this project": e-mail with the sheet number and title in the subject (only when the studio address is set).
@@ -407,7 +409,7 @@
       '<div class="pf-who"><div><h2 class="pf-name">' + esc(pfName()) + '</h2><p class="pf-lead">' + esc(x.heroLead) + '</p><p class="pf-body">' + esc(x.aboutBody) + '</p></div>' + specs(pfFacts()) + '</div>' +
       '<section class="pf-sec"><p class="nk-label">' + esc(c.svc) + (sv.length ? ' · ' + String(sv.length).padStart(2, '0') : '') + '</p>' + svc + '</section>' +
       '<section class="pf-sec"><p class="nk-label">' + esc(c.equip) + '</p><dl class="pf-skills">' + SKILLS.map(function (g) { return '<div><dt>' + esc(g[lang]) + '</dt><dd>' + pfSkill(g).map(esc).join('<span aria-hidden="true"> · </span><span class="vh">; </span>') + '</dd></div>'; }).join('') + '</dl></section>' +
-      (work.length ? '<section class="pf-sec"><p class="nk-label">' + esc(c.work) + '</p><ul class="pf-work">' + work.map(function (p) { return '<li><span class="nk-label">' + sheetNo(p) + '</span><span><a href="#p-' + esc(p.slug) + '">' + esc(P(p, 'title')) + '</a> — ' + esc(cat(p)) + ', ' + esc(p.year) + '. ' + esc(P(p, 'description')) + '</span></li>'; }).join('') + '</ul></section>' : '') +
+      (work.length ? '<section class="pf-sec"><p class="nk-label">' + esc(c.work) + '</p><ul class="pf-work">' + work.map(function (p) { return '<li><span class="nk-label">' + sheetNo(p) + '</span><span><a ' + ra('#p-' + p.slug) + '>' + esc(P(p, 'title')) + '</a> — ' + esc(cat(p)) + ', ' + esc(p.year) + '. ' + esc(P(p, 'description')) + '</span></li>'; }).join('') + '</ul></section>' : '') +
       '<footer class="pf-sec pf-contact"><div><p class="nk-label">' + esc(c.contact) + '</p><dl class="nk-specs">' + contact.join('') + '</dl></div>' + qrBox(pfUrl(), c.scan, { px: 96, cls: 'pf-qr', print: true }) + '</footer>' +
       '<p class="pf-foot">' + esc(c.foot.replace('{d}', fmtDate(pfToday()))) + '</p></article>';
   }
@@ -429,7 +431,7 @@
   function pfView() {
     var x = t(), c = x.pf, f = pfState();
     var ck = function (key, label, on) { return '<label class="pl-opt"><input type="checkbox" data-pf="' + key + '"' + (on ? ' checked' : '') + '><span>' + esc(label) + '</span></label>'; };
-    return '<section class="block first pf"><a class="back" href="#about">← ' + esc(x.nav.about) + '</a>' + head(c.label, c.title, c.lead, true) +
+    return '<section class="block first pf"><a class="back" ' + ra('#about') + '>← ' + esc(x.nav.about) + '</a>' + head(c.label, c.title, c.lead, true) +
       '<div class="pf-grid"><div class="pf-ctl"><fieldset class="pl-q"><legend class="nk-label">' + esc(c.show + ' · ' + c.svc) + '</legend><div class="pl-opts pf-opts">' + SERVICES.map(function (s) { return ck('s:' + s.key, L(s.title), f.s.indexOf(s.key) >= 0); }).join('') + '</div></fieldset>' +
       '<fieldset class="pl-q"><legend class="nk-label">' + esc(c.show + ' · ' + c.more) + '</legend><div class="pl-opts pf-opts">' + ck('w', c.work, f.w) + '</div></fieldset>' +
       '<div class="cta-row pf-act"><button type="button" class="nk-btn nk-btn--primary" data-pf-act="print">' + esc(c.print) + '</button><button type="button" class="nk-btn" data-pf-act="copy">' + esc(c.copy) + '</button><button type="button" class="nk-btn" data-pf-act="link">' + esc(c.copyLink) + '</button><a class="nk-btn" id="pf-mail" href="' + esc(pfMail()) + '">' + esc(c.mail) + '</a></div>' +
@@ -731,7 +733,7 @@
     if (!a.length) return '';
     return '<section class="sl" aria-labelledby="sl-h"><div class="sl-head"><p class="nk-label">' + esc(x.label) + ' · ' + a.length + '</p><h2 class="sub" id="sl-h" tabindex="-1">' + esc(x.title) + '</h2><p class="sl-lead">' + esc(x.lead) + '</p></div>' +
       '<ul class="sl-list" id="sl-list">' + a.map(function (p) {
-        return '<li><a href="#p-' + esc(p.slug) + '"><span class="nk-label">' + sheetNo(p) + '</span><span class="sl-t">' + esc(P(p, 'title')) + '</span><span class="nk-label sl-c">' + esc(cat(p)) + '</span></a>' +
+        return '<li><a ' + ra('#p-' + p.slug) + '><span class="nk-label">' + sheetNo(p) + '</span><span class="sl-t">' + esc(P(p, 'title')) + '</span><span class="nk-label sl-c">' + esc(cat(p)) + '</span></a>' +
           '<button type="button" class="chip sl-x" data-sl-del="' + esc(p.slug) + '" aria-label="' + esc(x.del.replace('{t}', P(p, 'title'))) + '">✕</button></li>';
       }).join('') + '</ul>' +
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--sm" data-sl-go>' + esc(x.start) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
@@ -831,7 +833,7 @@
   function cmpTable(list) {
     var x = t(), c = x.cmp;
     var headCells = list.map(function (p, i) {
-      return '<th scope="col" role="columnheader" class="cmp-col"><a class="cmp-sheet" href="#p-' + esc(p.slug) + '"><span class="nk-sheet__art cmp-art" aria-hidden="true">' + art(p) + '</span>' +
+      return '<th scope="col" role="columnheader" class="cmp-col"><a class="cmp-sheet" ' + ra('#p-' + p.slug) + '><span class="nk-sheet__art cmp-art" aria-hidden="true">' + art(p) + '</span>' +
         '<span class="nk-label">' + 'ABC'[i] + ' · ' + sheetNo(p) + '</span><span class="cmp-t">' + esc(P(p, 'title')) + '</span></a></th>';
     }).join('');
     var rows = CMP_ROWS.map(function (k) {
@@ -995,7 +997,7 @@
     var out = document.getElementById('find-out'), nw = document.getElementById('find-news'), none = document.getElementById('find-none'), clr = app.querySelector('[data-find-clear]');
     out.textContent = q ? f.count.replace('{p}', shown).replace('{n}', news.length) : '';
     nw.hidden = !news.length;
-    nw.innerHTML = news.length ? '<p class="nk-label">' + esc(f.news) + ' · ' + news.length + '</p><ul>' + news.map(function (n) { return '<li><a href="#n-' + esc(n.slug) + '"><span class="nk-label">' + esc(fmtDate(n.date)) + '</span><span>' + esc(P(n, 'title')) + ' →</span></a></li>'; }).join('') + '</ul>' : '';
+    nw.innerHTML = news.length ? '<p class="nk-label">' + esc(f.news) + ' · ' + news.length + '</p><ul>' + news.map(function (n) { return '<li><a ' + ra('#n-' + n.slug) + '><span class="nk-label">' + esc(fmtDate(n.date)) + '</span><span>' + esc(P(n, 'title')) + ' →</span></a></li>'; }).join('') + '</ul>' : '';
     none.hidden = !(q && !shown && !news.length);
     none.innerHTML = none.hidden ? '' : '<p class="sub">' + esc(f.none.replace('{q}', q)) + '</p><p class="lead">' + esc(f.noneBody) + '</p><div class="cta-row">' + btn(t().cta, '#order', 'primary', null, true) + fxElse(q) + '</div>';
     if (clr) clr.hidden = !state.q;
@@ -1023,7 +1025,7 @@
     return '<section class="sl sx" aria-labelledby="sx-h"><div class="sl-head"><p class="nk-label">' + esc(x.label) + ' · ' + a.length + '</p><h2 class="sub" id="sx-h" tabindex="-1">' + esc(x.title) + '</h2><p class="sl-lead">' + esc(x.lead) + '</p></div>' +
       '<ol class="sl-list sx-list">' + a.map(function (p) {
         var on = mine.indexOf(p.slug) >= 0;
-        return '<li><a href="#p-' + esc(p.slug) + '"><span class="nk-label">' + sheetNo(p) + '</span><span class="sl-t">' + esc(P(p, 'title')) + (on ? ' <span class="sl-mark" aria-hidden="true">★</span><span class="vh"> — ' + esc(t().sl.on) + '</span>' : '') + '<span class="sx-d">' + esc(P(p, 'description')) + '</span></span><span class="nk-label sl-c">' + esc(cat(p)) + '</span></a></li>';
+        return '<li><a ' + ra('#p-' + p.slug) + '><span class="nk-label">' + sheetNo(p) + '</span><span class="sl-t">' + esc(P(p, 'title')) + (on ? ' <span class="sl-mark" aria-hidden="true">★</span><span class="vh"> — ' + esc(t().sl.on) + '</span>' : '') + '<span class="sx-d">' + esc(P(p, 'description')) + '</span></span><span class="nk-label sl-c">' + esc(cat(p)) + '</span></a></li>';
       }).join('') + '</ol>' +
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary nk-btn--sm" data-pz="sx" aria-haspopup="dialog"><span aria-hidden="true">▶ </span>' + esc(t().pz.btn) + '</button>' + cmpSlBtn(a) +
       (fresh ? '<button type="button" class="nk-btn nk-btn--sm" data-sx-keep><span class="sl-star" aria-hidden="true">☆</span>' + esc(x.keep) + '</button>' : '') +
@@ -1137,7 +1139,7 @@
       var on = sl.indexOf(p.slug) >= 0, ti = P(p, 'title');
       var cells = cols.map(function (k) {
         var v = k === 'no' ? '<span class="nk-label">' + sheetNo(p) + '</span>' :
-          k === 'name' ? '<a class="rg-t" href="#p-' + esc(p.slug) + '">' + esc(ti) + '</a><span class="rg-d">' + esc(P(p, 'description')) + '</span>' :
+          k === 'name' ? '<a class="rg-t" ' + ra('#p-' + p.slug) + '>' + esc(ti) + '</a><span class="rg-d">' + esc(P(p, 'description')) + '</span>' :
           k === 'cat' ? esc(cat(p)) : k === 'year' ? esc(p.year) :
           k === 'm3d' ? (p.model ? esc(x.yes) : none) : (p.photos && p.photos.length ? String(p.photos.length) : none);
         var tag = k === 'name' ? 'th' : 'td';
@@ -1669,7 +1671,7 @@
     return '<ol class="pl-rows">' + rows + '</ol>' + specs(spec) +
       (due ? '<p class="pl-due"><span class="nk-label">' + esc(f.due) + '</span> ' + due + '</p>' : '') +
       '<p class="pl-prep"><span class="nk-label">' + esc(f.prep) + '</span> ' + esc(plN(f.prepN, needs)) + ' · <button type="button" class="pl-link" data-pl-prep>' + esc(f.prepGo) + ' ↓</button></p>' +
-      (refs.length ? '<div class="pl-refs"><p class="nk-label">' + esc(f.refs) + '</p><ul>' + refs.map(function (p) { return '<li><a href="#p-' + esc(p.slug) + '"><span class="nk-label">' + sheetNo(p) + '</span> ' + esc(P(p, 'title')) + '</a></li>'; }).join('') + '</ul></div>' : '') +
+      (refs.length ? '<div class="pl-refs"><p class="nk-label">' + esc(f.refs) + '</p><ul>' + refs.map(function (p) { return '<li><a ' + ra('#p-' + p.slug) + '><span class="nk-label">' + sheetNo(p) + '</span> ' + esc(P(p, 'title')) + '</a></li>'; }).join('') + '</ul></div>' : '') +
       '<div class="cta-row"><button type="button" class="nk-btn nk-btn--primary" data-pl-go>' + esc(f.go) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></button>' +
       '<button type="button" class="nk-btn" data-pl-copy>' + esc(f.copy) + '</button></div><p class="share-msg" id="pl-msg" role="status" aria-live="polite"></p>';
   }
@@ -4550,7 +4552,7 @@
     var sec = function (title, body, n) { return '<section class="mn-sec"><h2 class="sub">' + esc(title) + (n ? ' <span class="nk-label">' + n + '</span>' : '') + '</h2>' + body + '</section>'; };
     var when = function (e) { return '<span class="mn-when">' + esc(x.on) + ' ' + esc(mnWhen(e.at)) + '</span>'; };
     var rm = function (kind, e) { return '<button type="button" class="tb-copy" data-mn-rm="' + kind + '" data-mn-at="' + e.at + '">' + esc(x.remove) + '</button>'; };
-    var slB = sl.length ? '<ul class="mn-list">' + sl.map(function (p) { return '<li><a href="#p-' + esc(p.slug) + '"><b>' + esc(P(p, 'title')) + '</b> <span class="nk-label">' + esc(sheetNo(p)) + '</span></a><button type="button" class="tb-copy" data-sl-tog="' + esc(p.slug) + '" data-mn-sl>' + esc(x.slRemove) + '</button></li>'; }).join('') + '</ul>' +
+    var slB = sl.length ? '<ul class="mn-list">' + sl.map(function (p) { return '<li><a ' + ra('#p-' + p.slug) + '><b>' + esc(P(p, 'title')) + '</b> <span class="nk-label">' + esc(sheetNo(p)) + '</span></a><button type="button" class="tb-copy" data-sl-tog="' + esc(p.slug) + '" data-mn-sl>' + esc(x.slRemove) + '</button></li>'; }).join('') + '</ul>' +
       '<div class="cta-row">' + (sl.length > 1 ? btn(x.slCompare.replace('{n}', Math.min(3, sl.length)), cmpHash(slRead().slice(0, 3)), '', 'sm') : '') + '<button type="button" class="nk-btn nk-btn--sm" data-sl-go>' + esc(x.slStart) + '</button></div>' : '<p class="hint">' + esc(x.slEmpty) + '</p>';
     var drB = dr.at && state.send !== 'sent' ? '<p class="mn-row"><b>' + esc(x.drSaved.replace('{d}', drWhen()).replace('{s}', state.step + 1)) + '</b></p>' +
       '<dl class="nk-specs mn-specs"><div><dt>' + esc(x.drServices) + '</dt><dd>' + esc(state.order.services.map(function (k) { var sv = SERVICES.filter(function (v) { return v.key === k; })[0]; return sv ? L(sv.title) : k; }).join(', ') || '—') + '</dd></div>' +
@@ -4581,7 +4583,7 @@
     var tb = '<footer class="foot"><div class="nk-tb" style="--tb-cols:6">' +
       cell(x.tb.title, '<span class="tb-brand">' + logo() + '<span>Nace Kepa · Engineering Studio</span></span>', 'wide', true, true) + cell(x.tb.drawn, 'N. Kepa') + cell(x.tb.loc, 'Škofja Loka, SI') + cell(x.tb.sheet, String(idx).padStart(2, '0') + ' / ' + String(PAGES.length).padStart(2, '0')) +
       cell(x.tb.scale, '1:1') + cell(x.tb.rev, 'B') + cell(x.tb.date, d) + cell(x.tb.contact, (CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '" id="tb-mail">' + esc(CONTACT_EMAIL) + '</a> <button type="button" class="tb-copy" data-tb-copy>' + esc(x.tbCopy) + '</button><span class="tb-msg" id="tb-msg" role="status" aria-live="polite"></span> · ' : '') + '<a href="' + LINKEDIN + '" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span><span class="vh"> (' + esc(t().newTab) + ')</span></a>' + (qrOn() ? ' · <button type="button" class="tb-copy" data-qr-vcf>' + esc(t().eq.vcf) + '</button><span class="tb-msg qr-msg" role="status" aria-live="polite"></span>' : ''), 'wide', false, true) + cell(x.tb.order, '<a href="#order">' + esc(ctaText()) + ' →</a>' + (giftOn() ? ' · <a href="#gift">' + esc(t().gift.tbLink) + '</a>' : ''), 'wide', false, true) +
-      cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa' + kbdBtn() + vwFoot() + '<a class="mine-foot" href="#mine">' + esc(x.mn.link) + '</a>' + '<button type="button" class="to-top" data-top>' + esc(x.toTop) + ' <span aria-hidden="true">↑</span></button></p></footer>';
+      cell('', esc(x.footerNote), 'full', false, true) + '</div><p class="copy">© ' + new Date().getFullYear() + ' Nace Kepa' + kbdBtn() + vwFoot() + '<a class="mine-foot" href="#mine">' + esc(x.mn.link) + '</a>' + glLink('foot') + '<button type="button" class="to-top" data-top>' + esc(x.toTop) + ' <span aria-hidden="true">↑</span></button></p></footer>';
     return '<div class="frame"><a class="skip" href="#main" data-skip>' + esc(x.skip) + '</a>' + zones + nav + '<main id="main" tabindex="-1">' + inner + '</main>' + tb + '</div>';
   }
   function cell(k, v, span, title, raw) {
@@ -4614,6 +4616,7 @@
     if (p === 'order') drSave();
     if (p === 'services' && state.fc.res) { fcDraw(); fc3dMount(); } // File check views + 3D preview
     if (p === 'studio') stMount();
+    if (p === 'glossary') glMount(); // Glossary NK-G (2026-11-27)
     tlMark(p === 'services' ? state.tool : ''); // Print package (2026-11-02, evening run)
     if (p === 'services' && state.tool && location.hash !== state.tlAt) { state.tlAt = location.hash; tlGo(state.tool); } else if (p !== 'services') state.tlAt = '';
     if (p === 'services' && state.mpFocus) { state.mpFocus = false; var mb = document.getElementById('material'); if (mb) { tlSetFold('material', true); mb.scrollIntoView({ block: 'start' }); var mi = mb.querySelector('input'); if (mi) mi.focus({ preventScroll: true }); } }
@@ -4647,6 +4650,7 @@
       ev.preventDefault(); var rah = el.getAttribute('data-ra'); if (location.hash !== rah) location.hash = rah;
     }
     if (el.hasAttribute('data-sv-copy')) { svCopy(el); return; } // Service sheets (2026-11-26)
+    if (glClick(el)) return; // Glossary NK-G (2026-11-27)
     if (el.hasAttribute('data-fx')) { fxOpen(el.getAttribute('data-fx')); return; } // Find anything (2026-11-12)
     if (el.hasAttribute('data-hm-go')) { hmGo(el.getAttribute('data-hm-go')); return; } // Home for orders (2026-11-26)
     if (el.hasAttribute('data-pf-act')) { pfAct(el.getAttribute('data-pf-act')); return; } // Studio profile NK-A (2026-11-25)
@@ -4971,7 +4975,7 @@
   }
   function svView() {
     var x = t(), v = x.sv, s = svById(currentSlug()), mp = svMap(s), work = svWork(s), price = svPrice(s), pm = svPromo(s);
-    var li = function (a) { return '<ul class="sv-list">' + a.map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul>'; };
+    var li = function (a) { return '<ul class="sv-list">' + a.map(function (g) { return '<li><span>' + glAuto(g) + '</span></li>'; }).join('') + '</ul>'; }; // glAuto: Glossary NK-G (2026-11-27) — a term the glossary explains is a link to it
     var glance = [[x.sd.svc, s.code], [x.turnaround, s.time ? L(s.time) : x.onRequest]];
     var tools = (SV_TOOLS[s.key] || []).map(function (k) { return TL_TOOLS.filter(function (d) { return d[0] === k; })[0]; }).filter(Boolean);
     var grp = mp.grp >= 0 ? SKILLS[mp.grp] : null, url = siteUrl('services/' + s.id + '/');
@@ -5012,6 +5016,136 @@
     try { navigator.clipboard.writeText(url).then(function () { if (msg) msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
   }
 
+  // ---------- Glossary NK-G / "Slovar" (#glossary, real pages /glossary/ + /sl/glossary/; 2026-11-27) ----------
+  // The technical words a quote, a brief or this site uses (STEP, STL, FDM, PETG, tolerance, firmware …), each in a sentence
+  // or two of plain language — GLOSSARY in content.js. Per term: other names, the definition, for a material the note of
+  // the material picker, "On this site" (the tool, service sheet, Part studio or Skills page where the term matters, and the
+  // project sheets that mention it — counted like the Skills → proof links) and "Copy link to this term"
+  // (#glossary?t=<id> opens the page at that term). A search box and group chips filter the list in place; a link may carry
+  // ?q=… and ?g=<group>. Entry points: the footer, the Skills page, Find anything (every term), the G key, and the "What you
+  // get" / "What I need" lists on the service sheets, where a term the glossary explains is a link (glAuto()).
+  // Nothing stored, nothing sent; the terms are general technical vocabulary, not statements about the studio.
+  // Self-contained. To remove: this block (GL … glClick()), 'glossary' in PAGES / KBD_GO / RA_SEC / views and the two section
+  // regexes at the top, the glossary line in page(), the glMount() line in render(), the glClick line in the click handler,
+  // the gl-q line in the keydown handler, glLink() in frame() + views.skills, glAuto() in svView() (put esc(g) back), the GL
+  // line in fxIndex(), gl: + nav.glossary + fx.groups.glossary + GLOSSARY in content.js, the "Glossary" rules in page.css,
+  // `glossary` in SECTIONS / secTitle / secDesc / the snapshot / termsLd in Site.astro, the two src/pages/**/glossary/
+  // files, the 'glossary' entries in src/pages/og/[...path].png.ts, src/og/card.ts and astro.config.mjs.
+  var GL = (typeof GLOSSARY !== 'undefined' && Array.isArray(GLOSSARY) ? GLOSSARY : []).filter(function (g) { return g && /^[a-z0-9-]+$/.test(g.id) && g.t && g.d; });
+  var GL_GROUPS = ['files', 'print', 'mat', 'cad', 'elec'].filter(function (k) { return GL.some(function (g) { return g.g === k; }); });
+  state.gl = { q: '', g: 'all', t: '' };
+  function glById(id) { for (var i = 0; i < GL.length; i++) if (GL[i].id === id) return GL[i]; return null; }
+  function glRead(qs) { // #glossary?t=<term id>&q=<words>&g=<group>
+    var get = function (k) { var m = new RegExp('(?:^|&)' + k + '=([^&]*)').exec(qs || ''); if (!m) return ''; try { return decodeURIComponent(m[1].replace(/\+/g, ' ')); } catch (e) { return ''; } };
+    var tid = get('t'), g = get('g');
+    state.gl.t = glById(tid) ? tid : '';
+    state.gl.q = state.gl.t ? '' : get('q').slice(0, 60);
+    state.gl.g = !state.gl.t && GL_GROUPS.indexOf(g) >= 0 ? g : 'all';
+  }
+  function glHref(id) { return 'href="' + (lang === 'sl' ? '/sl' : '') + '/glossary/#glossary?t=' + id + '" data-ra="#glossary?t=' + id + '"'; } // real address + in-app hash, like ra()
+  function glLink(where) {
+    if (!GL.length) return '';
+    var g = t().gl;
+    if (where === 'foot') return '<a class="mine-foot gl-foot" ' + ra('#glossary') + '>' + esc(g.foot) + '</a>';
+    return '<p class="gl-in"><a ' + ra('#glossary') + '>' + esc(g.skLink) + ' →</a></p>';
+  }
+  function glKey(g) { return findFold([findBoth(g.t), (g.aka || []).join(' '), L(g.d), g.m ? t().mp.notes[g.m] || '' : ''].join(' ')); }
+  function glGo(g) { // where the term matters on this site
+    var x = t(), k = x.gl, a = [];
+    (g.go || []).forEach(function (to) {
+      var m;
+      if ((m = /^tool:([a-z]+)$/.exec(to))) { var d = TL_TOOLS.filter(function (v) { return v[0] === m[1]; })[0]; if (d) a.push('<a href="' + tlHash(m[1]) + '"><span class="nk-label">' + esc(k.tool) + '</span> ' + esc(x[d[1]].title) + ' →</a>'); }
+      else if ((m = /^s:([a-z0-9-]+)$/.exec(to))) { var s = svById(m[1]); if (s) a.push('<a ' + ra('#s-' + s.id) + '><span class="nk-label">' + esc(s.code) + '</span> ' + esc(L(s.title)) + ' →</a>'); }
+      else if (to === 'studio') a.push('<a href="#studio"><span class="nk-label">' + esc(k.tool) + '</span> ' + esc(k.studio) + ' →</a>');
+      else if (to === 'skills') a.push('<a ' + ra('#skills') + '>' + esc(k.skills) + ' →</a>');
+    });
+    var term = String(L(g.t)).replace(/\s*\(.*\)$/, ''), n = skCount(term);
+    if (n) a.push('<a href="#work?q=' + encodeURIComponent(term) + '">' + esc((n === 1 ? k.sheets1 : k.sheetsN).replace('{n}', n)) + ' →</a>');
+    return a.length ? '<p class="gl-go"><span class="nk-label">' + esc(k.here) + '</span>' + a.join('') + '</p>' : '';
+  }
+  function glTerm(g) {
+    var x = t(), k = x.gl, note = g.m && x.mp && x.mp.notes ? x.mp.notes[g.m] : '';
+    var aka = (g.aka || []).filter(function (n) { return n === n.toUpperCase() && findFold(L(g.t)).indexOf(findFold(n)) < 0; }).slice(0, 3); // shown: other abbreviations only (the rest of aka serves the search and glAuto)
+    return '<div class="gl-term" id="gl-' + g.id + '" tabindex="-1" data-gl-g="' + g.g + '" data-gl-k="' + esc(glKey(g)) + '"><dt><span class="gl-t">' + esc(L(g.t)) + '</span>' +
+      (aka.length ? '<span class="gl-aka">' + esc(k.also) + ': ' + esc(aka.join(', ')) + '</span>' : '') + '</dt>' +
+      '<dd><p>' + esc(L(g.d)) + (note ? ' ' + esc(note) : '') + '</p>' + glGo(g) +
+      '<p class="gl-act"><button type="button" class="tb-copy" data-gl-copy="' + g.id + '">' + esc(k.copy) + '<span class="vh"> — ' + esc(L(g.t)) + '</span></button><span class="tl-msg" role="status" aria-live="polite"></span></p></dd></div>';
+  }
+  function glView() {
+    var x = t(), k = x.gl, st = state.gl;
+    var chips = ['all'].concat(GL_GROUPS).map(function (c) {
+      var n = c === 'all' ? GL.length : GL.filter(function (g) { return g.g === c; }).length;
+      return '<button type="button" class="chip" data-gl-grp="' + c + '" aria-pressed="' + (st.g === c) + '">' + esc(c === 'all' ? k.all : k.groups[c]) + ' <span>' + n + '</span></button>';
+    }).join('');
+    var mail = CONTACT_EMAIL ? '<a class="nk-btn nk-btn--sm" href="mailto:' + esc(CONTACT_EMAIL) + '?subject=' + encodeURIComponent(k.mailSub + ' · nacekepa.work') + '">' + esc(k.mail) + '</a>' : '';
+    return '<section class="block first gl">' + head(k.label, k.title, k.lead, true) +
+      '<div class="find gl-find" role="search"><label class="nk-label" for="gl-q">' + esc(k.q) + '</label>' +
+      '<div class="find-row"><input class="nk-input" id="gl-q" type="search" enterkeyhint="search" autocomplete="off" spellcheck="false" maxlength="60" placeholder="' + esc(k.ph) + '" value="' + esc(st.q) + '" aria-describedby="gl-out">' +
+      '<button type="button" class="chip find-clear" data-gl-clear aria-label="' + esc(k.clear) + '"' + (st.q ? '' : ' hidden') + '>✕</button></div>' +
+      '<div class="filters gl-filters" role="group" aria-label="' + esc(k.label.split(' · ')[0]) + '">' + chips + '</div>' +
+      '<p class="nk-label find-out" id="gl-out" role="status" aria-live="polite"></p></div>' +
+      GL_GROUPS.map(function (c) {
+        return '<section class="gl-grp" data-gl-sec="' + c + '" aria-labelledby="gl-h-' + c + '"><h2 class="sub" id="gl-h-' + c + '">' + esc(k.groups[c]) + '</h2><dl class="gl-list">' + GL.filter(function (g) { return g.g === c; }).map(glTerm).join('') + '</dl></section>';
+      }).join('') +
+      '<p class="gl-none" id="gl-none" hidden>' + esc(k.none) + ' <button type="button" class="tb-copy" data-gl-clear>' + esc(k.clear) + '</button></p>' +
+      '<div class="gl-ask"><h2 class="sub">' + esc(k.askT) + '</h2><p>' + esc(k.askB) + '</p><div class="cta-row">' + btn(k.order, '#order', 'primary', 'sm', true) + mail + '</div></div>' +
+      '</section>' + ctaBand();
+  }
+  function glApply() { // filter the rendered list in place (no re-render, so the box keeps the caret)
+    var box = app.querySelector('.gl'); if (!box) return;
+    var st = state.gl, w = findFold(st.q).split(/\s+/).filter(Boolean), n = 0, k = t().gl;
+    Array.prototype.forEach.call(box.querySelectorAll('.gl-term'), function (el) {
+      var key = el.getAttribute('data-gl-k'), ok = (st.g === 'all' || el.getAttribute('data-gl-g') === st.g) && w.every(function (x) { return key.indexOf(x) >= 0; });
+      el.hidden = !ok; if (ok) n++;
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('.gl-grp'), function (sec) { sec.hidden = !sec.querySelector('.gl-term:not([hidden])'); });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-gl-grp]'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-gl-grp') === st.g)); });
+    var none = document.getElementById('gl-none'), out = document.getElementById('gl-out'), clr = box.querySelector('.find-clear');
+    if (none) none.hidden = n > 0;
+    if (clr) clr.hidden = !st.q;
+    if (out) out.textContent = (n === 1 ? k.count1 : k.countN).replace('{n}', n);
+  }
+  function glMount() {
+    glApply();
+    var st = state.gl; if (!st.t) return;
+    var el = document.getElementById('gl-' + st.t); st.t = '';
+    if (el) { el.classList.add('is-on'); el.scrollIntoView({ block: 'center' }); el.focus({ preventScroll: true }); }
+  }
+  function glClick(el) {
+    if (el.hasAttribute('data-gl-grp')) { state.gl.g = el.getAttribute('data-gl-grp'); glApply(); return true; }
+    if (el.hasAttribute('data-gl-clear')) { state.gl.q = ''; state.gl.g = 'all'; var q = document.getElementById('gl-q'); if (q) { q.value = ''; q.focus(); } glApply(); return true; }
+    if (el.hasAttribute('data-gl-copy')) {
+      var id = el.getAttribute('data-gl-copy'), msg = el.parentNode.querySelector('.tl-msg'), x = t().tl, url = siteUrl('glossary/#glossary?t=' + id);
+      var fail = function () { if (msg) msg.textContent = x.copyFail; };
+      try { navigator.clipboard.writeText(url).then(function () { if (msg) msg.textContent = x.copied; }, fail); } catch (e) { fail(); }
+      return true;
+    }
+    return false;
+  }
+  app.addEventListener('input', function (ev) { if (ev.target && ev.target.id === 'gl-q') { state.gl.q = ev.target.value; glApply(); } });
+  // glAuto(text) → escaped HTML in which the first mention of each glossary term is a link to it (service sheets).
+  // A name written in capitals (STL, PC, PA …) must match in the same case; other names match in any case.
+  var glRe = null, glNames = {};
+  function glAuto(s) {
+    s = String(s == null ? '' : s); if (!GL.length) return esc(s);
+    if (!glRe) {
+      var names = [];
+      GL.forEach(function (g) { [g.t.en || g.t, g.t.sl || g.t].concat(g.aka || []).forEach(function (n) { n = String(n).replace(/\s*\(.*\)$/, ''); var kk = n.toLowerCase(); if (n.length < 2 || glNames[kk]) return; glNames[kk] = { id: g.id, n: n }; names.push(n); }); });
+      names.sort(function (a, b) { return b.length - a.length; });
+      glRe = new RegExp('(^|[^0-9A-Za-zÀ-ž])(' + names.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\\/-]/g, '\\$&'); }).join('|') + ')(?![0-9A-Za-zÀ-ž])', 'gi');
+    }
+    var out = '', last = 0, seen = {}, m; glRe.lastIndex = 0;
+    while ((m = glRe.exec(s))) {
+      var hit = glNames[m[2].toLowerCase()];
+      if (!hit || seen[hit.id] || (hit.n === hit.n.toUpperCase() && m[2] !== hit.n)) continue;
+      seen[hit.id] = 1;
+      var at = m.index + m[1].length;
+      out += esc(s.slice(last, at)) + '<a class="gl-ref" ' + glHref(hit.id) + '>' + esc(m[2]) + '</a>';
+      last = at + m[2].length;
+    }
+    return out + esc(s.slice(last));
+  }
+
   // ---------- Find anything / "Poišči karkoli" (Ctrl / Cmd + K or the magnifier in the header; 2026-11-12) ----------
   // One box that finds every page, tool, service, project sheet, news post, skill and FAQ answer of the site (EN or SL
   // words, with or without č š ž) and opens it with Enter. Built from the data the site already renders; nothing leaves
@@ -5035,6 +5169,7 @@
     SERVICES.forEach(function (s) { add('services', L(s.title), L(s.body), '#s-' + s.id, findBoth(s.title) + ' ' + T.en.sv.label + ' ' + T.sl.sv.label + ' ' + L(s.get).join(' ') + ' ' + (s.time ? L(s.time) : ''), s.code); });
     PROJECTS.forEach(function (p) { add('projects', P(p, 'title'), P(p, 'description'), '#p-' + p.slug, [findBoth(p.title), findBoth(p.description), findBoth(p.details), p.category, cat(p), p.materials, p.year].join(' '), sheetNo(p)); });
     NEWS.forEach(function (n) { add('news', P(n, 'title'), P(n, 'summary'), '#n-' + n.slug, [findBoth(n.title), findBoth(n.summary), findBoth(n.body)].join(' '), fmtDate(n.date)); });
+    if (GL.length) { add('pages', x.nav.glossary, x.gl.fxS, '#glossary', 'glossary slovar terms izrazi dictionary slovarcek pojmi meaning pomen what is kaj je kaj pomeni NK-G'); GL.forEach(function (g) { add('glossary', L(g.t), L(g.d), '#glossary?t=' + g.id, [findBoth(g.t), (g.aka || []).join(' '), findBoth(g.d), T.en.gl.groups[g.g], T.sl.gl.groups[g.g], 'glossary slovar term izraz what is kaj je kaj pomeni'].join(' '), ''); }); } // Glossary NK-G (2026-11-27)
     SKILLS.forEach(function (g) { g.items.forEach(function (it) { add('skills', L(it[0]), L(it[1]), '#skills', g[lang] + ' ' + findBoth(it[0]) + ' ' + findBoth(it[1]), ''); }); });
     // Search package (2026-11-13): the materials of the material picker (no price per gram — Nace, 2026-11-27) and, while PRICE_LIST is on, the rows of the price list.
     MP_MATS.forEach(function (m) {
@@ -5220,7 +5355,7 @@
       '<p class="nk-label">' + sheetNo(p) + ' · ' + esc(cat(p)) + ' · ' + esc(p.year) + '</p><h2 class="pz-title" id="pz-t">' + esc(P(p, 'title')) + '</h2>' +
       '<p class="lead">' + esc(P(p, 'description')) + '</p>' + (rows.length ? specs(rows) : '') +
       (d ? '<div class="pz-details">' + d.split(/\n{2,}/).slice(0, 2).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' : '') +
-      '<div class="cta-row"><a class="nk-btn nk-btn--sm" href="#p-' + esc(p.slug) + '">' + esc(x.open) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></a>' +
+      '<div class="cta-row"><a class="nk-btn nk-btn--sm" ' + ra('#p-' + p.slug) + '>' + esc(x.open) + '<span class="nk-btn__arrow" aria-hidden="true">→</span></a>' +
       '<button type="button" class="nk-btn nk-btn--sm" data-pz-sl><span class="sl-star" aria-hidden="true">' + (on ? '★' : '☆') + '</span>' + esc(on ? t().sl.remove : t().sl.add) + '</button></div></div></article>';
   }
   function pzDraw(say) {
@@ -5334,7 +5469,7 @@
   // ---------- Keyboard shortcuts: "?" opens a list; ← / → previous/next sheet; H S W N O jump; L switches EN/SL ----------
   // Self-contained: remove this block (KBD_GO … kbdKey()), kbdBtn() in frame(), the data-kbd line in the click handler,
   // the kbdKey(ev) line in the keydown handler, keys: in both languages in content.js and the "Keyboard shortcuts" rules in page.css.
-  var KBD_GO = { h: 'home', s: 'services', w: 'work', n: 'news', p: 'studio', o: 'order', c: 'compare' };
+  var KBD_GO = { h: 'home', s: 'services', w: 'work', n: 'news', p: 'studio', o: 'order', c: 'compare', g: 'glossary' };
   // ── Redline notes / "Rdeči svinčnik" on project sheets (2026-11-24) ──────────────────────────────────────────────────
   // "One like this, but different": on a project sheet the visitor marks the drawing (or the first photo) with numbered red
   // marks — a click in "Mark on the drawing" mode, or "Add a note" and the arrow keys on the mark — and writes one line per
@@ -5597,6 +5732,7 @@
   // Search keys: "/" jumps to the search on #work from anywhere; Esc in the box clears it.
   document.addEventListener('keydown', function (ev) {
     var tg = ev.target, typing = tg && (/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName) || tg.isContentEditable);
+    if (ev.key === 'Escape' && tg && tg.id === 'gl-q' && tg.value) { tg.value = ''; state.gl.q = ''; glApply(); ev.preventDefault(); return; } // Glossary NK-G (2026-11-27)
     if (ev.key === 'Escape' && tg && tg.id === 'find-q' && state.q) { state.q = ''; tg.value = ''; findApply(); ev.preventDefault(); return; }
     if (rlKey(ev)) return; // Redline notes (2026-11-24)
     if (pzKey(ev)) return; // Presentation (2026-11-13)
