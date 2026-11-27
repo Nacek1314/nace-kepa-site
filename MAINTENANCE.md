@@ -26,6 +26,14 @@ bugs fixed, the one improvement, ideas for next time.
   (dimension lines, ranges), list "+" markers are `--ink-muted`; card hover is a border-colour step, never a lift or shadow;
   one easing curve `--ease`; mono uppercase labels stay (title-block convention, Nace's choice) at .06em tracking.
 
+## 2026-11-27 (Nace, live: move to Claude Code)
+
+No change to the site. Added for the move of the daily run to Claude Code: **`CLAUDE.md`** (project rules read at the start of
+every session — the standing rules from this log and the task prompt in one place; this log still wins when it is newer) and
+**`scripts/checks/sweep.cjs`** (the page sweep the daily run does by hand until now: every main view at 1280 / 390 px, light / dark,
+EN / SL → JS errors, failed requests, horizontal scroll, broken images, "undefined" text, page language, one `<h1>`; run it against
+`npx astro preview` or with `BASE=https://nacekepa.work`). Keep both up to date when rules or views change.
+
 ## 2026-11-26 (daily run)
 
 **Checked** (rebased on Nace's commit e68cd74 "prices: none on the home page, price-list tool switched off", which arrived during the run): build (74 → 82 pages); home, #services, #work, #p-famfive, #news, #n-<newest>, #skills, #about, #contact, #order (all 4 steps
